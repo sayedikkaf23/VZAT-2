@@ -23,16 +23,23 @@
             "assets": [
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "src/assets",
+                "output": "assets"
               },
               {
                 "glob": "**/*",
                 "input": "src/environments",
                 "output": "environments"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "assets"
               }
             ],
             "styles": [
-              "src/styles.scss"
+               "src/assets/css/bootstrap.min.css",
+                "src/assets/css/payment-schedual.css"
             ],
             "server": "src/main.server.ts",
             "outputMode": "server",
@@ -45,13 +52,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1mb",
+                  "maximumError": "2MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "200kB",
+                  "maximumError": "400kB"
                 }
               ],
               "outputHashing": "all"
@@ -87,11 +94,13 @@
             "assets": [
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "src/assets",
+                "output": "assets"
               }
             ],
             "styles": [
-              "src/styles.scss"
+               "src/assets/css/bootstrap.min.css",
+                "src/assets/css/payment-schedual.css"
             ]
           }
         }
