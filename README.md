@@ -1,16 +1,25 @@
-# VZAT-Recurring MEAN Stack Project
+## Running the Backend
 
-## Structure
-- `backend/`: Node.js/Express API
-- `frontend/`: Angular app (to be created after Node.js update)
+### Environment Setup
 
-## Setup
-1. Backend is ready in the `backend` folder. Run `npm install` and `npm start` inside `backend`.
-2. Frontend will be created after Node.js is updated to v20.19.0 or higher.
+- Create two environment files in the backend folder:
+  - `.env.sandbox` for sandbox/development
+  - `.env.production` for production
 
-## Environments
-- Both backend and frontend will support sandbox and production configurations for database and API URLs.
+Each file should contain your MongoDB connection string:
+```
+MONGODB_URI=your_mongodb_connection_string
+```
 
----
+### Starting the Server
 
-Update Node.js to v20.19.0+ to continue with the Angular frontend setup.
+- **Sandbox (default):**
+  ```
+  node app.js
+  ```
+- **Production:**
+  ```
+  NODE_ENV=production node app.js
+  ```
+
+The server will automatically use the correct MongoDB URI based on the environment.

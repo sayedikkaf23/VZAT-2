@@ -57,3 +57,34 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+
+## Running the Frontend
+
+### Environment Setup
+
+- The frontend uses Angular environment files for configuration.
+- Edit the following files as needed:
+  - `src/environments/environment.ts` for sandbox/development
+  - `src/environments/environment.prod.ts` for production
+
+Each file should contain your API URL:
+```
+export const environment = {
+  production: false, // or true for production
+  apiUrl: 'http://localhost:3000/api' // Change as needed for your backend
+};
+```
+
+### Starting the Frontend
+
+- **Sandbox (default):**
+  ```
+  ng serve
+  ```
+- **Production build:**
+  ```
+  ng build --configuration production
+  ```
+
+The frontend will automatically use the correct environment file based on the build configuration.
