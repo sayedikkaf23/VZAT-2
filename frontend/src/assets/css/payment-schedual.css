@@ -1,7 +1,8 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 /* payment-schedule-page */
+
 body{
-    padding-left: var(--sidebar-width);
     font-family: 'poppins', sans-serif;
 }
 html a {
@@ -9,11 +10,27 @@ html a {
     text-decoration: none;
     transition: all 0.3s;
 }
+
 .payment-schedule {
     --primary:#FA2E52;
     --sidebar-width: 320px;
     --light-primary:#F8E8E9;
+    display: flex;
+    background-image: url('/assets/images/empire.png');
+    background-repeat: no-repeat;
+    background-position: right bottom;
+    font-family: poppins;
+    background-attachment: fixed;
+    overflow: hidden;
+    
 }
+
+.payment-schedule .detils-sidebar {
+    background-color: var(--light-primary);
+    width: var(--sidebar-width);
+    height: 100vh;
+}
+
 .payment-schedule .sidebar-row .logo {
     padding-top: 0px;
     padding-bottom: 40px;
@@ -46,20 +63,11 @@ html a {
     color: inherit;
     font-weight: 600;
 }
-.payment-schedule .detils-sidebar {
-    background-color: var(--light-primary);
-    width: var(--sidebar-width);
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    z-index: 9;
-}
 .payment-schedule .sidebar-row {
     flex-direction: column;
     min-height: 100vh;
     padding: 20px;
-}   
+}    
 .payment-schedule .logo a {
     display: inline-block;
     vertical-align: top;
@@ -88,13 +96,16 @@ html a {
 .payment-schedule .detils-sidebar h6 a:hover{
     color:var(--primary);
 }
+
 .payment-schedule .details-content {
-    position: relative;
-    padding: 85px 85px 120px;
-    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex: 1;
+    padding: 20px;
+    height: 100vh;
+    overflow: auto;
+    overflow-x: hidden;
 }
 .payment-schedule .details-content .details-footer {
     position: absolute;
@@ -128,16 +139,7 @@ html a {
     color:var(--primary);
 }
 .payment-schedule .details-content .container {
-    width: 850px;
-    max-width: 100%;
-    padding: 0 15px;
-}
-body.payment-schedule {
-    background-image: url(../images/empire.png);
-    background-repeat: no-repeat;
-    background-position: right bottom;
-    font-family: poppins;
-    background-attachment: fixed;
+    padding: 20px;
 }
 body.payment-schedule  .details-content {
     padding: 40px 0px;
@@ -148,7 +150,7 @@ body.payment-schedule  .details-content {
 }
 .payment-schedule-head{
     padding-bottom: 20px;
-}
+} 
 .payment-schedule-head h3 {
     font-size: 24px;
     font-weight: 600;
@@ -172,7 +174,7 @@ body.payment-schedule  .details-content {
 }
 .payment-schedule-list .total-item{
     padding: 15px 40px;
-}
+} 
 .payment-schedule-list .item p {
     font-size: 14px;
     color: #444444;
@@ -239,7 +241,7 @@ body.payment-schedule  .details-content {
     z-index: 0;
     height: 94%;
     top: 50%;
-}
+} 
 .payment-schedule-list .wrp .item.active:after {
     width: 20px;
     height: 20px;
@@ -266,7 +268,7 @@ body.payment-schedule  .details-content {
 html .payment-schedule .schedule-list-box .form-check .form-check-input {
     background-color: #FFF4F4;
     border: 1px solid #F1E3E3 !important;
-}   
+}    
 html .payment-schedule .schedule-list-box .form-check .form-check-input:checked{
     background-color: #FA2E52;
 }
@@ -287,13 +289,14 @@ html .payment-schedule .schedule-list-box .form-check .form-check-input:checked{
 }
 .payment-schedule .btn-wrp .btn:hover{
     background: #000 !important;
-}
+} 
 html .schedule-list-box  .form-check .form-check-label {
     color: #444444;
     font-weight: 400;
     font-size: 15px;
-}
-@media(max-width:991px){
+} 
+
+@media(max-width:970px){
     .payment-schedule .schedule-list-box {
         padding: 0;
     }
@@ -311,20 +314,31 @@ html .schedule-list-box  .form-check .form-check-label {
         font-size: 11px;
         line-height: 22px;
         padding: 0 11px;
-    }
+    } 
     .payment-schedule-list .total-item {
         padding: 12px 15px;
     }
     .payment-schedule-head h3 {
         font-size: 18px;
     }
-    .payment-schedule .details-content .container {
-        padding: 0 30px;
-    }
+    body.payment-schedule  .details-content {
+        position:absolute;
+        right:0;
+        width: 850px;
+        max-width: 100%;
+        padding: 320px 15px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    } 
+    body.payment-schedule .details-content .container {
+        float: right;
+    } 
     .payment-schedule {
         --sidebar-width: 290px;
     }
 }
+
 @media(max-width:767px){
     .payment-schedule .detils-sidebar .price {
         font-size: 22px;
@@ -336,6 +350,7 @@ html .schedule-list-box  .form-check .form-check-label {
         position: static;
         width: 100%;
         text-align: center;
+        height:50%
     }
     .payment-schedule .detils-sidebar p {
         font-size: 13px;
@@ -343,10 +358,6 @@ html .schedule-list-box  .form-check .form-check-label {
     .payment-schedule .sidebar-row {
         min-height: unset;
         padding: 20px 30px 20px;
-    }
-    body.payment-schedule {
-        padding-left: 0;
-       background-attachment: scroll;
     }
     .payment-schedule .sidebar-row .payment-schedule .contact-info-box {
         margin-top: 33px;
@@ -379,10 +390,19 @@ html .schedule-list-box  .form-check .form-check-label {
         max-width: 100%;
         padding: 0 8px;
     }
-    body.payment-schedule  .details-content {
+    .payment-schedule {
+       background-color: var(--light-primary);
+       display: flex;
+       flex-direction: column;
+    }
+    .payment-schedule  .details-content {
+        display: flex;
+        flex-direction: column;
         padding: 0px 10px 0;
         min-height: unset;
+        width: 100%;
         background: var(--light-primary);
+        overflow: hidden;
     }
     .payment-schedule-list .item p {
         font-size: 13px;
@@ -390,12 +410,16 @@ html .schedule-list-box  .form-check .form-check-label {
     .payment-schedule-head  h6 {
         font-size: 12px;
     }
-    .payment-schedule .details-content {
-        flex-direction: column;
-    }
     .payment-schedule .details-content .details-footer {
         position: relative;
+        bottom: 0;
         padding: 0px 15px 15px;
+        width: 100%;
+    }
+    .payment-schedule .details-footer{
+        position: absolute;
+        bottom: 0;
+        background: var(--light-primary);
         width: 100%;
     }
     .payment-schedule .details-footer ul {
@@ -457,11 +481,17 @@ html .schedule-list-box  .form-check .form-check-label {
     .payment-schedule .details-footer h6 a:hover{
         color:var(--dark)
     }
-    .payment-schedule .schedule-list-box .btn-wrp .btn {
+    .payment-schedule .details-footer .col {
+        text-align: right;
+    }
+     .payment-schedule .details-footer .col-auto {
+        width:50%;
+    }
+     .payment-schedule .schedule-list-box .btn-wrp .btn {
         height: 40px;
         font-size: 15px;
         padding: 0 24px;
         line-height: 40px;
         margin-top: 12px;
     }
-}
+} 
