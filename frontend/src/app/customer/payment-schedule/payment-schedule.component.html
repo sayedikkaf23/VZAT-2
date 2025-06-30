@@ -17,8 +17,8 @@
       <div class="col-auto d-none d-md-block">
         <hr/> <h3 class="mb-0"><b>Need Assistance? </b></h3>
         <p>Contact your sales agent:</p>
-        <p><b>Divya Naresh</b></p>
-        <h6 class="fw-normal mb-2">Company Formation  Specialist</h6>
+        <p><b>{{salesAgent.name}}</b></p>
+        <h6 class="fw-normal mb-2">{{salesAgent.position}}</h6>
         <div class="mb-3">
           <div class="row align-items-center gx-1 mb-1">
             <div class="col-auto">
@@ -26,7 +26,7 @@
               <!-- ...SVG code here... -->
             </div>
             <div class="col">
-              <h6 class="mb-0"><a href="fax:+97144578271">+971 4 457 8271</a></h6>
+              <h6 class="mb-0"><a href="fax:+97144578271">{{salesAgent.mobNo1}}</a></h6>
             </div>
           </div>
           <div class="row align-items-center gx-1">
@@ -35,7 +35,7 @@
               <!-- ...SVG code here... -->
             </div>
             <div class="col">
-              <h6 class="mb-0"><a href="tell:+971522382839">+971 52 238 2839</a></h6>
+              <h6 class="mb-0"><a href="tell:+971522382839">{{salesAgent.mobNo2}}</a></h6>
             </div>
           </div>
         </div>
@@ -145,8 +145,8 @@
         <h3>Contact your sales agent:</h3>
         <div class="row gx-0 justify-content-between">
           <div class="col-auto">
-            <p><b>John Doe</b></p>
-            <h6>Company Formation <br>Specialist</h6>
+            <p><b>{{salesAgent.name}}</b></p>
+            <h6>{{salesAgent.position}}</h6>
           </div>
           <div class="col-auto">
             <div class="row align-items-center gx-1 mb-1">
@@ -155,7 +155,7 @@
                 <!-- ...SVG code here... -->
               </div>
               <div class="col">
-                <h6 class="mb-0"><a href="fax:+9714123456">+971 4 123456</a></h6>
+                <h6 class="mb-0"><a href="fax:+9714123456">{{salesAgent.mobNo1}}</a></h6>
               </div>
             </div>
             <div class="row align-items-center gx-1 mb-1">
@@ -164,7 +164,7 @@
                 <!-- ...SVG code here... -->
               </div>
               <div class="col">
-                <h6 class="mb-0"><a href="tell:+971521234567">+971 52 1234567</a></h6>
+                <h6 class="mb-0"><a href="tell:+971521234567">{{salesAgent.mobNo2}}</a></h6>
               </div>
             </div>
             <div class="row align-items-center gx-1">
