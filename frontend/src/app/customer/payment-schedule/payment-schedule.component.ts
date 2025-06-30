@@ -1,5 +1,6 @@
 import { Component, AfterViewInit, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { SalesForceService } from '../../services/salesforce.service';
 
 @Component({
   selector: 'app-payment-schedule',
@@ -11,7 +12,24 @@ import { isPlatformBrowser } from '@angular/common';
   ]
 })
 export class PaymentScheduleComponent implements AfterViewInit {
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+
+  salesAgent: { name: string; 
+                position: String; 
+                mobNo1: String; 
+                mobNo2: String; 
+                token: number;} = {name: "", 
+                                   position: "", 
+                                   mobNo1: "", 
+                                   mobNo2: "", 
+                                   token:0}
+
+  constructor(@Inject(PLATFORM_ID) private platformId: Object,
+              private salesForceService: SalesForceService) {}
+
+  
+  ngOnInit(): void {
+    this.getSalesForceDetails();
+  }
 
   ngAfterViewInit() {
     if (isPlatformBrowser(this.platformId)) {
@@ -30,4 +48,23 @@ export class PaymentScheduleComponent implements AfterViewInit {
     script.async = false;
     document.body.appendChild(script);
   }
+
+   getSalesForceDetails()  {
+    this.salesForceService.getSalesForceDetails().subscribe({
+      next: (res: any) => {
+        console.log(res);
+        this.salesAgent.name = res.name;
+        this.salesAgent.position = res.position;
+        this.salesAgent.mobNo1 = res.mobNo1;
+        this.salesAgent.mobNo2 = res.mobNo2;
+        this.salesAgent.token = res.token;
+        console.log(this.salesAgent);
+      },
+      error: (err) => {
+        this.salesAgent = {name: "", position: "", mobNo1: "", mobNo2: "", token:0};
+      },
+      complete: () => {},
+    });
+  }
+
 }
