@@ -1,0 +1,53 @@
+<div class="container">
+    <h2 class="heading">Login</h2>
+    <form #adminLogin="ngForm" (ngSubmit)="login(adminLogin)">
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" 
+                   class="form-control" 
+                   id="email" 
+                   name="email" 
+                   [(ngModel)]="loginDetails.email" 
+                   #email="ngModel"
+                   required email>
+
+            <div *ngIf="email.invalid && (email.dirty || email.touched)" class="text-danger">
+                <div *ngIf="email.errors?.['required']">Email is required.</div>
+                    Please enter a valid email.
+            </div>
+            <!-- <div *ngIf="adminLogin.controls.email?.touched && adminLogin.controls.email?.invalid" class="text-danger">
+                 Please enter a valid email.
+            </div> -->
+        </div>
+   
+     
+        
+  
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input 
+            type="password"
+            class="form-control"
+            id="password" 
+            name="password"
+            [(ngModel)]="loginDetails.password"
+            #password="ngModel"
+            [pattern]="passwordPattern"
+            required
+        >
+        <div *ngIf="password.invalid && (password.dirty || password.touched)" class="text-danger">
+            <div *ngIf="password.errors?.['required']" class="text-danger" >Password is required.</div>
+            <div *ngIf="password.errors?.['pattern']" class="text-danger">
+               
+                Please enter Valid Password.
+            </div>
+        </div>
+      </div>
+      
+      <button type="submit" class="btn btn-primary">Submit</button>
+
+      
+    </form>
+  </div>
+
