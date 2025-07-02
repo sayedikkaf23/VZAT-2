@@ -9,16 +9,20 @@
     "test": "ng test",
     "serve:ssr:frontend": "node dist/frontend/server/server.mjs"
   },
-  "private": true, "dependencies": {
+  "private": true,
+  "dependencies": {
     "@angular/animations": "^20.0.4",
+    "@angular/cdk": "^20.0.4",
     "@angular/common": "^20.0.0",
     "@angular/compiler": "^20.0.0",
     "@angular/core": "^20.0.0",
     "@angular/forms": "^20.0.0",
+    "@angular/material": "^20.0.4",
     "@angular/platform-browser": "^20.0.0",
     "@angular/platform-server": "^20.0.0",
     "@angular/router": "^20.0.0",
     "@angular/ssr": "^20.0.3",
+    "@fontsource/dm-sans": "^5.2.6",
     "express": "^5.1.0",
     "ngx-cookie-service": "^20.0.1",
     "ngx-toastr": "^19.0.0",
@@ -40,6 +44,4 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.8.2"
   }
-  
 }
-
