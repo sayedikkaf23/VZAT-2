@@ -38,8 +38,9 @@
               }
             ],
             "styles": [
-               "src/assets/css/bootstrap.min.css",
-                "src/assets/css/payment-schedual.css"
+              "@angular/material/prebuilt-themes/azure-blue.css",
+              "src/assets/css/bootstrap.min.css",
+              "src/assets/css/payment-schedual.css"
             ],
             "server": "src/main.server.ts",
             "outputMode": "server",
@@ -99,8 +100,9 @@
               }
             ],
             "styles": [
-               "src/assets/css/bootstrap.min.css",
-                "src/assets/css/payment-schedual.css"
+              "@angular/material/prebuilt-themes/azure-blue.css",
+              "src/assets/css/bootstrap.min.css",
+              "src/assets/css/payment-schedual.css"
             ]
           }
         }

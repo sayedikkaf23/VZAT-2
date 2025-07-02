@@ -7,8 +7,7 @@ import { SalesForceService } from '../../services/salesforce.service';
   templateUrl: './payment-schedule.component.html',
   styleUrls: [
     './payment-schedule.component.scss',
-    '../../../assets/css/bootstrap.min.css',
-    '../../../assets/css/payment-schedual.css'
+    '../../../assets/css/bootstrap.min.css'
   ]
 })
 export class PaymentScheduleComponent implements AfterViewInit {
