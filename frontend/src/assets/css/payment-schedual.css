@@ -4,6 +4,8 @@
 
 body{
     font-family: 'poppins', sans-serif;
+    height: 100%;
+    overflow: hidden;
 }
 html a {
     color: var(--primary);

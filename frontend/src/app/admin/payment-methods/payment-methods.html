@@ -1,180 +1,27 @@
-<div class="content">
-  <div class="page-heading">
-    <div class="row align-items-center justify-content-between">
-      <div class="col-auto">
-        <div class="row align-items-center">
-          <div class="col-auto mb-2">
-            <h2>{{ "Payment Methods" }}</h2>
-          </div>
-        </div>
-      </div>
+<div class="payment-methods-container">
+  <h2 class="title">Payment Methods</h2>
+
+
+<div class="wrapper">
+<div class="methods">
+  <div class="methods-header">
+    <div *ngFor="let method of paymentMethods" class="method-name">
+      {{ method.name }}
     </div>
   </div>
-  <div class="table-responsive overflow-behaviour">
-    <table class="table table-list-data table-hover">
-      <thead class="bg-light">
-        <tr>
-          <th scope="col">{{ "Bank Transfer" }}</th>
-          <th scope="col">{{ "Card Machine" }}</th>
-          <th scope="col">{{ "Cash Deposit" }}</th>
-          <th scope="col">{{ "Cash Over Counter" }}</th>
-          <th scope="col">{{ "Cheque Deposit" }}</th>
-          <th scope="col">{{ "Online Payment" }}</th>
-          <th scope="col">{{ "PDC Cheque" }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let payMethod of paymentMethods; let i = index">
-          <td>
-            <div class="form-check form-switch form-switch-2">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="Status_id2"
-                [(ngModel)]="payMethod.bankTransfer"
-                (change)="
-                  onPaymentMethodStatusChange(payMethod, 'bankTransfer')
-                "
-              />
-            </div>
-          </td>
 
-          <td>
-            <div class="form-check form-switch form-switch-2">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="Status_id2"
-                [(ngModel)]="payMethod.cardMachine"
-                (change)="onPaymentMethodStatusChange(payMethod, 'cardMachine')"
-              />
-            </div>
-          </td>
-
-          <td>
-            <div class="form-check form-switch form-switch-2">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="Status_id2"
-                [(ngModel)]="payMethod.cashDeposit"
-                (change)="onPaymentMethodStatusChange(payMethod, 'cashDeposit')"
-              />
-            </div>
-          </td>
-
-          <td>
-            <div class="form-check form-switch form-switch-2">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="Status_id2"
-                [(ngModel)]="payMethod.cashOverCounter"
-                (change)="
-                  onPaymentMethodStatusChange(payMethod, 'cashOverCounter')
-                "
-              />
-            </div>
-          </td>
-          <td>
-            <div class="form-check form-switch form-switch-2">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="Status_id2"
-                [(ngModel)]="payMethod.chequeDeposit"
-                (change)="
-                  onPaymentMethodStatusChange(payMethod, 'chequeDeposit')
-                "
-              />
-            </div>
-          </td>
-          <td>
-            <div class="form-check form-switch form-switch-2">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="Status_id2"
-                [(ngModel)]="payMethod.onlinePayment"
-                (change)="
-                  onPaymentMethodStatusChange(payMethod, 'onlinePayment')
-                "
-              />
-            </div>
-          </td>
-          <td>
-            <div class="form-check form-switch form-switch-2">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="Status_id2"
-                [(ngModel)]="payMethod.pcdCheque"
-                (change)="onPaymentMethodStatusChange(payMethod, 'pcdCheque')"
-              />
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="data-footer">
-    <div class="row align-items-center justify-content-end">
-      <div class="col-auto">
-        <ul class="pagination cursor-pointer">
-          <li class="page-item d-flex" *ngIf="page !== 1">
-            <a class="page-link" (click)="getPaymentMethods(page - 1)">
-              <span aria-hidden="true"
-                ><i class="fa-solid fa-chevron-left"></i></span
-            ></a>
-          </li>
-          <li
-            class="page-item d-flex"
-            *ngFor="let index of total_pages"
-            [class.active]="page == index"
-          >
-            <a
-              *ngIf="
-                index == 1 ||
-                index == total_page ||
-                index == page ||
-                index == page - 1 ||
-                index == page + 1
-              "
-              (click)="getPaymentMethods(index)"
-              class="page-link"
-              >{{ index }}</a
-            >
-            <a
-              *ngIf="
-                (index == 1 && page !== 1 && page !== 2 && page !== 3) ||
-                (index == total_page - 1 &&
-                  page !== total_page &&
-                  page !== total_page - 1 &&
-                  page !== total_page - 2)
-              "
-              class="page-link"
-              >...</a
-            >
-          </li>
-          <li
-            class="page-item d-flex"
-            *ngIf="page !== total_page && paymentMethods.length !== 0"
-          >
-            <a class="page-link" (click)="getPaymentMethods(page + 1)">
-              <span aria-hidden="true"
-                ><i class="fa-solid fa-chevron-right"></i></span
-            ></a>
-          </li>
-        </ul>
-      </div>
+  <div class="methods-body">
+    <div *ngFor="let method of paymentMethods" class="toggle-wrapper">
+      <label class="switch">
+        <input type="checkbox" [(ngModel)]="method.enabled" />
+        <span class="slider"></span>
+      </label>
     </div>
+  </div>
+  </div>
+
+  <div class="pagination">
+    <button class="page-btn">1</button>
+  </div>
   </div>
 </div>
-
