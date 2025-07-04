@@ -1,0 +1,26 @@
+@use '../css/style.css' as *;
+@use '../css/responsive.css' as *;
+
+
+.main-body{
+        margin: 0;
+    font-family: "Satoshi";
+    font-size: 16px;
+    color: var(--text);
+    background-color: var(--white);
+}
+
+.admin_body.sidebar-hidden {
+  padding-left: 0 !important;
+}
+
+
+.custom-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1050;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+}

@@ -40,7 +40,9 @@
             "styles": [
               "@angular/material/prebuilt-themes/azure-blue.css",
               "src/assets/css/bootstrap.min.css",
-              "src/assets/css/payment-schedual.css"
+              "src/assets/css/payment-schedual.css",
+              "src/assets/CustomerPortal/css/style.css",
+              "src/assets/CustomerPortal/css/responsive.css"
             ],
             "server": "src/main.server.ts",
             "outputMode": "server",
@@ -102,7 +104,9 @@
             "styles": [
               "@angular/material/prebuilt-themes/azure-blue.css",
               "src/assets/css/bootstrap.min.css",
-              "src/assets/css/payment-schedual.css"
+              "src/assets/css/payment-schedual.css",
+              "src/assets/CustomerPortal/css/style.css",
+              "src/assets/CustomerPortal/css/responsive.css"
             ]
           }
         }
