@@ -1,0 +1,15 @@
+@use '../css/style' as *;
+@use '../css/responsive' as *;
+
+
+.main-body{
+        margin: 0;
+    font-family: "Satoshi";
+    font-size: 16px;
+    color: var(--text);
+    background-color: var(--white);
+}
+
+.admin_body.sidebar-hidden {
+  padding-left: 0 !important;
+} 
