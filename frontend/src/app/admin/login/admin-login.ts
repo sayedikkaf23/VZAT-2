@@ -36,8 +36,7 @@ constructor(private router: Router,
         console.log(res);
         if (res.loggedIn***REMOVED***1) {
           this.cookieService.set('jwtToken', res.token);
-          //this.router.navigate(['/dashboard']); 
-          this.router.navigate(['/payment-methods']); 
+          this.router.navigate(['/dashboard']);    
         } else {
           this.toastr.error(res.message);
       }

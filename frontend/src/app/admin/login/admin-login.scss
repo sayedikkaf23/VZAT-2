@@ -63,6 +63,59 @@
     }
 }
 
+@media (min-width:361px) and (max-width: 450px) {
+    .login-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 350px;
+    height: 100vh;
+    overflow-x: hidden;
+}
+.login-content .form-control {
+    width: 250px !important;
+}
+}
+
+@media (max-width: 360px) {
+    .login-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 300px;
+    height: 100vh;
+    overflow-x: hidden;
+}
+.login-content .form-control {
+    width: 250px !important;
+}
+}
+@media (max-height: 400px) {
+    .login-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+    }
+    .logo {
+        margin-top: 110px;
+        object-fit: contain;
+        margin-bottom: 20px;
+    }
+    .d-block {
+        margin-top: 110px;
+        height: 100px;
+        width: 300px;
+    }
+    .login-content .form-control {
+        width: 250px !important;
+    }
+}
+
 .login-label {
     color: rgba(0, 0, 0, 0.50);
     font-size: 10px;
@@ -73,7 +126,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 20px 0;
+    margin-bottom: 20px;
+    margin-top: 10px;
 }
 
 .login-content .form-control {
@@ -108,7 +162,7 @@
     transition: all 0.3s;
     text-decoration: none;
     margin-bottom: 20px;
-
+    margin-top: 10px !important;
 }
 
 .d-block {
@@ -117,6 +171,7 @@
 }
 
 .logo {
+    margin-top: 90px;
         object-fit: contain;
         margin-bottom: 30px;
 }
@@ -151,6 +206,14 @@
         font-size: 35px;
         letter-spacing: 2px;
     }
+    .logo {
+        object-fit: scale-down;
+        margin-bottom: 30px;
+    }
+    .d-block {
+        height: 100px;
+        width: 200px;
+    }
 }
 
 @media (max-width: 767px) {
@@ -158,10 +221,21 @@
         background: none;
     }
     .login-tag {
-        left: 30px;
-        bottom: 30px;
-        font-size: 35px;
-        letter-spacing: 2px;
         display: none;
     }
+    .logo {
+        object-fit: contain;
+        margin-bottom: 30px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .d-block {
+        height: 100px;
+        width: 200px;
+    }
+    .login-content {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    
 }
