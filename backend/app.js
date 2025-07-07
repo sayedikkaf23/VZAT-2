@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import SalesForce from "./routes/SalesForce.js";
 import AdminLogin from "./routes/AdminLoginRoute.js";
+import Customer from "./routes/CustomerRoute.js"
 
 const app = express()
 app.use(express.json())
@@ -22,6 +23,7 @@ app.use((req, res, next) => {
 
 app.use('/api/salesForce',  SalesForce);
 app.use('/api/adminLogin',  AdminLogin);
+app.use('/api/customer',  Customer);
 
 
 app.listen(3000, () => {

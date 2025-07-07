@@ -24,12 +24,39 @@
           </div>
           <h2>Sign In to <br class="d-none d-md-block"> Your Account</h2>
           <p>Welcome Back! Sign in with your data entered during registration.</p>
-          <form>
+          <form #customerLogin="ngForm" (ngSubmit)="login(customerLogin)">
             <div class="form-field">
-              <input type="email" class="form-control" placeholder="Email address">
+              <input 
+                  type="email" 
+                  class="form-control" 
+                  placeholder="Email address"
+                  name="email"
+                  [(ngModel)]="loginDetails.email" 
+                  #email="ngModel"
+                  required email
+              />
+              <div *ngIf="email.invalid && (email.dirty || email.touched)" class="text-danger">
+                <div *ngIf="email.errors?.['required']">Email is required.</div>
+                  Please enter a valid email.
+               </div>
             </div>
             <div class="form-field password">
-              <input  [type]="passwordVisible ? 'text' : 'password'" class="form-control" placeholder="Password">
+              <input  
+                  [type]="passwordVisible ? 'text' : 'password'" 
+                  class="form-control" 
+                  placeholder="Password"
+                  name="password"
+                  [(ngModel)]="loginDetails.password"
+                  #password="ngModel"
+                  [pattern]="passwordPattern"
+                  required
+              />
+              <div *ngIf="password.invalid && (password.dirty || password.touched)" class="text-danger">
+                <div *ngIf="password.errors?.['required']" class="text-danger" >Password is required.</div>
+                   <div *ngIf="password.errors?.['pattern']" class="text-danger">
+                      Password must contain uppercase, lowercase, digit, and special character.
+                    </div>
+              </div>
               <div class="icon">
                      <svg class="pass-hide"  *ngIf="!passwordVisible" (click)="togglePasswordVisibility()"  width="19" height="19" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M18.439 13.439C19.3636 12.5212 20.0775 11.6091 20.544 10.955C20.848 10.5287 21 10.3155 21 10C21 9.6845 20.848 9.4713 20.544 9.045C19.1779 7.12944 15.6892 3 11 3C10.0922 3 9.2294 3.15476 8.41827 3.41827M5.74742 4.74742C3.73118 6.1072 2.24215 7.94266 1.45604 9.045C1.15201 9.4713 1 9.6845 1 10C1 10.3155 1.15201 10.5287 1.45604 10.955C2.8221 12.8706 6.31078 17 11 17C12.9908 17 14.7651 16.2557 16.2526 15.2526" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
