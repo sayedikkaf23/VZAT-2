@@ -1,0 +1,65 @@
+import mongoose from "mongoose";
+
+const Schema = mongoose.Schema;
+
+const vzatRecurringDataSchema = new Schema({
+    OpportunityId: {
+        type:String,
+        required: true,
+    },
+    quotepaymentId: {
+        type:String,
+        required: true 
+    },
+    QuoteId: {
+        type: String,
+        required: true
+    },
+    // recurring: {
+    //     type: Boolean,
+    //     required: true
+    // },
+    CreatedDate: {
+        type: String,
+        required: true
+    },
+    Product_details: [
+        {
+            QuoteLineItemId: {
+                type: String,
+                required: true
+            },
+            TotalPrice: {
+                type: Number,
+                required: true
+            },
+            // amount: {
+            //     type: Number,
+            //     required: true
+            // },
+            Total_Price_After_VAT__c: {
+                type: Number,
+                required: true
+            }
+        }
+    ],
+    Status: {
+        type: String,
+        required: true
+    },
+    TotalPrice: {
+        type: Number,
+        required: true
+    },
+    Total_After_VAT_Currency__c: {
+        type: Number,
+        required: true
+    }
+});
+
+const Vzat_Recurring_Data = mongoose.model('Vzat_Recurring_Data',vzatRecurringDataSchema);
+
+export default Vzat_Recurring_Data;
+
+
+ 
