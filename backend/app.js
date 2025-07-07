@@ -3,6 +3,7 @@ import cors from "cors";
 import SalesForce from "./routes/SalesForce.js";
 import AdminLogin from "./routes/AdminLoginRoute.js";
 import Customer from "./routes/CustomerRoute.js"
+import VzatRecurring from "./routes/VzatRecurring.js"
 
 const app = express()
 app.use(express.json())
@@ -24,6 +25,7 @@ app.use((req, res, next) => {
 app.use('/api/salesForce',  SalesForce);
 app.use('/api/adminLogin',  AdminLogin);
 app.use('/api/customer',  Customer);
+app.use('/api/vzat_recurring_create_payment_link',  VzatRecurring);
 
 
 app.listen(3000, () => {
