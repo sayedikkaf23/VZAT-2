@@ -4,6 +4,7 @@ import { Role } from '../../services/role';
 import { CommonModule } from '@angular/common'; // <--- ADD THIS for *ngIf, *ngFor
 import { FormsModule } from '@angular/forms'; 
 import { DateFormatPipe } from '../../../assets/pipes/date-format.pipe'; 
+import { StyleLoader } from '../../services/style-loader';
 
 @Component({
   selector: 'app-role-list',
@@ -12,6 +13,12 @@ import { DateFormatPipe } from '../../../assets/pipes/date-format.pipe';
   styleUrls: ['./role-list.scss',  '../../../assets/css/admin-theme.css']
 })
 export class RoleList {
+      private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
+  loading = true; 
 
    storeId: any;
   roleLists: any = [];
@@ -31,9 +38,18 @@ export class RoleList {
     direction: 'asc',
   };
 
-  constructor(private roleService: Role, private router: Router) {}
+  constructor(private roleService: Role,  private styleLoader:StyleLoader, private router: Router) {}
 
   ngOnInit(): void {
+        this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
     this.page = 1;
     this.getRoleLists(this.page);
   }
@@ -160,6 +176,9 @@ export class RoleList {
         return 0;
       }
     });
+  }
+      ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
   }
 
 }

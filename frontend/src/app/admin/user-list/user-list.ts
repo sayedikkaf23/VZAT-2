@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { User } from '../../services/user';
 import { FormsModule } from '@angular/forms';
 import { DateFormatPipe } from '../../../assets/pipes/date-format.pipe'; 
+import { StyleLoader } from '../../services/style-loader';
 
 @Component({
   standalone: true,
@@ -13,7 +14,13 @@ import { DateFormatPipe } from '../../../assets/pipes/date-format.pipe';
   styleUrls: ['./user-list.scss','../../../assets/css/admin-theme.css']
 })
 export class UserList {
+      private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
 userList: any = [];
+loading = true; 
   page: any;
   total_page: any;
   total_pages: any =[];
@@ -29,9 +36,18 @@ userList: any = [];
     direction: 'asc',
   };
 
-  constructor(private userService: User, private router: Router) {}
+  constructor(private userService: User,private styleLoader:StyleLoader, private router: Router) {}
 
   ngOnInit(): void {
+      this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
     this.page = 1;
     this.getUsers(this.page);
   }
@@ -159,5 +175,9 @@ userList: any = [];
         return 0;
       }
     });
+  }
+
+   ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
   }
 }

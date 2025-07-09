@@ -2,7 +2,7 @@ import { Component,Inject, PLATFORM_ID , Renderer2} from '@angular/core';
 import { DOCUMENT, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CustomerLoginService } from '../../services/customer-login.service';
-
+import { StyleLoader } from '../../services/style-loader';
 @Component({
   selector: 'app-active-services',
   imports: [NgIf, RouterLink],
@@ -10,15 +10,30 @@ import { CustomerLoginService } from '../../services/customer-login.service';
   styleUrl: './active-services.scss',  
 })
 export class ActiveServices {
+  private themeUrls = [
+    'assets/CustomerPortal/css/style.css',
+    'assets/CustomerPortal/css/responsive.css'
+  ];
 
+  loading = true; 
   isAdditionalModalOpen: boolean = false;
   isServiceModalOpen:boolean = false;
   isUploadModalOpen:boolean = false;
     isSidebarHidden = false;
   isNavbarActive = false;
 
-   constructor(  @Inject(DOCUMENT) private document: Document,  private renderer: Renderer2, private customerLogin: CustomerLoginService) {}
-
+   constructor(  @Inject(DOCUMENT) private document: Document, private styleLoader:StyleLoader, private renderer: Renderer2, private customerLogin: CustomerLoginService) {}
+    ngOnInit(): void {
+     this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
+  }
    openModal(): void {
     this.isAdditionalModalOpen = true;
     console.log('modal open --', this.isAdditionalModalOpen);
@@ -75,6 +90,8 @@ export class ActiveServices {
     }
   }
 
-
+    ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
+  }
 
 }

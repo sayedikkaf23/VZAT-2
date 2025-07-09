@@ -27,14 +27,30 @@ interface SidebarData {
 
 
 export class Footer {
- 
+     private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
  @Input() sidebarData: SidebarData | undefined; // Or initialize it: = {};
-
+loading = true; 
   constructor(  private styleLoader: StyleLoader) { }
 
   ngOnInit(): void {
-
+  this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
     // If sidebarData is fetched asynchronously, ensure its assignment
     // For example: this.someService.getData().subscribe(data => this.sidebarData = data);
+  }
+
+      ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
   }
 }

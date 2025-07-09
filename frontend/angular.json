@@ -33,16 +33,9 @@
               }
             ],
 
-
-            "styles": [
-                   "src/assets/css/bootstrap.min.css",
-   "src/assets/css/admin-theme.css",
-    "src/assets/css/style-admin.css",
-                  "src/assets/css/simplebar.min.css",
-              "src/assets/css/responsive-admin.css"
-
+           "styles": [
+                   "src/assets/css/bootstrap.min.css"
             ],
-            "scripts": [  ],
             "server": "src/main.server.ts",
             "outputMode": "server",
             "ssr": {
@@ -101,14 +94,8 @@
               }
             ],
 
-             "scripts": [ ],
-
             "styles": [
-   "src/assets/css/bootstrap.min.css",
-   "src/assets/css/admin-theme.css",
-    "src/assets/css/style-admin.css",
-    "src/assets/css/simplebar.min.css",
-              "src/assets/css/responsive-admin.css"
+              "src/assets/css/bootstrap.min.css"
             ]
           }
         }

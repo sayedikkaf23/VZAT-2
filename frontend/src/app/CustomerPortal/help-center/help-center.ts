@@ -2,7 +2,7 @@ import { Component,Inject, PLATFORM_ID , Renderer2 , ElementRef} from '@angular/
 import { DOCUMENT } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CustomerLoginService } from '../../services/customer-login.service';
-
+import { StyleLoader } from '../../services/style-loader';
 @Component({
   selector: 'app-help-center',
   imports: [RouterLink],
@@ -10,11 +10,26 @@ import { CustomerLoginService } from '../../services/customer-login.service';
   styleUrl: './help-center.scss',
 })
 export class HelpCenter {
+    private themeUrls = [
+    'assets/CustomerPortal/css/style.css',
+    'assets/CustomerPortal/css/responsive.css'
+  ];
 
+  loading = true; 
 isSidebarHidden = false;
   isNavbarActive = false;
-   constructor( @Inject(DOCUMENT) private document: Document, private renderer: Renderer2, private el: ElementRef, private customerLogin: CustomerLoginService) {}
-
+   constructor( @Inject(DOCUMENT) private document: Document,private styleLoader:StyleLoader, private renderer: Renderer2, private el: ElementRef, private customerLogin: CustomerLoginService) {}
+   ngOnInit(): void {
+     this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
+  }
 
   onLogout(): void {
     this.customerLogin.logout();
@@ -44,5 +59,9 @@ isSidebarHidden = false;
         toggleElement.classList.remove('active');
       }
     }
+  }
+
+      ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
   }
 }
