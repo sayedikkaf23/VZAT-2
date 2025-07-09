@@ -3,61 +3,63 @@ import { isPlatformBrowser } from '@angular/common';
 
 @Injectable({ providedIn: 'root' })
 export class StyleLoader {
-  private renderer: Renderer2;
+constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
 
-  private adminCssHrefs: string[] = [
-    'assets/css/admin-theme.css',
-    'assets/css/style-admin.css',
-    'assets/css/simplebar.min.css',
-    'assets/css/responsive-admin.css',
-    'assets/css/select2.min.css',
-    'assets/css/stylepay.css'
-  ];
+  private loadedThemes: { [key: string]: HTMLLinkElement } = {};
 
-  constructor(
-    private rendererFactory: RendererFactory2,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ) {
-    this.renderer = this.rendererFactory.createRenderer(null, null);
-  }
+   loadTheme(themeUrl: string): Promise<void> {
+     if (!isPlatformBrowser(this.platformId)) {
+      // running on server: skip
+      return Promise.resolve();
+    }
 
-  /**
-   * Load admin styles dynamically into <head>
-   */
-  loadAdminStyles(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    this.adminCssHrefs.forEach(href => {
-      if (!this.isStyleLoaded(href)) {
-        const linkEl = this.renderer.createElement('link');
-        linkEl.rel = 'stylesheet';
-        linkEl.href = href;
-        this.renderer.appendChild(document.head, linkEl);
+    return new Promise((resolve, reject) => {
+      if (!this.loadedThemes[themeUrl]) {
+        const head = document.getElementsByTagName('head')[0];
+        const themeLink = document.createElement('link');
+        themeLink.rel = 'stylesheet';
+        themeLink.href = themeUrl;
+        themeLink.onload = () => resolve();
+        themeLink.onerror = () => reject(`Failed to load CSS: ${themeUrl}`);
+        head.appendChild(themeLink);
+        this.loadedThemes[themeUrl] = themeLink;
+      } else {
+        // Already loaded
+        resolve();
       }
     });
   }
 
-  /**
-   * Remove previously loaded admin styles
+  removeTheme(themeUrl: string): void {
+        if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    const themeLink = this.loadedThemes[themeUrl];
+    if (themeLink) {
+      themeLink.remove();
+      delete this.loadedThemes[themeUrl];
+    }
+  }
+
+    /**
+   * Load multiple CSS files
    */
-  removeAdminStyles(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    const links = Array.from(document.head.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
-
-    links.forEach(link => {
-      if (this.adminCssHrefs.some(adminHref => link.href.includes(adminHref))) {
-        this.renderer.removeChild(document.head, link);
-      }
-    });
+  loadThemes(themeUrls: string[]): Promise<void> {
+     if (!isPlatformBrowser(this.platformId)) {
+      return Promise.resolve();
+    }
+    const promises = themeUrls.map(url => this.loadTheme(url));
+    return Promise.all(promises).then(() => undefined);
   }
 
   /**
-   * Utility: check if style is already added
+   * Remove multiple CSS files
    */
-private isStyleLoaded(href: string): boolean {
-  return Array.from(document.head.querySelectorAll('link[rel="stylesheet"]'))
-    .some(link => (link as HTMLLinkElement).href.includes(href));
-}
+  removeThemes(themeUrls: string[]): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    themeUrls.forEach(url => this.removeTheme(url));
+  }
 
 }

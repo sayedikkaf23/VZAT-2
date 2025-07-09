@@ -3,6 +3,7 @@ import { User } from '../../services/user';
 import { ToastrService } from 'ngx-toastr';
 import { FormsModule } from '@angular/forms'; 
 import { CommonModule } from '@angular/common';
+import { StyleLoader } from '../../services/style-loader';
 
 @Component({
   selector: 'app-mail-management',
@@ -11,6 +12,12 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./mail-management.scss',"../../../assets/css/admin-theme.css"]
 })
 export class MailManagement {
+  loading = true; 
+      private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
  id: string = '';
   subject: string = '';
   mailbody: string = '';
@@ -19,9 +26,18 @@ export class MailManagement {
 
 
 
-  constructor(private userService: User, private toastr: ToastrService) {}
+  constructor(private userService: User, private toastr: ToastrService, private styleLoader: StyleLoader) {}
 
   ngOnInit(): void {
+      this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
     this.loadProfile();
   }
 
@@ -68,5 +84,9 @@ export class MailManagement {
         console.error('Error saving profile:', error);
       }
     );
+  }
+
+      ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
   }
 }

@@ -3,6 +3,7 @@ import { ManualInvoice } from '../../services/manual-invoice';
 import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { StyleLoader } from '../../services/style-loader';
 
 @Component({
   selector: 'app-manual-invoice-payment',
@@ -12,19 +13,69 @@ import { FormsModule } from '@angular/forms';
 })
 export class ManualInvoicePayment {
 
+  dummyInvoices = [
+  {
+    billTo: 'John Doe',
+    invoiceNumber: 'INV-001',
+    email: 'john@example.com',
+    totalAmount: '100.00',
+    status: 'Paid',
+    dueDate: '2025-07-15',
+    paymentURL: 'https://example.com/pay/INV-001'
+  },
+  {
+    billTo: 'Jane Smith',
+    invoiceNumber: 'INV-002',
+    email: 'jane@example.com',
+    totalAmount: '200.00',
+    status: 'Pending',
+    dueDate: '2025-07-20',
+    paymentURL: 'https://example.com/pay/INV-002'
+  },
+  {
+    billTo: 'Bob Brown',
+    invoiceNumber: 'INV-003',
+    email: 'bob@example.com',
+    totalAmount: '150.00',
+    status: 'Overdue',
+    dueDate: '2025-07-10',
+    paymentURL: 'https://example.com/pay/INV-003'
+  }
+];
+
+    private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
 
    manualInvoiceList: any = [];
   filteredInvoiceList: any = [];
   searchTerm: string = '';
   currentPage: number = 1;
   itemsPerPage: number = 5;
-
+loading = true; 
   constructor(
     private ManualInvoiceService: ManualInvoice,
+    private styleLoader:StyleLoader,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+     this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
+
+      this.manualInvoiceList = [...this.dummyInvoices];
+  this.filteredInvoiceList = [...this.dummyInvoices];
+
+
     this.getAllManualInvoice();
   }
 
@@ -122,5 +173,9 @@ export class ManualInvoicePayment {
     if (paymentURL) {
       window.open(paymentURL, '_blank');
     }
+  }
+      
+  ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
   }
 }

@@ -14,6 +14,11 @@ import { StyleLoader} from '../../services/style-loader';
   styleUrls: ['./header.scss','../../../assets/css/admin-theme.css']
 })
 export class Header {
+      private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
   constructor(private route: ActivatedRoute,  private styleLoader: StyleLoader, private router: Router, public authService: Auth, public userService: User) { }
 
   ngOnInit(): void { }
