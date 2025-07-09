@@ -1,6 +1,7 @@
 import { Component,Inject, PLATFORM_ID , Renderer2} from '@angular/core';
 import { DOCUMENT, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { CustomerLoginService } from '../../services/customer-login.service';
 
 @Component({
   selector: 'app-active-services',
@@ -16,13 +17,17 @@ export class ActiveServices {
     isSidebarHidden = false;
   isNavbarActive = false;
 
-   constructor(  @Inject(DOCUMENT) private document: Document,  private renderer: Renderer2) {}
+   constructor(  @Inject(DOCUMENT) private document: Document,  private renderer: Renderer2, private customerLogin: CustomerLoginService) {}
 
    openModal(): void {
     this.isAdditionalModalOpen = true;
     console.log('modal open --', this.isAdditionalModalOpen);
   }
 
+
+  onLogout(): void {
+    this.customerLogin.logout();
+  }
   closeModal(): void {
     this.isAdditionalModalOpen = false;
   }

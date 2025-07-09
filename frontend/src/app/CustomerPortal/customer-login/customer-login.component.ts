@@ -51,7 +51,7 @@ export class CustomerLoginComponent {
           if (res.loggedIn***REMOVED***1) {
             this.cookieService.set('jwtToken', res.token);
             console.log("Logged In")
-            //this.router.navigate(['/dashboard']);   //set the navigation path for customer, after logging in 
+            this.router.navigate(['/active-services']);   //set the navigation path for customer, after logging in 
           } else {
             this.toastr.error(res.message);
         }
