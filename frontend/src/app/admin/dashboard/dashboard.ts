@@ -6,16 +6,16 @@ import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Header,NavigationPanel,PaymentMethods],
+  imports: [],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   providers: [],
 })
 export class Dashboard {
-  constructor(private authService: AuthService) { }
+  // constructor(private authService: AuthService) { }
 
-  onLogout(): void {
-    this.authService.logout();
-  }
+  // onLogout(): void {
+  //   this.authService.logout();
+  // }
 
 }

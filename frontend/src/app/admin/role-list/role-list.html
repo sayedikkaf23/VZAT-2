@@ -1,0 +1,193 @@
+<div class="content">
+  <div class="page-heading">
+    <div class="row align-items-center justify-content-between">
+      <div class="col-auto">
+        <div class="row align-items-center">
+          <div class="col-auto mb-2">
+            <h2>{{ "Roles  " }}</h2>
+          </div>
+          <div class="col-auto mb-2">
+            <a
+              class="btn btn-sm btn-light-primary"
+              [routerLink]="['/panel/add_role']"
+              ><i class="fa-solid fa-plus"></i>{{ "New Role" }}</a
+            >
+          </div>
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="row align-items-center">
+          <div class="col-auto mb-2 mt-2">
+            <div class="form-feild page-heading-search-field mb-0">
+              <div class="search-section me-3">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search roles..."
+            [(ngModel)]="searchTerm"
+          
+          />
+          <i class="fa fa-search search-icon"></i>
+        </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="table-responsive overflow-behaviour">
+    <table class="table table-list-data table-hover">
+      <thead class="bg-light">
+        <tr>
+          <th scope="col" (click)="sortColumn('role_name')">
+            <b>{{ "Role" }}</b>
+            <span
+              class="cursor-pointer"
+              [ngClass]="
+                sortOrder.direction ***REMOVED***= 'asc' ? 'asc-icon' : 'desc-icon'
+              "
+            >
+              &#x2191;&#x2193;
+            </span>
+          </th>
+          <th scope="col" (click)="sortColumn('status')">
+            <b>{{ "Status" }}</b>
+            <span
+              class="cursor-pointer"
+              [ngClass]="
+                sortOrder.direction ***REMOVED***= 'asc' ? 'asc-icon' : 'desc-icon'
+              "
+            >
+              &#x2191;&#x2193;
+            </span>
+          </th>
+          <th scope="col" (click)="sortColumn('updatedAt')">
+            {{ "Updated On" }}
+            <span
+              class="cursor-pointer"
+              [ngClass]="
+                sortOrder.direction ***REMOVED***= 'asc' ? 'asc-icon' : 'desc-icon'
+              "
+            >
+              &#x2191;&#x2193;
+            </span>
+          </th>
+          <th scope="col">{{ "Action" }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let roleList of roleLists; let i = index">
+          <td>{{ roleList?.role_name }}</td>
+          <td>
+            <div class="form-check form-switch form-switch-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="Status_id2"
+                [(ngModel)]="roleList.status"
+                (change)="onRoleStatusChange(roleList, $event)"
+              />
+            </div>
+          </td>
+
+          <td>
+            {{ roleList?.updatedAt | dateFormat }}
+          </td>
+
+          <td class="text-end td-action-data">
+            <div class="dropdown">
+              <button
+                class="btn btn-icon btn-sm btn-light dropdown-toggle arrow-none"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </button>
+              <ul class="dropdown-menu">
+                <li>
+                  <a
+                    class="dropdown-item cursor-pointer"
+                    (click)="editRole(roleList, 'edit')"
+                    >{{ "Edit" }}</a
+                  >
+                </li>
+
+                <li>
+                  <a
+                    class="dropdown-item cursor-pointer"
+                    (click)="viewRole(roleList, 'view')"
+                    >{{ "View" }}</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item cursor-pointer"
+                    (click)="deleteRole(roleList)"
+                    >{{ "Delete" }}</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="data-footer">
+    <div class="row align-items-center justify-content-end">
+      <div class="col-auto">
+        <ul class="pagination cursor-pointer">
+          <li class="page-item d-flex" *ngIf="page !***REMOVED*** 1">
+            <a class="page-link" (click)="getRoleLists(page - 1)">
+              <span aria-hidden="true"
+                ><i class="fa-solid fa-chevron-left"></i></span
+            ></a>
+          </li>
+          <li
+            class="page-item d-flex"
+            *ngFor="let index of total_pages"
+            [class.active]="page ***REMOVED*** index"
+          >
+            <a
+              *ngIf="
+                index ***REMOVED*** 1 ||
+                index ***REMOVED*** total_page ||
+                index ***REMOVED*** page ||
+                index ***REMOVED*** page - 1 ||
+                index ***REMOVED*** page + 1
+              "
+              (click)="getRoleLists(index)"
+              class="page-link"
+              >{{ index }}</a
+            >
+            <a
+              *ngIf="
+                (index ***REMOVED*** 1 && page !***REMOVED*** 1 && page !***REMOVED*** 2 && page !***REMOVED*** 3) ||
+                (index ***REMOVED*** total_page - 1 &&
+                  page !***REMOVED*** total_page &&
+                  page !***REMOVED*** total_page - 1 &&
+                  page !***REMOVED*** total_page - 2)
+              "
+              class="page-link"
+              >...</a
+            >
+          </li>
+          <li
+            class="page-item d-flex"
+            *ngIf="page !***REMOVED*** total_page && roleLists.length !***REMOVED*** 0"
+          >
+            <a class="page-link" (click)="getRoleLists(page + 1)">
+              <span aria-hidden="true"
+                ><i class="fa-solid fa-chevron-right"></i></span
+            ></a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <!-- <div class="footer-container">
+    <app-footer></app-footer>
+  </div> -->
+</div>

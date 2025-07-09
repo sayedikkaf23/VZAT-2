@@ -1,0 +1,123 @@
+
+<div class="content">
+  <div class="page-heading">
+    <div class="row align-items-center justify-content-between">
+      <div class="col-auto">
+        <div class="row align-items-center">
+          <div class="col-auto">
+            <h2 *ngIf="type ***REMOVED*** 'add'">{{ "Add User" }}</h2>
+            <h2 *ngIf="type ***REMOVED*** 'edit'">{{ "Edit User" }}</h2>
+            <h2 *ngIf="type ***REMOVED*** 'view'">{{ "View User" }}</h2>
+          </div>
+          <div class="col-auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Basic Detail</h2>
+    <div class="row mb-2">
+      <div class="form-field col-md-3">
+        <label for="email">Email<em>*</em></label>
+        <input
+          type="text"
+          name="email"
+          placeholder="Please Enter Email"
+          autocomplete="off"
+          class="form-control form-control-sm form-control-solid"
+          aria-required="true"
+          aria-invalid="false"
+          [(ngModel)]="email"
+          [disabled]="type ***REMOVED*** 'view'"
+        />
+        <span class=""></span>
+      </div>
+      <div class="form-field col-md-3">
+        <label for="password">Password<em>*</em></label>
+        <input
+          type="password"
+          name="password"
+          placeholder="Please Enter Password"
+          autocomplete="off"
+          class="form-control form-control-sm form-control-solid"
+          aria-required="true"
+          aria-invalid="false"
+          [(ngModel)]="password"
+          [disabled]="type ***REMOVED*** 'view'"
+        />
+        <span class=""></span>
+      </div>
+      <div class="form-field col-md-3">
+        <label for="firstname">User Name<em>*</em></label>
+        <input
+          type="text"
+          name="fullname"
+          placeholder="Please Enter Full Name"
+          autocomplete="off"
+          class="form-control form-control-sm form-control-solid"
+          aria-required="true"
+          aria-invalid="false"
+          [(ngModel)]="userName"
+          [disabled]="type ***REMOVED*** 'view'"
+        />
+        <span class=""></span>
+      </div>
+      <div class="form-field col-md-3">
+        <label for="phone">Contact No.<em>*</em></label>
+        <input
+          type="text"
+          name="phone"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+          placeholder="Please Enter Contact Number"
+          autocomplete="off"
+          class="form-control form-control-sm form-control-solid"
+          aria-required="true"
+          aria-invalid="false"
+          [(ngModel)]="contactNo"
+          [disabled]="type ***REMOVED*** 'view'"
+        />
+        <span class=""></span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <h2>Role Information</h2>
+        <div class="row mb-2">
+          <div class="form-field col-md-6">
+            <label for="lastname">Role<em>*</em></label>
+            <ng-select
+              class=""
+              placeholder="Select Role"
+              [(ngModel)]="selectedRole"
+              [required]="true"
+              [disabled]="type ***REMOVED*** 'view'"
+            >
+              <ng-option *ngFor="let role of roles" [value]="role?._id">{{
+                role?.role_name
+              }}</ng-option>
+            </ng-select>
+            <span class=""></span>
+          </div>
+          <div class="form-field col-md-6">
+            <label for="status">Status</label>
+            <ng-select
+              class=""
+              placeholder="Select Status"
+              [(ngModel)]="selectedStatus"
+              [disabled]="type ***REMOVED*** 'view'"
+            >
+              <ng-option *ngFor="let status of statusList" [value]="status">{{
+                status
+              }}</ng-option>
+            </ng-select>
+
+            <span class=""></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="text-end" *ngIf="type != 'view'">
+    <a (click)="addUser()" class="btn btn-primary btn-radius">{{ "Save" }}</a>
+  </div>
+</div>
