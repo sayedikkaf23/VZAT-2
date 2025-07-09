@@ -1,0 +1,57 @@
+
+:root{
+	--primary:#CF3339;
+    --light-primary:#F8E8E9;
+	--secondary:#8F8F8F;
+	--light:#FBFBFB;
+	--dark:#121212;
+    --white:#fff;
+    --danger: #F23737;
+    --success: #01AC68;
+    --warning:#FFC700;
+    --border-color:#EBEEF2;
+    --page-content-space:20px;
+    --sidebar-width:440px;
+    --body-font-size:15px;
+}
+
+.details-footer ul {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.details-footer ul li:last-child {
+    padding-right: 0;
+    margin-right: 0;
+    border-right: 0;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.details-footer ul li {
+    line-height: 18px;
+    position: relative;
+}
+
+.details-footer ul li {
+    line-height: 18px;
+    position: relative;
+    padding-right: 15px;
+    border-right: 1px solid var(--secondary);
+    margin-right: 15px;
+}
+
+.details-footer ul li a {
+    color: var(--secondary);
+}
+
+html a {
+    text-decoration: none;
+    transition: all 0.3s;
+}

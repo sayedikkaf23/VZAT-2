@@ -1,0 +1,55 @@
+<div>
+    <div class="content">
+      <div class="page-heading" style="margin: 20px; margin-top: 25px">
+        <div class="row align-items-center justify-content-between">
+          <div class="col-auto">
+            <div class="row align-items-center">
+              <div class="col-auto mb-2">
+                <h2>Mail Write-up</h2>
+              </div>
+            </div>
+          </div>
+  
+          <div class="container-fluid p-4">
+            <div class="invoiceformwpr">
+           
+  
+              <div class="card">
+                <div class="row">
+                  <!-- Subject Field -->
+                  <div class="col-md-12" style="margin-bottom: 20px;">
+                    <div class="form-field">
+                      <label for="subject" class="form-label" style="font-size: 18px;">Subject</label>
+                      <input [ngModelOptions]="{ standalone: true }" [(ngModel)]="subject" class="form-control"
+                        id="subject" type="text" placeholder="Subject" style="width: 100%; font-size: 16px; padding: 10px;" />
+                    </div>
+                  </div>
+                  <!-- Mail Body Field -->
+                  <div class="col-md-12">
+                    <div class="form-field">
+                      <label for="mailbody" class="form-label" style="font-size: 18px;">Mail Body</label>
+                      <textarea id="mailbody" placeholder="Mail Body" class="form-control"
+                        [(ngModel)]="mailbody" [ngModelOptions]="{ standalone: true }"
+                        style="width: 100%; height: 200px; font-size: 16px; padding: 10px;"></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+  
+            
+  
+              <div class="btnwpr" style="text-align: center; margin-top: 20px;">
+                <button (click)="save()" class="btn btn-success" style="width: 200px;">Save</button>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- <div class="footer-container">
+      <app-footer></app-footer>
+    </div> -->
+  </div>
+  

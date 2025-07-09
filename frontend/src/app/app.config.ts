@@ -7,6 +7,7 @@ import { provideClientHydration, withEventReplay } from '@angular/platform-brows
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { CookieService } from 'ngx-cookie-service';
 import { provideToastr } from 'ngx-toastr';
+import { NgxPermissionsModule } from 'ngx-permissions';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -16,6 +17,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch()),
     provideAnimations(), // required animations providers
     provideToastr(), // Toastr providers
-    CookieService
+    CookieService,
+    NgxPermissionsModule.forRoot().providers!
   ]
 };
