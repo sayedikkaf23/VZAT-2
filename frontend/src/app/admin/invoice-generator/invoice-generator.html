@@ -1,0 +1,383 @@
+<div *ngIf="loading">
+  <!-- Display your loader here -->
+  <!-- Example: -->
+  <div class="data-loader">
+    <div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
+</div>
+<div *ngIf="!loading">
+  <div class="content">
+    <div class="page-heading" style="margin: 20px; margin-top: 25px">
+      <div class="row align-items-center justify-content-between">
+        <div class="col-auto">
+          <div class="row align-items-center">
+            <div class="col-auto mb-2">
+              <h2>Invoice Generator</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="container-fluid p-4">
+          <div class="invoiceformwpr">
+            <div class="card">
+              <div class="row">
+                <div class="row">
+                  <!-- First Row -->
+                  <div class="col-md-6">
+                    <div class="form-feild">
+                      <label for="FullInvoicenumber" class="form-label">Invoice Number   <span style="color: red;">*</span></label>
+                      <input type="text" id="FullInvoicenumber" class="form-control ng-untouched ng-pristine ng-valid"
+                        [(ngModel)]="invoiceNumber" [ngModelOptions]="{ standalone: true }"
+                        placeholder="Enter Invoice Number">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-feild">
+                      <label for="FullInvoicenumber" class="form-label">Account ID   <span style="color: red;">*</span></label>
+                      <input disabled type="text" class="form-control disabled-input" id="accountNumber"
+                        placeholder="Account Id" [ngModelOptions]="{ standalone: true }" [(ngModel)]="accountId" />
+                    </div>
+                  </div>
+              
+                  <!-- Second Row -->
+                  <div class="col-md-6" style="margin-top: 15px;">
+                    <div class="form-feild">
+                      <label for="Yourcompanydetails" class="form-label">Your company details   <span style="color: red;">*</span></label>
+                      <input id="Yourcompanydetails" class="form-control" [(ngModel)]="companyDetails"
+                        [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                  </div>
+                </div>
+                
+
+                <!-- <div class="col-md-6">
+                  <div class="form-field w-100 h-100">
+                    <label for="Logo" class="form-label">Logo</label>
+
+                    <div class="invoice-logo-upload text-center p-4 border rounded" *ngIf="!selectedImage"
+                      style="height: 90%">
+                      <svg width="48" height="48" viewBox="0 0 32 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                          d="M28.5714 4.22361L12.9485 4.20957C12.9485 3.08702 12.5942 2.0346 11.9542 1.23481C11.3028 0.435012 10.4456 0 9.51991 0H3.42857C1.54288 0 0 1.89433 0 4.20957V25.7904C0 28.1057 1.54288 30 3.42857 30H28.5714C30.4571 30 32 28.1057 32 25.7904V8.43306C32 6.10377 30.4571 4.22361 28.5714 4.22361ZM27.7714 17.5959C27.28 18.073 26.56 17.9607 26.1714 17.3574L24 13.9476V24.3312C24 25.103 23.4857 25.7344 22.8571 25.7344C22.2286 25.7344 21.7143 25.103 21.7143 24.3312V13.9476L19.5429 17.3574C19.3257 17.7082 18.9829 17.8906 18.64 17.8906C18.4 17.8906 18.1485 17.7924 17.9429 17.5959C17.44 17.1188 17.36 16.2348 17.7486 15.6314L21.9543 8.99445C22.4114 8.30691 23.3143 8.29286 23.76 8.99445L27.9657 15.6314C28.3543 16.2348 28.2743 17.1188 27.7714 17.5959Z"
+                          fill="currentColor" />
+                      </svg>
+                      <small class="text-muted d-block my-2">
+                        JPG, JPEG, PNG, less than 5MB
+                      </small>
+
+                      <input type="file" class="d-none" #fileInput (change)="onSelect($event)" />
+
+                      <button class="btn btn-danger btn-sm rounded-pill mt-3" (click)="fileInput.click()">
+                        Upload file
+                      </button>
+                    </div>
+
+                    <div *ngIf="selectedImage" class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <img [src]="selectedImage" alt="Selected Image" width="50" class="me-3" />
+                        <span>{{ fileName }}</span>
+                      </div>
+                      <button class="btn btn-outline-danger btn-sm" (click)="removeImage()">
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div> -->
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div class="col-md-4">
+
+                  <div class="form-feild">
+                    <label for="Purchaseorder" class="form-label">Customer/Client Email   <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" id="email" placeholder="Client@example.com"
+                      [ngModelOptions]="{ standalone: true }" [(ngModel)]="email" />
+                  </div>
+                 
+                </div>
+                <div class="col-md-4">
+                  <div class="form-feild">
+                    <label for="Billto" class="form-label">Bill to   <span style="color: red;">*</span></label>
+                    <input id="Billto" class="form-control" [(ngModel)]="billTo"
+                      [ngModelOptions]="{ standalone: true }" />
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-feild">
+                    <label for="PurchaseOrderNumber" class="form-label">Customer/Client Purchase Order Number</label>
+                    <input type="text" id="PurchaseOrderNumber" class="form-control ng-untouched ng-pristine ng-valid"
+                      [(ngModel)]="purchaseOrder" [ngModelOptions]="{ standalone: true }"
+                      placeholder="Client Purchase Order Number">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-feild">
+                    <label for="Currency" class="form-label">Currency   <span style="color: red;">*</span></label>
+                    <select class="form-select" id="currency" [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="currency">
+                      <option value="AED">AED</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-feild">
+                    <label for="InvoiceDate" class="form-label">Invoice date   <span style="color: red;">*</span></label>
+                    <input type="date" id="InvoiceDate" class="form-control" [(ngModel)]="invoiceDate"
+                      [ngModelOptions]="{ standalone: true }" />
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-feild">
+                    <label for="DueDate" class="form-label">Due date   <span style="color: red;">*</span></label>
+                    <input type="date" id="DueDate" class="form-control" [(ngModel)]="dueDate"
+                      [ngModelOptions]="{ standalone: true }" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-feild">
+                    <label for="salesPersonName" class="form-label">Sales Person Name   <span style="color: red;">*</span></label>
+                    <input [ngModelOptions]="{ standalone: true }" [(ngModel)]="salesPersonName" class="form-control"
+                      id="salesPersonName" type="text" placeholder="Sales Person Name" />
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="form-feild">
+                    <label for="SalesPersonNumber" class="form-label">Sales Person Number</label>
+                    <input [ngModelOptions]="{ standalone: true }" [(ngModel)]="salesPersonMobile" class="form-control"
+                      id="SalesPersonNumber" type="tel" placeholder="Enter Sales Person Number">
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="form-feild">
+                    <label for="salesPersonEmail" class="form-label">Sales Person Email   <span style="color: red;">*</span></label>
+                    <input [ngModelOptions]="{ standalone: true }" [(ngModel)]="salesPersonEmail" class="form-control"
+                      id="salesPersonEmail" type="email" placeholder="Sales Person Email" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card bg-light">
+              <div class="multipleitems">
+                <!-- Iterate over items array -->
+                <div class="item" *ngFor="let item of items; let i = index">
+                  <div class="row align-items-end mb-4 gx-0">
+                    <!-- Item Name -->
+                    <div class="col-md-3">
+                      <label for="Itemdescription{{ i }}" class="form-label"
+                        >Item Name <span style="color: red;">*</span></label
+                      >
+                      <input
+                        type="text"
+                        id="Itemdescription{{ i }}"
+                        [(ngModel)]="item.description"
+                        name="description{{ i }}"
+                        class="form-control"
+                        (input)="updateItemAmount(item)"
+                        placeholder="Item Name"
+                      />
+                    </div>
+            
+                    <!-- Quantity -->
+                    <div class="col-md-2">
+                      <label for="Quantity{{ i }}" class="form-label"
+                        >Quantity <span style="color: red;">*</span></label
+                      >
+                      <input
+                        type="number"
+                        id="Quantity{{ i }}"
+                        [(ngModel)]="item.quantity"
+                        name="quantity{{ i }}"
+                        class="form-control"
+                        (input)="updateItemAmount(item)"
+                        placeholder="Quantity"
+                      />
+                    </div>
+            
+                    <!-- Item Price -->
+                    <div class="col-md-3">
+                      <label for="Unitcost{{ i }}" class="form-label"
+                        >Item Price <span style="color: red;">*</span></label
+                      >
+                      <input
+                        type="number"
+                        id="Unitcost{{ i }}"
+                        [(ngModel)]="item.unitCost"
+                        name="unitCost{{ i }}"
+                        class="form-control"
+                        (input)="updateItemAmount(item)"
+                        placeholder="Item Price"
+                      />
+                    </div>
+            
+                    <!-- Amount and Remove button -->
+                    <div class="col-md-4 d-flex align-items-center">
+                      <div class="flex-fill">
+                        <label for="Amount{{ i }}" class="form-label">Total Price <span style="color: red;">*</span></label>
+                        <input type="text" id="Amount{{ i }}" [value]="item.amount | number: '1.2-2'" class="form-control" readonly placeholder="Total Price" />
+                      </div>
+                      <!-- Remove button shown only when more than one item exists and the item is not empty -->
+                      <div *ngIf="!isItemEmpty(item)" class="ms-2">
+                        <button class="btn btn-danger" style="padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-top: 25px;" (click)="removeItem(i)">Remove</button>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+            
+              <!-- Add Item Button -->
+
+          <!-- Add Item Button -->
+<!-- Add Item Button -->
+<!-- Add Item Button with Flexbox -->
+<div class="add-item-button" style="display: flex; justify-content: center; align-items: center; height: 60px; margin-top: 20px;">
+  <button
+    class="additem"
+    style="background: none; border: none; cursor: pointer;"
+    (click)="addItem()"
+    aria-label="Add Item"
+  >
+    <svg width="40" height="40" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="29.5" cy="29.5" r="29.5" fill="currentColor" />
+      <line x1="29.5938" y1="17" x2="29.5938" y2="42" stroke="white" stroke-width="1.5" />
+      <line x1="42" y1="29.5938" x2="17" y2="29.5937" stroke="white" stroke-width="1.5" />
+    </svg>
+  </button>
+</div>
+
+
+
+
+              <!-- <div class="add-item-button" style="margin-top: 20px;">
+                <button
+                  (click)="addItem()"
+                  style="
+                    background-color: green;
+                    color: white;
+                    border: none;
+                    padding: 6px 12px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                  "
+                >
+                  Add Item
+                </button>
+              </div> -->
+            
+              <!-- Subtotal -->
+              <div class="subtotalwpr">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>Subtotal</td>
+                      <td>AED&nbsp;{{ subtotal | number: '1.2-2' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+
+            <div class="card">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-feild">
+                    <label for="payment" class="form-label">Notes / payment terms   <span style="color: red;">*</span></label>
+                    <textarea id="payment" placeholder="Payment is due within 15 days" class="form-control"
+                      [(ngModel)]="Notes" [ngModelOptions]="{ standalone: true }"></textarea>
+                      <!-- <button (click)="saveNotes()">Save Notes</button> -->
+
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-feild">
+                    <label for="Tax" class="form-label">Tax %</label>
+                    <input type="number" id="Tax" class="form-control" [(ngModel)]="taxPercentage"
+                      [ngModelOptions]="{ standalone: true }" placeholder="Enter tax percentage" />
+                  </div>
+                  <div class="form-feild">
+                    <label for="Discount" class="form-label">Discount (AED)</label>
+                    <input type="number" id="Discount" class="form-control" [(ngModel)]="discount"
+                      [ngModelOptions]="{ standalone: true }" placeholder="Enter discount amount" />
+                  </div>
+                  <div class="form-feild">
+                    <label for="Shippingfee" class="form-label">Shipping Fee (AED)</label>
+                    <input type="number" id="Shippingfee" class="form-control" [(ngModel)]="shippingFee"
+                      [ngModelOptions]="{ standalone: true }" placeholder="Enter shipping fee" />
+                  </div>
+                  <div class="table-responsive mt-3">
+                    <table class="w-100">
+                      <tbody>
+                        <tr>
+                          <td class="text-end">Total</td>
+                          <td class="text-end">AED&nbsp;{{ total | number: '1.2-2' }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-feild">
+                    <label for="bankDetails" class="form-label">
+                      Bank account details <span style="color: red;">*</span>
+                    </label>
+                    <textarea
+                      id="bankDetails"
+                      class="form-control"
+                      [(ngModel)]="bankDetails"
+                      [ngModelOptions]="{ standalone: true }"
+                    ></textarea>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-feild">
+                    <label for="termsAndConditions" class="form-label">
+                      Terms & Conditions <span style="color: red;">*</span>
+                    </label>
+                    <textarea
+                      id="termsAndConditions"
+                      class="form-control"
+                      [(ngModel)]="termsAndConditions"
+                      [ngModelOptions]="{ standalone: true }"
+                    ></textarea>
+                  </div>
+             
+                </div>
+              </div>
+            </div>
+            
+
+            <div class="btnwpr">
+              <a (click)="saveInvoiceDetail()" class="btn btn-success w-100">Generate Payment Link</a>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

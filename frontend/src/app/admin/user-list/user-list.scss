@@ -1,0 +1,108 @@
+/* .footer-container {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding: 10px 0;
+  }
+  
+  .footer-content {
+    text-align: center;
+    font-size: 14px;
+    color: #333; /* Optional: Text color */
+ /* old */
+
+ 
+
+
+ .footer-container {
+    position: static; /* Remove fixed positioning for footer in manual-invoice-payment */
+    width: 100%; /* Ensures the footer spans the entire width */
+    padding: 10px 0; /* Padding for spacing */
+    margin-top: 100px;
+  }
+  
+  .footer-content {
+    text-align: center; /* Centers the content within the footer */
+    font-size: 14px; /* Font size for footer text */
+    color: #333; /* Optional: Text color */
+  }
+  
+  /* Enhanced Search Section */
+.search-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 300px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 25px;
+  background-color: #f9f9f9;
+  font-size: 14px;
+  color: #333;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #888;
+  background-color: #ffffff;
+}
+
+.search-input::placeholder {
+  color: #aaa;
+  font-size: 14px;
+}
+
+.search-icon {
+  position: absolute;
+  right: 15px;
+  font-size: 16px;
+  color: #888;
+}
+.pagination-container {
+  display: flex;
+  justify-content: flex-end; /* Align pagination to the right */
+  align-items: center;
+  gap: 5px;
+}
+
+.pagination-icon {
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6c757d; /* Default icon color */
+  transition: color 0.3s ease;
+}
+
+.pagination-icon:hover {
+  color: #f74354; /* Highlight color on hover */
+}
+
+.pagination-icon.disabled {
+  cursor: not-allowed;
+  color: #ced4da; /* Disabled color */
+}
+
+.pagination-number {
+  font-size: 1rem;
+  padding: 5px 10px;
+  margin: 0 2px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.pagination-number.active {
+  font-weight: bold;
+  color: white;
+  background-color: #f74354; /* Active page color */
+}
+
+.pagination-number:hover:not(.active) {
+  background-color: #f8f9fa; /* Hover effect */
+}

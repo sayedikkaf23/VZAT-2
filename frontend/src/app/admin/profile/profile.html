@@ -1,0 +1,173 @@
+<div>
+  <div class="content">
+    <div class="page-heading" style="margin: 20px; margin-top: 25px">
+      <div class="row align-items-center justify-content-between">
+        <div class="col-auto">
+          <div class="row align-items-center">
+            <div class="col-auto mb-2">
+              <h2>Profile</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="container-fluid p-4">
+          <div class="invoiceformwpr">
+            <div class="card">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-field w-100 h-100">
+                    <label for="Logo" class="form-label">Invoice Logo</label>
+
+                    <div
+                      class="invoice-logo-upload text-center p-4"
+                      *ngIf="!selectedImage"
+                      style="height: 90%"
+                    >
+                      <svg
+                        width="48"
+                        height="48"
+                        viewBox="0 0 32 30"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <!-- SVG content -->
+                      </svg>
+                      <small class="text-muted d-block my-2">
+                        JPG, JPEG, PNG, less than 5MB
+                      </small>
+
+                      <!-- Hidden file input -->
+                      <input
+                        type="file"
+                        id="fileInput"
+                        class="d-none"
+                        #fileInput
+                        (change)="onSelect($event)"
+                      />
+
+                      <!-- Button to trigger file input -->
+                      <button
+                        class="btn btn-primary"
+                        (click)="triggerFileInput()"
+                      >
+                        Upload Logo
+                      </button>
+                    </div>
+
+                    <div
+                      *ngIf="selectedImage"
+                      class="d-flex justify-content-between align-items-center"
+                    >
+                      <div>
+                        <img
+                          [src]="selectedImage"
+                          alt="Selected Image"
+                          width="50"
+                          class="me-3"
+                        />
+                        <span>{{ fileName }}</span>
+                      </div>
+                      <button
+                        (click)="removeImage()"
+                        style="
+                          background-color: rgb(19, 1, 1);
+                          color: white;
+                          border: none;
+                          padding: 10px;
+                          border-radius: 5px;
+                        "
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-feild">
+                    <label for="salesPersonName" class="form-label">
+                      Name</label
+                    >
+                    <input
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="salesPersonName"
+                      class="form-control"
+                      id="salesPersonName"
+                      type="text"
+                      placeholder="Sales Person Name"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-field">
+                    <label for="payment" class="form-label"
+                      >Notes / Payment Terms</label
+                    >
+                    <textarea
+                      id="payment"
+                      placeholder="Payment is due within 15 days"
+                      class="form-control"
+                      [(ngModel)]="Notes"
+                      [ngModelOptions]="{ standalone: true }"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-field">
+                    <label for="anotherField" class="form-label"
+                      >Terms & Condition</label
+                    >
+                    <textarea
+                      type="text"
+                      id="anotherField"
+                      placeholder="Terms & Condition"
+                      class="form-control"
+                      [(ngModel)]="Termsandcondition"
+                      [ngModelOptions]="{ standalone: true }"
+                    >
+                    </textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-feild">
+                    <label for="bankDetails" class="form-label"
+                      >Bank account details</label
+                    >
+                    <textarea
+                      id="bankDetails"
+                      class="form-control"
+                      [(ngModel)]="bankDetails"
+                      [ngModelOptions]="{ standalone: true }"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="btnwpr">
+              <a (click)="save()" class="btn btn-success w-100">Save</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- <div class="footer-container">
+    <app-footer></app-footer>
+  </div> -->
+</div>

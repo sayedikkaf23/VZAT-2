@@ -36,7 +36,7 @@ constructor(private router: Router,
         console.log(res);
         if (res.loggedIn==1) {
           this.cookieService.set('jwtToken', res.token);
-          this.router.navigate(['/dashboard']);    
+          this.router.navigate(['/panel/roles']);    
         } else {
           this.toastr.error(res.message);
       }

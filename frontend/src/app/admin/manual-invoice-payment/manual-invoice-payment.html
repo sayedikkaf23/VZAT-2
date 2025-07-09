@@ -1,0 +1,133 @@
+<div class="content">
+  <div class="page-heading">
+    <div class="row align-items-center justify-content-between mt-3 mb-3">
+      <div class="col-6">
+        <h2>Invoice Generator</h2>
+      </div>
+      <div class="col-6 d-flex justify-content-end align-items-center">
+        <div class="search-section me-3">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search invoices..."
+            [(ngModel)]="searchTerm"
+            (input)="searchInvoices()"
+          />
+          <i class="fa fa-search search-icon"></i>
+        </div>
+        <button class="btn btn-danger btn-sm" (click)="addInvoice()">Add Invoice</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive overflow-behaviour" style="margin-top: 50px;">
+    <table class="table table-list-data table-hover" *ngIf="filteredInvoiceList.length > 0; else noResults">
+      <thead class="bg-light">
+        <tr>
+          <th scope="col" (click)="sortColumn('billTo')">
+            Name (Bill To) &#x2191;&#x2193;
+          </th>
+          <th scope="col" (click)="sortColumn('invoiceNumber')">
+            Invoice Number &#x2191;&#x2193;
+          </th>
+          <th scope="col" (click)="sortColumn('email')">
+            Client Email &#x2191;&#x2193;
+          </th>
+          <th scope="col" (click)="sortColumn('totalAmount')">
+            Amount &#x2191;&#x2193;
+          </th>
+          <th scope="col" (click)="sortColumn('status')">
+            Status &#x2191;&#x2193;
+          </th>
+          <th scope="col" (click)="sortColumn('dueDate')">
+            Due Date &#x2191;&#x2193;
+          </th>
+          <th scope="col">Payment Link</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of paginatedInvoices">
+          <td>{{ item?.billTo }}</td>
+          <td>{{ item?.invoiceNumber }}</td>
+          <td>{{ item?.email }}</td>
+          <td>{{ item?.totalAmount }}</td>
+          <td>{{ item?.status }}</td>
+          <td>{{ item?.dueDate }}</td>
+          <td>
+            <button
+              (click)="navigateToPayment(item?.paymentURL)"
+              class="btn btn-danger btn-sm"
+            >
+              Pay Now
+            </button>
+          </td>
+          <td>
+            <button
+              (click)="editInvoice(item)"
+              class="btn btn-danger btn-sm"
+            >
+              Edit
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  
+    <!-- No Results Message -->
+    <ng-template #noResults>
+      <div class="text-center mt-4">
+        <p class="text-muted">No results found for "{{ searchTerm }}".</p>
+      </div>
+    </ng-template>
+  </div>
+  
+  <div class="pagination-container d-flex justify-content-end align-items-center mt-3">
+    <!-- First Page Icon -->
+    <i
+      class="fa fa-angle-double-left pagination-icon me-3"
+      (click)="changePage(1)"
+      [class.disabled]="currentPage === 1"
+      title="First Page"
+    ></i>
+  
+    <!-- Previous Page Icon -->
+    <i
+      class="fa fa-angle-left pagination-icon me-3"
+      (click)="previousPage()"
+      [class.disabled]="currentPage === 1"
+      title="Previous Page"
+    ></i>
+  
+    <!-- Page Numbers -->
+    <ng-container *ngFor="let page of getPageNumbers(); let i = index">
+      <span
+        class="pagination-number"
+        [class.active]="currentPage === page"
+        (click)="changePage(page)"
+      >
+        {{ page }}
+      </span>
+    </ng-container>
+  
+    <!-- Next Page Icon -->
+    <i
+      class="fa fa-angle-right pagination-icon ms-3"
+      (click)="nextPage()"
+      [class.disabled]="currentPage === totalPages"
+      title="Next Page"
+    ></i>
+  
+    <!-- Last Page Icon -->
+    <i
+      class="fa fa-angle-double-right pagination-icon ms-3"
+      (click)="changePage(totalPages)"
+      [class.disabled]="currentPage === totalPages"
+      title="Last Page"
+    ></i>
+  </div>
+  <!-- <div class="footer-container">
+    <app-footer></app-footer>
+  </div> -->
+  
+</div>
