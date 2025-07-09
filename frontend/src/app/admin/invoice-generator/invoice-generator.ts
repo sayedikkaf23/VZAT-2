@@ -3,6 +3,7 @@ import { User} from '../../services/user';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common'; 
 import { FormsModule } from '@angular/forms'; 
+import { StyleLoader } from '../../services/style-loader';
 
 interface InvoiceItem {
   description: string;
@@ -18,7 +19,11 @@ interface InvoiceItem {
   styleUrl: './invoice-generator.scss'
 })
 export class InvoiceGenerator {
-
+    private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
   profileData: any;
   items: InvoiceItem[] = [
     {
@@ -55,10 +60,20 @@ export class InvoiceGenerator {
   constructor(
     private userService: User,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private styleLoader: StyleLoader
   ) {}
 
   ngOnInit(): void {
+         this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
     this.type = this.route.snapshot.paramMap.get('type') || '';
     if (this.type ***REMOVED***= 'generate') {
       const hash = location.hash.substring(1);
@@ -417,6 +432,8 @@ export class InvoiceGenerator {
       (item.quantity ***REMOVED***= null || item.quantity ***REMOVED***= 0)
     );
   }
-  
+      ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
+  }
 
 }

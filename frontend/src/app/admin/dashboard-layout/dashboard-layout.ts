@@ -17,7 +17,13 @@ import { StyleLoader} from '../../services/style-loader';
   styleUrls: ['./dashboard-layout.scss']
 })
 export class DashboardLayout {
+    private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
   permissions: any = [];
+  loading = true; 
 
   constructor(
     public authSvc: Auth,
@@ -28,6 +34,15 @@ export class DashboardLayout {
   ) { }
 
   ngOnInit(): void {
+      this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
     const token = this.authSvc.token;
     // if (!token) {
     //   localStorage.clear();
@@ -83,5 +98,9 @@ export class DashboardLayout {
       '/panel/card_machine',
       '/panel/cash_counter',
     ].includes(location.pathname);
+  }
+
+      ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
   }
 }

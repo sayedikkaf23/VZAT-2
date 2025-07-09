@@ -6,14 +6,23 @@ import { Role } from '../../services/role';
 import { ACCESS } from './access';
 import { CommonModule } from '@angular/common'; // <--- ADD THIS for *ngIf, *ngFor
 import { FormsModule } from '@angular/forms'; 
+import { StyleLoader } from '../../services/style-loader';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 @Component({
   selector: 'app-role-add',
-  imports: [CommonModule,FormsModule],
+  imports: [CommonModule,FormsModule, NgSelectModule],
   templateUrl: './role-add.html',
   styleUrls: ['./role-add.scss',"../../../assets/css/admin-theme.css"]
 })
 export class RoleAdd {
+  parent: any;
+  loading = true; 
+      private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
 
     accessList: any = ACCESS;
 
@@ -49,10 +58,20 @@ export class RoleAdd {
     private toaster: ToastrService,
     private authService: Auth,
     private route: ActivatedRoute,
+    private styleLoader:StyleLoader,
     private roleService: Role
   ) {}
 
   ngOnInit(): void {
+        this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
     if (this.route.snapshot.queryParamMap.get('type')) {
       this.type = this.route.snapshot.queryParamMap.get('type');
     }
@@ -226,5 +245,6 @@ export class RoleAdd {
 
   ngOnDestroy() {
     this.permissions = [];
+     this.styleLoader.removeThemes(this.themeUrls);
   }
 }

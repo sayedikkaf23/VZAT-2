@@ -4,6 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { CommonModule } from '@angular/common'; 
 import { FormsModule } from '@angular/forms'; 
 import { NgSelectModule } from '@ng-select/ng-select'; 
+import { StyleLoader } from '../../services/style-loader';
 
 import { User } from '../../services/user';
 import { Role } from '../../services/role';
@@ -14,6 +15,12 @@ import { Role } from '../../services/role';
   styleUrls: ['./user-add.scss',"../../../assets/css/admin-theme.css"]
 })
 export class UserAdd {
+      private themeUrls = [
+    'assets/css/admin-theme.css',
+    'assets/css/style-admin.css',
+    'assets/css/responsive-admin.css'
+  ];
+  loading = true; 
    type: any = 'add';
   userId: any;
   storeId: any;
@@ -39,10 +46,20 @@ export class UserAdd {
     private userService: User,
     private roleService: Role,
     private toaster: ToastrService,
+    private styleLoader:StyleLoader,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+      this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
     if (this.route.snapshot.queryParamMap.get('type')) {
       this.type = this.route.snapshot.queryParamMap.get('type');
     }
@@ -202,6 +219,9 @@ export class UserAdd {
         complete: () => {},
       });
     }
+  }
+   ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
   }
 
 }

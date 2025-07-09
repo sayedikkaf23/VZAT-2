@@ -2,6 +2,7 @@ import { Component,Inject, PLATFORM_ID , Renderer2 , ElementRef} from '@angular/
 import { DOCUMENT } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CustomerLoginService } from '../../services/customer-login.service';
+import { StyleLoader } from '../../services/style-loader';
 
 @Component({
   selector: 'app-saved-card',
@@ -10,15 +11,30 @@ import { CustomerLoginService } from '../../services/customer-login.service';
   styleUrl: './saved-card.scss'
 })
 export class SavedCard {
+  loading = true; 
+    private themeUrls = [
+    'assets/CustomerPortal/css/style.css',
+    'assets/CustomerPortal/css/responsive.css'
+  ];
     isSidebarHidden = false;
       isNavbarActive = false;
-   constructor( @Inject(DOCUMENT) private document: Document, private renderer: Renderer2, private el: ElementRef, private customerLogin: CustomerLoginService) {}
-
+   constructor( @Inject(DOCUMENT) private document: Document, private renderer: Renderer2, private el: ElementRef, private customerLogin: CustomerLoginService, private styleLoader:StyleLoader) {}
+  ngOnInit(): void {
+     this.styleLoader.loadThemes(this.themeUrls)
+    .then(() => {
+      // Styles loaded, show content
+      this.loading = false;
+    })
+    .catch(err => {
+      console.error(err);
+      this.loading = false; // Show anyway if failed
+    });
+  }
 
    onLogout(): void {
     this.customerLogin.logout();
   }
-  
+
     toggleSidebar(): void {
     this.isSidebarHidden = !this.isSidebarHidden;
 
@@ -44,6 +60,10 @@ export class SavedCard {
         toggleElement.classList.remove('active');
       }
     }
+  }
+
+      ngOnDestroy(): void {
+    this.styleLoader.removeThemes(this.themeUrls);
   }
 
 }
