@@ -1,6 +1,7 @@
 import { Component,Inject, PLATFORM_ID , Renderer2 , ElementRef} from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { CustomerLoginService } from '../../services/customer-login.service';
 
 @Component({
   selector: 'app-saved-card',
@@ -11,8 +12,13 @@ import { RouterLink } from '@angular/router';
 export class SavedCard {
     isSidebarHidden = false;
       isNavbarActive = false;
-   constructor( @Inject(DOCUMENT) private document: Document, private renderer: Renderer2, private el: ElementRef) {}
+   constructor( @Inject(DOCUMENT) private document: Document, private renderer: Renderer2, private el: ElementRef, private customerLogin: CustomerLoginService) {}
 
+
+   onLogout(): void {
+    this.customerLogin.logout();
+  }
+  
     toggleSidebar(): void {
     this.isSidebarHidden = !this.isSidebarHidden;
 
