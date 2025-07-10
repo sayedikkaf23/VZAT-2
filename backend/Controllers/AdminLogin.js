@@ -2,13 +2,22 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import {connectDB,disconnectDB} from "../config/db.js";
 import AdminUser from "../model/AdminLoginModel.js";
+import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 
 
 const Login = async (req,res) => {
-     if (!req.body) {
-        res.statusCode = 404;
-        res.end("Error");
+    if (!req.body) {
+      const body = {
+          message: "Body is empty"
       }
+      const data = {
+          message: "Nothing to Process to get the response"
+      }
+      const LogData = Post_Common_DB_Log_Data("/api/adminLogin",body,data);
+      console.log(LogData);
+      res.statusCode = 404;
+      res.end("Error");
+    }
       const { email, password } = req.body;
       console.log(email,password);
       await connectDB();
@@ -16,13 +25,25 @@ const Login = async (req,res) => {
         const loggingUser = await AdminUser.findOne({ email: email });
         console.log(loggingUser);
         if (!loggingUser) {
+          const data = {
+              message: "Couldn't find User", 
+              loggedIn: 0 
+          }
+          const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
+          console.log(LogData);
           //await disconnectDB();
-          return res.json({ message: "Couldn't find User", loggedIn: 0 });
+          return res.json(data);
         }
         const isEqual = await bcrypt.compare(password, loggingUser.password);
         if (!isEqual) {
+          const data = {
+              message: "Password is Incorrect", 
+              loggedIn: 0 
+          }
+          const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
+          console.log(LogData);
           //await disconnectDB();
-          return res.json({ message: "Password is Incorrect", loggedIn: 0  });
+          return res.json(data);
         }
         const token = jwt.sign(
           {
@@ -45,12 +66,20 @@ const Login = async (req,res) => {
         // });
         // let decodedToken = jwt.verify(token, "virtuzone");
         // console.log(decodedToken);
-        res.json({
+        const data = {
           message: "Logged in the User Successfully",
           loggedIn: 1, 
-          token:token
-        });
+          token:token 
+        }
+        const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
+        console.log(LogData);
+        res.json(data);
       } catch (err) {
+        const data = {
+            message: err
+        }
+        const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
+        console.log(LogData);
         //await disconnectDB();
         throw err;
       }
