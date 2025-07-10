@@ -1,28 +1,57 @@
 import {connectDB,disconnectDB} from "../config/db.js";
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
+import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 
 
 const Post_Vzat_Recurring_Data = async (req,res) => {
      if (!req.body) {
+        const body = {
+            message: "Body is empty"
+        }
+        const data = {
+            message: "Nothing to Process to get the response"
+        }
+        const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",body,data);
+        console.log(LogData);
         res.statusCode = 404;
-        res.end("Error");
+        res.json(body);
       }
       const { 
             OpportunityId,
             quotepaymentId,
             QuoteId,
-            //recurring,
             CreatedDate,
             Status,
             TotalPrice, 
             Total_After_VAT_Currency__c
         } = req.body;
-    //const {product_details} =  req.body.product_details;
-    //console.log(product_details)
       console.log(req.body);
+
       await connectDB();
       try {
-       const dataToUpload = new Vzat_Recurring_Data({
+        var regEx = /^\d{4}-\d{2}-\d{2}$/;
+        var d = new Date(CreatedDate);
+        var dNum = d.getTime();
+        if(!CreatedDate.match(regEx)) {
+            const data = {
+                message: "Date should be in yyyy-mm-dd format"
+            }
+            const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+            console.log(LogData);
+            //await disconnectDB();
+            res.json(data);
+        }
+        else if(!dNum && dNum !== 0) {
+            const data = {
+                message: "Invalid Date"
+            }
+            const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+            console.log(LogData);
+            //await disconnectDB();
+            res.json(data);
+        }  
+        else if(d.toISOString().slice(0,10) === CreatedDate){
+        const dataToUpload = new Vzat_Recurring_Data({
             OpportunityId: OpportunityId,
             quotepaymentId: quotepaymentId,
             QuoteId: QuoteId,
@@ -35,8 +64,10 @@ const Post_Vzat_Recurring_Data = async (req,res) => {
         if(Array.isArray(req.body.Product_details)){
             if (req.body.Product_details.length === 0 || !OpportunityId || !quotepaymentId || !QuoteId  || !CreatedDate || !Status  || TotalPrice === null || TotalPrice === undefined || TotalPrice === 0 || Total_After_VAT_Currency__c === null || Total_After_VAT_Currency__c === undefined || Total_After_VAT_Currency__c === 0) {
                 const data = {
-                    message: "one or more datas are missing - 1"
+                    message: "one or more datas are missing"
                 }
+                const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+                console.log(LogData);
                 //await disconnectDB();
                 res.json(data);
             } else {
@@ -48,11 +79,18 @@ const Post_Vzat_Recurring_Data = async (req,res) => {
                             if (deletedDocument) {
                                 console.log('Document deleted successfully:', deletedDocument);
                                 const data = {
-                                    message: "one or more datas are missing - 2"
+                                    message: "one or more datas are missing"
                                 }
+                                const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+                                console.log(LogData);
                                 //await disconnectDB();
                                 res.json(data);
                             } else {
+                                const data = {
+                                    message: "No document found for deleting with the given ID."
+                                }
+                                const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+                                console.log(LogData);
                                 console.log('No document found for deleting with the given ID.');
                             }   
                         }
@@ -69,6 +107,8 @@ const Post_Vzat_Recurring_Data = async (req,res) => {
                                 const data = {
                                     message: "uploaded the data successfully"
                                 }
+                                const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+                                console.log(LogData);
                                 //await disconnectDB();
                                 res.json(data);
                                 } else {
@@ -78,14 +118,26 @@ const Post_Vzat_Recurring_Data = async (req,res) => {
                                     const data = {
                                         message: "Not uploaded the data"
                                     }
+                                    const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+                                    console.log(LogData);
                                     //await disconnectDB();
                                     res.json(data);
                                 }
                                 else {
+                                    const data = {
+                                        message: "Not Uploaded the data and not deleted the document which is created before pushing into the array"
+                                    }
+                                    const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+                                    console.log(LogData);
                                     console.log("Not Uploaded the data and not deleted the document which is created before pushing into the array")
                                 }
                                 }
                             } catch (error) {
+                                const data = {
+                                    message: error
+                                }
+                                const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+                                console.log(LogData);
                                 console.error('Error uploading data :', error);
                             }
                         }
@@ -96,10 +148,27 @@ const Post_Vzat_Recurring_Data = async (req,res) => {
             const data = {
                 message: "Product Details should be array"
             }
+            const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+            console.log(LogData);
             //await disconnectDB();
             res.json(data);
         }
+    }
+    else {
+       const data = {
+                message: "Date should be in yyyy-mm-dd format"
+            }
+            const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+            console.log(LogData);
+            //await disconnectDB();
+            res.json(data); 
+    }
       } catch (err) {
+        const data = {
+            message: err
+        }
+        const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
+        console.log(LogData);
         await disconnectDB();
         throw err;
       }
