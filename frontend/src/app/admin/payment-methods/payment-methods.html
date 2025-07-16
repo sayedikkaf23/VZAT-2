@@ -1,27 +1,159 @@
-<div class="payment-methods-container">
-  <h2 class="title">Payment Methods</h2>
+<div class="content">
+  <div class="page-heading" style=" margin: 20px; margin-top: 25px;">
 
-
-<div class="wrapper">
-<div class="methods">
-  <div class="methods-header">
-    <div *ngFor="let method of paymentMethods" class="method-name">
-      {{ method.name }}
+    <div class="row align-items-center justify-content-between">
+      <div class="col-auto">
+        <div class="row align-items-center">
+          <div class="col-auto mb-2">
+            <h2>{{ "Payment Mode Management" }}</h2>
+          </div>
+          <!-- <div class="col-auto mb-2">
+            <a
+              class="btn btn-sm btn-light-primary"
+              [routerLink]="['/panel/add_payment_mode']"
+              ><i class="fa-solid fa-plus"></i>{{ "New Payment Mode" }}</a
+            >
+          </div> -->
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="row align-items-center">
+          <div class="col-auto mb-2">
+            <div class="form-feild page-heading-search-field mb-0">
+              <div class="field-icon">
+                <input
+                  type="text"
+                  class="form-control form-c ontrol-sm form-control-shadow"
+                  placeholder="Search..."
+                  [(ngModel)]="searchTerm"
+                  (input)="onPaymentModeSearch()"
+                />
+                <div class="icon">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+  <div class="table-responsive overflow-behaviour">
+    <table class="table table-list-data table-hover">
+      <thead class="bg-light">
+        <tr>
+          <th scope="col" (click)="sortColumn('name')">
+            {{ "Payment Mode Management" }}
+            <span
+              class="cursor-pointer"
+              [ngClass]="
+                sortOrder.direction ***REMOVED***= 'asc' ? 'asc-icon' : 'desc-icon'
+              "
+            >
+              &#x2191;&#x2193;
+            </span>
+          </th>
 
-  <div class="methods-body">
-    <div *ngFor="let method of paymentMethods" class="toggle-wrapper">
-      <label class="switch">
-        <input type="checkbox" [(ngModel)]="method.enabled" />
-        <span class="slider"></span>
-      </label>
+          <th scope="col" (click)="sortColumn('isActive')">
+            {{ "Status" }}
+            <span
+              class="cursor-pointer"
+              [ngClass]="
+                sortOrder.direction ***REMOVED***= 'asc' ? 'asc-icon' : 'desc-icon'
+              "
+            >
+              &#x2191;&#x2193;
+            </span>
+          </th>
+
+          <th scope="col" (click)="sortColumn('updatedAt')">
+            {{ "Updated On" }}
+            <span
+              class="cursor-pointer"
+              [ngClass]="
+                sortOrder.direction ***REMOVED***= 'asc' ? 'asc-icon' : 'desc-icon'
+              "
+            >
+              &#x2191;&#x2193;
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let payMode of paymentModeList; let i = index">
+          <td>{{ payMode?.name }}</td>
+
+          <td>
+            <div class="form-check form-switch form-switch-2">
+              <input
+              class="form-check-input"
+              type="checkbox"
+              role="switch"
+              id="Status_id2"
+              [(ngModel)]="payMode.isActive"
+              (change)="onUserStatusChange(payMode)"
+            />
+            
+            </div>
+          </td>
+
+          <td>
+            {{ payMode?.updatedAt }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- <div class="data-footer">
+    <div class="row align-items-center justify-content-end">
+      <div class="col-auto">
+        <ul class="pagination cursor-pointer">
+          <li class="page-item d-flex" *ngIf="page !***REMOVED*** 1">
+            <a class="page-link" (click)="getPaymentModes(page - 1)">
+              <span aria-hidden="true"
+                ><i class="fa-solid fa-chevron-left"></i></span
+            ></a>
+          </li>
+          <li
+            class="page-item d-flex"
+            *ngFor="let index of total_pages"
+            [class.active]="page ***REMOVED*** index"
+          >
+            <a
+              *ngIf="
+                index ***REMOVED*** 1 ||
+                index ***REMOVED*** total_page ||
+                index ***REMOVED*** page ||
+                index ***REMOVED*** page - 1 ||
+                index ***REMOVED*** page + 1
+              "
+              (click)="getPaymentModes(index)"
+              class="page-link"
+              >{{ index }}</a
+            >
+            <a
+              *ngIf="
+                (index ***REMOVED*** 1 && page !***REMOVED*** 1 && page !***REMOVED*** 2 && page !***REMOVED*** 3) ||
+                (index ***REMOVED*** total_page - 1 &&
+                  page !***REMOVED*** total_page &&
+                  page !***REMOVED*** total_page - 1 &&
+                  page !***REMOVED*** total_page - 2)
+              "
+              class="page-link"
+              >...</a
+            >
+          </li>
+          <li
+            class="page-item d-flex"
+            *ngIf="page !***REMOVED*** total_page && paymentModeList.length !***REMOVED*** 0"
+          >
+            <a class="page-link" (click)="getPaymentModes(page + 1)">
+              <span aria-hidden="true"
+                ><i class="fa-solid fa-chevron-right"></i></span
+            ></a>
+          </li>
+        </ul>
+      </div>
     </div>
-  </div>
-  </div>
-
-  <div class="pagination">
-    <button class="page-btn">1</button>
-  </div>
-  </div>
+  </div> -->
 </div>
