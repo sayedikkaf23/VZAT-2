@@ -10,7 +10,7 @@ export class PaymentMethodsService {
 
   constructor(private http: HttpClient) {}
 
-  getPaymentMethods(page = 1, limit = '') {
+  getPaymentModes(page = 1, limit = '') {
     return this.http.get(
       `${this.url}/admin/get_payment_methods?page=${page}&limit=${limit}`
     );
@@ -21,5 +21,20 @@ export class PaymentMethodsService {
       `${this.url}/admin/update_payment_method/${paymentMethodId}`,
       payload
     );
+  }
+
+  addPaymentMode(payload: any) {
+    return this.http.post(`${this.url}/online/add_payment_mode`, payload);
+  }
+
+  updatePaymentModeStatus(payload: any) {
+    return this.http.patch(
+      `${this.url}/online/update_payment_mode_status`,
+      payload
+    );
+  }
+
+  searchPaymentMode(payload: any) {
+    return this.http.post(`${this.url}/online/search_payment_mode`, payload);
   }
 }
