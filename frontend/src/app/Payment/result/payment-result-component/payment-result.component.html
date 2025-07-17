@@ -1,0 +1,14 @@
+<div class="payment-result">
+  <h2>Payment Result</h2>
+  <div *ngIf="loading">Loading payment status...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+  <div *ngIf="!loading && paymentStatus">
+    <pre>{{ paymentStatus | json }}</pre>
+    <div *ngIf="paymentStatus.result && paymentStatus.result.code === '000.100.110'">
+      <p class="success">Payment successful!</p>
+    </div>
+    <div *ngIf="paymentStatus.result && paymentStatus.result.code !== '000.100.110'">
+      <p class="fail">Payment failed or pending. Please contact support.</p>
+    </div>
+  </div>
+</div>

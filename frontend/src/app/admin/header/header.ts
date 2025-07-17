@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { Auth } from '../../services/auth'; 
 import { FormsModule } from '@angular/forms'; 
 import { CommonModule } from '@angular/common'; 
-import "@fontsource/dm-sans"; 
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { User } from '../../services/user';
 import { StyleLoader} from '../../services/style-loader';

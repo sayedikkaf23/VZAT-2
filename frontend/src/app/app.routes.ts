@@ -3,6 +3,8 @@ import { PaymentScheduleComponent } from './customer/payment-schedule/payment-sc
 import { AdminLogin } from './admin/login/admin-login';
 import { AuthGuard } from './guards/auth.guard';
 import { CustomerLoginComponent } from './CustomerPortal/customer-login/customer-login.component';
+import { PaymentComponent } from './Payment/payment-component/payment-component';
+import { PaymentResultComponent } from './Payment/result/payment-result-component/payment-result.component';
 import { ActiveServices } from './CustomerPortal/active-services/active-services';
 import { HelpCenter } from './CustomerPortal/help-center/help-center';
 import { SavedCard } from './CustomerPortal/saved-card/saved-card';
@@ -19,6 +21,9 @@ import { InvoiceGenerator } from './admin/invoice-generator/invoice-generator';
 export const routes: Routes = [
   { path: 'paymentSchedule', component: PaymentScheduleComponent },
   { path: 'adminLogin', component: AdminLogin},
+  { path: 'payment/:checkoutId', component: PaymentComponent},
+  { path: 'payment/result', component: PaymentResultComponent },
+
   // { path: 'dashboard', component: Dashboard , 
   //    canActivate: [AuthGuard]
   //  },
@@ -34,7 +39,6 @@ export const routes: Routes = [
      canActivate: [AuthGuard],
     children: [
 
-      
 
       {
         path: 'roles',
