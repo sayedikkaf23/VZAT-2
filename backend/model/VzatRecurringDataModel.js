@@ -51,6 +51,18 @@ const vzatRecurringDataSchema = new Schema({
         type: Number,
         required: true
     },
+     InstallmentType: {
+        type: String,
+        required: true
+    },
+     InstallmentLeft: {
+        type: Number,
+        required: false
+     },
+     First_Charge_Date: {
+        type: String,
+        required: false
+     },
     Total_After_VAT_Currency__c: {
         type: Number,
         required: true
