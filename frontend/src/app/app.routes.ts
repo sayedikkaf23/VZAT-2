@@ -17,6 +17,7 @@ import { MailManagement } from './admin/mail-management/mail-management';
 import { Profile } from './admin/profile/profile';
 import { ManualInvoicePayment } from './admin/manual-invoice-payment/manual-invoice-payment';
 import { InvoiceGenerator } from './admin/invoice-generator/invoice-generator';
+import { PaymentMethods } from './admin/payment-methods/payment-methods';
 
 export const routes: Routes = [
   { path: 'paymentSchedule', component: PaymentScheduleComponent },
@@ -71,7 +72,11 @@ export const routes: Routes = [
         component: MailManagement,
         canActivate: [AuthGuard],
       },
-
+      {
+        path: 'payment-method',
+        component: PaymentMethods,
+        canActivate: [AuthGuard],
+      },
       {
         path: 'manual_invoice_payment',
         component: ManualInvoicePayment,
