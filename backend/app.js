@@ -27,13 +27,25 @@ app.use(cors({
 }));
 
 // ✅ Define your API routes
+
 app.use('/api/salesForce', SalesForce);
 app.use('/api/adminLogin', AdminLogin);
 app.use('/api/customer', Customer);
 app.use('/api/vzat_recurring_create_payment_link', VzatRecurring);
 
+// Serve static Angular frontend files
+import { fileURLToPath } from 'url';
+import path from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, 'frontend/dist/frontend/browser')));
 
-// ✅ Start the server
+// SPA catch-all (must be last)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend/dist/frontend/browser/index.html'));
+});
+
+// Start the server
 app.listen(3000, () => {
   console.log("server is running on port 3000");
 });
