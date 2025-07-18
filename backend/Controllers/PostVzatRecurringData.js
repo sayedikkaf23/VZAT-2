@@ -24,7 +24,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       CreatedDate,
       Status,
       TotalPrice,
-      Total_After_VAT_Currency__c,
+      Total_After_VAT_Currency,
       InstallmentType,
       Product_details
     } = req.body;
@@ -33,7 +33,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     if (
       !OpportunityId || !quotepaymentId || !QuoteId || !CreatedDate || !Status ||
       TotalPrice === null || TotalPrice === undefined || TotalPrice === 0 ||
-      Total_After_VAT_Currency__c === null || Total_After_VAT_Currency__c === undefined || Total_After_VAT_Currency__c === 0 ||
+      Total_After_VAT_Currency === null || Total_After_VAT_Currency === undefined || Total_After_VAT_Currency === 0 ||
       !Array.isArray(Product_details) || Product_details.length === 0
     ) {
       const data = { message: "Missing or invalid required fields" };
@@ -66,7 +66,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     let InstallmentLeft = 1; // fallback default
     let firstPaymentDueDate = new Date(createdDateObj);
     let nextInstallmentDate = null;
-    let installmentAmount = parseFloat(Total_After_VAT_Currency__c);
+    let installmentAmount = parseFloat(Total_After_VAT_Currency);
     
     if (finalInstallmentType === "Installments") {
       const currentDate = new Date();
@@ -95,7 +95,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       // Use UTC to avoid timezone issues
       nextInstallmentDate = new Date(Date.UTC(chargeYear, chargeMonth, chargeDay, 0, 0, 0, 0));
 
-      installmentAmount = parseFloat((Total_After_VAT_Currency__c / InstallmentLeft).toFixed(2));
+      installmentAmount = parseFloat((Total_After_VAT_Currency / InstallmentLeft).toFixed(2));
     }
 
     // Save to DB
@@ -107,7 +107,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       Status,
       InstallmentType: finalInstallmentType,
       TotalPrice,
-      Total_After_VAT_Currency__c,
+      Total_After_VAT_Currency,
       Product_details: []
     });
 
@@ -118,7 +118,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       if (
         !product.QuoteLineItemId ||
         product.TotalPrice === null || product.TotalPrice === undefined || product.TotalPrice === 0 ||
-        product.Total_Price_After_VAT__c === null || product.Total_Price_After_VAT__c === undefined || product.Total_Price_After_VAT__c === 0
+        product.Total_Price_After_VAT === null || product.Total_Price_After_VAT === undefined || product.Total_Price_After_VAT === 0
       ) {
         await Vzat_Recurring_Data.findByIdAndDelete(result._id);
         const data = { message: "One or more product details are missing or invalid" };
