@@ -128,12 +128,12 @@ app.post('/test-payment-link', (req, res) => {
     CreatedDate: "2025-01-18",
     Status: "Active",
     TotalPrice: 100,
-    Total_After_VAT_Currency__c: 105,
+    Total_After_VAT_Currency: 105,
     InstallmentType: "OneTime",
     Product_details: [{
       QuoteLineItemId: "test-item-123",
       TotalPrice: 100,
-      Total_Price_After_VAT__c: 105
+      Total_Price_After_VAT: 105
     }]
   };
   
