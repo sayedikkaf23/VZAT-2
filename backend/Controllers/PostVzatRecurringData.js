@@ -24,7 +24,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       CreatedDate,
       Status,
       TotalPrice,
-      Total_After_VAT_Currency__c,
+      Total_After_VAT_Currency,
       InstallmentType,
       Product_details
     } = req.body;
@@ -33,7 +33,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     if (
       !OpportunityId || !quotepaymentId || !QuoteId || !CreatedDate || !Status ||
       TotalPrice ***REMOVED***= null || TotalPrice ***REMOVED***= undefined || TotalPrice ***REMOVED***= 0 ||
-      Total_After_VAT_Currency__c ***REMOVED***= null || Total_After_VAT_Currency__c ***REMOVED***= undefined || Total_After_VAT_Currency__c ***REMOVED***= 0 ||
+      Total_After_VAT_Currency ***REMOVED***= null || Total_After_VAT_Currency ***REMOVED***= undefined || Total_After_VAT_Currency ***REMOVED***= 0 ||
       !Array.isArray(Product_details) || Product_details.length ***REMOVED***= 0
     ) {
       const data = { message: "Missing or invalid required fields" };
@@ -66,7 +66,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     let InstallmentLeft = 1; // fallback default
     let firstPaymentDueDate = new Date(createdDateObj);
     let nextInstallmentDate = null;
-    let installmentAmount = parseFloat(Total_After_VAT_Currency__c);
+    let installmentAmount = parseFloat(Total_After_VAT_Currency);
     
     if (finalInstallmentType ***REMOVED***= "Installments") {
       const currentDate = new Date();
@@ -95,7 +95,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       // Use UTC to avoid timezone issues
       nextInstallmentDate = new Date(Date.UTC(chargeYear, chargeMonth, chargeDay, 0, 0, 0, 0));
 
-      installmentAmount = parseFloat((Total_After_VAT_Currency__c / InstallmentLeft).toFixed(2));
+      installmentAmount = parseFloat((Total_After_VAT_Currency / InstallmentLeft).toFixed(2));
     }
 
     // Save to DB
@@ -107,7 +107,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       Status,
       InstallmentType: finalInstallmentType,
       TotalPrice,
-      Total_After_VAT_Currency__c,
+      Total_After_VAT_Currency,
       Product_details: []
     });
 
@@ -118,7 +118,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       if (
         !product.QuoteLineItemId ||
         product.TotalPrice ***REMOVED***= null || product.TotalPrice ***REMOVED***= undefined || product.TotalPrice ***REMOVED***= 0 ||
-        product.Total_Price_After_VAT__c ***REMOVED***= null || product.Total_Price_After_VAT__c ***REMOVED***= undefined || product.Total_Price_After_VAT__c ***REMOVED***= 0
+        product.Total_Price_After_VAT ***REMOVED***= null || product.Total_Price_After_VAT ***REMOVED***= undefined || product.Total_Price_After_VAT ***REMOVED***= 0
       ) {
         await Vzat_Recurring_Data.findByIdAndDelete(result._id);
         const data = { message: "One or more product details are missing or invalid" };

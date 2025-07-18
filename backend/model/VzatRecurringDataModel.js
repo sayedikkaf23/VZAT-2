@@ -37,7 +37,7 @@ const vzatRecurringDataSchema = new Schema({
             //     type: Number,
             //     required: true
             // },
-            Total_Price_After_VAT__c: {
+            Total_Price_After_VAT: {
                 type: Number,
                 required: true
             }
@@ -63,7 +63,7 @@ const vzatRecurringDataSchema = new Schema({
         type: String,
         required: false
      },
-    Total_After_VAT_Currency__c: {
+    Total_After_VAT_Currency: {
         type: Number,
         required: true
     },
