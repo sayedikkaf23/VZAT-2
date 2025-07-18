@@ -1,7 +1,15 @@
 
 <h1>Payment Checkout</h1>
-<form
-  class="paymentWidgets"
-  [attr.data-brands]="brands"
-  [attr.data-entity-id]="entityId">
-</form>
+<div *ngIf="checkoutId; else noCheckoutId">
+  <p>Checkout ID: {{ checkoutId }}</p>
+  <form
+    class="paymentWidgets"
+    [attr.data-brands]="brands"
+    [attr.data-entity-id]="entityId"
+    action="http://localhost:3000/payment-result"
+    method="POST">
+  </form>
+</div>
+<ng-template #noCheckoutId>
+  <p style="color: red;">No checkout ID provided. Please generate a payment link first.</p>
+</ng-template>

@@ -66,6 +66,10 @@ const vzatRecurringDataSchema = new Schema({
     Total_After_VAT_Currency__c: {
         type: Number,
         required: true
+    },
+    afs_checkout_id: {
+        type: String,
+        required: false
     }
 });
 

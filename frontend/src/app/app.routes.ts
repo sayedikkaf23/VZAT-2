@@ -4,7 +4,7 @@ import { AdminLogin } from './admin/login/admin-login';
 import { AuthGuard } from './guards/auth.guard';
 import { CustomerLoginComponent } from './CustomerPortal/customer-login/customer-login.component';
 import { PaymentComponent } from './Payment/payment-component/payment-component';
-import { PaymentResultComponent } from './Payment/result/payment-result-component/payment-result.component';
+import { PaymentResultComponent } from './payment-result/payment-result.component';
 import { ActiveServices } from './CustomerPortal/active-services/active-services';
 import { HelpCenter } from './CustomerPortal/help-center/help-center';
 import { SavedCard } from './CustomerPortal/saved-card/saved-card';
@@ -22,8 +22,8 @@ import { PaymentMethods } from './admin/payment-methods/payment-methods';
 export const routes: Routes = [
   { path: 'paymentSchedule', component: PaymentScheduleComponent },
   { path: 'adminLogin', component: AdminLogin},
-  { path: 'payment/:checkoutId', component: PaymentComponent},
   { path: 'payment/result', component: PaymentResultComponent },
+  { path: 'payment/:checkoutId', component: PaymentComponent},
 
   // { path: 'dashboard', component: Dashboard , 
   //    canActivate: [AuthGuard]

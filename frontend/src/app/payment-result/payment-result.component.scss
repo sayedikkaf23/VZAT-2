@@ -1,0 +1,67 @@
+.payment-result {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 24px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #eee;
+}
+
+h2 {
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.success {
+  color: #198754;
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-bottom: 20px;
+}
+
+.partial-success {
+  color: #fd7e14;
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-bottom: 20px;
+}
+
+.error {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.warning {
+  color: #fd7e14;
+  font-style: italic;
+  margin-top: 10px;
+}
+
+.payment-details {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 6px;
+  margin-top: 16px;
+  border-left: 4px solid #198754;
+}
+
+.payment-details h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #333;
+  font-size: 1.1em;
+}
+
+.payment-details p {
+  margin: 8px 0;
+  font-family: monospace;
+}
+
+.payment-details strong {
+  color: #495057;
+  font-weight: 600;
+}
+
+p {
+  margin: 8px 0;
+}

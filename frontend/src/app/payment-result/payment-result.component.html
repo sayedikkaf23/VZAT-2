@@ -1,0 +1,65 @@
+<div class="payment-result">
+  <h2>Payment Checkout</h2>
+  
+  <!-- Debug information (remove in production) -->
+  <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;">
+    <strong>Debug Info:</strong><br>
+    Loading: {{ loading }}<br>
+    Result exists: {{ !!result }}<br>
+    Payment Status: {{ result?.paymentStatus || 'undefined' }}<br>
+    Error: {{ error || 'none' }}
+  </div>
+  
+  <div *ngIf="loading">Loading payment result...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+  <div *ngIf="result">
+    <!-- Handle new cleaned response format with paymentStatus -->
+    <div *ngIf="result.paymentStatus ***REMOVED***= 'success'">
+      <p class="success">🎉 Payment Paid Successfully!</p>
+      <div class="payment-details">
+        <h3>Payment Details:</h3>
+        <p><strong>Amount:</strong> {{ result.amount }} {{ result.currency }}</p>
+        <p><strong>Transaction ID:</strong> {{ result.id }}</p>
+        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
+        <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
+        <p><strong>Payment Type:</strong> {{ result.paymentType }}</p>
+        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
+        <p *ngIf="result.warning" class="warning">⚠️ {{ result.warning }}</p>
+      </div>
+    </div>
+    
+    <!-- Handle partial success (with warnings) -->
+    <div *ngIf="result.paymentStatus ***REMOVED***= 'partial_success'">
+      <p class="partial-success">⚠️ Payment completed with warnings</p>
+      <div class="payment-details">
+        <h3>Payment Details:</h3>
+        <p><strong>Amount:</strong> {{ result.amount }} {{ result.currency }}</p>
+        <p><strong>Transaction ID:</strong> {{ result.id }}</p>
+        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
+        <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
+        <p><strong>Payment Type:</strong> {{ result.paymentType }}</p>
+        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
+        <p class="warning">Please contact support if you have concerns.</p>
+      </div>
+    </div>
+    
+    <!-- Handle legacy AFS response format (fallback) -->
+    <div *ngIf="!result.paymentStatus && result.result && result.result.code ***REMOVED***= '000.100.110'">
+      <p class="success">Payment completed successfully!</p>
+    </div>
+    
+    <!-- Handle errors or unknown status -->
+    <div *ngIf="!result.paymentStatus || (result.paymentStatus !***REMOVED*** 'success' && result.paymentStatus !***REMOVED*** 'partial_success')">
+      <div *ngIf="!result.result || result.result.code !***REMOVED*** '000.100.110'">
+        <p class="error">❌ Payment cannot be completed.</p>
+        <p>Please contact support with following information:</p>
+        <p><strong>Checkout ID:</strong> {{ result.id }}</p>
+        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
+        <p><strong>Status:</strong> {{ result.paymentStatus || 'unknown' }}</p>
+        <p><strong>Result:</strong> {{ result.result?.description || result.message || 'invalid' }}</p>
+        <p><strong>NDC:</strong> {{ result.ndc }}</p>
+        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
+      </div>
+    </div>
+  </div>
+</div>
