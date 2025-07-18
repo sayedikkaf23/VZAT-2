@@ -1,19 +1,23 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+
 import SalesForce from "./routes/SalesForce.js";
 import AdminLogin from "./routes/AdminLoginRoute.js";
 import Customer from "./routes/CustomerRoute.js";
 import VzatRecurring from "./routes/VzatRecurring.js";
-import path from "path";
-import { fileURLToPath } from 'url';
-
 
 const app = express();
 
-// Enable JSON parsing
+// ✅ Path resolution support (ESM)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Middleware
 app.use(express.json());
 
-// ✅ Global CORS middleware
+// ✅ CORS setup
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = ['http://localhost:4200', 'https://vzatnew.yeepeey.com'];
@@ -26,24 +30,21 @@ app.use(cors({
   credentials: true,
 }));
 
-// ✅ Define your API routes
+// ✅ API Routes
 app.use('/api/salesForce', SalesForce);
 app.use('/api/adminLogin', AdminLogin);
 app.use('/api/customer', Customer);
 app.use('/api/vzat_recurring_create_payment_link', VzatRecurring);
 
-// ✅ Serve Angular static files
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+// ✅ Static Angular frontend files
 app.use(express.static(path.join(__dirname, 'frontend/dist/frontend/browser')));
 
-// ✅ Handle Angular routes
+// ✅ Frontend SPA catch-all (keep at end)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend/dist/frontend/browser/index.html'));
 });
 
-// ✅ Start the server
+// ✅ Start server
 app.listen(3000, () => {
-  console.log("server is running on port 3000");
+  console.log("Server is running on port 3000");
 });
