@@ -143,7 +143,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       const accessToken = "OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA=";
       // Prepare shopperResultUrl for AFS redirect
       const sandboxFrontendUrl = 'https://vzatnew.yeepeey.com';
-      const shopperResultUrl = `${sandboxFrontendUrl}/payment/result?id={checkoutId}&resourcePath=/v1/checkouts/{checkoutId}/payment`;
+      // Use a safe placeholder for shopperResultUrl
+      const shopperResultUrl = `${sandboxFrontendUrl}/payment/result`;
       const afsData = new URLSearchParams();
       afsData.append('entityId', entityId);
       afsData.append('amount', installmentAmount.toString());
