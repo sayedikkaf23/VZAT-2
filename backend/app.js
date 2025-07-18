@@ -37,11 +37,23 @@ app.use('/api/vzat_recurring_create_payment_link', VzatRecurring);
 
 
 
+// ...existing code...
+
+// Serve static files
 app.use(express.static(path.join(__dirname, 'frontend/dist/frontend/browser')));
 
 // SPA catch-all (must be last)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend/dist/frontend/browser/index.html'));
+  res.sendFile(path.resolve(__dirname, 'frontend/dist/frontend/browser/index.html'), function (err) {
+    if (err) {
+      res.status(500).send(err);
+    }
+  });
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log("server is running on port 3000");
 });
 
 // Start the server
