@@ -7,10 +7,13 @@ import VzatRecurring from "./routes/VzatRecurring.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 
-
 const app = express();
 
-// Enable JSON parsing
+// Convert ES module path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Middleware
 app.use(express.json());
 
 // ✅ Global CORS middleware
@@ -26,14 +29,22 @@ app.use(cors({
   credentials: true,
 }));
 
-// ✅ Define your API routes
+// ✅ API routes
 app.use('/api/salesForce', SalesForce);
 app.use('/api/adminLogin', AdminLogin);
 app.use('/api/customer', Customer);
 app.use('/api/vzat_recurring_create_payment_link', VzatRecurring);
 
+// ✅ Serve static Angular frontend (PRODUCTION BUILD path)
+const frontendPath = path.join(__dirname, 'frontend/dist/frontend/browser');
+app.use(express.static(frontendPath));
 
-// ✅ Start the server
+// ✅ Catch-all route for Angular routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// ✅ Start server
 app.listen(3000, () => {
   console.log("server is running on port 3000");
 });
