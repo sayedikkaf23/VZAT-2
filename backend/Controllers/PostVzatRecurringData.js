@@ -2,7 +2,10 @@ import {connectDB,disconnectDB} from "../config/db.js";
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 import axios from "axios";
+import dotenv from "dotenv";
 
+// Load environment variables
+dotenv.config();
 
 const Post_Vzat_Recurring_Data = async (req, res) => {
   await connectDB();
@@ -67,8 +70,6 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     
     if (finalInstallmentType === "Installments") {
       const currentDate = new Date();
-      // Debug log for year, month, current year
-      console.log("Installment Calculation Debug:", { year, month, currentYear: currentDate.getFullYear() });
 
       // Calculate installments left based on CreatedDate month (including current month)
       if (year <= currentDate.getFullYear()) {
@@ -132,19 +133,22 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       );
     }
 
-    // Final response before AFS call
     // Generate AFS payment link
     let paymentLink = null;
     let afsError = null;
     let afsResponse = null;
     try {
-      const afsUrl = "https://eu-test.oppwa.com/v1/checkouts";
-      const entityId = "8ac7a4c797e1beca0197e482a8200127";
-      const accessToken = "OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA=";
-      // Prepare shopperResultUrl for AFS redirect
-      const sandboxFrontendUrl = 'https://vzatnew.yeepeey.com';
-      // Use a safe placeholder for shopperResultUrl
-      const shopperResultUrl = `${sandboxFrontendUrl}/payment/result`;
+      const afsUrl = `${process.env.AFS_DOMAIN}/v1/checkouts`;
+      const entityId = process.env.AFS_ENTITY_ID;
+      const accessToken = process.env.AFS_ACCESS_TOKEN;
+      const frontendUrl = process.env.FRONTEND_URL;
+      const shopperResultUrl = `${frontendUrl}/payment-result`;
+      
+      // Debug: Check if environment variables are loaded
+      if (!process.env.AFS_DOMAIN || !process.env.AFS_ENTITY_ID || !process.env.AFS_ACCESS_TOKEN) {
+        throw new Error(`Missing AFS environment variables: AFS_DOMAIN=${!!process.env.AFS_DOMAIN}, AFS_ENTITY_ID=${!!process.env.AFS_ENTITY_ID}, AFS_ACCESS_TOKEN=${!!process.env.AFS_ACCESS_TOKEN}`);
+      }
+      
       const afsData = new URLSearchParams();
       afsData.append('entityId', entityId);
       afsData.append('amount', installmentAmount.toString());
@@ -152,18 +156,27 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       afsData.append('paymentType', 'DB');
       afsData.append('merchantTransactionId', quotepaymentId);
       afsData.append('shopperResultUrl', shopperResultUrl);
-      // Optionally add customer info if available
-      // afsData.append('customer.email', req.body.customerEmail || 'test@example.com');
-      console.log('AFS Checkout Request Data:', afsData.toString());
+      
       const afsHeaders = {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/x-www-form-urlencoded"
       };
+      
       afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
       if (afsResponse.data && afsResponse.data.id) {
-        console.log("AFS Response:", afsResponse.data);
         // Generate payment link with checkout ID
-        paymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${afsResponse.data.id}`;
+        paymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${afsResponse.data.id}`;
+        
+        // Store the checkout ID in the database for later retrieval
+        try {
+          await Vzat_Recurring_Data.findByIdAndUpdate(
+            result._id,
+            { afs_checkout_id: afsResponse.data.id },
+            { new: true }
+          );
+        } catch (updateErr) {
+          console.error("❌ Failed to store checkout ID:", updateErr);
+        }
       } else {
         afsError = afsResponse.data;
       }
@@ -173,15 +186,16 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
 
     // Final response including payment link
     // Generate shopperResultUrl with id, resourcePath, and quotepaymentId for AFS redirect
-    const sandboxFrontendUrl = 'https://vzatnew.yeepeey.com';
-    let shopperResultUrl = `${sandboxFrontendUrl}/payment/result`;
+    const backendUrl = process.env.BACKEND_URL;
+    let shopperResultUrl = `${backendUrl}/payment-result`;
     let paymentPageUrl = null;
     if (afsResponse && afsResponse.data && afsResponse.data.id) {
       const id = encodeURIComponent(afsResponse.data.id);
       const resourcePath = encodeURIComponent(`/v1/checkouts/${afsResponse.data.id}/payment`);
-      shopperResultUrl = `${sandboxFrontendUrl}/payment/result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
-      paymentPageUrl = `${sandboxFrontendUrl}/payment/${encodeURIComponent(afsResponse.data.id)}`;
+      shopperResultUrl = `${backendUrl}/payment-result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
+      paymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(afsResponse.data.id)}`;
     }
+    
     const brands = "VISA MASTER AMEX";
     const data = {
       status: true,
@@ -212,6 +226,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
   }
 };
 
+// Exported for use in Express app.js as a dedicated backend route
 export const getAFSPaymentResult = async (req, res) => {
   const { resourcePath, quotepaymentId } = req.query;
 
@@ -227,25 +242,98 @@ export const getAFSPaymentResult = async (req, res) => {
   }
 
   try {
-    const afsUrl = `https://eu-test.oppwa.com${decodedPath}`;
-    const accessToken = 'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA=';
+    const afsUrl = `${process.env.AFS_DOMAIN}${decodedPath}`;
+    const entityId = process.env.AFS_ENTITY_ID;
+    const accessToken = process.env.AFS_ACCESS_TOKEN;
 
-    console.log("🔎 Fetching AFS payment result from:", afsUrl);
-    if (quotepaymentId) {
-      console.log("🔎 quotepaymentId for tracking:", quotepaymentId);
+    // Based on AFS docs error 800.900.300, try POST method with form data (like payment creation)
+    let response;
+    try {
+      const formData = new URLSearchParams();
+      formData.append('entityId', entityId);
+      
+      response = await axios.post(afsUrl, formData, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        }
+      });
+    } catch (postError) {
+      try {
+        response = await axios.get(`${afsUrl}?entityId=${entityId}`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept': 'application/json'
+          }
+        });
+      } catch (getError) {
+        try {
+          response = await axios.get(`${afsUrl}?entityId=${entityId}`, {
+            headers: {
+              'Authorization': `Basic ${accessToken}`,
+              'Accept': 'application/json'
+            }
+          });
+        } catch (basicError) {
+          // Try the result endpoint without /payment suffix (some AFS setups use this)
+          const alternativeUrl = afsUrl.replace('/payment', '');
+          
+          response = await axios.get(alternativeUrl, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Accept': 'application/json'
+            }
+          });
+        }
+      }
     }
 
-    const response = await axios.get(afsUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-
-    console.log("✅ AFS Payment Result:", JSON.stringify(response.data, null, 2));
     // Attach quotepaymentId to response for frontend display/tracking
     const resultData = { ...response.data };
     if (quotepaymentId) {
       resultData.quotepaymentId = quotepaymentId;
+    }
+
+    // Check if this is actually a successful response with payment data
+    // AFS sometimes returns result.code 200.300.404 for parameter warnings, but payment data is still valid
+    if (resultData.id && resultData.amount && resultData.currency) {
+      
+      // Check if the error is ONLY about shopperResultUrl (which is just a warning)
+      if (resultData.result && 
+          resultData.result.code === "200.300.404" && 
+          resultData.result.parameterErrors && 
+          resultData.result.parameterErrors.length === 1 &&
+          resultData.result.parameterErrors[0].name === "shopperResultUrl") {
+        
+        // This is just a warning about shopperResultUrl, not a real error
+        const cleanData = { ...resultData };
+        delete cleanData.result; // Remove the warning
+        cleanData.paymentStatus = 'success';
+        cleanData.message = 'Payment details retrieved successfully';
+        cleanData.warning = 'shopperResultUrl was already set during payment creation';
+        
+        return res.json(cleanData);
+      } else if (resultData.result && resultData.result.code === "200.300.404") {
+        // There are other parameter errors, but we have valid payment data
+        resultData.paymentStatus = 'partial_success';
+        resultData.message = 'Payment data retrieved with warnings';
+        return res.json(resultData);
+      } else {
+        // No errors, clean success
+        resultData.paymentStatus = 'success';
+        resultData.message = 'Payment details retrieved successfully';
+        return res.json(resultData);
+      }
+    } else {
+      // No valid payment data found
+      if (resultData.result && resultData.result.code) {
+        return res.status(400).json({
+          message: 'Failed to retrieve payment data',
+          error: resultData.result,
+          code: resultData.result.code
+        });
+      }
     }
 
     res.json(resultData);
@@ -270,9 +358,4 @@ export const getAFSPaymentResult = async (req, res) => {
   }
 };
 
-
-
-
-
 export default Post_Vzat_Recurring_Data;
-
