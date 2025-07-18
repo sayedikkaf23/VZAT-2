@@ -172,14 +172,14 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     }
 
     // Final response including payment link
-    // Generate shopperResultUrl with id and resourcePath for AFS redirect
+    // Generate shopperResultUrl with id, resourcePath, and quotepaymentId for AFS redirect
     const sandboxFrontendUrl = 'https://vzatnew.yeepeey.com';
     let shopperResultUrl = `${sandboxFrontendUrl}/payment/result`;
     let paymentPageUrl = null;
     if (afsResponse && afsResponse.data && afsResponse.data.id) {
       const id = encodeURIComponent(afsResponse.data.id);
       const resourcePath = encodeURIComponent(`/v1/checkouts/${afsResponse.data.id}/payment`);
-      shopperResultUrl = `${sandboxFrontendUrl}/payment/result?id=${id}&resourcePath=${resourcePath}`;
+      shopperResultUrl = `${sandboxFrontendUrl}/payment/result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
       paymentPageUrl = `${sandboxFrontendUrl}/payment/${encodeURIComponent(afsResponse.data.id)}`;
     }
     const brands = "VISA MASTER AMEX";
@@ -213,7 +213,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
 };
 
 export const getAFSPaymentResult = async (req, res) => {
-  const { resourcePath } = req.query;
+  const { resourcePath, quotepaymentId } = req.query;
 
   if (!resourcePath) {
     return res.status(400).json({ message: "Missing resourcePath" });
@@ -231,6 +231,9 @@ export const getAFSPaymentResult = async (req, res) => {
     const accessToken = 'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA=';
 
     console.log("🔎 Fetching AFS payment result from:", afsUrl);
+    if (quotepaymentId) {
+      console.log("🔎 quotepaymentId for tracking:", quotepaymentId);
+    }
 
     const response = await axios.get(afsUrl, {
       headers: {
@@ -239,8 +242,13 @@ export const getAFSPaymentResult = async (req, res) => {
     });
 
     console.log("✅ AFS Payment Result:", JSON.stringify(response.data, null, 2));
+    // Attach quotepaymentId to response for frontend display/tracking
+    const resultData = { ...response.data };
+    if (quotepaymentId) {
+      resultData.quotepaymentId = quotepaymentId;
+    }
 
-    res.json(response.data);
+    res.json(resultData);
   } catch (error) {
     // Log full error response for diagnostics
     if (error.response) {
