@@ -6,6 +6,8 @@ import Customer from "./routes/CustomerRoute.js";
 import VzatRecurring from "./routes/VzatRecurring.js";
 import path from "path";
 import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 const app = express();
@@ -33,11 +35,8 @@ app.use('/api/adminLogin', AdminLogin);
 app.use('/api/customer', Customer);
 app.use('/api/vzat_recurring_create_payment_link', VzatRecurring);
 
-// Serve static Angular frontend files
-import { fileURLToPath } from 'url';
-import path from 'path';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
+
 app.use(express.static(path.join(__dirname, 'frontend/dist/frontend/browser')));
 
 // SPA catch-all (must be last)
