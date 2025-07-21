@@ -143,7 +143,11 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       const accessToken = process.env.AFS_ACCESS_TOKEN;
       const backendUrl = process.env.BACKEND_URL;
       const frontendUrl = process.env.FRONTEND_URL;
-      
+
+      console.log("process.env.FRONTEND_URL");
+      console.log(frontendUrl);
+      console.log("process.env.BACKEND_URL");
+      console.log(backendUrl);      
       // Use backend URL for shopperResultUrl since that's where the payment-result endpoint is
       const shopperResultUrl = `${backendUrl}/payment-result`;
       
