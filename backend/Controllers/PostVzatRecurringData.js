@@ -41,6 +41,47 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       return res.status(400).json(data);
     }
 
+    // Check if quotepaymentId already exists in the database
+    console.log(`🔍 Checking for existing quotepaymentId: ${quotepaymentId}`);
+    const existingRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
+    console.log(`🔍 Database search result:`, existingRecord ? 'FOUND' : 'NOT FOUND');
+    
+    if (existingRecord) {
+      console.log(`❌ Duplicate quotepaymentId found! Record ID: ${existingRecord._id}`);
+      
+      // Generate payment page URL for existing record
+      let existingPaymentPageUrl = null;
+      let existingPaymentLink = null;
+      
+      if (existingRecord.afs_checkout_id) {
+        existingPaymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(existingRecord.afs_checkout_id)}`;
+        existingPaymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${existingRecord.afs_checkout_id}`;
+      }
+
+      const data = {
+        status: false,
+        message: "Payment link already exists for this quotepaymentId",
+        error: "DUPLICATE_QUOTE_PAYMENT_ID",
+        quotepaymentId,
+        existing_record: {
+          id: existingRecord._id,
+          created_date: existingRecord.CreatedDate,
+          status: existingRecord.Status,
+          total_amount: existingRecord.Total_After_VAT_Currency,
+          installment_type: existingRecord.InstallmentType,
+          afs_checkout_id: existingRecord.afs_checkout_id,
+          payment_page_url: existingPaymentPageUrl,
+          payment_widget_link: existingPaymentLink
+        },
+        suggestion: "Use the existing payment link or provide a different quotepaymentId"
+      };
+      
+      Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link", req.body, data);
+      return res.status(409).json(data); // 409 Conflict status code
+    }
+    
+    console.log(`✅ No duplicate found, proceeding with new payment creation for quotepaymentId: ${quotepaymentId}`);
+
     // Validate CreatedDate format
     const regEx = /^\d{4}-\d{2}-\d{2}$/;
     if (typeof CreatedDate !== 'string' || !regEx.test(CreatedDate)) {
@@ -99,6 +140,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     }
 
     // Save to DB
+    console.log(`💾 Saving new record with quotepaymentId: ${quotepaymentId}`);
     const baseData = new Vzat_Recurring_Data({
       OpportunityId,
       quotepaymentId,
@@ -112,6 +154,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     });
 
     const result = await baseData.save();
+    console.log(`✅ Record saved successfully with ID: ${result._id}`);
 
     // Insert product details
     for (const product of Product_details) {
@@ -209,8 +252,10 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       payment_amount: installmentAmount,
       installments_left: InstallmentLeft,
       installment_type: finalInstallmentType,
+      payment_link: paymentLink,
       payment_page_url: paymentPageUrl,
       afs_checkout_id: afsResponse && afsResponse.data && afsResponse.data.id ? afsResponse.data.id : null,
+      shopper_result_url: finalShopperResultUrl,
       data_brands: brands,
       afs_error: afsError
     };
