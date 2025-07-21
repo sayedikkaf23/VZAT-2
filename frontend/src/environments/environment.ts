@@ -7,6 +7,6 @@ export const environment = {
   // This should be replaced with the actual API URL in production
   apiUrl: 'https://vzatnew.yeepeey.com/api',
   // Use localhost URL for development frontend
-  frontendUrl: 'http://localhost:4200' // Development URL
+  frontendUrl: 'https://vzatnew.yeepeey.com' // Development URL
 };
 
