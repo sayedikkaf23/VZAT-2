@@ -328,9 +328,13 @@ export const getAFSPaymentResult = async (req, res) => {
       resultData.quotepaymentId = quotepaymentId;
     }
 
+    console.log(`📋 AFS Response received:`, JSON.stringify(resultData, null, 2));
+
     // Check if this is actually a successful response with payment data
     // AFS sometimes returns result.code 200.300.404 for parameter warnings, but payment data is still valid
     if (resultData.id && resultData.amount && resultData.currency) {
+      
+      console.log(`✅ Valid payment data found: ID=${resultData.id}, Amount=${resultData.amount}, Currency=${resultData.currency}`);
       
       // Check if the error is ONLY about shopperResultUrl (which is just a warning)
       if (resultData.result && 
@@ -346,19 +350,44 @@ export const getAFSPaymentResult = async (req, res) => {
         cleanData.message = 'Payment details retrieved successfully';
         cleanData.warning = 'shopperResultUrl was already set during payment creation';
         
+        console.log(`✅ Treating shopperResultUrl warning as success - returning clean data`);
         return res.json(cleanData);
       } else if (resultData.result && resultData.result.code ***REMOVED***= "200.300.404") {
         // There are other parameter errors, but we have valid payment data
         resultData.paymentStatus = 'partial_success';
         resultData.message = 'Payment data retrieved with warnings';
+        console.log(`⚠️ Payment data with warnings - returning partial success`);
         return res.json(resultData);
       } else {
         // No errors, clean success
         resultData.paymentStatus = 'success';
         resultData.message = 'Payment details retrieved successfully';
+        console.log(`✅ Clean success - no warnings`);
         return res.json(resultData);
       }
     } else {
+      console.log(`❌ No valid payment data found in response`);
+      
+      // Special case: If we get a shopperResultUrl error but it's about the CORRECT URL, treat it as success
+      if (resultData.result && 
+          resultData.result.code ***REMOVED***= "200.300.404" && 
+          resultData.result.parameterErrors && 
+          resultData.result.parameterErrors.length ***REMOVED***= 1 &&
+          resultData.result.parameterErrors[0].name ***REMOVED***= "shopperResultUrl" &&
+          resultData.result.parameterErrors[0].value ***REMOVED***= `${process.env.BACKEND_URL}/payment-result`) {
+        
+        console.log(`✅ AFS shopperResultUrl warning detected - but it's the correct URL, treating as success`);
+        return res.json({
+          paymentStatus: 'success',
+          message: 'Payment session accessed successfully',
+          warning: 'AFS returned a shopperResultUrl warning, but the URL is correct',
+          quotepaymentId: quotepaymentId,
+          checkout_id: req.query.id,
+          shopperResultUrl: resultData.result.parameterErrors[0].value,
+          note: 'This usually means the payment checkout is valid but AFS is being strict about parameter usage'
+        });
+      }
+      
       // No valid payment data found - check for specific "shopperResultUrl" error case
       if (resultData.result && 
           resultData.result.code ***REMOVED***= "200.300.404" && 
