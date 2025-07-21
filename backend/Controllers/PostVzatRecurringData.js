@@ -255,6 +255,7 @@ export const getAFSPaymentResult = async (req, res) => {
     console.log(`🌐 AFS Domain: ${process.env.AFS_DOMAIN}`);
     console.log(`🔑 Entity ID: ${process.env.AFS_ENTITY_ID ? 'Set' : 'Missing'}`);
     console.log(`🎫 Access Token: ${process.env.AFS_ACCESS_TOKEN ? 'Set' : 'Missing'}`);
+    console.log(`🔗 Full AFS URL will be: ${process.env.AFS_DOMAIN}${decodedPath}`);
   }
 
   try {
@@ -262,38 +263,53 @@ export const getAFSPaymentResult = async (req, res) => {
     const entityId = process.env.AFS_ENTITY_ID;
     const accessToken = process.env.AFS_ACCESS_TOKEN;
 
-    // Based on AFS docs error 800.900.300, try POST method with form data (like payment creation)
+    console.log(`🔧 Attempting to query AFS URL: ${afsUrl}`);
+
+    // Try GET request without entityId first (some AFS implementations don't want it for status checks)
     let response;
     try {
-      const formData = new URLSearchParams();
-      formData.append('entityId', entityId);
-      
-      response = await axios.post(afsUrl, formData, {
+      console.log(`🔄 Method 1: GET without entityId parameter`);
+      response = await axios.get(afsUrl, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json'
         }
       });
-    } catch (postError) {
+      console.log(`✅ Method 1 successful`);
+    } catch (getError) {
+      console.log(`❌ Method 1 failed:`, getError.response?.status, getError.response?.data);
+      
       try {
+        console.log(`🔄 Method 2: GET with entityId parameter`);
         response = await axios.get(`${afsUrl}?entityId=${entityId}`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Accept': 'application/json'
           }
         });
-      } catch (getError) {
+        console.log(`✅ Method 2 successful`);
+      } catch (getWithEntityError) {
+        console.log(`❌ Method 2 failed:`, getWithEntityError.response?.status, getWithEntityError.response?.data);
+        
         try {
-          response = await axios.get(`${afsUrl}?entityId=${entityId}`, {
+          console.log(`🔄 Method 3: POST with entityId in body`);
+          const formData = new URLSearchParams();
+          formData.append('entityId', entityId);
+          
+          response = await axios.post(afsUrl, formData, {
             headers: {
-              'Authorization': `Basic ${accessToken}`,
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
               'Accept': 'application/json'
             }
           });
-        } catch (basicError) {
-          // Try the result endpoint without /payment suffix (some AFS setups use this)
+          console.log(`✅ Method 3 successful`);
+        } catch (postError) {
+          console.log(`❌ Method 3 failed:`, postError.response?.status, postError.response?.data);
+          
+          // Try the result endpoint without /payment suffix as last resort
           const alternativeUrl = afsUrl.replace('/payment', '');
+          console.log(`🔄 Method 4: Alternative URL without /payment: ${alternativeUrl}`);
           
           response = await axios.get(alternativeUrl, {
             headers: {
@@ -301,6 +317,7 @@ export const getAFSPaymentResult = async (req, res) => {
               'Accept': 'application/json'
             }
           });
+          console.log(`✅ Method 4 successful`);
         }
       }
     }
