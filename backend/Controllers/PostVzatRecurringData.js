@@ -143,15 +143,10 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       const accessToken = process.env.AFS_ACCESS_TOKEN;
       const backendUrl = process.env.BACKEND_URL;
       const frontendUrl = process.env.FRONTEND_URL;
-
-      console.log("process.env.FRONTEND_URL");
-      console.log(frontendUrl);
-      console.log("process.env.BACKEND_URL");
-      console.log(backendUrl);      
+     
       // Use backend URL for shopperResultUrl since that's where the payment-result endpoint is
       const shopperResultUrl = `${backendUrl}/payment-result`;
-      
-      console.log(`🔧 Creating payment with shopperResultUrl: ${shopperResultUrl}`);
+    
       
       // Debug: Check if environment variables are loaded
       if (!process.env.AFS_DOMAIN || !process.env.AFS_ENTITY_ID || !process.env.AFS_ACCESS_TOKEN) {
@@ -214,10 +209,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       payment_amount: installmentAmount,
       installments_left: InstallmentLeft,
       installment_type: finalInstallmentType,
-      payment_link: paymentLink,
       payment_page_url: paymentPageUrl,
       afs_checkout_id: afsResponse && afsResponse.data && afsResponse.data.id ? afsResponse.data.id : null,
-      shopper_result_url: finalShopperResultUrl,
       data_brands: brands,
       afs_error: afsError
     };
@@ -251,11 +244,6 @@ export const getAFSPaymentResult = async (req, res) => {
 
   // Check if checkout ID is provided and log environment info for debugging
   if (id) {
-    console.log(`🔍 Checking payment result for checkout ID: ${id}`);
-    console.log(`🌐 AFS Domain: ${process.env.AFS_DOMAIN}`);
-    console.log(`🔑 Entity ID: ${process.env.AFS_ENTITY_ID ? 'Set' : 'Missing'}`);
-    console.log(`🎫 Access Token: ${process.env.AFS_ACCESS_TOKEN ? 'Set' : 'Missing'}`);
-    console.log(`🔗 Full AFS URL will be: ${process.env.AFS_DOMAIN}${decodedPath}`);
   }
 
   try {
@@ -263,19 +251,16 @@ export const getAFSPaymentResult = async (req, res) => {
     const entityId = process.env.AFS_ENTITY_ID;
     const accessToken = process.env.AFS_ACCESS_TOKEN;
 
-    console.log(`🔧 Attempting to query AFS URL: ${afsUrl}`);
-
     // Try GET request without entityId first (some AFS implementations don't want it for status checks)
     let response;
     try {
-      console.log(`🔄 Method 1: GET without entityId parameter`);
       response = await axios.get(afsUrl, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/json'
         }
       });
-      console.log(`✅ Method 1 successful`);
+      
     } catch (getError) {
       console.log(`❌ Method 1 failed:`, getError.response?.status, getError.response?.data);
       
@@ -287,12 +272,10 @@ export const getAFSPaymentResult = async (req, res) => {
             'Accept': 'application/json'
           }
         });
-        console.log(`✅ Method 2 successful`);
       } catch (getWithEntityError) {
         console.log(`❌ Method 2 failed:`, getWithEntityError.response?.status, getWithEntityError.response?.data);
         
         try {
-          console.log(`🔄 Method 3: POST with entityId in body`);
           const formData = new URLSearchParams();
           formData.append('entityId', entityId);
           
@@ -303,7 +286,7 @@ export const getAFSPaymentResult = async (req, res) => {
               'Accept': 'application/json'
             }
           });
-          console.log(`✅ Method 3 successful`);
+       
         } catch (postError) {
           console.log(`❌ Method 3 failed:`, postError.response?.status, postError.response?.data);
           
@@ -317,7 +300,7 @@ export const getAFSPaymentResult = async (req, res) => {
               'Accept': 'application/json'
             }
           });
-          console.log(`✅ Method 4 successful`);
+          
         }
       }
     }
@@ -350,23 +333,23 @@ export const getAFSPaymentResult = async (req, res) => {
         cleanData.message = 'Payment details retrieved successfully';
         cleanData.warning = 'shopperResultUrl was already set during payment creation';
         
-        console.log(`✅ Treating shopperResultUrl warning as success - returning clean data`);
+     
         return res.json(cleanData);
       } else if (resultData.result && resultData.result.code === "200.300.404") {
         // There are other parameter errors, but we have valid payment data
         resultData.paymentStatus = 'partial_success';
         resultData.message = 'Payment data retrieved with warnings';
-        console.log(`⚠️ Payment data with warnings - returning partial success`);
+     
         return res.json(resultData);
       } else {
         // No errors, clean success
         resultData.paymentStatus = 'success';
         resultData.message = 'Payment details retrieved successfully';
-        console.log(`✅ Clean success - no warnings`);
+
         return res.json(resultData);
       }
     } else {
-      console.log(`❌ No valid payment data found in response`);
+  
       
       // Special case: If we get a shopperResultUrl error but it's about the CORRECT URL, treat it as success
       if (resultData.result && 
@@ -376,7 +359,7 @@ export const getAFSPaymentResult = async (req, res) => {
           resultData.result.parameterErrors[0].name === "shopperResultUrl" &&
           resultData.result.parameterErrors[0].value === `${process.env.BACKEND_URL}/payment-result`) {
         
-        console.log(`✅ AFS shopperResultUrl warning detected - but it's the correct URL, treating as success`);
+       
         return res.json({
           paymentStatus: 'success',
           message: 'Payment session accessed successfully',
