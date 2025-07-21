@@ -141,8 +141,13 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       const afsUrl = `${process.env.AFS_DOMAIN}/v1/checkouts`;
       const entityId = process.env.AFS_ENTITY_ID;
       const accessToken = process.env.AFS_ACCESS_TOKEN;
+      const backendUrl = process.env.BACKEND_URL;
       const frontendUrl = process.env.FRONTEND_URL;
-      const shopperResultUrl = `${frontendUrl}/payment-result`;
+      
+      // Use backend URL for shopperResultUrl since that's where the payment-result endpoint is
+      const shopperResultUrl = `${backendUrl}/payment-result`;
+      
+      console.log(`🔧 Creating payment with shopperResultUrl: ${shopperResultUrl}`);
       
       // Debug: Check if environment variables are loaded
       if (!process.env.AFS_DOMAIN || !process.env.AFS_ENTITY_ID || !process.env.AFS_ACCESS_TOKEN) {
@@ -185,14 +190,13 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     }
 
     // Final response including payment link
-    // Generate shopperResultUrl with id, resourcePath, and quotepaymentId for AFS redirect
-    const backendUrl = process.env.BACKEND_URL;
-    let shopperResultUrl = `${backendUrl}/payment-result`;
+    // Generate final URLs for response
+    let finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result`;
     let paymentPageUrl = null;
     if (afsResponse && afsResponse.data && afsResponse.data.id) {
       const id = encodeURIComponent(afsResponse.data.id);
       const resourcePath = encodeURIComponent(`/v1/checkouts/${afsResponse.data.id}/payment`);
-      shopperResultUrl = `${backendUrl}/payment-result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
+      finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
       paymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(afsResponse.data.id)}`;
     }
     
@@ -209,7 +213,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       payment_link: paymentLink,
       payment_page_url: paymentPageUrl,
       afs_checkout_id: afsResponse && afsResponse.data && afsResponse.data.id ? afsResponse.data.id : null,
-      shopper_result_url: shopperResultUrl,
+      shopper_result_url: finalShopperResultUrl,
       data_brands: brands,
       afs_error: afsError
     };
@@ -228,7 +232,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
 
 // Exported for use in Express app.js as a dedicated backend route
 export const getAFSPaymentResult = async (req, res) => {
-  const { resourcePath, quotepaymentId } = req.query;
+  const { resourcePath, quotepaymentId, id } = req.query;
 
   if (!resourcePath) {
     return res.status(400).json({ message: "Missing resourcePath" });
@@ -239,6 +243,14 @@ export const getAFSPaymentResult = async (req, res) => {
   // Optional security check
   if (!decodedPath.startsWith('/v1/checkouts/')) {
     return res.status(400).json({ message: "Invalid resourcePath format" });
+  }
+
+  // Check if checkout ID is provided and log environment info for debugging
+  if (id) {
+    console.log(`🔍 Checking payment result for checkout ID: ${id}`);
+    console.log(`🌐 AFS Domain: ${process.env.AFS_DOMAIN}`);
+    console.log(`🔑 Entity ID: ${process.env.AFS_ENTITY_ID ? 'Set' : 'Missing'}`);
+    console.log(`🎫 Access Token: ${process.env.AFS_ACCESS_TOKEN ? 'Set' : 'Missing'}`);
   }
 
   try {
@@ -326,7 +338,29 @@ export const getAFSPaymentResult = async (req, res) => {
         return res.json(resultData);
       }
     } else {
-      // No valid payment data found
+      // No valid payment data found - check for specific "shopperResultUrl" error case
+      if (resultData.result && 
+          resultData.result.code ***REMOVED***= "200.300.404" && 
+          resultData.result.parameterErrors && 
+          resultData.result.parameterErrors.length ***REMOVED***= 1 &&
+          resultData.result.parameterErrors[0].name ***REMOVED***= "shopperResultUrl") {
+        
+        // This is the specific case where AFS is complaining about shopperResultUrl mismatch
+        return res.status(400).json({
+          message: 'Payment session configuration mismatch',
+          error: 'The payment was created with a different shopperResultUrl. This usually happens when the payment was created on localhost but accessed from live server.',
+          suggestion: 'Create a new payment link from your live server environment',
+          original_error: resultData.result,
+          environment_info: {
+            current_domain: process.env.AFS_DOMAIN,
+            current_backend: process.env.BACKEND_URL,
+            checkout_id: req.query.id,
+            conflicting_url: resultData.result.parameterErrors[0].value
+          }
+        });
+      }
+      
+      // Other 404 errors
       if (resultData.result && resultData.result.code) {
         return res.status(400).json({
           message: 'Failed to retrieve payment data',
@@ -341,6 +375,27 @@ export const getAFSPaymentResult = async (req, res) => {
     // Log full error response for diagnostics
     if (error.response) {
       console.error("❌ AFS Payment Result Error:", JSON.stringify(error.response.data, null, 2));
+      
+      // Handle specific AFS error: "No payment session found"
+      if (error.response.data && 
+          error.response.data.result && 
+          error.response.data.result.code ***REMOVED***= "200.300.404" &&
+          error.response.data.result.description && 
+          error.response.data.result.description.includes("No payment session found")) {
+        
+        return res.status(400).json({
+          message: 'Payment session has expired or not found',
+          error: 'This payment session is no longer valid. This can happen if: 1) More than 30 minutes have passed since payment creation, 2) Wrong environment (test vs live), or 3) Invalid checkout ID.',
+          suggestion: 'Please create a new payment link',
+          original_error: error.response.data,
+          environment_check: {
+            current_domain: process.env.AFS_DOMAIN,
+            checkout_id: req.query.id,
+            suggested_action: 'Verify AFS environment matches your server environment'
+          }
+        });
+      }
+      
       res.status(500).json({
         message: 'Failed to get payment result',
         error: error.response.data,
