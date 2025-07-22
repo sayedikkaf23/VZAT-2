@@ -70,6 +70,36 @@ const vzatRecurringDataSchema = new Schema({
     afs_checkout_id: {
         type: String,
         required: false
+    },
+    // Subscription-related fields
+    is_subscription: {
+        type: Boolean,
+        default: false
+    },
+    subscription_status: {
+        type: String,
+        enum: ['pending', 'active', 'paused', 'cancelled', 'completed', 'one-time'],
+        default: 'one-time'
+    },
+    next_charge_date: {
+        type: Date,
+        required: false
+    },
+    afs_registration_id: {
+        type: String,
+        required: false // Stored after successful initial payment
+    },
+    payments_completed: {
+        type: Number,
+        default: 0
+    },
+    last_payment_date: {
+        type: Date,
+        required: false
+    },
+    subscription_created_date: {
+        type: Date,
+        default: Date.now
     }
 });
 
