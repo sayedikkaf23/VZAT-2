@@ -176,10 +176,12 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       );
     }
 
-    // Generate AFS payment link
+    // Generate AFS payment link or subscription
     let paymentLink = null;
     let afsError = null;
     let afsResponse = null;
+    let isSubscription = finalInstallmentType === "Installments" && InstallmentLeft > 1;
+    
     try {
       const afsUrl = `${process.env.AFS_DOMAIN}/v1/checkouts`;
       const entityId = process.env.AFS_ENTITY_ID;
@@ -200,34 +202,67 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       afsData.append('entityId', entityId);
       afsData.append('amount', installmentAmount.toString());
       afsData.append('currency', 'AED');
-      afsData.append('paymentType', 'DB');
       afsData.append('merchantTransactionId', quotepaymentId);
       afsData.append('shopperResultUrl', shopperResultUrl);
+      
+      if (isSubscription) {
+        console.log(`🔄 Creating subscription for ${InstallmentLeft} installments`);
+        
+        // For subscriptions, we use 'PA' (Pre-Authorization) for initial setup
+        afsData.append('paymentType', 'PA');
+        
+        // Add subscription-specific parameters
+        afsData.append('recurringType', 'INITIAL');
+        
+        // Calculate next charge date based on creation date logic
+        const nextChargeDate = nextInstallmentDate.toISOString().slice(0, 10);
+        console.log(`📅 Next charge date calculated: ${nextChargeDate}`);
+        
+        // Add subscription metadata (for tracking)
+        afsData.append('merchantMemo', `Subscription:${quotepaymentId}:${InstallmentLeft}:${nextChargeDate}`);
+        
+      } else {
+        console.log(`💳 Creating one-time payment`);
+        // For one-time payments, use 'DB' (Direct Debit)
+        afsData.append('paymentType', 'DB');
+      }
       
       const afsHeaders = {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/x-www-form-urlencoded"
       };
       
+      console.log(`🚀 Sending request to AFS: ${isSubscription ? 'SUBSCRIPTION' : 'ONE-TIME'}`);
       afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
+      
       if (afsResponse.data && afsResponse.data.id) {
         // Generate payment link with checkout ID
         paymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${afsResponse.data.id}`;
         
-        // Store the checkout ID in the database for later retrieval
+        // Store the checkout ID and subscription info in the database
         try {
+          const updateData = { 
+            afs_checkout_id: afsResponse.data.id,
+            is_subscription: isSubscription,
+            subscription_status: isSubscription ? 'pending' : 'one-time',
+            next_charge_date: isSubscription ? nextInstallmentDate : null
+          };
+          
           await Vzat_Recurring_Data.findByIdAndUpdate(
             result._id,
-            { afs_checkout_id: afsResponse.data.id },
+            updateData,
             { new: true }
           );
+          
+          console.log(`✅ ${isSubscription ? 'Subscription' : 'Payment'} data stored successfully`);
         } catch (updateErr) {
-          console.error("❌ Failed to store checkout ID:", updateErr);
+          console.error("❌ Failed to store checkout/subscription data:", updateErr);
         }
       } else {
         afsError = afsResponse.data;
       }
     } catch (err) {
+      console.error("❌ AFS API Error:", err.response ? err.response.data : err.message);
       afsError = err.response ? err.response.data : err.message;
     }
 
@@ -245,8 +280,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     const brands = "VISA MASTER AMEX";
     const data = {
       status: true,
-      message: "Installment calculation complete",
+      message: isSubscription ? "Subscription payment link created successfully" : "One-time payment link created successfully",
       quotepaymentId,
+      payment_type: isSubscription ? "subscription" : "one-time",
       first_payment_due_date: firstPaymentDueDate.toISOString().slice(0, 10),
       next_installment_due_date: nextInstallmentDate ? nextInstallmentDate.toISOString().slice(0, 10) : null,
       payment_amount: installmentAmount,
@@ -257,6 +293,13 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       afs_checkout_id: afsResponse && afsResponse.data && afsResponse.data.id ? afsResponse.data.id : null,
       shopper_result_url: finalShopperResultUrl,
       data_brands: brands,
+      subscription_info: isSubscription ? {
+        total_installments: InstallmentLeft,
+        remaining_installments: InstallmentLeft - 1, // First payment is immediate
+        next_charge_date: nextInstallmentDate ? nextInstallmentDate.toISOString().slice(0, 10) : null,
+        installment_amount: installmentAmount,
+        total_amount: Total_After_VAT_Currency
+      } : null,
       afs_error: afsError
     };
 

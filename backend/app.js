@@ -5,9 +5,11 @@ import SalesForce from "./routes/SalesForce.js";
 import AdminLogin from "./routes/AdminLoginRoute.js";
 import Customer from "./routes/CustomerRoute.js";
 import VzatRecurring from "./routes/VzatRecurring.js";
+import Subscription from "./routes/SubscriptionRoute.js";
 import { getAFSPaymentResult } from "./Controllers/PostVzatRecurringData.js";
 import { connectDB, disconnectDB } from "./config/db.js";
 import Vzat_Recurring_Data from "./model/VzatRecurringDataModel.js";
+import { initializeCronJobs } from "./config/cronJobs.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -48,6 +50,7 @@ app.use('/api/salesForce', SalesForce);
 app.use('/api/adminLogin', AdminLogin);
 app.use('/api/customer', Customer);
 app.use('/api/vzat_recurring_create_payment_link', VzatRecurring);
+app.use('/api/subscription', Subscription);
 
 // ✅ Payment result API endpoint
 app.get('/api/payment/result', (req, res) => {
@@ -149,6 +152,38 @@ app.post('/test-payment-link', (req, res) => {
   });
 });
 
+// ✅ Test endpoint for subscription
+app.post('/test-subscription-link', (req, res) => {
+  console.log('🧪 Test subscription link generation requested');
+  
+  const testData = {
+    OpportunityId: "test-sub-opp-123",
+    quotepaymentId: "test-sub-quote-" + Date.now(),
+    QuoteId: "test-sub-quote-123",
+    CreatedDate: "2025-07-21",
+    Status: "Active",
+    TotalPrice: 1200,
+    Total_After_VAT_Currency: 1200,
+    InstallmentType: "Installments", // This will trigger subscription
+    Product_details: [{
+      QuoteLineItemId: "test-sub-item-123",
+      TotalPrice: 1200,
+      Total_Price_After_VAT: 1200
+    }]
+  };
+  
+  // Forward to the main payment creation endpoint
+  req.body = testData;
+  
+  // Import the controller function
+  import('./Controllers/PostVzatRecurringData.js').then(module => {
+    module.default(req, res);
+  }).catch(err => {
+    console.error('Error importing controller:', err);
+    res.status(500).json({ error: 'Failed to process subscription link' });
+  });
+});
+
 // Serve static files
 app.use(express.static(path.join(__dirname, '../frontend/dist/frontend/browser')));
 
@@ -166,4 +201,12 @@ app.get('*', (req, res) => {
 // Start the server
 app.listen(3000, () => {
   console.log("server is running on port 3000");
+  
+  // Initialize cron jobs for subscription management
+  try {
+    initializeCronJobs();
+    console.log("✅ Subscription cron jobs initialized");
+  } catch (error) {
+    console.error("❌ Failed to initialize cron jobs:", error);
+  }
 });
