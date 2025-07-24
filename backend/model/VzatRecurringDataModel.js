@@ -133,7 +133,35 @@ const vzatRecurringDataSchema = new Schema({
     subscription_created_date: {
         type: Date,
         default: Date.now
-    }
+    },
+    // Payment schedule array - structured payment plan
+    payment_schedule: [{
+        installment_number: {
+            type: Number,
+            required: true
+        },
+        due_date: {
+            type: String,
+            required: true
+        },
+        amount: {
+            type: Number,
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ['completed', 'due', 'pending', 'overdue', 'cancelled'],
+            default: 'pending'
+        },
+        transaction_id: {
+            type: String,
+            required: false
+        },
+        payment_date: {
+            type: Date,
+            required: false
+        }
+    }]
 });
 
 const Vzat_Recurring_Data = mongoose.model('Vzat_Recurring_Data',vzatRecurringDataSchema);

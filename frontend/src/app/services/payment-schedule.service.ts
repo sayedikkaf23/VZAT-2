@@ -18,6 +18,14 @@ export interface PaymentScheduleResponse {
   afs_checkout_id: string;
   shopper_result_url: string;
   data_brands: string;
+  payment_schedule: Array<{
+    installment_number: number;
+    due_date: string;
+    amount: number;
+    status: 'completed' | 'due' | 'pending' | 'overdue' | 'cancelled';
+    transaction_id?: string;
+    payment_date?: string;
+  }>;
   subscription_info: {
     total_installments: number;
     remaining_installments: number;
@@ -177,9 +185,27 @@ export class PaymentScheduleService {
     const totalInstallments = subscriptionInfo.total_installments;
     const installmentAmount = subscriptionInfo.installment_amount;
 
+    // Calculate the payment day based on business rule
+    const getPaymentDay = (date: Date): number => {
+      const day = date.getDate();
+      return day <= 15 ? 10 : 25; // 1st-15th: 10th, 16th-31st: 25th
+    };
+
     for (let i = 0; i < totalInstallments; i++) {
-      const dueDate = new Date(startDate);
-      dueDate.setMonth(startDate.getMonth() + i);
+      let dueDate: Date;
+      
+      if (i === 0) {
+        // First payment: use the provided first payment date
+        dueDate = new Date(startDate);
+      } else {
+        // Subsequent payments: 10th or 25th of each month
+        const paymentDay = getPaymentDay(startDate);
+        const targetMonth = startDate.getMonth() + i;
+        const targetYear = startDate.getFullYear() + Math.floor(targetMonth / 12);
+        const adjustedMonth = targetMonth % 12;
+        
+        dueDate = new Date(targetYear, adjustedMonth, paymentDay);
+      }
 
       const isNextPayment = i === (totalInstallments - subscriptionInfo.remaining_installments);
       const status = i < (totalInstallments - subscriptionInfo.remaining_installments) ? 'completed' : 
