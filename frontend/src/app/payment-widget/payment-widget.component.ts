@@ -56,6 +56,10 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
         // Check if this is an AFS payment
         this.isAfsPayment = !!(this.paymentDetails.checkoutId && this.paymentDetails.paymentLink);
         console.log('Is AFS payment:', this.isAfsPayment);
+        console.log('CheckoutId present:', !!this.paymentDetails.checkoutId);
+        console.log('PaymentLink present:', !!this.paymentDetails.paymentLink);
+        console.log('CheckoutId value:', this.paymentDetails.checkoutId);
+        console.log('PaymentLink value:', this.paymentDetails.paymentLink);
         
         if (this.isAfsPayment) {
           this.initializeAfsPaymentGateway();
@@ -123,16 +127,26 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
 
   private setupAfsPaymentWidget(): void {
     console.log('Setting up AFS payment widget...');
+    console.log('Current payment details:', this.paymentDetails);
+    console.log('Checkout ID:', this.paymentDetails?.checkoutId);
+    console.log('Is AFS payment:', this.isAfsPayment);
     
     // Wait for the AFS script to be fully loaded and available
     setTimeout(() => {
       const widgetContainer = document.querySelector('.paymentWidgets');
+      console.log('Widget container found:', !!widgetContainer);
+      console.log('Container element:', widgetContainer);
+      
       if (widgetContainer && this.paymentDetails?.checkoutId) {
         // Ensure the container has the required attributes for AFS
         widgetContainer.setAttribute('data-checkout-id', this.paymentDetails.checkoutId);
         widgetContainer.setAttribute('data-brands', 'VISA MASTER AMEX');
         
         console.log('AFS widget container configured with checkout ID:', this.paymentDetails.checkoutId);
+        console.log('Container attributes set:', {
+          'data-checkout-id': widgetContainer.getAttribute('data-checkout-id'),
+          'data-brands': widgetContainer.getAttribute('data-brands')
+        });
         
         // Stop loading immediately if container is ready
         this.isLoading = false;
@@ -166,6 +180,23 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
         }, 3000);
       } else {
         console.error('AFS widget container not found or missing checkout ID');
+        console.error('Widget container found:', !!widgetContainer);
+        console.error('Checkout ID available:', !!this.paymentDetails?.checkoutId);
+        console.error('Payment details:', this.paymentDetails);
+        
+        if (!widgetContainer) {
+          console.error('Cannot find element with class .paymentWidgets');
+          // Let's check if the element exists in the DOM at all
+          const allForms = document.querySelectorAll('form');
+          console.error('All forms in DOM:', allForms);
+          const paymentContainers = document.querySelectorAll('.afs-payment-container, .payment-gateway-section');
+          console.error('Payment containers found:', paymentContainers);
+        }
+        
+        if (!this.paymentDetails?.checkoutId) {
+          console.error('Checkout ID is missing from payment details');
+        }
+        
         this.handleAfsWidgetFailure();
       }
     }, 1000);
