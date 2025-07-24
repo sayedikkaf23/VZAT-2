@@ -74,7 +74,10 @@ const disconnectDB = async () => {
 
 // Check if database is connected
 const isDBConnected = () => {
-  return isConnected && mongoose.connection.readyState === 1;
+  // Check the actual mongoose connection state instead of our custom variable
+  const connectionState = mongoose.connection.readyState;
+  // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+  return connectionState === 1;
 };
 
 export { connectDB, disconnectDB, isDBConnected };
