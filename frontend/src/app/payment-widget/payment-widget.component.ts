@@ -33,8 +33,13 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    console.log('PaymentWidgetComponent initialized');
+    console.log('Input paymentLink:', this.paymentLink);
+    
     // Get payment details from query parameters
     this.route.queryParams.subscribe(params => {
+      console.log('Query parameters received:', params);
+      
       if (params['paymentId']) {
         this.paymentDetails = {
           paymentId: params['paymentId'],
@@ -46,23 +51,26 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
           paymentLink: params['paymentLink']
         };
         
-        console.log('Payment details received:', this.paymentDetails);
+        console.log('Payment details parsed:', this.paymentDetails);
         
         // Check if this is an AFS payment
         this.isAfsPayment = !!(this.paymentDetails.checkoutId && this.paymentDetails.paymentLink);
+        console.log('Is AFS payment:', this.isAfsPayment);
         
         if (this.isAfsPayment) {
           this.initializeAfsPaymentGateway();
         } else {
+          console.log('Falling back to manual payment gateway');
           this.initializeManualPaymentGateway();
         }
       } else {
-        console.error('No payment details provided');
+        console.error('No payment details provided in query parameters');
         this.router.navigate(['/paymentSchedule']);
       }
     });
 
     if (this.paymentLink && !this.paymentDetails?.paymentLink) {
+      console.log('Using direct paymentLink input');
       this.paymentDetails = {
         ...this.paymentDetails!,
         paymentLink: this.paymentLink
@@ -73,46 +81,100 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
 
   private initializeAfsPaymentGateway(): void {
     this.isLoading = true;
+    console.log('Initializing AFS payment gateway...');
     
     // Load the AFS payment widget script
     if (this.paymentDetails?.paymentLink) {
+      console.log('Loading AFS script from:', this.paymentDetails.paymentLink);
+      
       this.scriptElement = document.createElement('script');
       this.scriptElement.src = this.paymentDetails.paymentLink;
       this.scriptElement.async = true;
       
+      // Set a timeout for script loading
+      const loadingTimeout = setTimeout(() => {
+        console.error('AFS script loading timeout after 10 seconds');
+        this.handleAfsWidgetFailure();
+      }, 10000);
+      
       this.scriptElement.onload = () => {
-        console.log('AFS Payment widget loaded successfully');
-        this.isLoading = false;
-        this.setupAfsPaymentWidget();
+        clearTimeout(loadingTimeout);
+        console.log('AFS Payment widget script loaded successfully');
+        
+        // Wait a moment for the script to be fully executed
+        setTimeout(() => {
+          this.setupAfsPaymentWidget();
+        }, 500);
       };
       
-      this.scriptElement.onerror = () => {
-        console.error('Failed to load AFS payment widget');
-        this.isLoading = false;
-        this.isAfsPayment = false; // Fallback to manual payment
+      this.scriptElement.onerror = (error: any) => {
+        clearTimeout(loadingTimeout);
+        console.error('Failed to load AFS payment widget script:', error);
+        this.handleAfsWidgetFailure();
       };
       
       document.head.appendChild(this.scriptElement);
     } else {
+      console.error('No payment link provided for AFS gateway');
       this.isLoading = false;
       this.isAfsPayment = false;
     }
   }
 
   private setupAfsPaymentWidget(): void {
-    // This will be replaced by the actual AFS widget implementation
-    // The AFS script will automatically create the payment form
     console.log('Setting up AFS payment widget...');
     
-    // Add AFS widget container if it doesn't exist
+    // Wait for the AFS script to be fully loaded and available
     setTimeout(() => {
       const widgetContainer = document.querySelector('.paymentWidgets');
       if (widgetContainer && this.paymentDetails?.checkoutId) {
-        // The AFS script should automatically populate this container
-        // with the payment form based on the checkout ID
-        console.log('AFS widget container ready');
+        // Ensure the container has the required attributes for AFS
+        widgetContainer.setAttribute('data-checkout-id', this.paymentDetails.checkoutId);
+        widgetContainer.setAttribute('data-brands', 'VISA MASTER AMEX');
+        
+        console.log('AFS widget container configured with checkout ID:', this.paymentDetails.checkoutId);
+        
+        // Stop loading immediately if container is ready
+        this.isLoading = false;
+        
+        // Check if the AFS library is available and trigger widget creation
+        if ((window as any).wpwlOptions || (window as any).wpwl) {
+          console.log('AFS library detected, widget should auto-initialize');
+        } else {
+          console.log('AFS library loading...');
+        }
+        
+        // Check if form fields have been created after a delay
+        setTimeout(() => {
+          const formFields = widgetContainer.querySelectorAll('input, select, iframe');
+          if (formFields.length ***REMOVED***= 0) {
+            console.warn('AFS widget form fields not found after 3 seconds, checking if widget is still loading...');
+            
+            // Give it more time, sometimes AFS widgets load slowly
+            setTimeout(() => {
+              const laterFields = widgetContainer.querySelectorAll('input, select, iframe');
+              if (laterFields.length ***REMOVED***= 0) {
+                console.error('AFS widget failed to initialize after 6 seconds');
+                this.handleAfsWidgetFailure();
+              } else {
+                console.log('AFS widget initialized successfully (late detection):', laterFields.length, 'form elements');
+              }
+            }, 3000);
+          } else {
+            console.log('AFS widget form fields detected:', formFields.length);
+          }
+        }, 3000);
+      } else {
+        console.error('AFS widget container not found or missing checkout ID');
+        this.handleAfsWidgetFailure();
       }
     }, 1000);
+  }
+  
+  private handleAfsWidgetFailure(): void {
+    console.warn('AFS widget failed to initialize, falling back to manual payment');
+    this.isAfsPayment = false;
+    this.isLoading = false;
   }
 
   private initializeManualPaymentGateway(): void {
