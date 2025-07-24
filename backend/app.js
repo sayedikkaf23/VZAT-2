@@ -7,7 +7,7 @@ import Customer from "./routes/CustomerRoute.js";
 import VzatRecurring from "./routes/VzatRecurring.js";
 import Subscription from "./routes/SubscriptionRoute.js";
 import { getAFSPaymentResult } from "./Controllers/PostVzatRecurringData.js";
-import { connectDB, disconnectDB, isDBConnected } from "./config/db.js";
+import { connectDB, disconnectDB } from "./config/db.js";
 import Vzat_Recurring_Data from "./model/VzatRecurringDataModel.js";
 import { initializeCronJobs } from "./config/cronJobs.js";
 import path from "path";

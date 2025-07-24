@@ -1,6 +1,5 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { isDBConnected } from "../config/db.js";
 import Customer from "../model/CustomerLoginModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 
@@ -24,11 +23,7 @@ const Login = async (req,res) => {
       console.log(email,password);
       
       try {
-        // Check if database is connected (using persistent connection)
-        if (!isDBConnected()) {
-          throw new Error("Database not connected");
-        }
-        
+        // Use persistent connection - mongoose will handle connection state automatically
         const loggingUser = await Customer.findOne({ email: email });
         console.log(loggingUser);
         
