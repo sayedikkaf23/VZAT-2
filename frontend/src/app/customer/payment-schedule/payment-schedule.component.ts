@@ -281,9 +281,27 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
                            data.quote_payment_id ||
                            data.id;
       
-      console.log('💾 Updated customer data:', this.customerData);
+      // Set checkout ID if available from API response
+      this.currentCheckoutId = data.afs_checkout_id || 
+                               data.checkoutId || 
+                               data.checkout_id || 
+                               data.checkout_token || 
+                               '';
+      
+      // If we have a checkout ID, build the AFS payment link
+      if (this.currentCheckoutId) {
+        this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.currentCheckoutId}`;
+        console.log('💳 AFS checkout ID found:', this.currentCheckoutId);
+        console.log('💳 AFS payment link:', this.afsPaymentLink);
+      } else {
+        console.log('⚠️ No checkout ID found in API response, AFS payment not available');
+        console.log('� Available fields in API response:', Object.keys(data));
+      }
+      
+      console.log('�💾 Updated customer data:', this.customerData);
       console.log('💾 Updated sales agent data:', this.salesAgent);
       console.log('💾 Quote payment ID:', this.quotepaymentId);
+      console.log('💾 Checkout ID:', this.currentCheckoutId);
       
       // If payment_schedule exists in data, use it directly (new structured approach)
       if (data.payment_schedule && Array.isArray(data.payment_schedule)) {
@@ -497,9 +515,13 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     if (payment.status === 'due' && payment.isNextPayment) {
       this.selectedPayment = payment;
       console.log('Initiating payment for:', payment);
+      console.log('Current checkout ID:', this.currentCheckoutId);
+      console.log('Quote payment ID:', this.quotepaymentId);
+      console.log('AFS payment link:', this.afsPaymentLink);
       
       // Navigate to payment widget with AFS checkout data
       if (this.currentCheckoutId) {
+        console.log('✅ Using AFS payment with checkout ID');
         // If we have a checkout ID, navigate to the AFS payment widget
         this.router.navigate(['/payment-widget'], {
           queryParams: {
@@ -512,6 +534,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           }
         });
       } else {
+        console.log('⚠️ No checkout ID available, using manual payment');
         // Fallback to manual payment widget
         this.router.navigate(['/payment-widget'], {
           queryParams: {
@@ -523,6 +546,8 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           }
         });
       }
+    } else {
+      console.warn('Payment cannot be initiated - not due or not next payment:', payment);
     }
   }
 
