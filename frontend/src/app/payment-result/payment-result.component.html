@@ -51,7 +51,7 @@
     <!-- Handle errors or unknown status -->
     <div *ngIf="!result.paymentStatus || (result.paymentStatus !== 'success' && result.paymentStatus !== 'partial_success')">
       <div *ngIf="!result.result || result.result.code !== '000.100.110'">
-        <p class="error">❌ Payment cannot be completed.</p>
+        <p class="error"> Payment cannot be completed.</p>
         <p>Please contact support with following information:</p>
         <p><strong>Checkout ID:</strong> {{ result.id }}</p>
         <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
