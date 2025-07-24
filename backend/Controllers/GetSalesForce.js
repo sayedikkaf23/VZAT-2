@@ -34,7 +34,7 @@ const GetSalesForce = async (req, res) => {
           //await disconnectDB();
           const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.query, salesAgent);
           console.log(LogData);
-          res.json(salesAgent);
+          return res.json(salesAgent); // Added return to prevent further execution
         }
        // await disconnectDB();
         const data = {
@@ -46,7 +46,7 @@ const GetSalesForce = async (req, res) => {
         }
         const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.query, data);
         console.log(LogData);
-        res.json(data);
+        return res.json(data); // Added return
       } catch (err) {
        // await disconnectDB();
        const data = {
@@ -54,7 +54,7 @@ const GetSalesForce = async (req, res) => {
         }
         const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.body,data);
         console.log(LogData);
-        throw err;
+        return res.status(500).json(data); // Added return and proper status code
       }
 
     }
