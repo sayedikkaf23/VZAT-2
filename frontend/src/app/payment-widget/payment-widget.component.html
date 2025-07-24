@@ -53,15 +53,25 @@
                 <h6 class="mb-3">Choose Payment Method</h6>
                 
                 <!-- Real AFS Payment Widget (when AFS is available) -->
-                <div *ngIf="isAfsPayment && !isLoading" class="afs-payment-container">
+                <div *ngIf="isAfsPayment" class="afs-payment-container">
+                  <!-- Loading indicator for AFS -->
+                  <div *ngIf="isLoading" class="text-center p-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                      <span class="visually-hidden">Loading payment form...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Loading secure payment form...</p>
+                  </div>
+                  
+                  <!-- AFS Payment Form - Always present when isAfsPayment is true -->
                   <form class="paymentWidgets" 
                         action=""
                         [attr.data-brands]="'VISA MASTER AMEX'"
-                        [attr.data-checkout-id]="paymentDetails.checkoutId">
+                        [attr.data-checkout-id]="paymentDetails?.checkoutId"
+                        [style.display]="isLoading ? 'none' : 'block'">
                     <!-- AFS will automatically populate this form -->
                   </form>
                   
-                  <div class="text-center mt-3">
+                  <div *ngIf="!isLoading" class="text-center mt-3">
                     <small class="text-muted">
                       <i class="fas fa-info-circle me-1"></i>
                       Complete your payment using the secure form above
