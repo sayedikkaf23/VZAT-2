@@ -31,7 +31,6 @@ const Login = async (req,res) => {
           }
           const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
           console.log(LogData);
-          //await disconnectDB();
           return res.json(data);
         }
         const isEqual = await bcrypt.compare(password, loggingUser.password);
@@ -42,7 +41,6 @@ const Login = async (req,res) => {
           }
           const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
           console.log(LogData);
-          //await disconnectDB();
           return res.json(data);
         }
         const token = jwt.sign(
@@ -54,7 +52,7 @@ const Login = async (req,res) => {
             expiresIn: "24h",
           }
         );
-        //await disconnectDB();
+        ;
 
         console.log(token)
 
@@ -80,7 +78,7 @@ const Login = async (req,res) => {
         }
         const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
         console.log(LogData);
-        //await disconnectDB();
+        ;
         throw err;
       }
 

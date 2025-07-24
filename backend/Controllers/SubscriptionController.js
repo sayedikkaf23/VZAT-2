@@ -1,4 +1,3 @@
-import {connectDB, disconnectDB} from "../config/db.js";
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 import { sendSubscriptionCompletedEmail, sendPaymentFailureEmail } from "../services/emailService.js";
@@ -12,7 +11,7 @@ dotenv.config();
  * Handle AFS webhook notifications for subscription events
  */
 export const handleAFSWebhook = async (req, res) => {
-  await connectDB();
+  // Using persistent connection - no need to connect/disconnect
   
   try {
     console.log('🔔 AFS Webhook received:', JSON.stringify(req.body, null, 2));
@@ -145,8 +144,6 @@ export const handleAFSWebhook = async (req, res) => {
       error: error.message 
     });
     res.status(500).json({ message: 'Webhook processing failed' });
-  } finally {
-    await disconnectDB();
   }
 };
 
@@ -190,7 +187,7 @@ async function scheduleNextPayment(subscriptionId) {
  * Process recurring payments (called by cron job)
  */
 export const processRecurringPayments = async (req, res) => {
-  await connectDB();
+  // Using persistent connection - no need to connect/disconnect
   
   try {
     const today = new Date();
@@ -303,8 +300,6 @@ export const processRecurringPayments = async (req, res) => {
       console.error(' Cron job failed:', errorResponse);
       return errorResponse;
     }
-  } finally {
-    await disconnectDB();
   }
 };
 
@@ -377,7 +372,7 @@ async function processSubscriptionPayment(subscription) {
  * Get subscription status
  */
 export const getSubscriptionStatus = async (req, res) => {
-  await connectDB();
+  
   
   try {
     const { quotepaymentId } = req.params;
@@ -418,7 +413,7 @@ export const getSubscriptionStatus = async (req, res) => {
     console.error(' Error getting subscription status:', error);
     res.status(500).json({ message: 'Failed to get subscription status' });
   } finally {
-    await disconnectDB();
+    
   }
 };
 
@@ -426,7 +421,7 @@ export const getSubscriptionStatus = async (req, res) => {
  * Cancel subscription
  */
 export const cancelSubscription = async (req, res) => {
-  await connectDB();
+  
   
   try {
     const { quotepaymentId } = req.params;
@@ -458,7 +453,7 @@ export const cancelSubscription = async (req, res) => {
     console.error(' Error cancelling subscription:', error);
     res.status(500).json({ message: 'Failed to cancel subscription' });
   } finally {
-    await disconnectDB();
+    
   }
 };
 
@@ -466,7 +461,7 @@ export const cancelSubscription = async (req, res) => {
  * Update subscription next charge date (for testing purposes)
  */
 export const updateNextChargeDate = async (req, res) => {
-  await connectDB();
+  
   
   try {
     const { quotepaymentId } = req.params;
@@ -494,7 +489,7 @@ export const updateNextChargeDate = async (req, res) => {
     console.error(' Error updating next charge date:', error);
     res.status(500).json({ message: 'Failed to update next charge date' });
   } finally {
-    await disconnectDB();
+    
   }
 };
 
@@ -502,7 +497,7 @@ export const updateNextChargeDate = async (req, res) => {
  * Fix missing InstallmentLeft field (for testing purposes)
  */
 export const fixInstallmentLeft = async (req, res) => {
-  await connectDB();
+  
   
   try {
     const { quotepaymentId } = req.params;
@@ -539,7 +534,7 @@ export const fixInstallmentLeft = async (req, res) => {
     console.error(' Error updating InstallmentLeft:', error);
     res.status(500).json({ message: 'Failed to update InstallmentLeft' });
   } finally {
-    await disconnectDB();
+    
   }
 };
 

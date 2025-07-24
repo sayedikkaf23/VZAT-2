@@ -376,7 +376,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link", req.body, data);
     return res.status(500).json(data);
   } finally {
-    await disconnectDB();
+    
   }
 };
 
