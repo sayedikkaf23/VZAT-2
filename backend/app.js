@@ -7,7 +7,7 @@ import Customer from "./routes/CustomerRoute.js";
 import VzatRecurring from "./routes/VzatRecurring.js";
 import Subscription from "./routes/SubscriptionRoute.js";
 import { getAFSPaymentResult } from "./Controllers/PostVzatRecurringData.js";
-import { connectDB, disconnectDB } from "./config/db.js";
+import { connectDB, disconnectDB, isDBConnected } from "./config/db.js";
 import Vzat_Recurring_Data from "./model/VzatRecurringDataModel.js";
 import { initializeCronJobs } from "./config/cronJobs.js";
 import path from "path";
@@ -57,9 +57,7 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
   console.log('📅 Payment schedule API called for checkoutId:', req.params.checkoutId);
   
   try {
-    await connectDB();
-    
-    // Find payment data by checkout ID
+    // Find payment data by checkout ID (using persistent connection)
     const paymentData = await Vzat_Recurring_Data.findOne({ 
       afs_checkout_id: req.params.checkoutId 
     });
@@ -83,8 +81,6 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       error: 'Failed to fetch payment schedule',
       message: error.message
     });
-  } finally {
-    await disconnectDB();
   }
 });
 
@@ -129,9 +125,8 @@ app.get('/payment-result', async (req, res) => {
   let quotepaymentId = req.query.quotepaymentId || '';
   
   if (!quotepaymentId && id) {
-    // Try to find quotepaymentId from the database using the checkout ID
+    // Try to find quotepaymentId from the database using the checkout ID (using persistent connection)
     try {
-      await connectDB();
       const paymentRecord = await Vzat_Recurring_Data.findOne({ 
         afs_checkout_id: id
       });
@@ -141,7 +136,6 @@ app.get('/payment-result', async (req, res) => {
       } else {
         console.log('💰 No payment record found for checkout ID:', id);
       }
-      await disconnectDB();
     } catch (err) {
       console.log('Error finding quotepaymentId:', err);
     }
@@ -234,15 +228,31 @@ app.get('*', (req, res) => {
   });
 });
 
-// Start the server
-app.listen(3000, () => {
-  console.log("server is running on port 3000");
-  
-  // Initialize cron jobs for subscription management
+// Start the server and establish database connection
+const startServer = async () => {
   try {
-    initializeCronJobs();
-    console.log("Subscription cron jobs initialized");
+    // Establish persistent database connection
+    await connectDB();
+    console.log("Database connection established");
+    
+    // Start the server
+    app.listen(3000, () => {
+      console.log("Server is running on port 3000");
+      
+      // Initialize cron jobs for subscription management
+      try {
+        initializeCronJobs();
+        console.log("Subscription cron jobs initialized");
+      } catch (error) {
+        console.error("Failed to initialize cron jobs:", error);
+      }
+    });
+    
   } catch (error) {
-    console.error("Failed to initialize cron jobs:", error);
+    console.error("Failed to start server:", error);
+    process.exit(1);
   }
-});
+};
+
+// Start the application
+startServer();
