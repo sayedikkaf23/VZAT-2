@@ -172,6 +172,54 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     const result = await baseData.save();
     console.log(`Record saved successfully with ID: ${result._id}`);
 
+    // Generate payment schedule array for installments
+    let paymentSchedule = [];
+    if (finalInstallmentType ***REMOVED***= "Installments" && InstallmentLeft > 0) {
+      console.log(`📅 Generating payment schedule for ${InstallmentLeft} installments`);
+      
+      // Helper function to calculate payment day based on business rule
+      const getPaymentDay = (date) => {
+        const day = date.getDate();
+        return day <= 15 ? 10 : 25; // 1st-15th: 10th, 16th-31st: 25th
+      };
+      
+      for (let i = 0; i < InstallmentLeft; i++) {
+        let dueDate;
+        
+        if (i ***REMOVED***= 0) {
+          // First payment: use the first payment due date (CreatedDate + 7 days)
+          dueDate = firstPaymentDueDate;
+        } else {
+          // Subsequent payments: 10th or 25th of each month based on original creation date
+          const paymentDay = getPaymentDay(createdDateObj);
+          const targetMonth = createdDateObj.getMonth() + i + 1; // +1 because first payment is immediate
+          const targetYear = createdDateObj.getFullYear() + Math.floor(targetMonth / 12);
+          const adjustedMonth = targetMonth % 12;
+          
+          dueDate = new Date(targetYear, adjustedMonth, paymentDay);
+        }
+        
+        // Format date as YYYY-MM-DD
+        const formattedDueDate = dueDate.toISOString().slice(0, 10);
+        
+        paymentSchedule.push({
+          installment_number: i + 1,
+          due_date: formattedDueDate,
+          amount: installmentAmount,
+          status: i ***REMOVED***= 0 ? 'due' : 'pending'
+        });
+      }
+      
+      console.log(`📋 Generated payment schedule:`, paymentSchedule);
+      
+      // Update the record with payment schedule
+      await Vzat_Recurring_Data.findByIdAndUpdate(
+        result._id,
+        { payment_schedule: paymentSchedule },
+        { new: true }
+      );
+    }
+
     // Insert product details
     for (const product of Product_details) {
       if (
@@ -309,6 +357,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       afs_checkout_id: afsResponse && afsResponse.data && afsResponse.data.id ? afsResponse.data.id : null,
       shopper_result_url: finalShopperResultUrl,
       data_brands: brands,
+      payment_schedule: paymentSchedule, // Add the structured payment schedule
       subscription_info: isSubscription ? {
         total_installments: InstallmentLeft,
         remaining_installments: InstallmentLeft - 1, // First payment is immediate
