@@ -1,4 +1,3 @@
-import { isDBConnected } from "../config/db.js";
 import SalesForce from "../model/SalesForceModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 import _ from 'lodash';
@@ -25,11 +24,7 @@ const GetSalesForce = async (req, res) => {
       console.log(token);
       
       try {
-        // Check if database is connected (using persistent connection)
-        if (!isDBConnected()) {
-          throw new Error("Database not connected");
-        }
-        
+        // Use persistent connection - mongoose will handle connection state automatically
         const salesAgent = await SalesForce.findOne({token: token});
         console.log(salesAgent)
         
