@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -29,7 +29,8 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -85,16 +86,28 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
     console.log('PaymentWidgetComponent view initialized');
     console.log('DOM ready, checking payment details...');
     
-    // Now that the view is initialized, we can safely initialize the payment gateway
-    if (this.paymentDetails) {
-      if (this.isAfsPayment) {
-        console.log('Initializing AFS payment gateway after view init...');
-        this.initializeAfsPaymentGateway();
-      } else {
-        console.log('Falling back to manual payment gateway');
-        this.initializeManualPaymentGateway();
+    // Force change detection to ensure DOM is rendered
+    this.cdr.detectChanges();
+    
+    // Wait a bit more for DOM to be fully rendered
+    setTimeout(() => {
+      console.log('After timeout, checking DOM again...');
+      const allForms = document.querySelectorAll('form');
+      const paymentContainers = document.querySelectorAll('.afs-payment-container, .payment-gateway-section');
+      console.log('Forms in DOM after timeout:', allForms);
+      console.log('Payment containers after timeout:', paymentContainers);
+      
+      // Now that the view is initialized and DOM is rendered, initialize the payment gateway
+      if (this.paymentDetails) {
+        if (this.isAfsPayment) {
+          console.log('Initializing AFS payment gateway after view init...');
+          this.initializeAfsPaymentGateway();
+        } else {
+          console.log('Falling back to manual payment gateway');
+          this.initializeManualPaymentGateway();
+        }
       }
-    }
+    }, 1000); // Wait 1 second for DOM to be fully rendered
   }
 
   private initializeAfsPaymentGateway(): void {
@@ -119,10 +132,10 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
         clearTimeout(loadingTimeout);
         console.log('AFS Payment widget script loaded successfully');
         
-        // Wait a moment for the script to be fully executed
+        // Wait a moment for the script to be fully executed and DOM to be ready
         setTimeout(() => {
           this.setupAfsPaymentWidget();
-        }, 1500);
+        }, 2000);
       };
       
       this.scriptElement.onerror = (error: any) => {
@@ -145,8 +158,9 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
     console.log('Checkout ID:', this.paymentDetails?.checkoutId);
     console.log('Is AFS payment:', this.isAfsPayment);
     
-    // Wait for the AFS script to be fully loaded and available
+    // Wait for the AFS script to be fully loaded and DOM to be available
     setTimeout(() => {
+      console.log('🔍 Checking DOM after 500ms delay...');
       const widgetContainer = document.querySelector('.paymentWidgets');
       console.log('Widget container found:', !!widgetContainer);
       console.log('Container element:', widgetContainer);
@@ -212,7 +226,7 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
         
         this.handleAfsWidgetFailure();
       }
-    }, 100);
+    }, 500); // Increased timeout to 500ms
   }
   
   private handleAfsWidgetFailure(): void {
