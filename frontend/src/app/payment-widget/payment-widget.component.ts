@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -19,7 +19,7 @@ interface PaymentDetails {
   templateUrl: './payment-widget.component.html',
   styleUrls: ['./payment-widget.component.scss']
 })
-export class PaymentWidgetComponent implements OnInit, OnDestroy {
+export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() paymentLink: string = '';
   
   paymentDetails: PaymentDetails | null = null;
@@ -61,12 +61,7 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
         console.log('CheckoutId value:', this.paymentDetails.checkoutId);
         console.log('PaymentLink value:', this.paymentDetails.paymentLink);
         
-        if (this.isAfsPayment) {
-          this.initializeAfsPaymentGateway();
-        } else {
-          console.log('Falling back to manual payment gateway');
-          this.initializeManualPaymentGateway();
-        }
+        // Don't initialize payment gateway here - wait for ngAfterViewInit
       } else {
         console.error('No payment details provided in query parameters');
         this.router.navigate(['/paymentSchedule']);
@@ -79,7 +74,23 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
         ...this.paymentDetails!,
         paymentLink: this.paymentLink
       };
-      this.initializeAfsPaymentGateway();
+      // Don't initialize here - wait for ngAfterViewInit
+    }
+  }
+
+  ngAfterViewInit(): void {
+    console.log('PaymentWidgetComponent view initialized');
+    console.log('DOM ready, checking payment details...');
+    
+    // Now that the view is initialized, we can safely initialize the payment gateway
+    if (this.paymentDetails) {
+      if (this.isAfsPayment) {
+        console.log('Initializing AFS payment gateway after view init...');
+        this.initializeAfsPaymentGateway();
+      } else {
+        console.log('Falling back to manual payment gateway');
+        this.initializeManualPaymentGateway();
+      }
     }
   }
 
@@ -108,7 +119,7 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
         // Wait a moment for the script to be fully executed
         setTimeout(() => {
           this.setupAfsPaymentWidget();
-        }, 1000);
+        }, 1500);
       };
       
       this.scriptElement.onerror = (error: any) => {
@@ -198,7 +209,7 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
         
         this.handleAfsWidgetFailure();
       }
-    }, 500);
+    }, 100);
   }
   
   private handleAfsWidgetFailure(): void {
