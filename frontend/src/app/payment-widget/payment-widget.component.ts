@@ -108,7 +108,7 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
         // Wait a moment for the script to be fully executed
         setTimeout(() => {
           this.setupAfsPaymentWidget();
-        }, 500);
+        }, 1000);
       };
       
       this.scriptElement.onerror = (error: any) => {
@@ -148,9 +148,6 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
           'data-brands': widgetContainer.getAttribute('data-brands')
         });
         
-        // Stop loading immediately if container is ready
-        this.isLoading = false;
-        
         // Check if the AFS library is available and trigger widget creation
         if ((window as any).wpwlOptions || (window as any).wpwl) {
           console.log('AFS library detected, widget should auto-initialize');
@@ -158,26 +155,28 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
           console.log('AFS library loading...');
         }
         
-        // Check if form fields have been created after a delay
+        // Wait a bit longer before checking for form fields, and only stop loading after forms appear
         setTimeout(() => {
           const formFields = widgetContainer.querySelectorAll('input, select, iframe');
-          if (formFields.length ***REMOVED***= 0) {
-            console.warn('AFS widget form fields not found after 3 seconds, checking if widget is still loading...');
+          if (formFields.length > 0) {
+            console.log('AFS widget form fields detected:', formFields.length);
+            this.isLoading = false; // Stop loading when fields appear
+          } else {
+            console.warn('AFS widget form fields not found after 2 seconds, checking if widget is still loading...');
             
             // Give it more time, sometimes AFS widgets load slowly
             setTimeout(() => {
               const laterFields = widgetContainer.querySelectorAll('input, select, iframe');
               if (laterFields.length ***REMOVED***= 0) {
-                console.error('AFS widget failed to initialize after 6 seconds');
+                console.error('AFS widget failed to initialize after 5 seconds');
                 this.handleAfsWidgetFailure();
               } else {
                 console.log('AFS widget initialized successfully (late detection):', laterFields.length, 'form elements');
+                this.isLoading = false; // Stop loading when fields appear
               }
             }, 3000);
-          } else {
-            console.log('AFS widget form fields detected:', formFields.length);
           }
-        }, 3000);
+        }, 2000);
       } else {
         console.error('AFS widget container not found or missing checkout ID');
         console.error('Widget container found:', !!widgetContainer);
@@ -199,7 +198,7 @@ export class PaymentWidgetComponent implements OnInit, OnDestroy {
         
         this.handleAfsWidgetFailure();
       }
-    }, 1000);
+    }, 500);
   }
   
   private handleAfsWidgetFailure(): void {
