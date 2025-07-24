@@ -7,7 +7,7 @@ dotenv.config();
 const EMAIL_CONFIG = {
   sender: {
     email: process.env.EMAIL_SENDER || 'workerappzpayments@gmail.com',
-    password: process.env.EMAIL_PASSWORD || 'YOUR_GMAIL_APP_PASSWORD_HERE', // Use app password
+    password: process.env.EMAIL_PASSWORD || 'voib cvgx tuko hcxs', // Use app password
     name: 'VZAT Payment System'
   },
   recipients: {
