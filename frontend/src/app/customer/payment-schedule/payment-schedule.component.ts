@@ -144,6 +144,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   // Load payment schedule by checkout ID (from URL like /payment/{checkoutId})
   private loadPaymentScheduleByCheckoutId(checkoutId: string): void {
     this.isLoading = true;
+    this.errorMessage = ''; // Clear any previous error
     this.paymentScheduleService.getPaymentScheduleByCheckoutId(checkoutId).subscribe({
       next: (data: any) => {
         console.log('✅ Payment schedule data received:', data);
@@ -154,8 +155,11 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       error: (error) => {
         console.error('❌ Error loading payment schedule:', error);
         this.errorMessage = 'Failed to load payment schedule. Loading demo data...';
-        this.loadDemoData();
-        // isLoading is set to false in loadDemoData
+        this.isLoading = false; // Set loading to false immediately
+        this.cdr.detectChanges(); // Force change detection
+        setTimeout(() => {
+          this.loadDemoData();
+        }, 500); // Small delay to show error message
       }
     });
   }
@@ -163,6 +167,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   // Load payment schedule by quote payment ID
   private loadPaymentScheduleByQuoteId(quotepaymentId: string): void {
     this.isLoading = true;
+    this.errorMessage = ''; // Clear any previous error
     this.paymentScheduleService.getVzatRecurringData(quotepaymentId).subscribe({
       next: (data: VzatRecurringData) => {
         this.populateComponentData(data);
@@ -171,8 +176,11 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       error: (error) => {
         console.error('Error loading payment data:', error);
         this.errorMessage = 'Failed to load payment data. Loading demo data...';
-        this.loadDemoData();
-        // isLoading is set to false in loadDemoData
+        this.isLoading = false; // Set loading to false immediately
+        this.cdr.detectChanges(); // Force change detection
+        setTimeout(() => {
+          this.loadDemoData();
+        }, 500); // Small delay to show error message
       }
     });
   }
@@ -492,28 +500,39 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
    getSalesForceDetails()  {
     this.salesForceService.getSalesForceDetails().subscribe({
       next: (res: any) => {
-        console.log(res);
-        this.salesAgent.name = res.name;
-        this.salesAgent.position = res.position;
-        this.salesAgent.mobNo1 = res.mobNo1;
-        this.salesAgent.mobNo2 = res.mobNo2;
-        this.salesAgent.token = res.token;
-        console.log(this.salesAgent);
+        console.log('✅ SalesForce response:', res);
+        if (res && res.name) {
+          this.salesAgent.name = res.name;
+          this.salesAgent.position = res.position;
+          this.salesAgent.mobNo1 = res.mobNo1;
+          this.salesAgent.mobNo2 = res.mobNo2;
+          this.salesAgent.token = res.token;
+          console.log('✅ Updated sales agent:', this.salesAgent);
+        } else {
+          console.warn('⚠️ Invalid SalesForce response, using fallback data');
+          this.setFallbackSalesAgent();
+        }
       },
       error: (err) => {
-        this.salesAgent = {
-          name: "Divya Naresh", 
-          position: "Company Formation Specialist", 
-          faxNumber: "+971 4 457 8271",
-          phoneNumber: "+971 52 238 2839",
-          email: "divya.naresh@virtuzone.com",
-          mobNo1: "", 
-          mobNo2: "", 
-          token: 0
-        };
+        console.error('❌ Error fetching SalesForce details:', err);
+        this.setFallbackSalesAgent();
       },
       complete: () => {},
     });
+  }
+
+  private setFallbackSalesAgent() {
+    this.salesAgent = {
+      name: "Divya Naresh", 
+      position: "Company Formation Specialist", 
+      faxNumber: "+971 4 457 8271",
+      phoneNumber: "+971 52 238 2839",
+      email: "divya.naresh@virtuzone.com",
+      mobNo1: "", 
+      mobNo2: "", 
+      token: 0
+    };
+    console.log('🔄 Using fallback sales agent data:', this.salesAgent);
   }
 
 }
