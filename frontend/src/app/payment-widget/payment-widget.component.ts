@@ -48,8 +48,11 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
           invoiceNumber: params['invoiceNumber'] || '',
           quotepaymentId: params['quotepaymentId'] || '',
           checkoutId: params['checkoutId'],
-          paymentLink: params['paymentLink']
+          paymentLink: params['paymentLink'] ? decodeURIComponent(params['paymentLink']) : undefined
         };
+        
+        console.log('Raw paymentLink from URL:', params['paymentLink']);
+        console.log('Decoded paymentLink:', this.paymentDetails.paymentLink);
         
         console.log('Payment details parsed:', this.paymentDetails);
         
