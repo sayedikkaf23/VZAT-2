@@ -143,6 +143,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
 
   // Load payment schedule by checkout ID (from URL like /payment/{checkoutId})
   private loadPaymentScheduleByCheckoutId(checkoutId: string): void {
+    console.log('🔄 Loading payment schedule for checkoutId:', checkoutId);
     this.isLoading = true;
     this.errorMessage = ''; // Clear any previous error
     this.paymentScheduleService.getPaymentScheduleByCheckoutId(checkoutId).subscribe({
@@ -154,7 +155,13 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       },
       error: (error) => {
         console.error('❌ Error loading payment schedule:', error);
-        this.errorMessage = 'Failed to load payment schedule. Loading demo data...';
+        console.error('❌ Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          message: error.message
+        });
+        this.errorMessage = `Failed to load payment schedule: ${error.status} ${error.statusText}. Loading demo data...`;
         this.isLoading = false; // Set loading to false immediately
         this.cdr.detectChanges(); // Force change detection
         setTimeout(() => {
