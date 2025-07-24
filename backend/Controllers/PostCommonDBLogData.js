@@ -31,13 +31,13 @@ const Post_Common_DB_Log_Data = async (url,reqData,resData) => {
             const data = {
                 message: "Log is stored in DB"
             }
-            //await disconnectDB();
+            ;
             
             return data;
         }            
         
       } catch (err) {
-        //await disconnectDB();
+        ;
         return err;
       }
 
