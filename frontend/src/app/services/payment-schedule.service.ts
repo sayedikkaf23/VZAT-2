@@ -89,7 +89,7 @@ export interface VzatRecurringData {
   providedIn: 'root'
 })
 export class PaymentScheduleService {
-  private apiUrl = environment.production ? 'https://your-production-url.com/api' : 'http://localhost:3000/api';
+  private apiUrl = environment.apiUrl; // Use environment configuration
   
   private paymentDataSubject = new BehaviorSubject<VzatRecurringData | null>(null);
   public paymentData$ = this.paymentDataSubject.asObservable();
@@ -124,9 +124,12 @@ export class PaymentScheduleService {
    * Get payment schedule details by checkoutId
    */
   getPaymentScheduleByCheckoutId(checkoutId: string): Observable<VzatRecurringData> {
-    return this.http.get<VzatRecurringData>(
-      `${this.apiUrl}/payment_schedule/${checkoutId}`
-    );
+    const url = `${this.apiUrl}/payment_schedule/${checkoutId}`;
+    console.log('🌐 Calling payment schedule API:', url);
+    console.log('🌐 API base URL:', this.apiUrl);
+    console.log('🌐 Environment production:', environment.production);
+    
+    return this.http.get<VzatRecurringData>(url);
   }
 
   /**
