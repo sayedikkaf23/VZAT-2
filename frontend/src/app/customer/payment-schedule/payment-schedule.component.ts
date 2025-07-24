@@ -285,12 +285,17 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       console.log('💾 Updated sales agent data:', this.salesAgent);
       console.log('💾 Quote payment ID:', this.quotepaymentId);
       
-      // If paymentSchedule exists in data, use it, otherwise generate from subscription info
-      if (data.paymentSchedule && Array.isArray(data.paymentSchedule)) {
+      // If payment_schedule exists in data, use it directly (new structured approach)
+      if (data.payment_schedule && Array.isArray(data.payment_schedule)) {
+        console.log('📅 Using structured payment_schedule from API:', data.payment_schedule);
+        this.paymentSchedule = this.convertStructuredPaymentSchedule(data.payment_schedule);
+      } 
+      // If paymentSchedule exists in data, use it (legacy format)
+      else if (data.paymentSchedule && Array.isArray(data.paymentSchedule)) {
         this.paymentSchedule = data.paymentSchedule;
         console.log('📅 Using existing payment schedule:', this.paymentSchedule);
       } else {
-        // Generate payment schedule from subscription info
+        // Generate payment schedule from subscription info (fallback)
         console.log('🔄 Generating payment schedule from subscription data');
         this.generatePaymentScheduleFromData(data);
       }
@@ -349,9 +354,27 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       
       this.paymentSchedule = [];
       
+      // Calculate the payment day based on business rule
+      const getPaymentDay = (date: Date): number => {
+        const day = date.getDate();
+        return day <= 15 ? 10 : 25; // 1st-15th: 10th, 16th-31st: 25th
+      };
+      
       for (let i = 0; i < totalInstallments; i++) {
-        const dueDate = new Date(nextChargeDate);
-        dueDate.setMonth(dueDate.getMonth() + i);
+        let dueDate: Date;
+        
+        if (i === 0) {
+          // First payment: use the next charge date as provided
+          dueDate = new Date(nextChargeDate);
+        } else {
+          // Subsequent payments: 10th or 25th of each month
+          const paymentDay = getPaymentDay(nextChargeDate);
+          const targetMonth = nextChargeDate.getMonth() + i;
+          const targetYear = nextChargeDate.getFullYear() + Math.floor(targetMonth / 12);
+          const adjustedMonth = targetMonth % 12;
+          
+          dueDate = new Date(targetYear, adjustedMonth, paymentDay);
+        }
         
         this.paymentSchedule.push({
           id: `payment-${i + 1}`,
@@ -368,6 +391,17 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       console.log('🔄 Attempting to generate from direct data properties');
       this.generateFromDirectData(data);
     }
+  }
+
+  // Helper method to convert structured payment_schedule from API to component format
+  private convertStructuredPaymentSchedule(paymentSchedule: any[]): PaymentScheduleItem[] {
+    return paymentSchedule.map((payment, index) => ({
+      id: `payment-${payment.installment_number}`,
+      dueDate: new Date(payment.due_date),
+      amount: payment.amount,
+      status: payment.status as 'completed' | 'due' | 'pending',
+      isNextPayment: payment.status === 'due'
+    }));
   }
 
   // Helper method to convert various installment formats to our payment schedule format
@@ -405,9 +439,27 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       
       this.paymentSchedule = [];
       
+      // Calculate the payment day based on business rule
+      const getPaymentDay = (date: Date): number => {
+        const day = date.getDate();
+        return day <= 15 ? 10 : 25; // 1st-15th: 10th, 16th-31st: 25th
+      };
+      
       for (let i = 0; i < installmentCount; i++) {
-        const dueDate = new Date(startDate);
-        dueDate.setMonth(dueDate.getMonth() + i);
+        let dueDate: Date;
+        
+        if (i === 0) {
+          // First payment: use the start date as provided
+          dueDate = new Date(startDate);
+        } else {
+          // Subsequent payments: 10th or 25th of each month
+          const paymentDay = getPaymentDay(startDate);
+          const targetMonth = startDate.getMonth() + i;
+          const targetYear = startDate.getFullYear() + Math.floor(targetMonth / 12);
+          const adjustedMonth = targetMonth % 12;
+          
+          dueDate = new Date(targetYear, adjustedMonth, paymentDay);
+        }
         
         this.paymentSchedule.push({
           id: `payment-${i + 1}`,
