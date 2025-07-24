@@ -55,6 +55,7 @@
                 <!-- Real AFS Payment Widget (when AFS is available) -->
                 <div *ngIf="isAfsPayment && !isLoading" class="afs-payment-container">
                   <form class="paymentWidgets" 
+                        action=""
                         [attr.data-brands]="'VISA MASTER AMEX'"
                         [attr.data-checkout-id]="paymentDetails.checkoutId">
                     <!-- AFS will automatically populate this form -->
