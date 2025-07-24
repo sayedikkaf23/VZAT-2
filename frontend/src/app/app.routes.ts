@@ -18,12 +18,15 @@ import { Profile } from './admin/profile/profile';
 import { ManualInvoicePayment } from './admin/manual-invoice-payment/manual-invoice-payment';
 import { InvoiceGenerator } from './admin/invoice-generator/invoice-generator';
 import { PaymentMethods } from './admin/payment-methods/payment-methods';
+import { PaymentWidgetComponent } from './payment-widget/payment-widget.component';
 
 export const routes: Routes = [
   { path: 'paymentSchedule', component: PaymentScheduleComponent },
+  { path: 'paymentSchedule/:quotepaymentId', component: PaymentScheduleComponent },
+  { path: 'payment-widget', component: PaymentWidgetComponent },
+  { path: 'payment/:checkoutId', component: PaymentScheduleComponent }, // Updated to use payment schedule
   { path: 'adminLogin', component: AdminLogin},
   { path: 'payment/result', component: PaymentResultComponent },
-  { path: 'payment/:checkoutId', component: PaymentComponent},
 
   // { path: 'dashboard', component: Dashboard , 
   //    canActivate: [AuthGuard]

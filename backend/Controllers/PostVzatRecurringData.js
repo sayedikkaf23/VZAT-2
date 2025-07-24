@@ -26,7 +26,15 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       TotalPrice,
       Total_After_VAT_Currency,
       InstallmentType,
-      Product_details
+      Product_details,
+      quote_payment_number,
+      Customer_name,
+      opp_owner,
+      opp_email,
+      opp_number,
+      opp_title,
+      opp_phone,
+      opp_mobile
     } = req.body;
 
     // Validate required fields
@@ -47,7 +55,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     console.log(`🔍 Database search result:`, existingRecord ? 'FOUND' : 'NOT FOUND');
     
     if (existingRecord) {
-      console.log(`❌ Duplicate quotepaymentId found! Record ID: ${existingRecord._id}`);
+      console.log(`Duplicate quotepaymentId found! Record ID: ${existingRecord._id}`);
       
       // Generate payment page URL for existing record
       let existingPaymentPageUrl = null;
@@ -80,7 +88,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       return res.status(409).json(data); // 409 Conflict status code
     }
     
-    console.log(`✅ No duplicate found, proceeding with new payment creation for quotepaymentId: ${quotepaymentId}`);
+    console.log(`No duplicate found, proceeding with new payment creation for quotepaymentId: ${quotepaymentId}`);
 
     // Validate CreatedDate format
     const regEx = /^\d{4}-\d{2}-\d{2}$/;
@@ -150,11 +158,19 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       InstallmentType: finalInstallmentType,
       TotalPrice,
       Total_After_VAT_Currency,
-      Product_details: []
+      Product_details: [],
+      quote_payment_number,
+      Customer_name,
+      opp_owner,
+      opp_email,
+      opp_number,
+      opp_title,
+      opp_phone,
+      opp_mobile
     });
 
     const result = await baseData.save();
-    console.log(`✅ Record saved successfully with ID: ${result._id}`);
+    console.log(`Record saved successfully with ID: ${result._id}`);
 
     // Insert product details
     for (const product of Product_details) {
@@ -200,7 +216,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       
       const afsData = new URLSearchParams();
       afsData.append('entityId', entityId);
-      afsData.append('amount', installmentAmount.toString());
+      afsData.append('amount', installmentAmount.toFixed(2)); // Ensure 2 decimal places
       afsData.append('currency', 'AED');
       afsData.append('merchantTransactionId', quotepaymentId);
       afsData.append('shopperResultUrl', shopperResultUrl);
@@ -254,15 +270,15 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
             { new: true }
           );
           
-          console.log(`✅ ${isSubscription ? 'Subscription' : 'Payment'} data stored successfully`);
+          console.log(`${isSubscription ? 'Subscription' : 'Payment'} data stored successfully`);
         } catch (updateErr) {
-          console.error("❌ Failed to store checkout/subscription data:", updateErr);
+          console.error(" Failed to store checkout/subscription data:", updateErr);
         }
       } else {
         afsError = afsResponse.data;
       }
     } catch (err) {
-      console.error("❌ AFS API Error:", err.response ? err.response.data : err.message);
+      console.error(" AFS API Error:", err.response ? err.response.data : err.message);
       afsError = err.response ? err.response.data : err.message;
     }
 
@@ -350,7 +366,7 @@ export const getAFSPaymentResult = async (req, res) => {
       });
       
     } catch (getError) {
-      console.log(`❌ Method 1 failed:`, getError.response?.status, getError.response?.data);
+      console.log(` Method 1 failed:`, getError.response?.status, getError.response?.data);
       
       try {
         console.log(`🔄 Method 2: GET with entityId parameter`);
@@ -361,7 +377,7 @@ export const getAFSPaymentResult = async (req, res) => {
           }
         });
       } catch (getWithEntityError) {
-        console.log(`❌ Method 2 failed:`, getWithEntityError.response?.status, getWithEntityError.response?.data);
+        console.log(` Method 2 failed:`, getWithEntityError.response?.status, getWithEntityError.response?.data);
         
         try {
           const formData = new URLSearchParams();
@@ -376,7 +392,7 @@ export const getAFSPaymentResult = async (req, res) => {
           });
        
         } catch (postError) {
-          console.log(`❌ Method 3 failed:`, postError.response?.status, postError.response?.data);
+          console.log(` Method 3 failed:`, postError.response?.status, postError.response?.data);
           
           // Try the result endpoint without /payment suffix as last resort
           const alternativeUrl = afsUrl.replace('/payment', '');
@@ -405,7 +421,7 @@ export const getAFSPaymentResult = async (req, res) => {
     // AFS sometimes returns result.code 200.300.404 for parameter warnings, but payment data is still valid
     if (resultData.id && resultData.amount && resultData.currency) {
       
-      console.log(`✅ Valid payment data found: ID=${resultData.id}, Amount=${resultData.amount}, Currency=${resultData.currency}`);
+      console.log(`Valid payment data found: ID=${resultData.id}, Amount=${resultData.amount}, Currency=${resultData.currency}`);
       
       // Check if the error is ONLY about shopperResultUrl (which is just a warning)
       if (resultData.result && 
@@ -495,7 +511,7 @@ export const getAFSPaymentResult = async (req, res) => {
   } catch (error) {
     // Log full error response for diagnostics
     if (error.response) {
-      console.error("❌ AFS Payment Result Error:", JSON.stringify(error.response.data, null, 2));
+      console.error(" AFS Payment Result Error:", JSON.stringify(error.response.data, null, 2));
       
       // Handle specific AFS error: "No payment session found"
       if (error.response.data && 
@@ -525,7 +541,7 @@ export const getAFSPaymentResult = async (req, res) => {
         config: error.config
       });
     } else {
-      console.error("❌ AFS Payment Result Error:", error.message);
+      console.error(" AFS Payment Result Error:", error.message);
       res.status(500).json({
         message: 'Failed to get payment result',
         error: error.message

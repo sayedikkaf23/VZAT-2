@@ -1,4 +1,12 @@
+// Localhost environment configuration for development
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api'
+  // Use localhost URLs for development
+  // apiUrl: 'http://localhost:3000/api',
+  // Sandbox API URL for development
+  // This should be replaced with the actual API URL in production
+  apiUrl: 'https://vzatnew.yeepeey.com/api',
+  // Use localhost URL for development frontend
+  frontendUrl: 'https://vzatnew.yeepeey.com' // Development URL
 };
+

@@ -1,1 +1,141 @@
-<form action="" class="paymentWidgets" data-brands="VISA MASTER AMEX"></form>
+<div class="payment-widget-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container text-center p-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-3">Initializing secure payment gateway...</p>
+  </div>
+
+  <!-- Payment Details -->
+  <div *ngIf="!isLoading && paymentDetails" class="payment-details-container">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+              <h4 class="mb-0">Secure Payment</h4>
+            </div>
+            <div class="card-body p-4">
+              <!-- Payment Summary -->
+              <div class="payment-summary mb-4">
+                <h5>Payment Details</h5>
+                <div class="row">
+                  <div class="col-6">
+                    <strong>Invoice Number:</strong>
+                  </div>
+                  <div class="col-6 text-end">
+                    {{ paymentDetails.invoiceNumber }}
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-6">
+                    <strong>Due Date:</strong>
+                  </div>
+                  <div class="col-6 text-end">
+                    {{ paymentDetails.dueDate | date:'mediumDate' }}
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-6">
+                    <strong>Amount:</strong>
+                  </div>
+                  <div class="col-6 text-end">
+                    <h5 class="text-primary mb-0">AED {{ paymentDetails.amount | number:'1.2-2' }}</h5>
+                  </div>
+                </div>
+              </div>
+
+              <hr>
+
+              <!-- AFS Payment Gateway Integration -->
+              <div class="payment-gateway-section">
+                <h6 class="mb-3">Choose Payment Method</h6>
+                
+                <!-- Real AFS Payment Widget (when AFS is available) -->
+                <div *ngIf="isAfsPayment && !isLoading" class="afs-payment-container">
+                  <form class="paymentWidgets" 
+                        [attr.data-brands]="'VISA MASTER AMEX'"
+                        [attr.data-checkout-id]="paymentDetails.checkoutId">
+                    <!-- AFS will automatically populate this form -->
+                  </form>
+                  
+                  <div class="text-center mt-3">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Complete your payment using the secure form above
+                    </small>
+                  </div>
+                </div>
+                
+                <!-- Manual Payment Form (fallback or when AFS is not available) -->
+                <div *ngIf="!isAfsPayment && !isLoading" class="manual-payment-container">
+                  <form class="manual-payment-form">
+                    <div class="mb-3">
+                      <label for="cardNumber" class="form-label">Card Number</label>
+                      <input type="text" class="form-control" id="cardNumber" placeholder="**** **** **** ****">
+                    </div>
+                    
+                    <div class="row">
+                      <div class="col-6">
+                        <label for="expiryDate" class="form-label">Expiry Date</label>
+                        <input type="text" class="form-control" id="expiryDate" placeholder="MM/YY">
+                      </div>
+                      <div class="col-6">
+                        <label for="cvv" class="form-label">CVV</label>
+                        <input type="text" class="form-control" id="cvv" placeholder="***">
+                      </div>
+                    </div>
+                    
+                    <div class="mb-3 mt-3">
+                      <label for="cardHolder" class="form-label">Card Holder Name</label>
+                      <input type="text" class="form-control" id="cardHolder" placeholder="Enter cardholder name">
+                    </div>
+                  </form>
+
+                  <!-- Manual Payment Action Buttons -->
+                  <div class="payment-actions mt-4">
+                    <button (click)="onPaymentSuccess()" class="btn btn-success w-100 mb-2">
+                      <i class="fas fa-lock me-2"></i>
+                      Pay AED {{ paymentDetails.amount | number:'1.2-2' }}
+                    </button>
+                    
+                    <div class="row">
+                      <div class="col-6">
+                        <button (click)="onPaymentCancel()" class="btn btn-outline-secondary w-100">
+                          Cancel
+                        </button>
+                      </div>
+                      <div class="col-6">
+                        <button (click)="onPaymentFailure()" class="btn btn-outline-danger w-100">
+                          Test Failure
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Security Info -->
+              <div class="security-info mt-4 text-center">
+                <small class="text-muted">
+                  <i class="fas fa-shield-alt me-1"></i>
+                  Your payment is secured with 256-bit SSL encryption
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!isLoading && !paymentDetails" class="error-container text-center p-5">
+    <h4>Payment Error</h4>
+    <p>Unable to load payment details. Please try again.</p>
+    <button (click)="onPaymentCancel()" class="btn btn-primary">
+      Return to Payment Schedule
+    </button>
+  </div>
+</div>

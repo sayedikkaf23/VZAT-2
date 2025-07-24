@@ -71,6 +71,39 @@ const vzatRecurringDataSchema = new Schema({
         type: String,
         required: false
     },
+    // Customer and Opportunity owner information
+    quote_payment_number: {
+        type: String,
+        required: false
+    },
+    Customer_name: {
+        type: String,
+        required: false
+    },
+    opp_owner: {
+        type: String,
+        required: false
+    },
+    opp_email: {
+        type: String,
+        required: false
+    },
+    opp_number: {
+        type: String,
+        required: false
+    },
+    opp_title: {
+        type: String,
+        required: false
+    },
+    opp_phone: {
+        type: String,
+        required: false
+    },
+    opp_mobile: {
+        type: String,
+        required: false
+    },
     // Subscription-related fields
     is_subscription: {
         type: Boolean,

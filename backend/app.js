@@ -28,7 +28,7 @@ app.use(express.json());
 // Enable form data parsing for AFS payment widget
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Global CORS middleware
+// Global CORS middleware
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = ['http://localhost:4200', 'http://localhost:3000','https://vzatnew.yeepeey.com'];
@@ -44,7 +44,7 @@ app.use(cors({
   credentials: true,
 }));
 
-// ✅ Define your API routes
+// Define your API routes
 
 app.use('/api/salesForce', SalesForce);
 app.use('/api/adminLogin', AdminLogin);
@@ -52,7 +52,43 @@ app.use('/api/customer', Customer);
 app.use('/api/vzat_recurring_create_payment_link', VzatRecurring);
 app.use('/api/subscription', Subscription);
 
-// ✅ Payment result API endpoint
+// Payment schedule API endpoint for Angular component
+app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
+  console.log('📅 Payment schedule API called for checkoutId:', req.params.checkoutId);
+  
+  try {
+    await connectDB();
+    
+    // Find payment data by checkout ID
+    const paymentData = await Vzat_Recurring_Data.findOne({ 
+      afs_checkout_id: req.params.checkoutId 
+    });
+    
+    if (!paymentData) {
+      console.log('❌ Payment data not found for checkoutId:', req.params.checkoutId);
+      return res.status(404).json({
+        error: 'Payment data not found',
+        checkoutId: req.params.checkoutId
+      });
+    }
+    
+    console.log('✅ Payment data found:', paymentData);
+    
+    // Return the data in the format expected by Angular component
+    res.json(paymentData);
+    
+  } catch (error) {
+    console.error('❌ Error fetching payment schedule:', error);
+    res.status(500).json({
+      error: 'Failed to fetch payment schedule',
+      message: error.message
+    });
+  } finally {
+    await disconnectDB();
+  }
+});
+
+// Payment result API endpoint
 app.get('/api/payment/result', (req, res) => {
   console.log('🔥 Payment result API called!');
   console.log('🔥 Query params:', req.query);
@@ -60,7 +96,7 @@ app.get('/api/payment/result', (req, res) => {
   getAFSPaymentResult(req, res);
 });
 
-// ✅ AFS Payment widget form submission endpoint
+// AFS Payment widget form submission endpoint
 app.post('/payment-result', (req, res) => {
   console.log('💳 AFS Payment widget form submitted!');
   console.log('💳 Body:', req.body);
@@ -81,7 +117,7 @@ app.post('/payment-result', (req, res) => {
   res.redirect(redirectUrl);
 });
 
-// ✅ Alternative payment result endpoint for direct access
+// Alternative payment result endpoint for direct access
 app.get('/payment-result', async (req, res) => {
   console.log('💰 Payment result GET endpoint called!');
   console.log('💰 Query params:', req.query);
@@ -120,7 +156,7 @@ app.get('/payment-result', async (req, res) => {
   res.redirect(redirectUrl);
 });
 
-// ✅ Test endpoint to generate new payment link
+// Test endpoint to generate new payment link
 app.post('/test-payment-link', (req, res) => {
   console.log('🧪 Test payment link generation requested');
   
@@ -152,7 +188,7 @@ app.post('/test-payment-link', (req, res) => {
   });
 });
 
-// ✅ Test endpoint for subscription
+// Test endpoint for subscription
 app.post('/test-subscription-link', (req, res) => {
   console.log('🧪 Test subscription link generation requested');
   
@@ -205,8 +241,8 @@ app.listen(3000, () => {
   // Initialize cron jobs for subscription management
   try {
     initializeCronJobs();
-    console.log("✅ Subscription cron jobs initialized");
+    console.log("Subscription cron jobs initialized");
   } catch (error) {
-    console.error("❌ Failed to initialize cron jobs:", error);
+    console.error("Failed to initialize cron jobs:", error);
   }
 });
