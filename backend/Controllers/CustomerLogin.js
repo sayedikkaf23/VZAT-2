@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import {connectDB,disconnectDB} from "../config/db.js";
+import { isDBConnected } from "../config/db.js";
 import Customer from "../model/CustomerLoginModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 
@@ -17,13 +17,21 @@ const Login = async (req,res) => {
         console.log(LogData);
         res.statusCode = 404;
         res.end("Error");
+        return;
       }
+      
       const { email, password } = req.body;
       console.log(email,password);
-      await connectDB();
+      
       try {
+        // Check if database is connected (using persistent connection)
+        if (!isDBConnected()) {
+          throw new Error("Database not connected");
+        }
+        
         const loggingUser = await Customer.findOne({ email: email });
         console.log(loggingUser);
+        
         if (!loggingUser) {
           const data = {
               message: "Couldn't find User", 
@@ -31,9 +39,9 @@ const Login = async (req,res) => {
           }
           const LogData = Post_Common_DB_Log_Data("/api/customer/login",req.body,data);
           console.log(LogData);
-          //await disconnectDB();
           return res.json(data);
         }
+        
         const isEqual = await bcrypt.compare(password, loggingUser.password);
         if (!isEqual) {
           const data = {
@@ -42,9 +50,9 @@ const Login = async (req,res) => {
           }
           const LogData = Post_Common_DB_Log_Data("/api/customer/login",req.body,data);
           console.log(LogData);
-          //await disconnectDB();
           return res.json(data);
         }
+        
         const token = jwt.sign(
           {
             email: loggingUser.email,
@@ -54,7 +62,6 @@ const Login = async (req,res) => {
             expiresIn: "24h",
           }
         );
-        //await disconnectDB();
 
         console.log(token)
 
@@ -74,16 +81,16 @@ const Login = async (req,res) => {
         const LogData = Post_Common_DB_Log_Data("/api/customer/login",req.body,data);
         console.log(LogData);
         res.json(data);
+        
       } catch (err) {
+        console.error("Error in CustomerLogin:", err);
         const data = {
-            message: err
+            message: err.message || err
         }
         const LogData = Post_Common_DB_Log_Data("/api/customer/login",req.body,data);
         console.log(LogData);
-        //await disconnectDB();
-        throw err;
+        res.status(500).json(data);
       }
-
   }
 
   export default Login;

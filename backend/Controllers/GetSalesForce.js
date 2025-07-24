@@ -1,4 +1,4 @@
-import {connectDB,disconnectDB} from "../config/db.js";
+import { isDBConnected } from "../config/db.js";
 import SalesForce from "../model/SalesForceModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 import _ from 'lodash';
@@ -18,25 +18,27 @@ const GetSalesForce = async (req, res) => {
         console.log(LogData);
         res.statusCode = 404;
         res.json(query);
+        return;
       }
-      else {
 
       console.log(req.query);
-
-    
       console.log(token);
-      await connectDB();
-    
+      
       try {
+        // Check if database is connected (using persistent connection)
+        if (!isDBConnected()) {
+          throw new Error("Database not connected");
+        }
+        
         const salesAgent = await SalesForce.findOne({token: token});
         console.log(salesAgent)
+        
         if (salesAgent) {
-          //await disconnectDB();
           const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.query, salesAgent);
           console.log(LogData);
-          return res.json(salesAgent); // Added return to prevent further execution
+          return res.json(salesAgent);
         }
-       // await disconnectDB();
+        
         const data = {
           name:"",
           position:"",
@@ -46,20 +48,17 @@ const GetSalesForce = async (req, res) => {
         }
         const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.query, data);
         console.log(LogData);
-        return res.json(data); // Added return
+        return res.json(data);
+        
       } catch (err) {
-       // await disconnectDB();
-       const data = {
-            message: err
+        console.error("Error in GetSalesForce:", err);
+        const data = {
+            message: err.message || err
         }
         const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.body,data);
         console.log(LogData);
-        return res.status(500).json(data); // Added return and proper status code
+        return res.status(500).json(data);
       }
-
-    }
-      
-      
 }
 
 export default GetSalesForce;
