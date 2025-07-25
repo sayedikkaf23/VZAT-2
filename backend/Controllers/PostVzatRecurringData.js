@@ -256,6 +256,12 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       // Use backend URL for shopperResultUrl since that's where the payment-result endpoint is
       const shopperResultUrl = `${backendUrl}/payment-result`;
     
+      console.log(`🔐 AFS Configuration Debug:`);
+      console.log(`   - Backend URL: ${backendUrl}`);
+      console.log(`   - Frontend URL: ${frontendUrl}`);
+      console.log(`   - Shopper Result URL: ${shopperResultUrl}`);
+      console.log(`   - AFS Domain: ${process.env.AFS_DOMAIN}`);
+      console.log(`   - Entity ID: ${entityId}`);
       
       // Debug: Check if environment variables are loaded
       if (!process.env.AFS_DOMAIN || !process.env.AFS_ENTITY_ID || !process.env.AFS_ACCESS_TOKEN) {
@@ -297,6 +303,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       };
       
       console.log(`🚀 Sending request to AFS: ${isSubscription ? 'SUBSCRIPTION' : 'ONE-TIME'}`);
+      console.log(`📋 AFS Request Data:`, Object.fromEntries(afsData.entries()));
+      console.log(`🔗 AFS URL:`, afsUrl);
+      
       afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
       
       if (afsResponse.data && afsResponse.data.id) {
