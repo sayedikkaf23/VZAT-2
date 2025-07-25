@@ -33,6 +33,14 @@ export class PaymentResultComponent implements OnInit {
     
     const backendUrl = `${environment.apiUrl}/payment/result`;
     
+    console.log('🔍 Payment Result Debug:');
+    console.log('   - Environment API URL:', environment.apiUrl);
+    console.log('   - Backend URL:', backendUrl);
+    console.log('   - Resource Path:', resourcePath);
+    console.log('   - Quote Payment ID:', quotepaymentId);
+    console.log('   - ID:', id);
+    console.log('   - Params:', params);
+    
     this.http.get(backendUrl, { params }).subscribe({
       next: (res: any) => {
         // Update component state

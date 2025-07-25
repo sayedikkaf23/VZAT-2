@@ -24,9 +24,9 @@ export const routes: Routes = [
   { path: 'paymentSchedule', component: PaymentScheduleComponent },
   { path: 'paymentSchedule/:quotepaymentId', component: PaymentScheduleComponent },
   { path: 'payment-widget', component: PaymentWidgetComponent },
+  { path: 'payment/result', component: PaymentResultComponent }, // Moved before parameterized route
   { path: 'payment/:checkoutId', component: PaymentScheduleComponent }, // Updated to use payment schedule
   { path: 'adminLogin', component: AdminLogin},
-  { path: 'payment/result', component: PaymentResultComponent },
 
   // { path: 'dashboard', component: Dashboard , 
   //    canActivate: [AuthGuard]
