@@ -1,12 +1,4 @@
 <div class="payment-widget-container">
-  <!-- Loading State -->
-  <div *ngIf="isLoading" class="loading-container text-center p-5">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-    <p class="mt-3">Initializing secure payment gateway...</p>
-  </div>
-
   <!-- Payment Details -->
   <div *ngIf="paymentDetails" class="payment-details-container">
     <div class="container">
@@ -55,12 +47,12 @@
                 <!-- Real AFS Payment Widget (when AFS is available) -->
                 <div *ngIf="isAfsPayment" class="afs-payment-container">
                   <!-- Loading indicator for AFS -->
-                  <div *ngIf="isLoading" class="text-center p-3">
+                  <!-- <div *ngIf="isLoading" class="text-center p-3">
                     <div class="spinner-border spinner-border-sm text-primary" role="status">
                       <span class="visually-hidden">Loading payment form...</span>
                     </div>
                     <p class="mt-2 mb-0">Loading secure payment form...</p>
-                  </div>
+                  </div> -->
                   
                   <!-- AFS Payment Form - Always present when isAfsPayment is true -->
                   <form class="paymentWidgets" 
