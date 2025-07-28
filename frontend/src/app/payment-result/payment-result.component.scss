@@ -65,3 +65,83 @@ h2 {
 p {
   margin: 8px 0;
 }
+
+/* Loading States */
+.loading-container {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-steps {
+  font-family: monospace;
+  color: #666;
+  line-height: 1.6;
+  margin-top: 15px;
+}
+
+/* Salesforce Status Indicators */
+.salesforce-status {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid;
+}
+
+.salesforce-status.success {
+  background: #d1edff;
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+
+.salesforce-status.warning {
+  background: #fff3cd;
+  border-color: #fd7e14;
+  color: #856404;
+}
+
+.salesforce-status.info {
+  background: #e2f3ff;
+  border-color: #17a2b8;
+  color: #0c5460;
+}
+
+.salesforce-status h4 {
+  margin: 0 0 10px 0;
+  font-size: 1.1em;
+}
+
+.salesforce-status p {
+  margin: 8px 0;
+  font-family: inherit;
+}
+
+.salesforce-status .error-detail {
+  font-size: 0.9em;
+  color: #dc3545;
+  font-family: monospace;
+  background: rgba(220, 53, 69, 0.1);
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.salesforce-status .note {
+  font-style: italic;
+  font-size: 0.95em;
+  margin-top: 12px;
+}
