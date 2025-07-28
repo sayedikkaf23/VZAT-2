@@ -106,7 +106,7 @@ export const updateQuotePaymentStatus = async (paymentData) => {
     const accessToken = await getSalesforceAccessToken();
 
     // Make the API call to Salesforce
-    const salesforceResponse = await axios.post(
+    const salesforceResponse = await axios.put(
       process.env.SALESFORCE_API_URL,
       salesforcePayload,
       {

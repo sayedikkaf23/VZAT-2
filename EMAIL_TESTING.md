@@ -129,6 +129,11 @@ curl -X POST http://localhost:3000/api/subscription/test/failure-email \
    - Verify recipient email address
    - Check Gmail's sent items to confirm sending
 
+4. **Salesforce API Error 405 (Method Not Allowed)**
+   - This error occurs when using POST instead of PUT method
+   - **Fix**: The Salesforce API expects PUT requests, not POST
+   - **Solution**: Update `salesforceService.js` to use `axios.put()` instead of `axios.post()`
+
 ### Debug Steps:
 
 1. **Test basic email config first**:

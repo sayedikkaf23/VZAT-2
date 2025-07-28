@@ -13,14 +13,14 @@ echo.
 echo.
 
 echo 2. Testing Salesforce payment status update...
-curl -X POST http://localhost:3000/api/subscription/test/salesforce-update ^
+curl -X PUT http://localhost:3000/api/subscription/test/salesforce-update ^
   -H "Content-Type: application/json" ^
   -d "{\"quotepaymentId\": \"aAWdu0000004kvVGAQ\", \"amount\": 87.50, \"status\": true, \"transactionId\": \"8ac7a4a298502ef70198505a2b627bf6\"}"
 echo.
 echo.
 
 echo 3. Testing failed payment status update...
-curl -X POST http://localhost:3000/api/subscription/test/salesforce-update ^
+curl -X PUT http://localhost:3000/api/subscription/test/salesforce-update ^
   -H "Content-Type: application/json" ^
   -d "{\"quotepaymentId\": \"aAWdu0000004kvVGAQ\", \"amount\": 87.50, \"status\": false, \"transactionId\": \"8ac7a4a298502ef70198505a2b627bf6\"}"
 echo.
