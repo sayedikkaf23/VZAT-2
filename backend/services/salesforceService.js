@@ -89,11 +89,15 @@ export const updateQuotePaymentStatus = async (paymentData) => {
     nextDueDate.setDate(nextDueDate.getDate() + 30);
     const formattedNextDueDate = nextDueDate.toISOString().slice(0, 10);
 
+    // Process amount
+    const processedAmount = Math.round(parseFloat(amount)) || 0;
+    console.log(`💰 Processing amount: "${amount}" → ${processedAmount} (type: ${typeof processedAmount})`);
+
     // Prepare Salesforce request payload
     const salesforcePayload = {
       QuotePaymentId: quotepaymentId,
       Status: isSuccess,
-      Paid_Amount: parseFloat(amount).toFixed(2) || "0.00",
+      Paid_Amount: processedAmount, // Round to nearest integer
       Transaction_Number: transactionId || 'N/A',
       Message: isSuccess ? 'Transaction completed successfully' : (resultDescription || 'Transaction failed'),
       Next_due_date: formattedNextDueDate,
@@ -190,7 +194,7 @@ export const testSalesforceConnection = async () => {
     const testPayload = {
       QuotePaymentId: "TEST-" + Date.now(),
       Status: true,
-      Paid_Amount: "1.00",
+      Paid_Amount: 1, // Simple integer
       Transaction_Number: "TEST-TRANSACTION-" + Date.now(),
       Message: "Test connection from VZAT payment system",
       Next_due_date: new Date().toISOString().slice(0, 10),
