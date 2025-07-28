@@ -93,7 +93,7 @@ export const updateQuotePaymentStatus = async (paymentData) => {
     const salesforcePayload = {
       QuotePaymentId: quotepaymentId,
       Status: isSuccess,
-      Paid_Amount: parseFloat(amount) || 0,
+      Paid_Amount: parseFloat(amount).toFixed(2) || "0.00",
       Transaction_Number: transactionId || 'N/A',
       Message: isSuccess ? 'Transaction completed successfully' : (resultDescription || 'Transaction failed'),
       Next_due_date: formattedNextDueDate,
@@ -120,6 +120,13 @@ export const updateQuotePaymentStatus = async (paymentData) => {
     );
 
     console.log('✅ Salesforce API response:', salesforceResponse.data);
+    
+    // Check if the response contains an error
+    if (salesforceResponse.data && salesforceResponse.data.error) {
+      console.error('❌ Salesforce returned an error:', salesforceResponse.data.error);
+      throw new Error(`Salesforce API returned error: ${salesforceResponse.data.error}`);
+    }
+    
     console.log('🎉 Salesforce has been called and updated successfully');
 
     return {
@@ -183,14 +190,14 @@ export const testSalesforceConnection = async () => {
     const testPayload = {
       QuotePaymentId: "TEST-" + Date.now(),
       Status: true,
-      Paid_Amount: 1.00,
+      Paid_Amount: "1.00",
       Transaction_Number: "TEST-TRANSACTION-" + Date.now(),
       Message: "Test connection from VZAT payment system",
       Next_due_date: new Date().toISOString().slice(0, 10),
       Payment_Type: "Test_payment"
     };
 
-    const response = await axios.post(
+    const response = await axios.put(
       process.env.SALESFORCE_API_URL,
       testPayload,
       {
