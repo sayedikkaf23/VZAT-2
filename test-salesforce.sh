@@ -13,7 +13,7 @@ curl -X POST http://localhost:3000/api/subscription/test/salesforce-connection \
   -w "\n\n"
 
 echo "2. Testing Salesforce payment status update..."
-curl -X POST http://localhost:3000/api/subscription/test/salesforce-update \
+curl -X PUT http://localhost:3000/api/subscription/test/salesforce-update \
   -H "Content-Type: application/json" \
   -d '{
     "quotepaymentId": "aAWdu0000004kvVGAQ",
@@ -24,7 +24,7 @@ curl -X POST http://localhost:3000/api/subscription/test/salesforce-update \
   -w "\n\n"
 
 echo "3. Testing failed payment status update..."
-curl -X POST http://localhost:3000/api/subscription/test/salesforce-update \
+curl -X PUT http://localhost:3000/api/subscription/test/salesforce-update \
   -H "Content-Type: application/json" \
   -d '{
     "quotepaymentId": "aAWdu0000004kvVGAQ",
