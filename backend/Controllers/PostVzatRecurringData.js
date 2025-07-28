@@ -477,22 +477,42 @@ export const getAFSPaymentResult = async (req, res) => {
     console.log(`📋 AFS Response received:`, JSON.stringify(resultData, null, 2));
 
     // Check if this is actually a successful response with payment data
-    // AFS sometimes returns result.code 200.300.404 for parameter warnings, but payment data is still valid
+    // First determine if payment was successful based on AFS result codes
+    const isPaymentSuccessful = resultData.result && 
+                               (resultData.result.code.startsWith('000.') || 
+                                resultData.result.code === '200.300.404'); // Special case for parameter warnings
+    
+    console.log(`🔍 Payment Status Check: Result Code=${resultData.result?.code}, Is Successful=${isPaymentSuccessful}`);
+    
     if (resultData.id && resultData.amount && resultData.currency) {
       
       console.log(`Valid payment data found: ID=${resultData.id}, Amount=${resultData.amount}, Currency=${resultData.currency}`);
       
-      // Call Salesforce API to update quote payment status
+      // Determine actual payment status based on AFS result codes
+      let actualPaymentStatus = 'failed';
+      let paymentMessage = 'Payment failed';
+      
+      if (isPaymentSuccessful) {
+        actualPaymentStatus = 'success';
+        paymentMessage = 'Payment completed successfully';
+      } else {
+        actualPaymentStatus = 'failed';
+        paymentMessage = resultData.result?.description || 'Payment failed for unknown reason';
+      }
+      
+      console.log(`💳 Determined Payment Status: ${actualPaymentStatus} - ${paymentMessage}`);
+      
+      // Call Salesforce API to update quote payment status (for both success and failure)
       if (quotepaymentId) {
         try {
-          console.log('🔄 Calling Salesforce API to update payment status...');
+          console.log(`🔄 Calling Salesforce API to update payment status (${actualPaymentStatus})...`);
           
           const salesforcePaymentData = {
             quotepaymentId: quotepaymentId,
             amount: resultData.amount,
             transactionId: resultData.id,
             paymentType: 'Online_payment',
-            paymentStatus: 'success',
+            paymentStatus: actualPaymentStatus, // Use actual status, not hardcoded
             resultCode: resultData.result?.code,
             resultDescription: resultData.result?.description,
             timestamp: resultData.timestamp
@@ -512,10 +532,18 @@ export const getAFSPaymentResult = async (req, res) => {
           
           if (salesforceResult.success) {
             console.log('✅ Salesforce has been called and updated successfully');
-            resultData.overall_status = 'complete_success'; // Payment + Salesforce both successful
+            if (actualPaymentStatus === 'success') {
+              resultData.overall_status = 'complete_success'; // Payment + Salesforce both successful
+            } else {
+              resultData.overall_status = 'payment_failed_salesforce_updated'; // Payment failed but Salesforce notified
+            }
           } else {
             console.warn('⚠️ Salesforce update failed:', salesforceResult.error);
-            resultData.overall_status = 'payment_success_salesforce_failed'; // Payment OK, Salesforce failed
+            if (actualPaymentStatus === 'success') {
+              resultData.overall_status = 'payment_success_salesforce_failed'; // Payment OK, Salesforce failed
+            } else {
+              resultData.overall_status = 'payment_failed_salesforce_failed'; // Both failed
+            }
           }
           
         } catch (salesforceError) {
@@ -524,10 +552,14 @@ export const getAFSPaymentResult = async (req, res) => {
             status: 'failed',
             success: false,
             error: salesforceError.message,
-            message: 'Failed to update Salesforce, but payment was processed',
+            message: 'Failed to update Salesforce',
             updated_at: new Date().toISOString()
           };
-          resultData.overall_status = 'payment_success_salesforce_failed';
+          if (actualPaymentStatus === 'success') {
+            resultData.overall_status = 'payment_success_salesforce_failed';
+          } else {
+            resultData.overall_status = 'payment_failed_salesforce_failed';
+          }
         }
       } else {
         // No quotepaymentId provided, so we can't update Salesforce
@@ -537,38 +569,34 @@ export const getAFSPaymentResult = async (req, res) => {
           message: 'No Quote Payment ID provided - Salesforce update skipped',
           updated_at: new Date().toISOString()
         };
-        resultData.overall_status = 'payment_success_salesforce_skipped';
+        if (actualPaymentStatus === 'success') {
+          resultData.overall_status = 'payment_success_salesforce_skipped';
+        } else {
+          resultData.overall_status = 'payment_failed_salesforce_skipped';
+        }
       }
       
-      // Check if the error is ONLY about shopperResultUrl (which is just a warning)
-      if (resultData.result && 
+      // Set the actual payment status and message based on AFS result
+      resultData.paymentStatus = actualPaymentStatus;
+      resultData.message = paymentMessage;
+      
+      // For backwards compatibility, also check special shopperResultUrl cases
+      if (actualPaymentStatus === 'success' && resultData.result && 
           resultData.result.code === "200.300.404" && 
           resultData.result.parameterErrors && 
           resultData.result.parameterErrors.length === 1 &&
           resultData.result.parameterErrors[0].name === "shopperResultUrl") {
         
-        // This is just a warning about shopperResultUrl, not a real error
+        // This is just a warning about shopperResultUrl, payment is successful
         const cleanData = { ...resultData };
         delete cleanData.result; // Remove the warning
-        cleanData.paymentStatus = 'success';
-        cleanData.message = 'Payment details retrieved successfully';
         cleanData.warning = 'shopperResultUrl was already set during payment creation';
         
-     
         return res.json(cleanData);
-      } else if (resultData.result && resultData.result.code === "200.300.404") {
-        // There are other parameter errors, but we have valid payment data
-        resultData.paymentStatus = 'partial_success';
-        resultData.message = 'Payment data retrieved with warnings';
-     
-        return res.json(resultData);
-      } else {
-        // No errors, clean success
-        resultData.paymentStatus = 'success';
-        resultData.message = 'Payment details retrieved successfully';
-
-        return res.json(resultData);
       }
+      
+      // Return the result with proper payment status
+      return res.json(resultData);
     } else {
   
       

@@ -92,6 +92,45 @@
       </div>
     </div>
     
+    <!-- Payment Failed -->
+    <div *ngIf="result.paymentStatus === 'failed' || result.overall_status?.includes('payment_failed')">
+      <p class="error">❌ Payment Failed</p>
+      <div class="payment-details error-details">
+        <h3>Payment Information:</h3>
+        <p><strong>Amount Attempted:</strong> {{ result.amount }} {{ result.currency }}</p>
+        <p><strong>Transaction ID:</strong> {{ result.id }}</p>
+        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
+        <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
+        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
+        
+        <!-- Failure Reason -->
+        <div class="failure-reason">
+          <h4>Reason for Failure:</h4>
+          <p><strong>Code:</strong> {{ result.result?.code }}</p>
+          <p><strong>Description:</strong> {{ result.result?.description || result.message }}</p>
+          <p *ngIf="result.resultDetails?.ExtendedDescription"><strong>Details:</strong> {{ result.resultDetails.ExtendedDescription }}</p>
+        </div>
+        
+        <!-- Salesforce Status for Failed Payment -->
+        <div *ngIf="result.salesforce_update" class="salesforce-status info">
+          <h4>📋 Record Status</h4>
+          <p *ngIf="result.salesforce_update.success">Your account has been notified of the failed payment attempt.</p>
+          <p *ngIf="!result.salesforce_update.success">Failed payment notification is pending.</p>
+        </div>
+        
+        <!-- Next Steps -->
+        <div class="next-steps">
+          <h4>What to do next:</h4>
+          <ul>
+            <li>Check your card details and try again</li>
+            <li>Ensure sufficient funds are available</li>
+            <li>Contact your bank if the issue persists</li>
+            <li>Contact our support team for assistance</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
     <!-- Handle partial success (with warnings) -->
     <div *ngIf="result.paymentStatus === 'partial_success'">
       <p class="partial-success">⚠️ Payment completed with warnings</p>
