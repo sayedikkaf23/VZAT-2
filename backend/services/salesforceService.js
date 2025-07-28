@@ -7,6 +7,59 @@ dotenv.config();
  * Service for interacting with Salesforce API
  */
 
+// Cache for access token
+let accessTokenCache = {
+  token: null,
+  expiresAt: null
+};
+
+/**
+ * Get Salesforce access token using OAuth2
+ * @returns {string} - Access token
+ */
+const getSalesforceAccessToken = async () => {
+  try {
+    // Check if we have a valid cached token
+    if (accessTokenCache.token && accessTokenCache.expiresAt > Date.now()) {
+      console.log('🔄 Using cached Salesforce access token');
+      return accessTokenCache.token;
+    }
+
+    console.log('🔄 Requesting new Salesforce access token...');
+
+    const authData = new URLSearchParams();
+    authData.append('grant_type', 'password');
+    authData.append('client_id', process.env.SALESFORCE_CLIENT_ID);
+    authData.append('client_secret', process.env.SALESFORCE_CLIENT_SECRET);
+    authData.append('username', process.env.SALESFORCE_USERNAME);
+    authData.append('password', process.env.SALESFORCE_PASSWORD + process.env.SALESFORCE_SECURITY_TOKEN);
+
+    const response = await axios.post(
+      `${process.env.SALESFORCE_LOGIN_URL}/services/oauth2/token`,
+      authData,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        timeout: 30000
+      }
+    );
+
+    const { access_token, expires_in } = response.data;
+    
+    // Cache the token (expires_in is typically 7200 seconds = 2 hours, we'll cache for 1.5 hours to be safe)
+    accessTokenCache.token = access_token;
+    accessTokenCache.expiresAt = Date.now() + (expires_in - 300) * 1000; // 5 minutes buffer
+
+    console.log('✅ Salesforce access token obtained successfully');
+    return access_token;
+
+  } catch (error) {
+    console.error('❌ Failed to get Salesforce access token:', error);
+    throw new Error(`Failed to authenticate with Salesforce: ${error.message}`);
+  }
+};
+
 /**
  * Call Salesforce API to update quote payment status
  * @param {Object} paymentData - Payment data from AFS response
@@ -49,6 +102,9 @@ export const updateQuotePaymentStatus = async (paymentData) => {
 
     console.log('📋 Salesforce payload:', JSON.stringify(salesforcePayload, null, 2));
 
+    // Get access token
+    const accessToken = await getSalesforceAccessToken();
+
     // Make the API call to Salesforce
     const salesforceResponse = await axios.post(
       process.env.SALESFORCE_API_URL,
@@ -56,7 +112,8 @@ export const updateQuotePaymentStatus = async (paymentData) => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
         },
         timeout: 30000 // 30 seconds timeout
       }
@@ -119,6 +176,10 @@ export const testSalesforceConnection = async () => {
   try {
     console.log('🧪 Testing Salesforce API connection...');
     
+    // First test the authentication
+    const accessToken = await getSalesforceAccessToken();
+    console.log('✅ Salesforce authentication successful');
+    
     const testPayload = {
       QuotePaymentId: "TEST-" + Date.now(),
       Status: true,
@@ -135,7 +196,8 @@ export const testSalesforceConnection = async () => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
         },
         timeout: 15000 // 15 seconds timeout for test
       }
@@ -150,15 +212,40 @@ export const testSalesforceConnection = async () => {
 
   } catch (error) {
     console.error('❌ Salesforce test connection failed:', error);
+    
+    let errorMessage = 'Salesforce API connection test failed';
+    let errorDetails = {};
+
+    if (error.response) {
+      errorMessage = `Salesforce API error: ${error.response.status} - ${error.response.statusText}`;
+      errorDetails = {
+        status: error.response.status,
+        data: error.response.data
+      };
+    } else {
+      errorDetails = { message: error.message };
+    }
+
     return {
       success: false,
-      error: error.message,
+      error: errorMessage,
+      details: errorDetails,
       message: 'Salesforce API connection test failed'
     };
   }
 };
 
+/**
+ * Clear the access token cache (useful for testing or when token issues occur)
+ */
+export const clearTokenCache = () => {
+  accessTokenCache.token = null;
+  accessTokenCache.expiresAt = null;
+  console.log('🔄 Salesforce access token cache cleared');
+};
+
 export default {
   updateQuotePaymentStatus,
-  testSalesforceConnection
+  testSalesforceConnection,
+  clearTokenCache
 };

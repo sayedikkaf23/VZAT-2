@@ -10,7 +10,7 @@ import {
   testPaymentFailureEmail
 } from "../Controllers/SubscriptionController.js";
 import { testEmailConfiguration } from "../services/emailService.js";
-import { testSalesforceConnection, updateQuotePaymentStatus } from "../services/salesforceService.js";
+import { testSalesforceConnection, updateQuotePaymentStatus, clearTokenCache } from "../services/salesforceService.js";
 
 const router = express.Router();// Webhook endpoint for AFS notifications
 router.post('/webhook/afs', handleAFSWebhook);
@@ -96,6 +96,24 @@ router.post('/test/salesforce-update', async (req, res) => {
       success: false, 
       error: error.message,
       message: 'Failed to test Salesforce update'
+    });
+  }
+});
+
+// Clear Salesforce token cache
+router.post('/test/salesforce-clear-cache', async (req, res) => {
+  try {
+    clearTokenCache();
+    res.json({
+      success: true,
+      message: 'Salesforce access token cache cleared successfully'
+    });
+  } catch (error) {
+    console.error('Error clearing Salesforce cache:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      message: 'Failed to clear Salesforce cache'
     });
   }
 });
