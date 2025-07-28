@@ -145,3 +145,47 @@ p {
   font-size: 0.95em;
   margin-top: 12px;
 }
+
+/* Failed Payment Styles */
+.error-details {
+  border-left: 4px solid #dc3545;
+  background: #f8d7da;
+}
+
+.failure-reason {
+  background: #fff;
+  border: 1px solid #dc3545;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 16px 0;
+}
+
+.failure-reason h4 {
+  color: #dc3545;
+  margin: 0 0 8px 0;
+  font-size: 1em;
+}
+
+.next-steps {
+  background: #e9ecef;
+  border: 1px solid #6c757d;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+.next-steps h4 {
+  color: #495057;
+  margin: 0 0 10px 0;
+  font-size: 1em;
+}
+
+.next-steps ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.next-steps li {
+  margin: 6px 0;
+  color: #495057;
+}
