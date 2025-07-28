@@ -429,6 +429,7 @@ async function processSubscriptionPayment(subscription) {
   afsData.append('amount', installmentAmount.toString());
   afsData.append('currency', 'AED');
   afsData.append('paymentType', 'DB');
+  afsData.append('recurringType', 'REPEATED'); // Mark as recurring payment
   afsData.append('registrationId', subscription.afs_registration_id);
   afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   
