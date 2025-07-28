@@ -1,6 +1,7 @@
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 import { sendSubscriptionCompletedEmail, sendPaymentFailureEmail } from "../services/emailService.js";
+import { updateQuotePaymentStatus } from "../services/salesforceService.js";
 import axios from "axios";
 import dotenv from "dotenv";
 
@@ -51,6 +52,33 @@ export const handleAFSWebhook = async (req, res) => {
         last_payment_date: new Date(timestamp)
       });
       
+      // Call Salesforce API for successful payment
+      try {
+        console.log('🔄 Calling Salesforce API for initial subscription payment...');
+        
+        const salesforcePaymentData = {
+          quotepaymentId: subscriptionRecord.quotepaymentId,
+          amount: amount,
+          transactionId: id,
+          paymentType: 'Online_payment',
+          paymentStatus: 'success',
+          resultCode: result.code,
+          resultDescription: result.description,
+          timestamp: timestamp
+        };
+
+        const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+        
+        if (salesforceResult.success) {
+          console.log('✅ Salesforce has been called and updated successfully for initial payment');
+        } else {
+          console.warn('⚠️ Salesforce update failed for initial payment:', salesforceResult.error);
+        }
+        
+      } catch (salesforceError) {
+        console.error('❌ Error calling Salesforce API for initial payment:', salesforceError);
+      }
+      
       // Schedule next payment
       await scheduleNextPayment(subscriptionRecord._id);
       
@@ -66,6 +94,33 @@ export const handleAFSWebhook = async (req, res) => {
         },
         { new: true }
       );
+
+      // Call Salesforce API for successful recurring payment
+      try {
+        console.log('🔄 Calling Salesforce API for recurring payment...');
+        
+        const salesforcePaymentData = {
+          quotepaymentId: subscriptionRecord.quotepaymentId,
+          amount: amount,
+          transactionId: id,
+          paymentType: 'Online_payment',
+          paymentStatus: 'success',
+          resultCode: result.code,
+          resultDescription: result.description,
+          timestamp: timestamp
+        };
+
+        const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+        
+        if (salesforceResult.success) {
+          console.log('✅ Salesforce has been called and updated successfully for recurring payment');
+        } else {
+          console.warn('⚠️ Salesforce update failed for recurring payment:', salesforceResult.error);
+        }
+        
+      } catch (salesforceError) {
+        console.error('❌ Error calling Salesforce API for recurring payment:', salesforceError);
+      }
 
       // Check if subscription is complete
       if (updatedRecord.payments_completed >= updatedRecord.InstallmentLeft) {
@@ -102,6 +157,33 @@ export const handleAFSWebhook = async (req, res) => {
     } else {
       // Payment failed
       console.log('❌ Payment failed:', result);
+      
+      // Call Salesforce API for failed payment
+      try {
+        console.log('🔄 Calling Salesforce API for failed payment...');
+        
+        const salesforcePaymentData = {
+          quotepaymentId: subscriptionRecord.quotepaymentId,
+          amount: amount,
+          transactionId: id,
+          paymentType: 'Online_payment',
+          paymentStatus: 'failed',
+          resultCode: result.code,
+          resultDescription: result.description || 'Payment processing failed',
+          timestamp: timestamp
+        };
+
+        const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+        
+        if (salesforceResult.success) {
+          console.log('✅ Salesforce has been called and updated successfully for failed payment');
+        } else {
+          console.warn('⚠️ Salesforce update failed for failed payment:', salesforceResult.error);
+        }
+        
+      } catch (salesforceError) {
+        console.error('❌ Error calling Salesforce API for failed payment:', salesforceError);
+      }
       
       // Send failure email to operations team
       try {
