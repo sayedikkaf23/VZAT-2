@@ -500,23 +500,44 @@ export const getAFSPaymentResult = async (req, res) => {
 
           const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
           
-          // Add Salesforce result to response data
-          resultData.salesforce_update = salesforceResult;
+          // Add comprehensive Salesforce result to response data
+          resultData.salesforce_update = {
+            status: salesforceResult.success ? 'success' : 'failed',
+            success: salesforceResult.success,
+            message: salesforceResult.message,
+            error: salesforceResult.error || null,
+            data: salesforceResult.data || null,
+            updated_at: new Date().toISOString()
+          };
           
           if (salesforceResult.success) {
             console.log('✅ Salesforce has been called and updated successfully');
+            resultData.overall_status = 'complete_success'; // Payment + Salesforce both successful
           } else {
             console.warn('⚠️ Salesforce update failed:', salesforceResult.error);
+            resultData.overall_status = 'payment_success_salesforce_failed'; // Payment OK, Salesforce failed
           }
           
         } catch (salesforceError) {
           console.error('❌ Error calling Salesforce API:', salesforceError);
           resultData.salesforce_update = {
+            status: 'failed',
             success: false,
             error: salesforceError.message,
-            message: 'Failed to update Salesforce, but payment was processed'
+            message: 'Failed to update Salesforce, but payment was processed',
+            updated_at: new Date().toISOString()
           };
+          resultData.overall_status = 'payment_success_salesforce_failed';
         }
+      } else {
+        // No quotepaymentId provided, so we can't update Salesforce
+        resultData.salesforce_update = {
+          status: 'skipped',
+          success: null,
+          message: 'No Quote Payment ID provided - Salesforce update skipped',
+          updated_at: new Date().toISOString()
+        };
+        resultData.overall_status = 'payment_success_salesforce_skipped';
       }
       
       // Check if the error is ONLY about shopperResultUrl (which is just a warning)
