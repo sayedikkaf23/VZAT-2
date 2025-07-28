@@ -1,6 +1,7 @@
 import {connectDB,disconnectDB} from "../config/db.js";
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
+import { updateQuotePaymentStatus } from "../services/salesforceService.js";
 import axios from "axios";
 import dotenv from "dotenv";
 
@@ -481,6 +482,43 @@ export const getAFSPaymentResult = async (req, res) => {
       
       console.log(`Valid payment data found: ID=${resultData.id}, Amount=${resultData.amount}, Currency=${resultData.currency}`);
       
+      // Call Salesforce API to update quote payment status
+      if (quotepaymentId) {
+        try {
+          console.log('🔄 Calling Salesforce API to update payment status...');
+          
+          const salesforcePaymentData = {
+            quotepaymentId: quotepaymentId,
+            amount: resultData.amount,
+            transactionId: resultData.id,
+            paymentType: 'Online_payment',
+            paymentStatus: 'success',
+            resultCode: resultData.result?.code,
+            resultDescription: resultData.result?.description,
+            timestamp: resultData.timestamp
+          };
+
+          const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+          
+          // Add Salesforce result to response data
+          resultData.salesforce_update = salesforceResult;
+          
+          if (salesforceResult.success) {
+            console.log('✅ Salesforce has been called and updated successfully');
+          } else {
+            console.warn('⚠️ Salesforce update failed:', salesforceResult.error);
+          }
+          
+        } catch (salesforceError) {
+          console.error('❌ Error calling Salesforce API:', salesforceError);
+          resultData.salesforce_update = {
+            success: false,
+            error: salesforceError.message,
+            message: 'Failed to update Salesforce, but payment was processed'
+          };
+        }
+      }
+      
       // Check if the error is ONLY about shopperResultUrl (which is just a warning)
       if (resultData.result && 
           resultData.result.code === "200.300.404" && 
@@ -521,6 +559,34 @@ export const getAFSPaymentResult = async (req, res) => {
           resultData.result.parameterErrors[0].name === "shopperResultUrl" &&
           resultData.result.parameterErrors[0].value === `${process.env.BACKEND_URL}/payment-result`) {
         
+        // Call Salesforce API for this success case too
+        if (quotepaymentId) {
+          try {
+            console.log('🔄 Calling Salesforce API for successful payment (shopperResultUrl warning case)...');
+            
+            const salesforcePaymentData = {
+              quotepaymentId: quotepaymentId,
+              amount: 0, // Amount not available in this case
+              transactionId: req.query.id || 'N/A',
+              paymentType: 'Online_payment',
+              paymentStatus: 'success',
+              resultCode: '000.100.110',
+              resultDescription: 'Payment completed successfully',
+              timestamp: new Date().toISOString()
+            };
+
+            const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+            
+            if (salesforceResult.success) {
+              console.log('✅ Salesforce has been called and updated successfully');
+            } else {
+              console.warn('⚠️ Salesforce update failed:', salesforceResult.error);
+            }
+            
+          } catch (salesforceError) {
+            console.error('❌ Error calling Salesforce API:', salesforceError);
+          }
+        }
        
         return res.json({
           paymentStatus: 'success',
