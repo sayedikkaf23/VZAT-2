@@ -279,8 +279,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       if (isSubscription) {
         console.log(`🔄 Creating subscription for ${InstallmentLeft} installments`);
         
-        // For subscriptions, we use 'PA' (Pre-Authorization) for initial setup
-        afsData.append('paymentType', 'PA');
+        // For subscriptions, we use 'DB' (Direct Debit) for immediate charge of first payment
+        // This ensures the first payment is actually debited, not just pre-authorized
+        afsData.append('paymentType', 'DB');
         
         // Add subscription-specific parameters
         afsData.append('recurringType', 'INITIAL');
