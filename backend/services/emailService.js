@@ -248,6 +248,123 @@ export const sendPaymentFailureEmail = async (failureData) => {
 };
 
 /**
+ * Send PDF via email from Salesforce webhook
+ */
+export const sendPdfEmail = async (emailData) => {
+  try {
+    const transporter = createTransporter();
+    
+    const {
+      quote_payment_number,
+      Total_After_VAT_Currency,
+      quote_email,
+      quotepaymentId,
+      paymentLink,
+      Installment_amount,
+      Total_Installments,
+      quotePdf
+    } = emailData;
+
+    // Get base URL from environment
+    const baseUrl = process.env.BASE_URL || 'https://vzatnew.yeepeey.com';
+    
+    // Construct payment link with proper base URL
+    const fullPaymentLink = paymentLink.startsWith('http') ? paymentLink : `${baseUrl}${paymentLink.startsWith('/') ? '' : '/'}${paymentLink}`;
+
+    // Process PDF attachments
+    const attachments = [];
+    if (quotePdf && Array.isArray(quotePdf)) {
+      for (const pdf of quotePdf) {
+        if (pdf.pdfContent && pdf.name) {
+          attachments.push({
+            filename: `${pdf.name}.pdf`,
+            content: pdf.pdfContent,
+            encoding: 'base64',
+            contentType: pdf.ContentType || 'application/pdf'
+          });
+        }
+      }
+    }
+
+    const mailOptions = {
+      from: {
+        name: EMAIL_CONFIG.sender.name,
+        address: EMAIL_CONFIG.sender.email
+      },
+      to: quote_email,
+      subject: `Virtuzone | Proforma Invoice & Payment Link – PI QP- No-${quote_payment_number}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="padding: 20px;">
+            <p>Hello,</p>
+            
+            <p>Thank you for choosing Virtuzone as your preferred Corporate Services Provider.</p>
+            
+            <p>Based on your requirements and our discussions, we are pleased to attach the Proforma Invoice 
+            along with the Payment Link embedded therein for your reference. A summary of the Proforma 
+            Invoice is as below:</p>
+            
+            <table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Quote Payment Number</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${quote_payment_number}</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Total Amount Requested</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${Total_After_VAT_Currency}</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Installment Amount</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${Installment_amount}</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Total Installments</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${Total_Installments}</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Payment Link</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">
+                  <a href="${fullPaymentLink}" style="color: #007bff; text-decoration: none;">${fullPaymentLink}</a>
+                </td>
+              </tr>
+            </table>
+            
+            <p>You may also click on the below button to view the payment options available to you.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${fullPaymentLink}" 
+                 style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; 
+                        border-radius: 4px; display: inline-block; font-weight: bold;">
+                Click Here To Pay
+              </a>
+            </div>
+            
+            <p>Please feel free to contact us anytime in case you have any queries on this payment or the 
+            service(s) offered.</p>
+            
+            <p>Thank you!</p>
+            
+            <p style="margin-top: 40px;">
+              Regards,<br>
+              VZ Payment API API
+            </p>
+          </div>
+        </div>
+      `,
+      attachments: attachments
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`✅ PDF email sent successfully to ${quote_email}: ${result.messageId}`);
+    return { success: true, messageId: result.messageId, recipient: quote_email };
+    
+  } catch (error) {
+    console.error('❌ Failed to send PDF email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Test email configuration
  */
 export const testEmailConfiguration = async () => {
@@ -285,5 +402,6 @@ export const testEmailConfiguration = async () => {
 export default {
   sendSubscriptionCompletedEmail,
   sendPaymentFailureEmail,
+  sendPdfEmail,
   testEmailConfiguration
 };
