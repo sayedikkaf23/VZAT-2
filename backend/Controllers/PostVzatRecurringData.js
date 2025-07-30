@@ -532,7 +532,8 @@ export const getAFSPaymentResult = async (req, res) => {
           };
           
           if (salesforceResult.success) {
-            console.log('✅ Salesforce has been called and updated successfully');
+            const statusText = actualPaymentStatus === 'success' ? 'successful payment' : 'failed payment';
+            console.log(`✅ Salesforce has been notified of ${statusText}`);
             if (actualPaymentStatus === 'success') {
               resultData.overall_status = 'complete_success'; // Payment + Salesforce both successful
             } else {
