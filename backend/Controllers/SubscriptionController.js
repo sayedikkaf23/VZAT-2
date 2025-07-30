@@ -70,7 +70,8 @@ export const handleAFSWebhook = async (req, res) => {
         const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
         
         if (salesforceResult.success) {
-          console.log('✅ Salesforce has been called and updated successfully for initial payment');
+          const statusText = salesforceResult.payment_was_successful ? 'successful' : 'failed';
+          console.log(`✅ Salesforce has been notified of ${statusText} initial payment`);
         } else {
           console.warn('⚠️ Salesforce update failed for initial payment:', salesforceResult.error);
         }
@@ -113,7 +114,8 @@ export const handleAFSWebhook = async (req, res) => {
         const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
         
         if (salesforceResult.success) {
-          console.log('✅ Salesforce has been called and updated successfully for recurring payment');
+          const statusText = salesforceResult.payment_was_successful ? 'successful' : 'failed';
+          console.log(`✅ Salesforce has been notified of ${statusText} recurring payment`);
         } else {
           console.warn('⚠️ Salesforce update failed for recurring payment:', salesforceResult.error);
         }

@@ -114,8 +114,14 @@
         <!-- Salesforce Status for Failed Payment -->
         <div *ngIf="result.salesforce_update" class="salesforce-status info">
           <h4>📋 Record Status</h4>
-          <p *ngIf="result.salesforce_update.success">Your account has been notified of the failed payment attempt.</p>
-          <p *ngIf="!result.salesforce_update.success">Failed payment notification is pending.</p>
+          <p *ngIf="result.salesforce_update.success">
+            ✅ Your account has been notified of the payment failure.
+            <br><small>Status: {{ result.salesforce_update.message }}</small>
+          </p>
+          <p *ngIf="!result.salesforce_update.success">
+            ⚠️ Failed payment notification is pending.
+            <br><small>Error: {{ result.salesforce_update.error }}</small>
+          </p>
         </div>
         
         <!-- Next Steps -->

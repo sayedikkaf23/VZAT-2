@@ -131,12 +131,17 @@ export const updateQuotePaymentStatus = async (paymentData) => {
       throw new Error(`Salesforce API returned error: ${salesforceResponse.data.error}`);
     }
     
-    console.log('🎉 Salesforce has been called and updated successfully');
+    // Create appropriate success message based on payment status
+    const paymentStatusText = isSuccess ? 'successful payment' : 'failed payment';
+    const salesforceMessage = `Salesforce has been notified of ${paymentStatusText} (Status: ${isSuccess})`;
+    
+    console.log(`🎉 ${salesforceMessage}`);
 
     return {
       success: true,
       data: salesforceResponse.data,
-      message: 'Salesforce has been called and updated successfully'
+      message: salesforceMessage,
+      payment_was_successful: isSuccess
     };
 
   } catch (error) {
