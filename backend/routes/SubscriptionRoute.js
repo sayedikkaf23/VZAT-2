@@ -35,9 +35,18 @@ router.put('/fix-installment-left/:quotepaymentId', fixInstallmentLeft);
 router.post('/test/email-config', async (req, res) => {
   try {
     const result = await testEmailConfiguration();
+    
+    // Log test to database
+    Post_Common_DB_Log_Data('/api/subscription/test/email-config', req.body, result);
+    
     res.json(result);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    const errorData = { success: false, error: error.message };
+    
+    // Log error to database
+    Post_Common_DB_Log_Data('/api/subscription/test/email-config', req.body, errorData);
+    
+    res.status(500).json(errorData);
   }
 });
 
@@ -53,14 +62,23 @@ router.post('/test/failure-email', testPaymentFailureEmail);
 router.post('/test/salesforce-connection', async (req, res) => {
   try {
     const result = await testSalesforceConnection();
+    
+    // Log test to database
+    Post_Common_DB_Log_Data('/api/subscription/test/salesforce-connection', req.body, result);
+    
     res.json(result);
   } catch (error) {
     console.error('Error testing Salesforce connection:', error);
-    res.status(500).json({ 
+    const errorData = { 
       success: false, 
       error: error.message,
       message: 'Failed to test Salesforce connection'
-    });
+    };
+    
+    // Log error to database
+    Post_Common_DB_Log_Data('/api/subscription/test/salesforce-connection', req.body, errorData);
+    
+    res.status(500).json(errorData);
   }
 });
 
@@ -70,10 +88,15 @@ router.post('/test/salesforce-update', async (req, res) => {
     const { quotepaymentId, amount, status, transactionId } = req.body;
     
     if (!quotepaymentId) {
-      return res.status(400).json({ 
+      const errorData = { 
         success: false, 
         message: 'quotepaymentId is required for testing' 
-      });
+      };
+      
+      // Log validation error to database
+      Post_Common_DB_Log_Data('/api/subscription/test/salesforce-update', req.body, errorData);
+      
+      return res.status(400).json(errorData);
     }
 
     const testPaymentData = {
@@ -88,15 +111,27 @@ router.post('/test/salesforce-update', async (req, res) => {
     };
 
     const result = await updateQuotePaymentStatus(testPaymentData);
+    
+    // Log successful test to database
+    Post_Common_DB_Log_Data('/api/subscription/test/salesforce-update', req.body, {
+      testPaymentData: testPaymentData,
+      result: result
+    });
+    
     res.json(result);
     
   } catch (error) {
     console.error('Error testing Salesforce update:', error);
-    res.status(500).json({ 
+    const errorData = { 
       success: false, 
       error: error.message,
       message: 'Failed to test Salesforce update'
-    });
+    };
+    
+    // Log error to database
+    Post_Common_DB_Log_Data('/api/subscription/test/salesforce-update', req.body, errorData);
+    
+    res.status(500).json(errorData);
   }
 });
 
@@ -104,17 +139,28 @@ router.post('/test/salesforce-update', async (req, res) => {
 router.post('/test/salesforce-clear-cache', async (req, res) => {
   try {
     clearTokenCache();
-    res.json({
+    
+    const responseData = {
       success: true,
       message: 'Salesforce access token cache cleared successfully'
-    });
+    };
+    
+    // Log cache clear to database
+    Post_Common_DB_Log_Data('/api/subscription/test/salesforce-clear-cache', req.body, responseData);
+    
+    res.json(responseData);
   } catch (error) {
     console.error('Error clearing Salesforce cache:', error);
-    res.status(500).json({ 
+    const errorData = { 
       success: false, 
       error: error.message,
       message: 'Failed to clear Salesforce cache'
-    });
+    };
+    
+    // Log error to database
+    Post_Common_DB_Log_Data('/api/subscription/test/salesforce-clear-cache', req.body, errorData);
+    
+    res.status(500).json(errorData);
   }
 });
 
