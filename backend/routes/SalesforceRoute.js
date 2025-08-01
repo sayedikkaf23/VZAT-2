@@ -1,5 +1,6 @@
 import express from 'express';
 import { handleSalesforcePdfWebhook, testSalesforcePdfWebhook } from '../Controllers/SalesforcePdfController.js';
+import Post_Common_DB_Log_Data from '../Controllers/PostCommonDBLogData.js';
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.post('/test-pdf-webhook', testSalesforcePdfWebhook);
  * @access Public
  */
 router.get('/health', (req, res) => {
-    res.status(200).json({
+    const responseData = {
         success: true,
         message: 'Salesforce integration service is healthy',
         timestamp: new Date().toISOString(),
@@ -31,7 +32,12 @@ router.get('/health', (req, res) => {
             pdf_webhook: '/api/salesforce/pdf-webhook',
             test_webhook: '/api/salesforce/test-pdf-webhook'
         }
-    });
+    };
+    
+    // Log health check to database
+    Post_Common_DB_Log_Data('/api/salesforce/health', req.query, responseData);
+    
+    res.status(200).json(responseData);
 });
 
 export default router;
