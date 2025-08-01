@@ -11,6 +11,7 @@ import { getAFSPaymentResult } from "./Controllers/PostVzatRecurringData.js";
 import { connectDB, disconnectDB } from "./config/db.js";
 import Vzat_Recurring_Data from "./model/VzatRecurringDataModel.js";
 import { initializeCronJobs } from "./config/cronJobs.js";
+import Post_Common_DB_Log_Data from "./Controllers/PostCommonDBLogData.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -66,23 +67,39 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     
     if (!paymentData) {
       console.log('❌ Payment data not found for checkoutId:', req.params.checkoutId);
-      return res.status(404).json({
+      const errorData = {
         error: 'Payment data not found',
         checkoutId: req.params.checkoutId
-      });
+      };
+      
+      // Log to database
+      Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, errorData);
+      
+      return res.status(404).json(errorData);
     }
     
     console.log('✅ Payment data found:', paymentData);
+    
+    // Log successful response to database
+    Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, {
+      success: true,
+      paymentData: paymentData
+    });
     
     // Return the data in the format expected by Angular component
     res.json(paymentData);
     
   } catch (error) {
     console.error('❌ Error fetching payment schedule:', error);
-    res.status(500).json({
+    const errorData = {
       error: 'Failed to fetch payment schedule',
       message: error.message
-    });
+    };
+    
+    // Log error to database
+    Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, errorData);
+    
+    res.status(500).json(errorData);
   }
 });
 
@@ -91,6 +108,13 @@ app.get('/api/payment/result', (req, res) => {
   console.log('🔥 Payment result API called!');
   console.log('🔥 Query params:', req.query);
   console.log('🔥 Headers:', req.headers);
+  
+  // Log the request to database
+  Post_Common_DB_Log_Data('/api/payment/result', req.query, {
+    message: 'Payment result API called',
+    headers: req.headers
+  });
+  
   getAFSPaymentResult(req, res);
 });
 
@@ -111,6 +135,17 @@ app.post('/payment-result', (req, res) => {
   // Redirect to Angular payment result page with parameters
   const redirectUrl = `${process.env.FRONTEND_URL}/payment/result?resourcePath=${encodeURIComponent(resourcePath || '')}&quotepaymentId=${encodeURIComponent(quotepaymentId || '')}`;
   console.log('💳 Redirecting to:', redirectUrl);
+  
+  // Log to database
+  Post_Common_DB_Log_Data('/payment-result', {
+    body: req.body,
+    query: req.query
+  }, {
+    resourcePath: resourcePath,
+    quotepaymentId: quotepaymentId,
+    redirectUrl: redirectUrl,
+    message: 'AFS Payment widget form submission processed'
+  });
   
   res.redirect(redirectUrl);
 });
@@ -140,6 +175,12 @@ app.get('/payment-result', async (req, res) => {
       }
     } catch (err) {
       console.log('Error finding quotepaymentId:', err);
+      
+      // Log error to database
+      Post_Common_DB_Log_Data('/payment-result', req.query, {
+        error: 'Error finding quotepaymentId',
+        message: err.message
+      });
     }
   }
   
@@ -148,6 +189,13 @@ app.get('/payment-result', async (req, res) => {
   // Redirect to Angular payment result page with parameters
   const redirectUrl = `${process.env.FRONTEND_URL}/payment/result?resourcePath=${encodeURIComponent(resourcePath || '')}&quotepaymentId=${encodeURIComponent(quotepaymentId || '')}&id=${encodeURIComponent(id || '')}`;
   console.log('💰 Redirecting to:', redirectUrl);
+  
+  // Log to database
+  Post_Common_DB_Log_Data('/payment-result', req.query, {
+    quotepaymentId: quotepaymentId,
+    redirectUrl: redirectUrl,
+    message: 'Payment result GET endpoint processed'
+  });
   
   res.redirect(redirectUrl);
 });
@@ -172,6 +220,12 @@ app.post('/test-payment-link', (req, res) => {
     }]
   };
   
+  // Log test request to database
+  Post_Common_DB_Log_Data('/test-payment-link', req.body, {
+    testData: testData,
+    message: 'Test payment link generation requested'
+  });
+  
   // Forward to the main payment creation endpoint
   req.body = testData;
   
@@ -180,7 +234,16 @@ app.post('/test-payment-link', (req, res) => {
     module.default(req, res);
   }).catch(err => {
     console.error('Error importing controller:', err);
-    res.status(500).json({ error: 'Failed to process payment link' });
+    
+    const errorData = { error: 'Failed to process payment link' };
+    
+    // Log error to database
+    Post_Common_DB_Log_Data('/test-payment-link', req.body, {
+      error: errorData,
+      message: err.message
+    });
+    
+    res.status(500).json(errorData);
   });
 });
 
@@ -204,6 +267,12 @@ app.post('/test-subscription-link', (req, res) => {
     }]
   };
   
+  // Log test request to database
+  Post_Common_DB_Log_Data('/test-subscription-link', req.body, {
+    testData: testData,
+    message: 'Test subscription link generation requested'
+  });
+  
   // Forward to the main payment creation endpoint
   req.body = testData;
   
@@ -212,7 +281,16 @@ app.post('/test-subscription-link', (req, res) => {
     module.default(req, res);
   }).catch(err => {
     console.error('Error importing controller:', err);
-    res.status(500).json({ error: 'Failed to process subscription link' });
+    
+    const errorData = { error: 'Failed to process subscription link' };
+    
+    // Log error to database
+    Post_Common_DB_Log_Data('/test-subscription-link', req.body, {
+      error: errorData,
+      message: err.message
+    });
+    
+    res.status(500).json(errorData);
   });
 });
 
