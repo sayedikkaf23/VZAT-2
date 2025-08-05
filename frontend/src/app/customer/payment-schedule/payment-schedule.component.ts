@@ -107,7 +107,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     // Get route parameters
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params: any) => {
       if (params['checkoutId']) {
         this.currentCheckoutId = params['checkoutId'];
         this.loadPaymentScheduleByCheckoutId(this.currentCheckoutId);
@@ -121,7 +121,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     });
 
     // Also check for query parameters
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params: any) => {
       if (params['quotepaymentId']) {
         this.quotepaymentId = params['quotepaymentId'];
       }
@@ -153,7 +153,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
         // isLoading is set to false in populateComponentData
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('❌ Error loading payment schedule:', error);
         console.error('❌ Error details:', {
           status: error.status,
@@ -161,12 +161,31 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           url: error.url,
           message: error.message
         });
-        this.errorMessage = `Failed to load payment schedule: ${error.status} ${error.statusText}. Loading demo data...`;
+        
+        // Handle payment link expiration (410 Gone)
+        if (error.status ***REMOVED***= 410) {
+          const errorData = error.error;
+          this.errorMessage = `Payment Link Expired: ${errorData.message || 'This payment link is no longer valid.'}`;
+          if (errorData.daysExpired) {
+            this.errorMessage += ` This link expired ${errorData.daysExpired} days ago.`;
+          }
+          if (errorData.expirationDate) {
+            this.errorMessage += ` Expiration date was: ${errorData.expirationDate}.`;
+          }
+          this.errorMessage += ' Please contact your sales representative for a new payment link.';
+        } else {
+          this.errorMessage = `Failed to load payment schedule: ${error.status} ${error.statusText}. Loading demo data...`;
+        }
+        
         this.isLoading = false; // Set loading to false immediately
         this.cdr.detectChanges(); // Force change detection
-        setTimeout(() => {
-          this.loadDemoData();
-        }, 500); // Small delay to show error message
+        
+        // Only load demo data if it's not an expiration error
+        if (error.status !***REMOVED*** 410) {
+          setTimeout(() => {
+            this.loadDemoData();
+          }, 500); // Small delay to show error message
+        }
       }
     });
   }
@@ -180,7 +199,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         this.populateComponentData(data);
         // isLoading is set to false in populateComponentData
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading payment data:', error);
         this.errorMessage = 'Failed to load payment data. Loading demo data...';
         this.isLoading = false; // Set loading to false immediately
@@ -597,7 +616,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           this.setFallbackSalesAgent();
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('❌ Error fetching SalesForce details:', err);
         this.setFallbackSalesAgent();
       },
