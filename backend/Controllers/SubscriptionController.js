@@ -126,30 +126,37 @@ export const handleAFSWebhook = async (req, res) => {
 
       // Check if subscription is complete
       if (updatedRecord.payments_completed >= updatedRecord.InstallmentLeft) {
-        await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
-          subscription_status: 'completed'
-        });
-        console.log('🎉 Subscription completed!');
+        // Only update status if not already completed (prevents duplicate emails)
+        const currentStatus = await Vzat_Recurring_Data.findById(subscriptionRecord._id).select('subscription_status');
         
-        // Send completion email to business team
-        try {
-          const emailResult = await sendSubscriptionCompletedEmail({
-            quotepaymentId: updatedRecord.quotepaymentId,
-            OpportunityId: updatedRecord.OpportunityId,
-            QuoteId: updatedRecord.QuoteId,
-            Total_After_VAT_Currency: updatedRecord.Total_After_VAT_Currency,
-            InstallmentLeft: updatedRecord.InstallmentLeft,
-            payments_completed: updatedRecord.payments_completed,
-            last_payment_date: updatedRecord.last_payment_date
+        if (currentStatus.subscription_status !***REMOVED*** 'completed') {
+          await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
+            subscription_status: 'completed'
           });
+          console.log('🎉 Subscription completed!');
           
-          if (emailResult.success) {
-            console.log('📧 Subscription completion email sent successfully');
-          } else {
-            console.error('📧 Failed to send completion email:', emailResult.error);
+          // Send completion email to business team (only for newly completed subscriptions)
+          try {
+            const emailResult = await sendSubscriptionCompletedEmail({
+              quotepaymentId: updatedRecord.quotepaymentId,
+              OpportunityId: updatedRecord.OpportunityId,
+              QuoteId: updatedRecord.QuoteId,
+              Total_After_VAT_Currency: updatedRecord.Total_After_VAT_Currency,
+              InstallmentLeft: updatedRecord.InstallmentLeft,
+              payments_completed: updatedRecord.payments_completed,
+              last_payment_date: updatedRecord.last_payment_date
+            });
+            
+            if (emailResult.success) {
+              console.log('📧 Subscription completion email sent successfully');
+            } else {
+              console.error('📧 Failed to send completion email:', emailResult.error);
+            }
+          } catch (emailError) {
+            console.error('📧 Error sending completion email:', emailError);
           }
-        } catch (emailError) {
-          console.error('📧 Error sending completion email:', emailError);
+        } else {
+          console.log('ℹ️ Subscription already marked as completed - skipping duplicate completion email');
         }
       } else {
         // Schedule next payment
@@ -293,10 +300,11 @@ export const processRecurringPayments = async (req, res) => {
     
     console.log(`🔍 Debug: Found ${allActiveSubscriptions.length} active subscriptions for today`);
     allActiveSubscriptions.forEach(sub => {
-      console.log(`📋 Subscription ${sub.quotepaymentId}: payments_completed=${sub.payments_completed}, InstallmentLeft=${sub.InstallmentLeft}`);
+      console.log(`📋 Subscription ${sub.quotepaymentId}: payments_completed=${sub.payments_completed}, InstallmentLeft=${sub.InstallmentLeft}, last_processed_date=${sub.last_processed_date}`);
     });
     
     // Find all active subscriptions due for payment today
+    // IMPORTANT: Exclude subscriptions already processed today to prevent duplicate emails
     const dueSubscriptions = await Vzat_Recurring_Data.find({
       subscription_status: 'active',
       next_charge_date: {
@@ -306,15 +314,29 @@ export const processRecurringPayments = async (req, res) => {
       InstallmentLeft: { $exists: true, $ne: null },
       $expr: { 
         $lt: ['$payments_completed', '$InstallmentLeft'] 
-      }
+      },
+      // Prevent duplicate processing: Skip if already processed today
+      $or: [
+        { last_processed_date: { $exists: false } }, // Never processed
+        { 
+          last_processed_date: {
+            $lt: today // Last processed before today
+          }
+        }
+      ]
     });
     
-    console.log(`📋 Found ${dueSubscriptions.length} subscriptions due for payment`);
+    console.log(`📋 Found ${dueSubscriptions.length} subscriptions due for payment (excluding already processed today)`);
     
     const results = [];
     
     for (const subscription of dueSubscriptions) {
       try {
+        // Mark as processed today to prevent duplicate processing
+        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+          last_processed_date: new Date()
+        });
+        
         const paymentResult = await processSubscriptionPayment(subscription);
         results.push({
           quotepaymentId: subscription.quotepaymentId,
@@ -322,7 +344,7 @@ export const processRecurringPayments = async (req, res) => {
           result: paymentResult
         });
       } catch (error) {
-        console.error(` Failed to process payment for ${subscription.quotepaymentId}:`, error);
+        console.error(`❌ Failed to process payment for ${subscription.quotepaymentId}:`, error);
         
         // Send failure email to operations team
         try {
@@ -367,7 +389,9 @@ export const processRecurringPayments = async (req, res) => {
     if (res) {
       res.json(response);
     } else {
-      console.log('Cron job completed:', response);
+      console.log('✅ Cron job completed:', response);
+      return response;
+    }
       return response;
     }
     
