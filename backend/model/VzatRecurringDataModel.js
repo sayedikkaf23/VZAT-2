@@ -130,6 +130,10 @@ const vzatRecurringDataSchema = new Schema({
         type: Date,
         required: false
     },
+    last_processed_date: {
+        type: Date,
+        required: false // Tracks when this subscription was last processed by cron job (prevents duplicate processing)
+    },
     subscription_created_date: {
         type: Date,
         default: Date.now
