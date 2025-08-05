@@ -112,7 +112,7 @@
                 <div class="d-flex justify-content-end gap-md-2 gap-1">
                   <a *ngIf="payment.status === 'due' && payment.isNextPayment" 
                      (click)="initiatePayment(payment)" 
-                     class="pay-now-link">pay now</a>
+                     class="pay-now-link">Due now</a>
                   <span [ngClass]="{
                     'text-success': payment.status === 'completed',
                     'text-warning': payment.status === 'due',
