@@ -392,11 +392,9 @@ export const processRecurringPayments = async (req, res) => {
       console.log('✅ Cron job completed:', response);
       return response;
     }
-      return response;
-    }
     
   } catch (error) {
-    console.error(' Recurring payments processing error:', error);
+    console.error('❌ Recurring payments processing error:', error);
     const errorResponse = { 
       message: 'Recurring payments processing failed', 
       error: error.message 
@@ -405,7 +403,7 @@ export const processRecurringPayments = async (req, res) => {
     if (res) {
       res.status(500).json(errorResponse);
     } else {
-      console.error(' Cron job failed:', errorResponse);
+      console.error('❌ Cron job failed:', errorResponse);
       return errorResponse;
     }
   }
