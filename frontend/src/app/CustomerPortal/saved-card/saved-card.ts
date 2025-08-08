@@ -127,6 +127,8 @@ export class SavedCard implements OnInit, OnDestroy {
     
     // Get customer ID from localStorage (set during login)
     const customerData = localStorage.getItem('customerData');
+    console.log('🔍 Raw customerData from localStorage:', customerData);
+    
     if (customerData) {
       try {
         const parsed = JSON.parse(customerData);
@@ -134,6 +136,7 @@ export class SavedCard implements OnInit, OnDestroy {
         
         // Try different possible field names for customer ID
         this.customerId = parsed.id || parsed._id || parsed.customerId;
+        console.log('🔍 Extracted customer ID:', this.customerId);
         
         if (this.customerId) {
           console.log('✅ Customer ID found:', this.customerId);
@@ -211,12 +214,18 @@ export class SavedCard implements OnInit, OnDestroy {
       if (this.loading) {
         console.warn('⚠️ Loading timeout reached after 15 seconds');
         this.loading = false;
-        this.error = 'Loading took too long. Please try clicking refresh again or check your connection.';
+        this.error = 'Loading took too long. Please check console for details and try debug button.';
       }
     }, 15000); // 15 second timeout
     
-    console.log('🔄 Making API call to load cards');
-    console.log('🔄 API URL:', `${this.savedCardsService['apiUrl']}/saved-cards/customer/${this.customerId}/cards`);
+    // Log the service and URL details
+    console.log('🔄 SavedCardsService details:', this.savedCardsService);
+    console.log('🔄 API Base URL from service:', this.savedCardsService['apiUrl'] || 'undefined');
+    
+    const expectedUrl = `${this.savedCardsService['apiUrl'] || 'UNKNOWN'}/saved-cards/customer/${this.customerId}/cards`;
+    console.log('🔄 Expected API URL:', expectedUrl);
+    
+    console.log('🔄 Making API call to load cards...');
     
     this.savedCardsService.getCustomerCards(this.customerId).subscribe({
       next: (response: ApiResponse<SavedCardModel>) => {
@@ -230,6 +239,7 @@ export class SavedCard implements OnInit, OnDestroy {
         if (response.success) {
           this.cards = response.cards || [];
           console.log('✅ Cards loaded successfully:', this.cards.length, 'cards');
+          console.log('✅ Card details:', this.cards);
           
           if (this.cards.length ***REMOVED***= 0) {
             console.log('ℹ️ No cards found for this customer');
@@ -247,23 +257,31 @@ export class SavedCard implements OnInit, OnDestroy {
           this.loadingTimeout = null;
         }
         
+        console.error('❌ Full error object:', error);
         console.error('❌ Error details:', {
           status: error.status,
+          statusText: error.statusText,
           message: error.message,
           url: error.url,
-          name: error.name
+          name: error.name,
+          headers: error.headers
         });
         
         if (error.status ***REMOVED***= 0) {
           this.error = 'Unable to connect to server. Please check your internet connection and try again.';
+          console.error('❌ Network error - likely CORS, server down, or wrong URL');
         } else if (error.status ***REMOVED***= 404) {
           this.error = 'Cards service not found. Please contact support.';
+          console.error('❌ 404 - API endpoint not found');
         } else if (error.status ***REMOVED***= 500) {
           this.error = 'Server error. Please try again in a few moments.';
+          console.error('❌ 500 - Server internal error');
         } else if (error.status ***REMOVED***= 401 || error.status ***REMOVED***= 403) {
           this.error = 'Session expired. Please login again.';
+          console.error('❌ Authentication/Authorization error');
         } else {
           this.error = `Failed to load saved cards. Error: ${error.status || 'Network error'}`;
+          console.error('❌ Unknown error:', error.status);
         }
       }
     });
@@ -343,6 +361,22 @@ export class SavedCard implements OnInit, OnDestroy {
     
     // Start fresh
     this.loadCustomerData();
+  }
+
+  // Debug method to show current state to user
+  showDebugInfo() {
+    const debugInfo = {
+      customerId: this.customerId,
+      loading: this.loading,
+      error: this.error,
+      cardsCount: this.cards.length,
+      apiUrl: this.savedCardsService['apiUrl'],
+      localStorage: localStorage.getItem('customerData'),
+      jwtToken: this.cookieService.get('jwtToken') ? 'Present' : 'Missing'
+    };
+    
+    console.log('🔍 Debug Info:', debugInfo);
+    alert('Debug Info (check console for details):\n' + JSON.stringify(debugInfo, null, 2));
   }
 
   setDefaultCard(cardId: string) {
