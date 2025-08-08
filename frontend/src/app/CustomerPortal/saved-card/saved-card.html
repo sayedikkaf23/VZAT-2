@@ -136,6 +136,14 @@
                             title="Force Complete Reload">
                         🔄 <span class="d-none d-lg-inline">Force Reload</span>
                     </button>
+
+                    <!-- Debug Button (Development) -->
+                    <button type="button" 
+                            class="btn btn-outline-info btn-sm d-inline-flex align-items-center gap-2" 
+                            (click)="showDebugInfo()"
+                            title="Show Debug Information">
+                        🔍 <span class="d-none d-lg-inline">Debug</span>
+                    </button>
                     
                     <!-- Fix Card Numbers Button (Development) -->
                     <button *ngIf="!loading && cards.length > 0" 
