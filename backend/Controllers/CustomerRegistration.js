@@ -112,6 +112,12 @@ export const createCustomerAccount = async (subscriptionData) => {
         
         // Send welcome email with login credentials
         try {
+            console.log('📧 EMAIL DEBUG - Starting welcome email process...');
+            console.log(`📧 Email recipient: ${opp_email}`);
+            console.log(`📧 Customer name: ${Customer_name}`);
+            console.log(`📧 Temporary password: ${temporaryPassword}`);
+            console.log(`📧 Login URL: ${process.env.FRONTEND_URL || 'http://localhost:4200'}/login`);
+            
             const emailResult = await sendCustomerWelcomeEmail({
                 customerName: Customer_name || 'Valued Customer',
                 email: opp_email,
@@ -120,13 +126,18 @@ export const createCustomerAccount = async (subscriptionData) => {
                 loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:4200'}/login`
             });
             
+            console.log('📧 EMAIL RESULT:', emailResult);
+            
             if (emailResult.success) {
-                console.log('📧 Welcome email sent successfully to customer');
+                console.log('✅ 📧 Welcome email sent successfully to customer');
+                console.log(`📧 Message ID: ${emailResult.messageId}`);
+                console.log(`📧 Recipient confirmed: ${emailResult.recipient}`);
             } else {
-                console.error('📧 Failed to send welcome email:', emailResult.error);
+                console.error('❌ 📧 Failed to send welcome email:', emailResult.error);
             }
         } catch (emailError) {
-            console.error('📧 Error sending welcome email:', emailError);
+            console.error('❌ 📧 Exception in welcome email process:', emailError);
+            console.error('❌ 📧 Email error stack:', emailError.stack);
         }
         
         // Log the account creation
