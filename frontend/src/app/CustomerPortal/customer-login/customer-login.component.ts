@@ -112,8 +112,8 @@ export class CustomerLoginComponent {
             const urlParams = new URLSearchParams(window.location.search);
             const redirect = urlParams.get('redirect');
             
-            if (redirect === 'saved-cards') {
-              this.router.navigate(['/saved-cards']);
+            if (redirect === 'saved-card') {
+              this.router.navigate(['/saved-card']);
             } else {
               this.router.navigate(['/active-services']);   //set the navigation path for customer, after logging in 
             }
