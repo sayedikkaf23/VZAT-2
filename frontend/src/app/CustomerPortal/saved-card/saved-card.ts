@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { CustomerLoginService } from '../../services/customer-login.service';
 import { StyleLoader } from '../../services/style-loader';
 import { SavedCardsService, SavedCard as SavedCardModel, ApiResponse } from '../../customer/saved-cards/saved-cards.service';
+import { CookieService } from 'ngx-cookie-service';
 
 @Component({
   selector: 'app-saved-card',
@@ -31,7 +32,8 @@ export class SavedCard implements OnInit, OnDestroy {
     private el: ElementRef, 
     private customerLogin: CustomerLoginService, 
     private styleLoader: StyleLoader,
-    private savedCardsService: SavedCardsService
+    private savedCardsService: SavedCardsService,
+    private cookieService: CookieService
   ) {}
   
   ngOnInit(): void {
@@ -50,16 +52,58 @@ export class SavedCard implements OnInit, OnDestroy {
     // Get customer ID from localStorage (set during login)
     const customerData = localStorage.getItem('customerData');
     if (customerData) {
-      const parsed = JSON.parse(customerData);
-      this.customerId = parsed.customerId || parsed._id;
-      
-      if (this.customerId) {
-        this.loadSavedCards();
-      } else {
-        this.error = 'Customer ID not found. Please login again.';
+      try {
+        const parsed = JSON.parse(customerData);
+        console.log('Customer data from localStorage:', parsed);
+        
+        // Try different possible field names for customer ID
+        this.customerId = parsed.id || parsed._id || parsed.customerId;
+        
+        if (this.customerId) {
+          console.log('Customer ID found:', this.customerId);
+          this.loadSavedCards();
+        } else {
+          console.error('No customer ID found in data:', parsed);
+          this.error = 'Customer ID not found. Please login again.';
+          this.loading = false;
+        }
+      } catch (e) {
+        console.error('Error parsing customer data:', e);
+        this.error = 'Invalid customer data. Please login again.';
         this.loading = false;
       }
     } else {
+      // Try to get customer ID from JWT token as fallback
+      console.log('No customer data in localStorage, trying JWT token');
+      this.tryGetCustomerIdFromToken();
+    }
+  }
+
+  private tryGetCustomerIdFromToken() {
+    const token = this.cookieService.get('jwtToken');
+    if (token) {
+      try {
+        // Decode JWT token (basic decode, not verification)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('JWT payload:', payload);
+        
+        this.customerId = payload.customerId || payload.id || payload.userId;
+        
+        if (this.customerId) {
+          console.log('Customer ID found in JWT:', this.customerId);
+          this.loadSavedCards();
+        } else {
+          console.error('No customer ID found in JWT:', payload);
+          this.error = 'Customer ID not found. Please login again.';
+          this.loading = false;
+        }
+      } catch (e) {
+        console.error('Error decoding JWT token:', e);
+        this.error = 'Invalid session. Please login again.';
+        this.loading = false;
+      }
+    } else {
+      console.error('No JWT token found');
       this.error = 'Not logged in. Please login again.';
       this.loading = false;
     }
