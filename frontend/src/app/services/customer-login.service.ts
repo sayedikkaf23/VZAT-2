@@ -21,6 +21,18 @@ export class CustomerLoginService {
     return this.http.post(url, data, { headers ,  withCredentials: true });
   }
 
+  requestPasswordReset(email: string): Observable<any> {
+    const url = `${this.url}/customer/forgot-password`;
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post(url, { email }, { headers });
+  }
+
+  resetPassword(email: string, token: string, newPassword: string): Observable<any> {
+    const url = `${this.url}/customer/reset-password`;
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post(url, { email, token, newPassword }, { headers });
+  }
+
         logout(): void {
         this.cookieService.delete('jwtToken'); 
         this.router.navigate(['/login']);
