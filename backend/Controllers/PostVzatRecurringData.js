@@ -2,6 +2,7 @@ import {connectDB,disconnectDB} from "../config/db.js";
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 import { updateQuotePaymentStatus } from "../services/salesforceService.js";
+import { createCustomerAccount, saveCustomerCard } from "./CustomerRegistration.js";
 import axios from "axios";
 import dotenv from "dotenv";
 
@@ -114,9 +115,11 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     const day = createdDateObj.getDate();
 
     let InstallmentLeft = 1; // fallback default
-    let firstPaymentDueDate = new Date(createdDateObj);
+    let firstPaymentDueDate = new Date(createdDateObj); // First payment due on CreatedDate itself
     let nextInstallmentDate = null;
     let installmentAmount = parseFloat(Total_After_VAT_Currency);
+    let paymentLinkExpiryDate = new Date(createdDateObj);
+    paymentLinkExpiryDate.setDate(paymentLinkExpiryDate.getDate() + 7); // Payment link expires 7 days after creation
     
     if (finalInstallmentType === "Installments") {
       const currentDate = new Date();
@@ -129,9 +132,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       }
       if (InstallmentLeft <= 0) InstallmentLeft = 1;
 
-      // Add 7 days to CreatedDate for first payment
+      // Add 0 days to CreatedDate for first payment (payment due on creation date itself)
       firstPaymentDueDate = new Date(createdDateObj.getTime());
-      firstPaymentDueDate.setDate(firstPaymentDueDate.getDate() + 7);
 
       // Next installment due date logic
       let chargeDay = day <= 15 ? 10 : 25;
@@ -167,7 +169,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       opp_number,
       opp_title,
       opp_phone,
-      opp_mobile
+      opp_mobile,
+      payment_link_expiry: paymentLinkExpiryDate
     });
 
     const result = await baseData.save();
@@ -581,6 +584,83 @@ export const getAFSPaymentResult = async (req, res) => {
       // Set the actual payment status and message based on AFS result
       resultData.paymentStatus = actualPaymentStatus;
       resultData.message = paymentMessage;
+      
+      // 🆕 CREATE CUSTOMER ACCOUNT ONLY FOR SUBSCRIPTION FIRST PAYMENTS
+      if (actualPaymentStatus === 'success' && quotepaymentId) {
+        try {
+          console.log('🔄 Checking if this is a subscription first payment...');
+          
+          // Find the original payment record to check if it's a subscription
+          const paymentRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
+          
+          if (paymentRecord && paymentRecord.is_subscription && paymentRecord.opp_email) {
+            console.log('✅ This is a subscription first payment - creating customer account...');
+            
+            const customerCreationResult = await createCustomerAccount({
+              quotepaymentId: paymentRecord.quotepaymentId,
+              opp_email: paymentRecord.opp_email,
+              Customer_name: paymentRecord.Customer_name,
+              OpportunityId: paymentRecord.OpportunityId,
+              QuoteId: paymentRecord.QuoteId
+            });
+            
+            if (customerCreationResult.success) {
+              console.log('✅ Customer account created successfully after subscription first payment');
+              resultData.customer_account = {
+                status: 'created',
+                message: 'Customer account created and welcome email sent for subscription',
+                isExisting: customerCreationResult.isExisting || false
+              };
+              
+              // 🆕 SAVE CUSTOMER CARD DETAILS AFTER SUCCESSFUL SUBSCRIPTION PAYMENT
+              try {
+                console.log('💳 Saving customer card details for subscription payment...');
+                const cardSaveResult = await saveCustomerCard({
+                  ...paymentRecord.toObject(),
+                  result: resultData // Pass AFS result for card details
+                });
+                
+                if (cardSaveResult.success) {
+                  console.log('✅ Customer card saved successfully');
+                  resultData.customer_account.card_saved = true;
+                } else {
+                  console.log('⚠️ Card saving failed:', cardSaveResult.message);
+                  resultData.customer_account.card_saved = false;
+                  resultData.customer_account.card_error = cardSaveResult.message;
+                }
+              } catch (cardError) {
+                console.error('❌ Error saving customer card:', cardError);
+                resultData.customer_account.card_saved = false;
+                resultData.customer_account.card_error = cardError.message;
+              }
+            } else {
+              console.error('❌ Failed to create customer account:', customerCreationResult.error);
+              resultData.customer_account = {
+                status: 'failed',
+                error: customerCreationResult.error
+              };
+            }
+          } else if (paymentRecord && !paymentRecord.is_subscription) {
+            console.log('ℹ️ This is a one-time payment - skipping customer account creation');
+            resultData.customer_account = {
+              status: 'skipped',
+              message: 'One-time payment - customer account creation not required'
+            };
+          } else {
+            console.warn('⚠️ Cannot create customer account: Missing payment record or email');
+            resultData.customer_account = {
+              status: 'skipped',
+              message: 'Customer account creation skipped - missing subscription data or email address'
+            };
+          }
+        } catch (customerError) {
+          console.error('❌ Error creating customer account:', customerError);
+          resultData.customer_account = {
+            status: 'failed',
+            error: customerError.message
+          };
+        }
+      }
       
       // For backwards compatibility, also check special shopperResultUrl cases
       if (actualPaymentStatus === 'success' && resultData.result && 

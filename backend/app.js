@@ -80,7 +80,27 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       return res.status(404).json(errorData);
     }
     
-    console.log('✅ Payment data found:', paymentData);
+    // ⏰ CHECK PAYMENT LINK EXPIRY (7 days after creation)
+    const currentDate = new Date();
+    const paymentLinkExpiry = paymentData.payment_link_expiry;
+    
+    if (paymentLinkExpiry && currentDate > paymentLinkExpiry) {
+      console.log('🚫 Payment link has expired for checkoutId:', req.params.checkoutId);
+      const expiredData = {
+        error: 'Payment link has expired',
+        message: 'This payment link has expired. Please contact your sales representative to generate a new payment link.',
+        isExpired: true,
+        expiryDate: paymentLinkExpiry,
+        checkoutId: req.params.checkoutId
+      };
+      
+      // Log expired link access attempt
+      Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, expiredData);
+      
+      return res.status(410).json(expiredData); // 410 Gone - resource expired
+    }
+    
+    console.log('✅ Payment data found and link is still valid:', paymentData);
     
     // Log successful response to database
     Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, {

@@ -71,6 +71,11 @@ const vzatRecurringDataSchema = new Schema({
         type: String,
         required: false
     },
+    // Payment link expiry date - links expire 7 days after creation
+    payment_link_expiry: {
+        type: Date,
+        required: false
+    },
     // Customer and Opportunity owner information
     quote_payment_number: {
         type: String,
