@@ -115,20 +115,42 @@ export class SavedCard implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
     
+    console.log('🔄 Loading saved cards for customer:', this.customerId);
+    console.log('🔄 API URL:', `${this.savedCardsService['apiUrl']}/saved-cards/customer/${this.customerId}/cards`);
+    
     this.savedCardsService.getCustomerCards(this.customerId).subscribe({
       next: (response: ApiResponse<SavedCardModel>) => {
         this.loading = false;
+        console.log('✅ API Response received:', response);
+        
         if (response.success) {
           this.cards = response.cards || [];
-          console.log('Cards loaded:', this.cards);
+          console.log('✅ Cards loaded successfully:', this.cards);
+          
+          if (this.cards.length ***REMOVED***= 0) {
+            console.log('ℹ️ No cards found for this customer');
+          }
         } else {
+          console.error('❌ API returned error:', response.message);
           this.error = response.message || 'Failed to load saved cards';
         }
       },
       error: (error: any) => {
         this.loading = false;
-        console.error('Error loading cards:', error);
-        this.error = 'Failed to load saved cards. Please try again.';
+        console.error('❌ API Error:', error);
+        console.error('❌ Error status:', error.status);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Full error object:', error);
+        
+        if (error.status ***REMOVED***= 0) {
+          this.error = 'Unable to connect to server. Please check your internet connection.';
+        } else if (error.status ***REMOVED***= 404) {
+          this.error = 'API endpoint not found. Please contact support.';
+        } else if (error.status ***REMOVED***= 500) {
+          this.error = 'Server error. Please try again later.';
+        } else {
+          this.error = `Failed to load saved cards. Error: ${error.status || 'Unknown'}`;
+        }
       }
     });
   }
@@ -175,6 +197,25 @@ export class SavedCard implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  // Fix existing card numbers (for development/testing)
+  fixCardNumbers() {
+    console.log('🔧 Fixing existing card numbers...');
+    this.savedCardsService.fixCardNumbers().subscribe({
+      next: (response: ApiResponse<void>) => {
+        if (response.success) {
+          console.log('✅ Card numbers fixed successfully');
+          // Reload cards to see the changes
+          this.loadSavedCards();
+        } else {
+          console.error('❌ Failed to fix card numbers:', response.message);
+        }
+      },
+      error: (error: any) => {
+        console.error('❌ Error fixing card numbers:', error);
+      }
+    });
   }
 
   getCardIcon(brand: string): string {
