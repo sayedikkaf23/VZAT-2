@@ -163,18 +163,20 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         });
         
         // Handle payment link expiration (410 Gone)
-        if (error.status ***REMOVED***= 410) {
+        if (error.status ***REMOVED***= 410 && error.error?.isExpired) {
           const errorData = error.error;
-          this.errorMessage = `Payment Link Expired: ${errorData.message || 'This payment link is no longer valid.'}`;
-          if (errorData.daysExpired) {
-            this.errorMessage += ` This link expired ${errorData.daysExpired} days ago.`;
+          let expiredMessage = '🚫 Payment Link Expired\n\n';
+          expiredMessage += errorData.message || 'This payment link has expired and is no longer valid for payments.';
+          
+          if (errorData.expiryDate) {
+            const expiryDate = new Date(errorData.expiryDate);
+            expiredMessage += `\n\nThis link expired on ${expiryDate.toLocaleDateString()}.`;
           }
-          if (errorData.expirationDate) {
-            this.errorMessage += ` Expiration date was: ${errorData.expirationDate}.`;
-          }
-          this.errorMessage += ' Please contact your sales representative for a new payment link.';
+          
+          expiredMessage += '\n\nPlease contact your sales representative to generate a new payment link.';
+          this.errorMessage = expiredMessage;
         } else {
-          this.errorMessage = `Failed to load payment schedule: ${error.status} ${error.statusText}. Loading demo data...`;
+          this.errorMessage = `Failed to load payment schedule: ${error.status} ${error.statusText}\n\nPlease try again later or contact support if the problem persists.`;
         }
         
         this.isLoading = false; // Set loading to false immediately
