@@ -38,39 +38,66 @@ export class SavedCard implements OnInit, OnDestroy {
   ) {}
   
   ngOnInit(): void {
+    console.log('🎯 SavedCard component initializing...');
+    
+    // Load customer data first
     this.loadCustomerData();
+    
+    // Load styles
     this.styleLoader.loadThemes(this.themeUrls)
       .then(() => {
-        // Styles loaded
-        console.log('Styles loaded successfully');
+        console.log('✅ Styles loaded successfully');
         // Retry loading cards after styles are loaded if they failed initially
         if (this.error && this.customerId) {
-          console.log('Retrying card load after styles loaded');
+          console.log('🔄 Retrying card load after styles loaded');
           this.retryLoadCards();
         }
       })
       .catch(err => {
-        console.error('Style loading failed:', err);
+        console.error('❌ Style loading failed:', err);
       });
 
-    // Add multiple checks to ensure cards load properly
+    // Multiple fallback checks with increasing delays
     setTimeout(() => {
       if (this.loading && this.customerId) {
-        console.log('DOM settled, checking card load status');
+        console.log('🔄 500ms check - cards still loading');
+        this.debugCurrentState();
         this.ensureCardsLoaded();
       }
     }, 500);
 
-    // Add a longer fallback check
     setTimeout(() => {
       if (this.loading && this.customerId) {
-        console.log('Extended check - cards still loading, forcing retry');
+        console.log('🔄 2s check - forcing retry');
+        this.debugCurrentState();
         this.retryLoadCards();
       }
     }, 2000);
 
+    setTimeout(() => {
+      if (this.loading) {
+        console.warn('⚠️ 5s check - still loading, something is wrong');
+        this.debugCurrentState();
+        if (this.customerId) {
+          this.retryLoadCards();
+        } else {
+          this.forceReload();
+        }
+      }
+    }, 5000);
+
     // Listen for layout changes that might indicate sidebar toggle
     this.setupLayoutObserver();
+  }
+
+  private debugCurrentState() {
+    console.log('🔍 Current component state:', {
+      loading: this.loading,
+      error: this.error,
+      customerId: this.customerId,
+      cardsCount: this.cards.length,
+      hasTimeout: !!this.loadingTimeout
+    });
   }
 
   private setupLayoutObserver() {
@@ -96,32 +123,37 @@ export class SavedCard implements OnInit, OnDestroy {
   }
 
   private loadCustomerData() {
+    console.log('🔍 Loading customer data...');
+    
     // Get customer ID from localStorage (set during login)
     const customerData = localStorage.getItem('customerData');
     if (customerData) {
       try {
         const parsed = JSON.parse(customerData);
-        console.log('Customer data from localStorage:', parsed);
+        console.log('✅ Customer data from localStorage:', parsed);
         
         // Try different possible field names for customer ID
         this.customerId = parsed.id || parsed._id || parsed.customerId;
         
         if (this.customerId) {
-          console.log('Customer ID found:', this.customerId);
-          this.loadSavedCards();
+          console.log('✅ Customer ID found:', this.customerId);
+          setTimeout(() => {
+            console.log('🔄 Starting card load with slight delay...');
+            this.loadSavedCards();
+          }, 100); // Small delay to ensure component is ready
         } else {
-          console.error('No customer ID found in data:', parsed);
+          console.error('❌ No customer ID found in data:', parsed);
           this.error = 'Customer ID not found. Please login again.';
           this.loading = false;
         }
       } catch (e) {
-        console.error('Error parsing customer data:', e);
+        console.error('❌ Error parsing customer data:', e);
         this.error = 'Invalid customer data. Please login again.';
         this.loading = false;
       }
     } else {
       // Try to get customer ID from JWT token as fallback
-      console.log('No customer data in localStorage, trying JWT token');
+      console.log('⚠️ No customer data in localStorage, trying JWT token');
       this.tryGetCustomerIdFromToken();
     }
   }
@@ -157,39 +189,47 @@ export class SavedCard implements OnInit, OnDestroy {
   }
 
   loadSavedCards() {
-    if (!this.customerId) return;
+    if (!this.customerId) {
+      console.error('🔄 Cannot load cards - no customer ID');
+      this.loading = false;
+      this.error = 'Customer ID not found. Please login again.';
+      return;
+    }
     
+    console.log('🔄 Starting card load for customer:', this.customerId);
     this.loading = true;
     this.error = null;
     
     // Clear any existing timeout
     if (this.loadingTimeout) {
       clearTimeout(this.loadingTimeout);
+      console.log('🔄 Cleared existing timeout');
     }
     
     // Set a timeout to prevent infinite loading
     this.loadingTimeout = setTimeout(() => {
       if (this.loading) {
-        console.warn('⚠️ Loading timeout reached, stopping loading state');
+        console.warn('⚠️ Loading timeout reached after 15 seconds');
         this.loading = false;
-        this.error = 'Loading took too long. Please try refreshing the page or clicking retry.';
+        this.error = 'Loading took too long. Please try clicking refresh again or check your connection.';
       }
     }, 15000); // 15 second timeout
     
-    console.log('🔄 Loading saved cards for customer:', this.customerId);
+    console.log('🔄 Making API call to load cards');
     console.log('🔄 API URL:', `${this.savedCardsService['apiUrl']}/saved-cards/customer/${this.customerId}/cards`);
     
     this.savedCardsService.getCustomerCards(this.customerId).subscribe({
       next: (response: ApiResponse<SavedCardModel>) => {
+        console.log('✅ API Response received:', response);
         this.loading = false;
         if (this.loadingTimeout) {
           clearTimeout(this.loadingTimeout);
+          this.loadingTimeout = null;
         }
-        console.log('✅ API Response received:', response);
         
         if (response.success) {
           this.cards = response.cards || [];
-          console.log('✅ Cards loaded successfully:', this.cards);
+          console.log('✅ Cards loaded successfully:', this.cards.length, 'cards');
           
           if (this.cards.length === 0) {
             console.log('ℹ️ No cards found for this customer');
@@ -200,23 +240,30 @@ export class SavedCard implements OnInit, OnDestroy {
         }
       },
       error: (error: any) => {
+        console.error('❌ API Error occurred:', error);
         this.loading = false;
         if (this.loadingTimeout) {
           clearTimeout(this.loadingTimeout);
+          this.loadingTimeout = null;
         }
-        console.error('❌ API Error:', error);
-        console.error('❌ Error status:', error.status);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Full error object:', error);
+        
+        console.error('❌ Error details:', {
+          status: error.status,
+          message: error.message,
+          url: error.url,
+          name: error.name
+        });
         
         if (error.status === 0) {
-          this.error = 'Unable to connect to server. Please check your internet connection.';
+          this.error = 'Unable to connect to server. Please check your internet connection and try again.';
         } else if (error.status === 404) {
-          this.error = 'API endpoint not found. Please contact support.';
+          this.error = 'Cards service not found. Please contact support.';
         } else if (error.status === 500) {
-          this.error = 'Server error. Please try again later.';
+          this.error = 'Server error. Please try again in a few moments.';
+        } else if (error.status === 401 || error.status === 403) {
+          this.error = 'Session expired. Please login again.';
         } else {
-          this.error = `Failed to load saved cards. Error: ${error.status || 'Unknown'}`;
+          this.error = `Failed to load saved cards. Error: ${error.status || 'Network error'}`;
         }
       }
     });
@@ -237,21 +284,65 @@ export class SavedCard implements OnInit, OnDestroy {
   }
 
   private retryLoadCards() {
-    if (!this.customerId) return;
+    if (!this.customerId) {
+      console.error('🔄 Cannot retry - no customer ID');
+      this.error = 'Customer ID not found. Please login again.';
+      this.loading = false;
+      return;
+    }
     
     console.log('🔄 Retrying card load for customer:', this.customerId);
+    
+    // Clear any existing timeout before retry
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
+    }
+    
     this.error = null;
+    this.loading = true;
     this.loadSavedCards();
   }
 
   refreshCards() {
     console.log('🔄 Manual refresh triggered');
+    
+    // Reset all states first
+    this.loading = true;
+    this.error = null;
+    this.cards = [];
+    
+    // Clear any existing timeout
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
+    }
+    
     if (this.customerId) {
-      this.retryLoadCards();
+      console.log('🔄 Customer ID exists, retrying card load');
+      this.loadSavedCards();
     } else {
       console.log('🔄 No customer ID, reloading customer data');
       this.loadCustomerData();
     }
+  }
+
+  // Complete reset and reload
+  forceReload() {
+    console.log('🔄 Force reload triggered - resetting everything');
+    
+    // Clear all timeouts
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
+      this.loadingTimeout = null;
+    }
+    
+    // Reset all states
+    this.loading = true;
+    this.error = null;
+    this.cards = [];
+    this.customerId = null;
+    
+    // Start fresh
+    this.loadCustomerData();
   }
 
   setDefaultCard(cardId: string) {
