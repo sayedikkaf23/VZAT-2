@@ -38,12 +38,11 @@ export class SavedCard implements OnInit, OnDestroy {
     this.loadCustomerData();
     this.styleLoader.loadThemes(this.themeUrls)
       .then(() => {
-        // Styles loaded, show content
-        this.loading = false;
+        // Styles loaded
+        console.log('Styles loaded successfully');
       })
       .catch(err => {
-        console.error(err);
-        this.loading = false; // Show anyway if failed
+        console.error('Style loading failed:', err);
       });
   }
 
@@ -58,19 +57,23 @@ export class SavedCard implements OnInit, OnDestroy {
         this.loadSavedCards();
       } else {
         this.error = 'Customer ID not found. Please login again.';
+        this.loading = false;
       }
     } else {
       this.error = 'Not logged in. Please login again.';
+      this.loading = false;
     }
   }
 
   loadSavedCards() {
     if (!this.customerId) return;
     
+    this.loading = true;
     this.error = null;
     
     this.savedCardsService.getCustomerCards(this.customerId).subscribe({
       next: (response: ApiResponse<SavedCardModel>) => {
+        this.loading = false;
         if (response.success) {
           this.cards = response.cards || [];
           console.log('Cards loaded:', this.cards);
@@ -79,6 +82,7 @@ export class SavedCard implements OnInit, OnDestroy {
         }
       },
       error: (error: any) => {
+        this.loading = false;
         console.error('Error loading cards:', error);
         this.error = 'Failed to load saved cards. Please try again.';
       }
