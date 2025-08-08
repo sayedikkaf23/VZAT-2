@@ -78,11 +78,40 @@
                 </div>
               </div>
               <div class="col-auto">
-                <a href="#" (click)="$event.preventDefault()" class="link"><u>Forgot Password?</u></a>
+                <a href="#" (click)="$event.preventDefault(); showForgotPasswordForm()" class="link"><u>Forgot Password?</u></a>
               </div>
             </div>
-            <button type="submit" class="btn w-100">Login</button>
+            <button type="submit" class="btn w-100" [disabled]="!customerLogin.form.valid">Login</button>
           </form>
+          
+          <!-- Forgot Password Form -->
+          <div *ngIf="showForgotPassword" class="forgot-password-form mt-4 p-4" style="background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+            <h4 style="color: #495057; margin-bottom: 15px;">Reset Your Password</h4>
+            <p style="color: #6c757d; font-size: 14px; margin-bottom: 20px;">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+            <div class="form-field">
+              <input 
+                type="email" 
+                class="form-control" 
+                placeholder="Enter your email address"
+                [(ngModel)]="forgotPasswordEmail"
+                required
+              />
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <button type="button" class="btn btn-secondary w-100" (click)="hideForgotPasswordForm()">
+                  Cancel
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-primary w-100" (click)="sendPasswordReset()" [disabled]="!forgotPasswordEmail">
+                  Send Reset Link
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
