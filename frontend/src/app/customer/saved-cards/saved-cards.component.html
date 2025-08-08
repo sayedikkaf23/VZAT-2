@@ -1,0 +1,137 @@
+<div class="saved-cards-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <h1 class="page-title">💳 Saved Payment Methods</h1>
+      <p class="page-subtitle">Manage your saved payment cards</p>
+    </div>
+    
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons">
+      <button class="nav-btn secondary" (click)="navigateToActiveServices()">
+        🏠 Active Services
+      </button>
+      <button class="nav-btn secondary" (click)="navigateToProfile()">
+        👤 Profile
+      </button>
+      <button class="nav-btn danger" (click)="logout()">
+        🚪 Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading your saved cards...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container">
+    <div class="error-message">
+      <span class="error-icon">⚠️</span>
+      <p>{{ error }}</p>
+    </div>
+    <button class="retry-btn" (click)="loadSavedCards()">Try Again</button>
+  </div>
+
+  <!-- Cards Content -->
+  <div *ngIf="!loading && !error" class="cards-content">
+    
+    <!-- No Cards State -->
+    <div *ngIf="cards.length ***REMOVED***= 0" class="no-cards-container">
+      <div class="no-cards-message">
+        <span class="no-cards-icon">💳</span>
+        <h3>No Saved Cards</h3>
+        <p>You don't have any saved payment methods yet.</p>
+        <p>Cards will be automatically saved when you make payments.</p>
+      </div>
+    </div>
+
+    <!-- Cards Grid -->
+    <div *ngIf="cards.length > 0" class="cards-grid">
+      <div *ngFor="let card of cards" class="card-item" [class.default-card]="card.isDefault">
+        
+        <!-- Default Badge -->
+        <div *ngIf="card.isDefault" class="default-badge">
+          ⭐ Default
+        </div>
+        
+        <!-- Card Header -->
+        <div class="card-header">
+          <div class="card-brand">
+            <span class="card-icon">{{ getCardIcon(card.cardBrand) }}</span>
+            <span class="brand-name">{{ card.cardBrand }}</span>
+          </div>
+          <div class="card-actions">
+            <button *ngIf="!card.isDefault" 
+                    class="action-btn set-default" 
+                    (click)="setDefaultCard(card._id)"
+                    title="Set as default">
+              ⭐
+            </button>
+            <button class="action-btn remove" 
+                    (click)="removeCard(card._id)"
+                    title="Remove card">
+              🗑️
+            </button>
+          </div>
+        </div>
+
+        <!-- Card Details -->
+        <div class="card-details">
+          <div class="card-number">
+            {{ formatCardNumber(card.maskedCardNumber) }}
+          </div>
+          <div class="card-info">
+            <div class="cardholder-name">{{ card.cardholderName }}</div>
+            <div class="expiry-date">{{ card.expiryMonth }}/{{ card.expiryYear }}</div>
+          </div>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="card-footer">
+          <div class="added-date">
+            <small>Added: {{ card.cardAddedDate | date:'shortDate' }}</small>
+          </div>
+          <div *ngIf="card.lastUsedDate" class="last-used">
+            <small>Last used: {{ card.lastUsedDate | date:'shortDate' }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards Summary -->
+    <div *ngIf="cards.length > 0" class="cards-summary">
+      <div class="summary-item">
+        <span class="summary-label">Total Cards:</span>
+        <span class="summary-value">{{ cards.length }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Default Card:</span>
+        <span class="summary-value">
+          {{ getDefaultCardNumber() }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Section -->
+  <div class="help-section">
+    <h3>💡 Card Management Help</h3>
+    <div class="help-items">
+      <div class="help-item">
+        <strong>Automatic Saving:</strong> Cards are automatically saved when you make successful payments.
+      </div>
+      <div class="help-item">
+        <strong>Default Card:</strong> Your default card will be pre-selected for future payments.
+      </div>
+      <div class="help-item">
+        <strong>Security:</strong> We only store masked card numbers. Full card details are never stored.
+      </div>
+      <div class="help-item">
+        <strong>Removal:</strong> You can remove any saved card that you no longer want to use.
+      </div>
+    </div>
+  </div>
+</div>

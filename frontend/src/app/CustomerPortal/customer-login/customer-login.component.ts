@@ -23,6 +23,8 @@ export class CustomerLoginComponent {
   ];
 
     passwordVisible: boolean = false;
+    showForgotPassword: boolean = false;
+    forgotPasswordEmail: string = '';
     passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*\(\)+\\;:'",.<>\/?=_\{\}\[\]\|\-]).{8,}$/;
     loginDetails = {
     email : '',
@@ -55,6 +57,38 @@ export class CustomerLoginComponent {
     this.passwordVisible = !this.passwordVisible;
   }
 
+  showForgotPasswordForm(): void {
+    this.showForgotPassword = true;
+    this.forgotPasswordEmail = this.loginDetails.email; // Pre-fill with login email if available
+  }
+
+  hideForgotPasswordForm(): void {
+    this.showForgotPassword = false;
+    this.forgotPasswordEmail = '';
+  }
+
+  sendPasswordReset(): void {
+    if (!this.forgotPasswordEmail || !this.forgotPasswordEmail.includes('@')) {
+      this.toastr.error('Please enter a valid email address');
+      return;
+    }
+
+    this.customerLoginService.requestPasswordReset(this.forgotPasswordEmail).subscribe({
+      next: (res: any) => {
+        if (res.success) {
+          this.toastr.success('Password reset link sent! Check your email.');
+          this.hideForgotPasswordForm();
+        } else {
+          this.toastr.error(res.message || 'Failed to send password reset email');
+        }
+      },
+      error: (err: any) => {
+        console.error('Password reset error:', err);
+        this.toastr.error('Error sending password reset email. Please try again.');
+      }
+    });
+  }
+
   //console.log(loginDetails);
 
   login(data:any):void{
@@ -66,8 +100,23 @@ export class CustomerLoginComponent {
           console.log(res);
           if (res.loggedIn***REMOVED***1) {
             this.cookieService.set('jwtToken', res.token);
+            
+            // Store customer data for other components
+            if (res.customer) {
+              localStorage.setItem('customerData', JSON.stringify(res.customer));
+            }
+            
             console.log("Logged In")
-            this.router.navigate(['/active-services']);   //set the navigation path for customer, after logging in 
+            
+            // Check if there's a redirect parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get('redirect');
+            
+            if (redirect ***REMOVED***= 'saved-cards') {
+              this.router.navigate(['/saved-cards']);
+            } else {
+              this.router.navigate(['/active-services']);   //set the navigation path for customer, after logging in 
+            }
           } else {
             this.toastr.error(res.message);
         }

@@ -365,6 +365,295 @@ export const sendPdfEmail = async (emailData) => {
 };
 
 /**
+ * Send welcome email to new customer with login credentials
+ */
+export const sendCustomerWelcomeEmail = async (customerData) => {
+  try {
+    const transporter = createTransporter();
+    
+    const {
+      customerName,
+      email,
+      temporaryPassword,
+      quotepaymentId,
+      loginUrl
+    } = customerData;
+
+    const mailOptions = {
+      from: {
+        name: EMAIL_CONFIG.sender.name,
+        address: EMAIL_CONFIG.sender.email
+      },
+      to: email,
+      subject: '🎉 Welcome to VZAT Customer Portal - Your Account is Ready!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">🎉 Welcome to VZAT!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">Your Customer Portal Account is Ready</p>
+          </div>
+          
+          <div style="padding: 30px; background-color: #f9f9f9;">
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
+              Dear <strong>${customerName}</strong>,
+            </p>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6;">
+              Congratulations! Your first payment has been successfully processed, and we've created your customer portal account. 
+              You can now access your account to view payment schedules, manage services, and more.
+            </p>
+            
+            <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #e3f2fd;">
+              <h3 style="color: #1976d2; margin-top: 0;">🔐 Your Login Credentials</h3>
+              <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${temporaryPassword}</code></p>
+              <p style="margin: 10px 0;"><strong>Quote Payment ID:</strong> ${quotepaymentId}</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px;">
+                🚀 Login to Your Account
+              </a>
+            </div>
+            
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <h4 style="color: #856404; margin-top: 0;">⚠️ Important Security Notice:</h4>
+              <p style="color: #856404; margin-bottom: 0; font-size: 14px;">
+                This is a temporary password. For your security, please change it immediately after your first login. 
+                You'll be prompted to create a new password when you sign in.
+              </p>
+            </div>
+            
+            <div style="background-color: #e8f5e8; border: 1px solid #c3e6c3; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <h4 style="color: #2d5a2d; margin-top: 0;">✨ What You Can Do in Your Portal:</h4>
+              <ul style="color: #2d5a2d; margin-bottom: 0; padding-left: 20px;">
+                <li>View your payment schedules and due dates</li>
+                <li>Access your active services</li>
+                <li>Update your saved payment methods</li>
+                <li>Get help and support</li>
+                <li>Download invoices and receipts</li>
+              </ul>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">
+              If you have any questions or need assistance, please don't hesitate to contact our support team. 
+              We're here to help you make the most of your VZAT experience.
+            </p>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+              <p style="font-size: 14px; color: #888; margin: 0;">
+                Best regards,<br>
+                <strong>The VZAT Team</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`✅ Welcome email sent successfully to ${email}: ${result.messageId}`);
+    return { success: true, messageId: result.messageId, recipient: email };
+    
+  } catch (error) {
+    console.error('❌ Failed to send welcome email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Send email to existing customer with login reminder
+ */
+export const sendExistingCustomerEmail = async (customerData) => {
+  try {
+    const transporter = createTransporter();
+    
+    const {
+      customerName,
+      email,
+      quotepaymentId,
+      existingQuotePaymentId,
+      loginUrl
+    } = customerData;
+
+    const mailOptions = {
+      from: {
+        name: EMAIL_CONFIG.sender.name,
+        address: EMAIL_CONFIG.sender.email
+      },
+      to: email,
+      subject: '🔐 Welcome Back! Your VZAT Account is Ready to Use',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">🔐 Welcome Back!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">Your VZAT Account is Already Active</p>
+          </div>
+          
+          <div style="padding: 30px; background-color: #f9f9f9;">
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
+              Dear <strong>${customerName}</strong>,
+            </p>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6;">
+              We noticed you've made another payment, but you already have an active account with us! 
+              No need to create a new account - you can continue using your existing credentials.
+            </p>
+            
+            <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #e8f5e8;">
+              <h3 style="color: #2e7d32; margin-top: 0;">📋 Account Information</h3>
+              <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 10px 0;"><strong>Original Quote Payment ID:</strong> ${existingQuotePaymentId}</p>
+              <p style="margin: 10px 0;"><strong>New Quote Payment ID:</strong> ${quotepaymentId}</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px;">
+                🔑 Login to Your Account
+              </a>
+            </div>
+            
+            <div style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <h4 style="color: #1565c0; margin-top: 0;">💡 Forgot Your Password?</h4>
+              <p style="color: #1565c0; margin-bottom: 0; font-size: 14px;">
+                If you've forgotten your password, click "Forgot Password?" on the login page to reset it securely.
+              </p>
+            </div>
+            
+            <div style="background-color: #fff3e0; border: 1px solid #ffcc02; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <h4 style="color: #f57c00; margin-top: 0;">🎯 Your Customer Portal Features:</h4>
+              <ul style="color: #f57c00; margin-bottom: 0; padding-left: 20px;">
+                <li>View all your payment schedules and history</li>
+                <li>Access your active services across all payments</li>
+                <li>Manage your saved payment methods</li>
+                <li>Download invoices and receipts</li>
+                <li>Get help and support when needed</li>
+              </ul>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">
+              If you have any questions or need assistance accessing your account, please don't hesitate to contact our support team.
+            </p>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+              <p style="font-size: 14px; color: #888; margin: 0;">
+                Best regards,<br>
+                <strong>The VZAT Team</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`✅ Existing customer email sent successfully to ${email}: ${result.messageId}`);
+    return { success: true, messageId: result.messageId, recipient: email };
+    
+  } catch (error) {
+    console.error('❌ Failed to send existing customer email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Send password reset email
+ */
+export const sendPasswordResetEmail = async (customerData) => {
+  try {
+    const transporter = createTransporter();
+    
+    const {
+      customerName,
+      email,
+      resetToken,
+      resetUrl
+    } = customerData;
+
+    const mailOptions = {
+      from: {
+        name: EMAIL_CONFIG.sender.name,
+        address: EMAIL_CONFIG.sender.email
+      },
+      to: email,
+      subject: '🔐 Reset Your VZAT Account Password',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">🔐 Password Reset</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">Reset Your VZAT Account Password</p>
+          </div>
+          
+          <div style="padding: 30px; background-color: #f9f9f9;">
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
+              Dear <strong>${customerName}</strong>,
+            </p>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6;">
+              We received a request to reset your password for your VZAT customer account. 
+              Click the button below to set a new password:
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px;">
+                🔑 Reset My Password
+              </a>
+            </div>
+            
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <h4 style="color: #856404; margin-top: 0;">⏰ Important:</h4>
+              <p style="color: #856404; margin-bottom: 0; font-size: 14px;">
+                This password reset link will expire in <strong>1 hour</strong> for security reasons. 
+                If you don't reset your password within this time, you'll need to request a new reset link.
+              </p>
+            </div>
+            
+            <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <h4 style="color: #721c24; margin-top: 0;">🛡️ Security Notice:</h4>
+              <p style="color: #721c24; margin-bottom: 5px; font-size: 14px;">
+                If you didn't request this password reset, please ignore this email. Your account will remain secure.
+              </p>
+              <p style="color: #721c24; margin-bottom: 0; font-size: 14px;">
+                For additional security, we recommend using a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters.
+              </p>
+            </div>
+            
+            <div style="background-color: #e8f4f8; border: 1px solid #bee5eb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <h4 style="color: #0c5460; margin-top: 0;">🔗 Alternative Method:</h4>
+              <p style="color: #0c5460; margin-bottom: 5px; font-size: 14px;">
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="color: #0c5460; margin-bottom: 0; font-size: 12px; word-break: break-all; background-color: #f1f9fc; padding: 8px; border-radius: 4px;">
+                ${resetUrl}
+              </p>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">
+              If you continue to have problems accessing your account, please contact our support team for assistance.
+            </p>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+              <p style="font-size: 14px; color: #888; margin: 0;">
+                Best regards,<br>
+                <strong>The VZAT Team</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`✅ Password reset email sent successfully to ${email}: ${result.messageId}`);
+    return { success: true, messageId: result.messageId, recipient: email };
+    
+  } catch (error) {
+    console.error('❌ Failed to send password reset email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Test email configuration
  */
 export const testEmailConfiguration = async () => {
@@ -403,5 +692,8 @@ export default {
   sendSubscriptionCompletedEmail,
   sendPaymentFailureEmail,
   sendPdfEmail,
+  sendCustomerWelcomeEmail,
+  sendExistingCustomerEmail,
+  sendPasswordResetEmail,
   testEmailConfiguration
 };

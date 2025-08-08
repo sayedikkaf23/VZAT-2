@@ -1,6 +1,7 @@
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 import { sendSubscriptionCompletedEmail, sendPaymentFailureEmail } from "../services/emailService.js";
+import { createCustomerAccount, saveCustomerCard } from "./CustomerRegistration.js";
 import { updateQuotePaymentStatus } from "../services/salesforceService.js";
 import axios from "axios";
 import dotenv from "dotenv";
@@ -78,6 +79,37 @@ export const handleAFSWebhook = async (req, res) => {
         
       } catch (salesforceError) {
         console.error('❌ Error calling Salesforce API for initial payment:', salesforceError);
+      }
+      
+      // 🆕 CREATE CUSTOMER ACCOUNT AFTER FIRST SUCCESSFUL PAYMENT
+      try {
+        console.log('🔄 Creating customer account for first payment...');
+        const customerCreationResult = await createCustomerAccount(subscriptionRecord);
+        
+        if (customerCreationResult.success) {
+          console.log('✅ Customer account created successfully');
+        } else {
+          console.error('❌ Failed to create customer account:', customerCreationResult.error);
+        }
+      } catch (customerError) {
+        console.error('❌ Error creating customer account:', customerError);
+      }
+      
+      // 🆕 SAVE CUSTOMER CARD DETAILS AFTER FIRST SUCCESSFUL PAYMENT
+      try {
+        console.log('💳 Saving customer card details...');
+        const cardSaveResult = await saveCustomerCard({
+          ...subscriptionRecord.toObject(),
+          result: webhookData.result // Pass AFS result for card details
+        });
+        
+        if (cardSaveResult.success) {
+          console.log('✅ Customer card saved successfully');
+        } else {
+          console.log('⚠️ Card saving failed:', cardSaveResult.message);
+        }
+      } catch (cardError) {
+        console.error('❌ Error saving customer card:', cardError);
       }
       
       // Schedule next payment

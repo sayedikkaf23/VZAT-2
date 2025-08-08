@@ -8,6 +8,7 @@ import { PaymentResultComponent } from './payment-result/payment-result.componen
 import { ActiveServices } from './CustomerPortal/active-services/active-services';
 import { HelpCenter } from './CustomerPortal/help-center/help-center';
 import { SavedCard } from './CustomerPortal/saved-card/saved-card';
+import { SavedCardsComponent } from './customer/saved-cards/saved-cards.component';
 import { RoleList } from './admin/role-list/role-list';
 import { RoleAdd } from './admin/role-add/role-add';
 import { UserList } from './admin/user-list/user-list';
@@ -21,6 +22,9 @@ import { PaymentMethods } from './admin/payment-methods/payment-methods';
 import { PaymentWidgetComponent } from './payment-widget/payment-widget.component';
 
 export const routes: Routes = [
+  // Default route - redirect to customer login
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  
   { path: 'paymentSchedule', component: PaymentScheduleComponent },
   { path: 'paymentSchedule/:quotepaymentId', component: PaymentScheduleComponent },
   { path: 'payment-widget', component: PaymentWidgetComponent },
@@ -36,6 +40,7 @@ export const routes: Routes = [
   { path: 'active-services', component: ActiveServices },
   { path: 'help-center', component: HelpCenter },
   { path: 'saved-card', component: SavedCard },
+  { path: 'saved-cards', component: SavedCardsComponent }, // New Angular component
 
        {
     path: 'panel',

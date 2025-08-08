@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Customer from "../model/CustomerLoginModel.js";
+import { updateCustomerLoginTime } from "./CustomerRegistration.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 
 
@@ -51,6 +52,8 @@ const Login = async (req,res) => {
         const token = jwt.sign(
           {
             email: loggingUser.email,
+            customerId: loggingUser._id,
+            quotepaymentId: loggingUser.quotepaymentId
           },
           "virtuzone",
           {
@@ -59,6 +62,9 @@ const Login = async (req,res) => {
         );
 
         console.log(token)
+
+        // Update last login time
+        await updateCustomerLoginTime(email);
 
         // res.cookie('jwtToken', token, {
         //   httpOnly: true,
@@ -71,7 +77,15 @@ const Login = async (req,res) => {
         const data = {
           message: "Logged in the User Successfully",
           loggedIn: 1, 
-          token:token 
+          token: token,
+          customer: {
+            id: loggingUser._id,
+            email: loggingUser.email,
+            name: loggingUser.customerName,
+            quotepaymentId: loggingUser.quotepaymentId,
+            isTemporaryPassword: loggingUser.isTemporaryPassword,
+            passwordResetRequired: loggingUser.passwordResetRequired
+          }
         }
         const LogData = Post_Common_DB_Log_Data("/api/customer/login",req.body,data);
         console.log(LogData);
