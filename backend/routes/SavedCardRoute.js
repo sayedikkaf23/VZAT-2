@@ -2,10 +2,14 @@ import { Router } from "express";
 import { 
     getCustomerSavedCards, 
     removeSavedCard, 
-    setDefaultCard 
+    setDefaultCard,
+    testCreateCard
 } from "../Controllers/SavedCardController.js";
 
 const router = Router();
+
+// Test endpoint to create a card manually
+router.post('/test-create-card', testCreateCard);
 
 // Get all saved cards for a customer
 router.get('/customer/:customerId/cards', getCustomerSavedCards);
