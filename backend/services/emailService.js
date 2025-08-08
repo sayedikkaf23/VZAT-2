@@ -398,9 +398,9 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       subject: '🎉 Welcome to VZAT Customer Portal - Your Account is Ready!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">🎉 Welcome to VZAT!</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">Your Customer Portal Account is Ready</p>
+          <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #007bff;">
+            <h1 style="margin: 0; font-size: 28px; color: #000000;">🎉 Welcome to VZAT!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is Ready</p>
           </div>
           
           <div style="padding: 30px; background-color: #f9f9f9;">
@@ -414,14 +414,16 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
             </p>
             
             <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #e3f2fd;">
-              <h3 style="color: #1976d2; margin-top: 0;">🔐 Your Login Credentials</h3>
-              <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
-              <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${temporaryPassword}</code></p>
-              <p style="margin: 10px 0;"><strong>Quote Payment ID:</strong> ${quotepaymentId}</p>
+              <h3 style="color: #000000; margin-top: 0;">🔐 Your Login Credentials</h3>
+              <p style="margin: 10px 0; color: #333;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 10px 0; color: #333;"><strong>Temporary Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #000000; font-weight: bold;">${temporaryPassword}</code></p>
+              <p style="margin: 10px 0; color: #333;"><strong>Quote Payment ID:</strong> ${quotepaymentId}</p>
+              <p style="margin: 15px 0 5px 0; color: #333;"><strong>🔗 Portal Login URL:</strong></p>
+              <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #007bff; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${loginUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px;">
+              <a href="${loginUrl}" style="background-color: #007bff; color: #000000; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #007bff;">
                 🚀 Login to Your Account
               </a>
             </div>
@@ -515,9 +517,9 @@ export const sendExistingCustomerEmail = async (customerData) => {
       subject: '🔐 Welcome Back! Your VZAT Account is Ready to Use',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-          <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">🔐 Welcome Back!</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">Your VZAT Account is Already Active</p>
+          <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #28a745;">
+            <h1 style="margin: 0; font-size: 28px; color: #000000;">🔐 Welcome Back!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your VZAT Account is Already Active</p>
           </div>
           
           <div style="padding: 30px; background-color: #f9f9f9;">
@@ -531,14 +533,16 @@ export const sendExistingCustomerEmail = async (customerData) => {
             </p>
             
             <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #e8f5e8;">
-              <h3 style="color: #2e7d32; margin-top: 0;">📋 Account Information</h3>
-              <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
-              <p style="margin: 10px 0;"><strong>Original Quote Payment ID:</strong> ${existingQuotePaymentId}</p>
-              <p style="margin: 10px 0;"><strong>New Quote Payment ID:</strong> ${quotepaymentId}</p>
+              <h3 style="color: #000000; margin-top: 0;">📋 Account Information</h3>
+              <p style="margin: 10px 0; color: #333;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 10px 0; color: #333;"><strong>Original Quote Payment ID:</strong> ${existingQuotePaymentId}</p>
+              <p style="margin: 10px 0; color: #333;"><strong>New Quote Payment ID:</strong> ${quotepaymentId}</p>
+              <p style="margin: 15px 0 5px 0; color: #333;"><strong>🔗 Portal Login URL:</strong></p>
+              <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #28a745; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${loginUrl}" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px;">
+              <a href="${loginUrl}" style="background-color: #28a745; color: #000000; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #28a745;">
                 🔑 Login to Your Account
               </a>
             </div>
