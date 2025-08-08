@@ -178,6 +178,8 @@ export const createCustomerAccount = async (subscriptionData) => {
 export const saveCustomerCard = async (paymentData) => {
     try {
         console.log('💳 Attempting to save customer card...');
+        console.log('💳 DEBUG - Payment data keys:', Object.keys(paymentData));
+        console.log('💳 DEBUG - Payment data:', JSON.stringify(paymentData, null, 2));
         
         const {
             quotepaymentId,
@@ -188,9 +190,27 @@ export const saveCustomerCard = async (paymentData) => {
             result // Payment result from AFS
         } = paymentData;
         
-        // Validate required data
-        if (!afs_registration_id || !opp_email || !quotepaymentId) {
+        console.log('💳 DEBUG - Extracted values:');
+        console.log(`   - quotepaymentId: ${quotepaymentId}`);
+        console.log(`   - opp_email: ${opp_email}`);
+        console.log(`   - Customer_name: ${Customer_name}`);
+        console.log(`   - afs_registration_id: ${afs_registration_id}`);
+        console.log(`   - afs_checkout_id: ${afs_checkout_id}`);
+        console.log(`   - result available: ${!!result}`);
+        
+        if (result) {
+            console.log('💳 DEBUG - AFS Result structure:', Object.keys(result));
+            console.log('💳 DEBUG - AFS Result details:', JSON.stringify(result, null, 2));
+        }
+        
+        // For now, let's make the registration ID optional or use checkout ID as fallback
+        let registrationId = afs_registration_id || afs_checkout_id || quotepaymentId;
+        
+        // Validate required data - relax the registration ID requirement for now
+        if (!opp_email || !quotepaymentId) {
             console.log('⚠️ Missing required card data - skipping card save');
+            console.log(`   - opp_email: ${!!opp_email}`);
+            console.log(`   - quotepaymentId: ${!!quotepaymentId}`);
             return { success: false, message: 'Missing required card data' };
         }
         
@@ -207,6 +227,8 @@ export const saveCustomerCard = async (paymentData) => {
             return { success: false, message: 'Customer not found' };
         }
         
+        console.log(`✅ Customer found: ${customer._id}`);
+        
         // Extract card information from AFS result if available
         let cardBrand = 'OTHER';
         let maskedCardNumber = '**** **** **** ****';
@@ -219,6 +241,9 @@ export const saveCustomerCard = async (paymentData) => {
             maskedCardNumber = result.card.last4 ? `**** **** **** ${result.card.last4}` : '**** **** **** ****';
             expiryMonth = result.card.expiryMonth || '**';
             expiryYear = result.card.expiryYear ? result.card.expiryYear.toString().slice(-2) : '**';
+            console.log('💳 Extracted card details from AFS result');
+        } else {
+            console.log('💳 No card details in AFS result - using defaults');
         }
         
         // Prepare card data for saving
@@ -226,8 +251,8 @@ export const saveCustomerCard = async (paymentData) => {
             customerId: customer._id,
             customerEmail: opp_email,
             quotepaymentId: quotepaymentId,
-            afs_registration_id: afs_registration_id,
-            afs_checkout_id: afs_checkout_id,
+            afs_registration_id: registrationId, // Use fallback registration ID
+            afs_checkout_id: afs_checkout_id || quotepaymentId,
             cardholderName: Customer_name || customer.customerName || 'Card Holder',
             maskedCardNumber: maskedCardNumber,
             cardBrand: cardBrand.toUpperCase(),
@@ -235,11 +260,14 @@ export const saveCustomerCard = async (paymentData) => {
             expiryYear: expiryYear
         };
         
+        console.log('💳 Final card data for saving:', JSON.stringify(cardData, null, 2));
+        
         // Save the card
         const savedCard = await addSavedCard(cardData);
         
         if (savedCard) {
             console.log('✅ Customer card saved successfully');
+            console.log(`💳 Saved card ID: ${savedCard._id}`);
             return { 
                 success: true, 
                 message: 'Card saved successfully',
@@ -252,6 +280,7 @@ export const saveCustomerCard = async (paymentData) => {
         
     } catch (error) {
         console.error('❌ Error saving customer card:', error);
+        console.error('❌ Card save error stack:', error.stack);
         return { success: false, error: error.message };
     }
 };

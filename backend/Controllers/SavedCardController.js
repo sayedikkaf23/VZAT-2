@@ -177,3 +177,60 @@ export const updateCardUsage = async (afs_registration_id) => {
         console.error('Error updating card usage:', error);
     }
 };
+
+// Test endpoint to manually create a card
+export const testCreateCard = async (req, res) => {
+    try {
+        console.log('TEST CARD CREATION - Request body:', req.body);
+        
+        const {
+            customerId,
+            maskedCardNumber = '**** **** **** 1234',
+            cardType = 'visa',
+            expiryMonth = '12',
+            expiryYear = '2025',
+            cardHolderName = 'Test Customer',
+            afs_registration_id = `test_reg_${Date.now()}`
+        } = req.body;
+
+        if (!customerId) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Customer ID is required'
+            });
+        }
+
+        const cardData = {
+            customerId,
+            maskedCardNumber,
+            cardType,
+            expiryMonth,
+            expiryYear,
+            cardHolderName,
+            afs_registration_id,
+            isDefault: true,
+            isActive: true
+        };
+
+        console.log('TEST CARD CREATION - Attempting to save card:', cardData);
+
+        const savedCard = new SavedCard(cardData);
+        const result = await savedCard.save();
+
+        console.log('TEST CARD CREATION - Card saved successfully:', result);
+
+        res.status(201).json({
+            status: 'success',
+            message: 'Test card created successfully',
+            card: result
+        });
+
+    } catch (error) {
+        console.error('TEST CARD CREATION - Error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to create test card',
+            error: error.message
+        });
+    }
+};
