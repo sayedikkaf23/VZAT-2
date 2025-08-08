@@ -116,6 +116,27 @@
                         <p> <a href="#" (click)="$event.preventDefault()">Dashboard</a> / Saved Cards</p>
                     </div>
                 </div>
+                <div class="col-auto d-flex align-items-center gap-2">
+                    <!-- Refresh Button -->
+                    <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" 
+                            (click)="refreshCards()" 
+                            [disabled]="loading"
+                            title="Refresh Cards">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" [class.spinning]="loading">
+                            <path d="M21 10C21 10 18.995 7.26822 17.3662 5.63824C15.7373 4.00827 13.4864 3 11 3C6.02944 3 2 7.02944 2 12C2 16.9706 6.02944 21 11 21C15.1031 21 18.5649 18.2543 19.6482 14.5M21 10V4M21 10H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="d-none d-lg-inline">Refresh</span>
+                    </button>
+                    
+                    <!-- Fix Card Numbers Button (Development) -->
+                    <button *ngIf="!loading && cards.length > 0" 
+                            type="button" 
+                            class="btn btn-warning btn-sm d-inline-flex align-items-center gap-2" 
+                            (click)="fixCardNumbers()"
+                            title="Fix Card Numbers (Development)">
+                        🔧 <span class="d-none d-lg-inline">Fix Card Numbers (Dev)</span>
+                    </button>
+                </div>
                 <div class="col-auto ms-auto d-none">
                     <div>
                         <a href="#" (click)="$event.preventDefault()" class="btn btn-sm d-inline-flex align-items-center gap-2"  data-bs-toggle="modal" data-bs-target="#add_card">
@@ -197,13 +218,17 @@
                         <span class="sr-only">Loading...</span>
                     </div>
                     <p class="mt-3">Loading your saved cards...</p>
+                    <p class="text-muted small">If cards don't appear, try toggling the sidebar or click refresh</p>
                 </div>
 
                 <!-- Error State -->
                 <div *ngIf="error && !loading" class="col-12">
                     <div class="alert alert-danger text-center">
                         <strong>Error:</strong> {{ error }}
-                        <button class="btn btn-outline-danger btn-sm ms-2" (click)="loadSavedCards()">Try Again</button>
+                        <div class="mt-2">
+                            <button class="btn btn-outline-danger btn-sm me-2" (click)="loadSavedCards()">Try Again</button>
+                            <button class="btn btn-outline-secondary btn-sm" (click)="refreshCards()">Refresh Page Data</button>
+                        </div>
                     </div>
                 </div>
 

@@ -13,3 +13,19 @@
 .admin_body.sidebar-hidden {
   padding-left: 0 !important;
 } 
+
+// Spinning animation for refresh button
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Ensure cards container has proper visibility
+.cards-list {
+  min-height: 200px;
+  position: relative;
+} 

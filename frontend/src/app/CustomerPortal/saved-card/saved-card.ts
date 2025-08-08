@@ -18,6 +18,7 @@ export class SavedCard implements OnInit, OnDestroy {
   cards: SavedCardModel[] = [];
   error: string | null = null;
   customerId: string | null = null;
+  private loadingTimeout: any;
   
   private themeUrls = [
     'assets/CustomerPortal/css/style.css',
@@ -42,10 +43,56 @@ export class SavedCard implements OnInit, OnDestroy {
       .then(() => {
         // Styles loaded
         console.log('Styles loaded successfully');
+        // Retry loading cards after styles are loaded if they failed initially
+        if (this.error && this.customerId) {
+          console.log('Retrying card load after styles loaded');
+          this.retryLoadCards();
+        }
       })
       .catch(err => {
         console.error('Style loading failed:', err);
       });
+
+    // Add multiple checks to ensure cards load properly
+    setTimeout(() => {
+      if (this.loading && this.customerId) {
+        console.log('DOM settled, checking card load status');
+        this.ensureCardsLoaded();
+      }
+    }, 500);
+
+    // Add a longer fallback check
+    setTimeout(() => {
+      if (this.loading && this.customerId) {
+        console.log('Extended check - cards still loading, forcing retry');
+        this.retryLoadCards();
+      }
+    }, 2000);
+
+    // Listen for layout changes that might indicate sidebar toggle
+    this.setupLayoutObserver();
+  }
+
+  private setupLayoutObserver() {
+    // Use ResizeObserver to detect when component becomes visible/layout changes
+    if (typeof ResizeObserver !== 'undefined') {
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (let entry of entries) {
+          // If component becomes visible and we're still loading, retry
+          if (entry.contentRect.width > 0 && this.loading && this.customerId) {
+            console.log('Component became visible, checking card load status');
+            setTimeout(() => {
+              if (this.loading) {
+                console.log('Still loading after visibility change, retrying');
+                this.retryLoadCards();
+              }
+            }, 100);
+          }
+        }
+      });
+      
+      resizeObserver.observe(this.el.nativeElement);
+    }
   }
 
   private loadCustomerData() {
@@ -115,12 +162,29 @@ export class SavedCard implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
     
+    // Clear any existing timeout
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
+    }
+    
+    // Set a timeout to prevent infinite loading
+    this.loadingTimeout = setTimeout(() => {
+      if (this.loading) {
+        console.warn('⚠️ Loading timeout reached, stopping loading state');
+        this.loading = false;
+        this.error = 'Loading took too long. Please try refreshing the page or clicking retry.';
+      }
+    }, 15000); // 15 second timeout
+    
     console.log('🔄 Loading saved cards for customer:', this.customerId);
     console.log('🔄 API URL:', `${this.savedCardsService['apiUrl']}/saved-cards/customer/${this.customerId}/cards`);
     
     this.savedCardsService.getCustomerCards(this.customerId).subscribe({
       next: (response: ApiResponse<SavedCardModel>) => {
         this.loading = false;
+        if (this.loadingTimeout) {
+          clearTimeout(this.loadingTimeout);
+        }
         console.log('✅ API Response received:', response);
         
         if (response.success) {
@@ -137,6 +201,9 @@ export class SavedCard implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         this.loading = false;
+        if (this.loadingTimeout) {
+          clearTimeout(this.loadingTimeout);
+        }
         console.error('❌ API Error:', error);
         console.error('❌ Error status:', error.status);
         console.error('❌ Error message:', error.message);
@@ -153,6 +220,38 @@ export class SavedCard implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  private ensureCardsLoaded() {
+    if (this.loading && this.customerId && !this.error) {
+      console.log('🔄 Ensuring cards are loaded - current state:', {
+        loading: this.loading,
+        customerId: this.customerId,
+        cardsCount: this.cards.length,
+        error: this.error
+      });
+      
+      // If still loading after reasonable time, retry
+      this.retryLoadCards();
+    }
+  }
+
+  private retryLoadCards() {
+    if (!this.customerId) return;
+    
+    console.log('🔄 Retrying card load for customer:', this.customerId);
+    this.error = null;
+    this.loadSavedCards();
+  }
+
+  refreshCards() {
+    console.log('🔄 Manual refresh triggered');
+    if (this.customerId) {
+      this.retryLoadCards();
+    } else {
+      console.log('🔄 No customer ID, reloading customer data');
+      this.loadCustomerData();
+    }
   }
 
   setDefaultCard(cardId: string) {
@@ -254,6 +353,14 @@ export class SavedCard implements OnInit, OnDestroy {
       const adminBody = this.document.querySelector('.admin_body');
       if (adminBody) this.renderer.removeClass(adminBody, 'sidebar-hidden');
     }
+
+    // Check if cards need to be loaded when sidebar state changes
+    setTimeout(() => {
+      if (this.loading && this.customerId) {
+        console.log('🔄 Sidebar toggled, retrying card load');
+        this.retryLoadCards();
+      }
+    }, 100);
   }
 
     toggleNavbar(): void {
@@ -271,6 +378,9 @@ export class SavedCard implements OnInit, OnDestroy {
 
       ngOnDestroy(): void {
     this.styleLoader.removeThemes(this.themeUrls);
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
+    }
   }
 
 }
