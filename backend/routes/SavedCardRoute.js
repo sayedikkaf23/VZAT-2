@@ -3,13 +3,17 @@ import {
     getCustomerSavedCards, 
     removeSavedCard, 
     setDefaultCard,
-    testCreateCard
+    testCreateCard,
+    fixExistingCardNumbers
 } from "../Controllers/SavedCardController.js";
 
 const router = Router();
 
 // Test endpoint to create a card manually
 router.post('/test-create-card', testCreateCard);
+
+// Fix existing cards with generic masking
+router.post('/fix-card-numbers', fixExistingCardNumbers);
 
 // Get all saved cards for a customer
 router.get('/customer/:customerId/cards', getCustomerSavedCards);

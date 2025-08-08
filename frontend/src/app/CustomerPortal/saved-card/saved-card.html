@@ -207,6 +207,13 @@
                     </div>
                 </div>
 
+                <!-- Development: Fix Card Numbers Button -->
+                <div class="col-12 mb-3" *ngIf="cards.length > 0">
+                    <button class="btn btn-outline-warning btn-sm" (click)="fixCardNumbers()">
+                        🔧 Fix Card Numbers (Dev)
+                    </button>
+                </div>
+
                 <!-- Dynamic Cards -->
                 <div *ngFor="let card of cards" class="col-auto">
                     <div class="s-card" [class.border-warning]="card.isDefault">

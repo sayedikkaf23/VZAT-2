@@ -45,4 +45,9 @@ export class SavedCardsService {
       customerId
     });
   }
+
+  // Fix existing cards with generic masking
+  fixCardNumbers(): Observable<ApiResponse<void>> {
+    return this.http.post<ApiResponse<void>>(`${this.apiUrl}/saved-cards/fix-card-numbers`, {});
+  }
 }
