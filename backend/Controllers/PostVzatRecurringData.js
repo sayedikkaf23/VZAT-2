@@ -588,15 +588,15 @@ export const getAFSPaymentResult = async (req, res) => {
       resultData.paymentStatus = actualPaymentStatus;
       resultData.message = paymentMessage;
       
-      // 🆕 CREATE CUSTOMER ACCOUNT ONLY FOR SUBSCRIPTION FIRST PAYMENTS
+      // 🆕 CREATE CUSTOMER ACCOUNT AND SAVE CARD FOR ALL SUCCESSFUL PAYMENTS
       if (actualPaymentStatus === 'success' && quotepaymentId) {
-        console.log('🔍 CUSTOMER REGISTRATION DEBUG - Starting customer account check...');
+        console.log('🔍 CUSTOMER REGISTRATION DEBUG - Starting customer account and card save process...');
         console.log(`🔍 Payment Status: ${actualPaymentStatus}, QuotePaymentId: ${quotepaymentId}`);
         
         try {
-          console.log('🔄 Checking if this is a subscription first payment...');
+          console.log('🔄 Finding payment record for card saving...');
           
-          // Find the original payment record to check if it's a subscription
+          // Find the original payment record
           const paymentRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
           console.log('🔍 DATABASE QUERY RESULT:', paymentRecord ? 'FOUND' : 'NOT FOUND');
           
@@ -609,6 +609,7 @@ export const getAFSPaymentResult = async (req, res) => {
             console.log(`   - Customer Name: ${paymentRecord.Customer_name}`);
             console.log(`   - Subscription Status: ${paymentRecord.subscription_status}`);
             
+            // Handle customer account creation (subscription payments only)
             if (paymentRecord.is_subscription && paymentRecord.opp_email) {
               console.log('✅ SUBSCRIPTION CRITERIA MET - Creating customer account...');
               
@@ -630,30 +631,6 @@ export const getAFSPaymentResult = async (req, res) => {
                   message: 'Customer account created and welcome email sent for subscription',
                   isExisting: customerCreationResult.isExisting || false
                 };
-                
-                // 🆕 SAVE CUSTOMER CARD DETAILS AFTER SUCCESSFUL SUBSCRIPTION PAYMENT
-                try {
-                  console.log('💳 Saving customer card details for subscription payment...');
-                  const cardSaveResult = await saveCustomerCard({
-                    ...paymentRecord.toObject(),
-                    result: resultData // Pass AFS result for card details
-                  });
-                  
-                  console.log('💳 CARD SAVE RESULT:', cardSaveResult);
-                  
-                  if (cardSaveResult.success) {
-                    console.log('✅ Customer card saved successfully');
-                    resultData.customer_account.card_saved = true;
-                  } else {
-                    console.log('⚠️ Card saving failed:', cardSaveResult.message);
-                    resultData.customer_account.card_saved = false;
-                    resultData.customer_account.card_error = cardSaveResult.message;
-                  }
-                } catch (cardError) {
-                  console.error('❌ Error saving customer card:', cardError);
-                  resultData.customer_account.card_saved = false;
-                  resultData.customer_account.card_error = cardError.message;
-                }
               } else {
                 console.error('❌ Failed to create customer account:', customerCreationResult.error);
                 resultData.customer_account = {
@@ -662,22 +639,84 @@ export const getAFSPaymentResult = async (req, res) => {
                 };
               }
             } else if (paymentRecord && !paymentRecord.is_subscription) {
-              console.log('ℹ️ SKIPPING - This is a one-time payment, not a subscription');
+              console.log('ℹ️ ONE-TIME PAYMENT - Creating customer account for card saving...');
               console.log(`   - InstallmentType: ${paymentRecord.InstallmentType}`);
               console.log(`   - Is Subscription Flag: ${paymentRecord.is_subscription}`);
-              resultData.customer_account = {
-                status: 'skipped',
-                message: 'One-time payment - customer account creation not required'
-              };
+              
+              // Create customer account for one-time payments too (for card saving)
+              if (paymentRecord.opp_email) {
+                const customerCreationResult = await createCustomerAccount({
+                  quotepaymentId: paymentRecord.quotepaymentId,
+                  opp_email: paymentRecord.opp_email,
+                  Customer_name: paymentRecord.Customer_name,
+                  OpportunityId: paymentRecord.OpportunityId,
+                  QuoteId: paymentRecord.QuoteId
+                });
+                
+                if (customerCreationResult.success) {
+                  console.log('✅ Customer account created successfully for one-time payment');
+                  resultData.customer_account = {
+                    status: 'created',
+                    message: 'Customer account created for one-time payment card saving',
+                    isExisting: customerCreationResult.isExisting || false
+                  };
+                } else {
+                  console.error('❌ Failed to create customer account for one-time payment:', customerCreationResult.error);
+                  resultData.customer_account = {
+                    status: 'failed',
+                    error: customerCreationResult.error
+                  };
+                }
+              } else {
+                console.warn('⚠️ No email address for one-time payment - skipping account creation');
+                resultData.customer_account = {
+                  status: 'skipped',
+                  message: 'One-time payment - no email address provided'
+                };
+              }
             } else {
-              console.warn('⚠️ SKIPPING - Missing subscription data or email address');
+              console.warn('⚠️ SKIPPING - Missing payment data or email address');
               console.log(`   - Has Email: ${!!paymentRecord.opp_email}`);
               console.log(`   - Is Subscription: ${paymentRecord.is_subscription}`);
               resultData.customer_account = {
                 status: 'skipped',
-                message: 'Customer account creation skipped - missing subscription data or email address'
+                message: 'Customer account creation skipped - missing payment data or email address'
               };
             }
+            
+            // 🆕 SAVE CUSTOMER CARD DETAILS FOR ALL SUCCESSFUL PAYMENTS
+            console.log('💳 ATTEMPTING TO SAVE CARD FOR ALL PAYMENT TYPES...');
+            try {
+              const cardSaveResult = await saveCustomerCard({
+                ...paymentRecord.toObject(),
+                result: resultData // Pass AFS result for card details
+              });
+              
+              console.log('💳 CARD SAVE RESULT:', cardSaveResult);
+              
+              if (cardSaveResult.success) {
+                console.log('✅ Customer card saved successfully for payment');
+                if (!resultData.customer_account) {
+                  resultData.customer_account = {};
+                }
+                resultData.customer_account.card_saved = true;
+              } else {
+                console.log('⚠️ Card saving failed:', cardSaveResult.message);
+                if (!resultData.customer_account) {
+                  resultData.customer_account = {};
+                }
+                resultData.customer_account.card_saved = false;
+                resultData.customer_account.card_error = cardSaveResult.message;
+              }
+            } catch (cardError) {
+              console.error('❌ Error saving customer card:', cardError);
+              if (!resultData.customer_account) {
+                resultData.customer_account = {};
+              }
+              resultData.customer_account.card_saved = false;
+              resultData.customer_account.card_error = cardError.message;
+            }
+            
           } else {
             console.error('❌ CRITICAL ERROR - Payment record not found in database');
             console.log(`   - Searched for quotepaymentId: ${quotepaymentId}`);

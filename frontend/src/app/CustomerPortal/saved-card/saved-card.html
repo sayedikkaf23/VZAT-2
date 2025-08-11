@@ -127,32 +127,6 @@
                         </svg>
                         <span class="d-none d-lg-inline">Refresh</span>
                     </button>
-
-                    <!-- Force Reload Button (if stuck) -->
-                    <button *ngIf="loading || error" 
-                            type="button" 
-                            class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2" 
-                            (click)="forceReload()"
-                            title="Force Complete Reload">
-                        🔄 <span class="d-none d-lg-inline">Force Reload</span>
-                    </button>
-
-                    <!-- Debug Button (Development) -->
-                    <button type="button" 
-                            class="btn btn-outline-info btn-sm d-inline-flex align-items-center gap-2" 
-                            (click)="showDebugInfo()"
-                            title="Show Debug Information">
-                        🔍 <span class="d-none d-lg-inline">Debug</span>
-                    </button>
-                    
-                    <!-- Fix Card Numbers Button (Development) -->
-                    <button *ngIf="!loading && cards.length > 0" 
-                            type="button" 
-                            class="btn btn-warning btn-sm d-inline-flex align-items-center gap-2" 
-                            (click)="fixCardNumbers()"
-                            title="Fix Card Numbers (Development)">
-                        🔧 <span class="d-none d-lg-inline">Fix Card Numbers (Dev)</span>
-                    </button>
                 </div>
                 <div class="col-auto ms-auto d-none">
                     <div>
@@ -235,24 +209,6 @@
                         <span class="sr-only">Loading...</span>
                     </div>
                     <p class="mt-3">Loading your saved cards...</p>
-                    <p class="text-muted small">If cards don't appear in 2 seconds, click Quick Fix below</p>
-                    <div class="mt-3">
-                        <button class="btn btn-primary btn-sm me-2" (click)="retryLoadCards()">
-                            ⚡ Quick Fix
-                        </button>
-                        <button class="btn btn-success btn-sm me-2" (click)="forceUIUpdate()">
-                            🎨 Force UI Update
-                        </button>
-                        <button class="btn btn-outline-primary btn-sm me-2" (click)="refreshCards()">
-                            🔄 Refresh
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm me-2" (click)="forceReload()">
-                            🔄 Force Reload
-                        </button>
-                        <button class="btn btn-outline-info btn-sm" (click)="showDebugInfo()">
-                            🔍 Debug
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Error State -->
@@ -261,25 +217,7 @@
                         <strong>Error:</strong> {{ error }}
                         <div class="mt-3">
                             <button class="btn btn-outline-danger btn-sm me-2" (click)="refreshCards()">🔄 Try Again</button>
-                            <button class="btn btn-outline-secondary btn-sm me-2" (click)="forceReload()">🔄 Force Reload</button>
-                            <button class="btn btn-outline-info btn-sm" (click)="loadSavedCards()">🔄 Retry Load</button>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Development: Fix Card Numbers Button -->
-                <div class="col-12 mb-3" *ngIf="cards.length > 0">
-                    <button class="btn btn-outline-warning btn-sm" (click)="fixCardNumbers()">
-                        🔧 Fix Card Numbers (Dev)
-                    </button>
-                </div>
-
-                <!-- Debug Info (Development) -->
-                <div class="col-12 mb-3" *ngIf="!loading">
-                    <div class="alert alert-info">
-                        <strong>Debug:</strong> Cards Count: {{ cards.length }} | Loading: {{ loading }} | Error: {{ error || 'None' }}
-                        <br>
-                        <small>Cards Array: {{ cards | json }}</small>
                     </div>
                 </div>
 
@@ -336,7 +274,7 @@
                         </svg>
                     </div>
                     <h4 class="text-muted">No Saved Cards</h4>
-                    <p class="text-muted">You don't have any saved payment methods yet.<br>Cards will be automatically saved when you make payments.</p>
+                    <p class="text-muted">You don't have any saved payment methods yet.<br>Cards will be automatically saved when you make any successful payment.</p>
                 </div>
 
                 <!-- Add Card Button -->
