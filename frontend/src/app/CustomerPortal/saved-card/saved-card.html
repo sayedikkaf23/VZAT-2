@@ -235,13 +235,22 @@
                         <span class="sr-only">Loading...</span>
                     </div>
                     <p class="mt-3">Loading your saved cards...</p>
-                    <p class="text-muted small">If cards don't appear, try toggling the sidebar, clicking refresh, or force reload</p>
+                    <p class="text-muted small">If cards don't appear in 2 seconds, click Quick Fix below</p>
                     <div class="mt-3">
-                        <button class="btn btn-outline-primary btn-sm me-2" (click)="refreshCards()" [disabled]="loading">
+                        <button class="btn btn-primary btn-sm me-2" (click)="retryLoadCards()">
+                            ⚡ Quick Fix
+                        </button>
+                        <button class="btn btn-success btn-sm me-2" (click)="forceUIUpdate()">
+                            🎨 Force UI Update
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm me-2" (click)="refreshCards()">
                             🔄 Refresh
                         </button>
-                        <button class="btn btn-outline-danger btn-sm" (click)="forceReload()">
+                        <button class="btn btn-outline-danger btn-sm me-2" (click)="forceReload()">
                             🔄 Force Reload
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" (click)="showDebugInfo()">
+                            🔍 Debug
                         </button>
                     </div>
                 </div>
@@ -265,8 +274,17 @@
                     </button>
                 </div>
 
+                <!-- Debug Info (Development) -->
+                <div class="col-12 mb-3" *ngIf="!loading">
+                    <div class="alert alert-info">
+                        <strong>Debug:</strong> Cards Count: {{ cards.length }} | Loading: {{ loading }} | Error: {{ error || 'None' }}
+                        <br>
+                        <small>Cards Array: {{ cards | json }}</small>
+                    </div>
+                </div>
+
                 <!-- Dynamic Cards -->
-                <div *ngFor="let card of cards" class="col-auto">
+                <div *ngFor="let card of cards; trackBy: trackByCardId" class="col-auto">
                     <div class="s-card" [class.border-warning]="card.isDefault">
                         <a href="#" (click)="removeCard(card._id); $event.preventDefault()" class="card-remove">
                             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
