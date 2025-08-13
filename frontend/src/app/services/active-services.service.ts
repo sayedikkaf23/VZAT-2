@@ -7,15 +7,27 @@ export interface PaymentScheduleService {
   id: string;
   installment_number: number;
   customerName: string;
+  Customer_name: string; // Database field
+  opp_email: string; // Database field
+  QuoteLineItemId: string; // Database field
   quotepaymentId: string;
   due_date: string;
   amount: number;
-  status: 'paid' | 'due' | 'pending';
+    status: 'due' | 'pending' | 'paid' | 'failed' | 'overdue';
+  subscription_status: 'active' | 'inactive' | 'cancelled' | 'pending' | 'expired' | 'failed' | 'overdue'; // Database field
+  subscriptionStatus: string;
   // Additional fields for reference
   opportunityId: string;
   quoteId: string;
-  subscriptionStatus: string;
   createdDate: Date;
+  payment_schedule?: PaymentScheduleItem[]; // For nested payment data
+}
+
+export interface PaymentScheduleItem {
+  installment_number: number;
+  due_date: string;
+  amount: number;
+  status: string;
 }
 
 export interface ActiveServicesResponse {
