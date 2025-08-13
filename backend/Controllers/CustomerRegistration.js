@@ -247,6 +247,19 @@ export const saveCustomerCard = async (paymentData) => {
         // Try to extract card details from AFS response - check multiple possible structures
         if (result) {
             console.log('💳 DEBUG - Full AFS result structure for card extraction:', JSON.stringify(result, null, 2));
+            console.log('💳 DEBUG - AFS result keys:', Object.keys(result));
+            console.log('💳 DEBUG - AFS result type:', typeof result);
+            
+            // Log specific card-related fields that might be present
+            const potentialCardFields = Object.keys(result).filter(key => 
+                key.toLowerCase().includes('card') || 
+                key.toLowerCase().includes('number') ||
+                key.toLowerCase().includes('pan') ||
+                key.toLowerCase().includes('mask') ||
+                key.toLowerCase().includes('last') ||
+                key.toLowerCase().includes('digits')
+            );
+            console.log('💳 DEBUG - Potential card fields in AFS result:', potentialCardFields);
             
             // Check different possible locations for card data in AFS response
             const cardSources = [
@@ -256,24 +269,60 @@ export const saveCustomerCard = async (paymentData) => {
                 result.paymentMethod,          // Payment method
                 result.source,                 // Source object
                 result.registrations?.[0],     // First registration
+                result.data,                   // Data object
+                result.response,               // Response object
+                result.cardData,               // Card data object
+                result.paymentData,            // Payment data object
                 result
             ];
             
             for (const cardSource of cardSources) {
                 if (cardSource) {
+                    console.log(`💳 DEBUG - Checking card source:`, typeof cardSource, Object.keys(cardSource || {}));
+                    
                     // Try different property names for card brand
                     cardBrand = cardSource.brand || cardSource.cardBrand || cardSource.type || cardSource.scheme || 'OTHER';
                     
-                    // Try different property names for last 4 digits
-                    last4Digits = cardSource.last4 || cardSource.lastFour || cardSource.maskedPan?.slice(-4) || 
-                                 cardSource.number?.slice(-4) || cardSource.cardNumber?.slice(-4);
+                    // Enhanced last 4 digits extraction - check more possible fields
+                    const last4Fields = [
+                        'last4', 'lastFour', 'last_4', 'last_four',
+                        'maskedPan', 'masked_pan', 'pan',
+                        'number', 'cardNumber', 'card_number', 'cardNo',
+                        'maskedCardNumber', 'masked_card_number',
+                        'displayNumber', 'display_number',
+                        'cardMask', 'card_mask', 'mask'
+                    ];
+                    
+                    for (const field of last4Fields) {
+                        let fieldValue = cardSource[field];
+                        if (fieldValue) {
+                            console.log(`💳 DEBUG - Found field ${field}:`, fieldValue);
+                            
+                            if (field ***REMOVED***= 'maskedPan' || field ***REMOVED***= 'masked_pan') {
+                                last4Digits = fieldValue.slice(-4);
+                            } else if (typeof fieldValue ***REMOVED***= 'string') {
+                                // Extract last 4 digits from full number or masked number
+                                const cleanValue = fieldValue.replace(/\D/g, '');
+                                if (cleanValue.length >= 4) {
+                                    last4Digits = cleanValue.slice(-4);
+                                } else if (fieldValue.length ***REMOVED***= 4 && /^\d{4}$/.test(fieldValue)) {
+                                    last4Digits = fieldValue;
+                                }
+                            }
+                            
+                            if (last4Digits) {
+                                console.log(`💳 DEBUG - Extracted last4 from ${field}: ${last4Digits}`);
+                                break;
+                            }
+                        }
+                    }
                     
                     // Try different property names for expiry
                     expiryMonth = cardSource.expiryMonth || cardSource.expMonth || cardSource.month || '**';
                     expiryYear = cardSource.expiryYear || cardSource.expYear || cardSource.year || '**';
                     
                     if (last4Digits) {
-                        console.log(`💳 Extracted card details from AFS result: Brand=${cardBrand}, Last4=${last4Digits}, Expiry=${expiryMonth}/${expiryYear}`);
+                        console.log(`💳 ✅ Extracted card details from AFS result: Brand=${cardBrand}, Last4=${last4Digits}, Expiry=${expiryMonth}/${expiryYear}`);
                         break;
                     }
                 }

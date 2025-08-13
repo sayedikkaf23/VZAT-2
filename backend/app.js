@@ -222,6 +222,36 @@ app.get('/payment-result', async (req, res) => {
   res.redirect(redirectUrl);
 });
 
+// Debug endpoint to capture AFS payment data
+app.post('/debug/payment-data', (req, res) => {
+  console.log('🔍 DEBUG ENDPOINT CALLED');
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  console.log('Query:', req.query);
+  
+  // Look for potential card numbers in the data
+  const allData = { ...req.body, ...req.query };
+  const cardFields = {};
+  
+  for (const [key, value] of Object.entries(allData)) {
+    if (value && typeof value ***REMOVED***= 'string') {
+      const cleanValue = value.replace(/\D/g, '');
+      if (cleanValue.length >= 13 && cleanValue.length <= 19) {
+        cardFields[key] = value;
+        cardFields[`${key}_LAST4`] = cleanValue.slice(-4);
+        console.log(`🔍 POTENTIAL CARD NUMBER found at ${key}: ${value} (last 4: ${cleanValue.slice(-4)})`);
+      }
+    }
+  }
+  
+  res.json({
+    message: 'Debug data captured',
+    receivedFields: Object.keys(allData),
+    cardFields: cardFields,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Test endpoint to generate new payment link
 app.post('/test-payment-link', (req, res) => {
   console.log('🧪 Test payment link generation requested');
