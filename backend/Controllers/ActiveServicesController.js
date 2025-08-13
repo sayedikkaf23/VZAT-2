@@ -42,7 +42,10 @@ export const getActiveServices = async (req, res) => {
           paymentScheduleServices.push({
             id: `${subscription.quotepaymentId}_${payment.installment_number}`,
             installment_number: payment.installment_number,
-            customerName: subscription.Customer_name || 'Customer',
+            Customer_name: subscription.Customer_name || 'Customer', // Database field name
+            opp_email: subscription.opp_email || '', // Database field name
+            QuoteLineItemId: subscription.QuoteLineItemId || subscription.quotepaymentId, // Database field name
+            subscription_status: subscription.subscription_status, // Database field name
             quotepaymentId: subscription.quotepaymentId,
             due_date: payment.due_date,
             amount: payment.amount,
@@ -50,8 +53,10 @@ export const getActiveServices = async (req, res) => {
             // Additional fields for reference
             opportunityId: subscription.OpportunityId,
             quoteId: subscription.QuoteId,
-            subscriptionStatus: subscription.subscription_status,
-            createdDate: subscription.createdAt
+            createdDate: subscription.createdAt,
+            // Keep legacy fields for backward compatibility
+            customerName: subscription.Customer_name || 'Customer',
+            subscriptionStatus: subscription.subscription_status
           });
         }
       } else {
@@ -72,15 +77,20 @@ export const getActiveServices = async (req, res) => {
           paymentScheduleServices.push({
             id: `${subscription.quotepaymentId}_${i}`,
             installment_number: i,
-            customerName: subscription.Customer_name || 'Customer',
+            Customer_name: subscription.Customer_name || 'Customer', // Database field name
+            opp_email: subscription.opp_email || '', // Database field name
+            QuoteLineItemId: subscription.QuoteLineItemId || subscription.quotepaymentId, // Database field name
+            subscription_status: subscription.subscription_status, // Database field name
             quotepaymentId: subscription.quotepaymentId,
             due_date: paymentDate.toLocaleDateString('en-CA'), // YYYY-MM-DD format
             amount: installmentAmount,
             status: status,
             opportunityId: subscription.OpportunityId,
             quoteId: subscription.QuoteId,
-            subscriptionStatus: subscription.subscription_status,
-            createdDate: subscription.createdAt
+            createdDate: subscription.createdAt,
+            // Keep legacy fields for backward compatibility
+            customerName: subscription.Customer_name || 'Customer',
+            subscriptionStatus: subscription.subscription_status
           });
         }
       }
