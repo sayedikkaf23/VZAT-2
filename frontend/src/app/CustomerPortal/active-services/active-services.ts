@@ -25,6 +25,7 @@ export class ActiveServices implements OnInit {
 
   // Dynamic data properties
   activeServices: PaymentScheduleService[] = [];
+  selectedService: PaymentScheduleService | null = null;
   customerEmail: string = '';
   servicesSummary: any = {};
   loadingServices = true;
@@ -173,14 +174,14 @@ export class ActiveServices implements OnInit {
   openServiceModal(service?: PaymentScheduleService): void {
     if (service) {
       console.log('Opening service modal for:', service.quotepaymentId);
-      // You can store the selected service for modal display
-      // this.selectedService = service;
+      this.selectedService = service;
     }
     this.isServiceModalOpen = true;
   }
 
   closeServiceModal(): void {
     this.isServiceModalOpen = false;
+    this.selectedService = null;
   }
 
   toggleSidebar(): void {
