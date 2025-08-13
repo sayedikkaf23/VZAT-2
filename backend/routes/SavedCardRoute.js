@@ -4,7 +4,8 @@ import {
     removeSavedCard, 
     setDefaultCard,
     testCreateCard,
-    fixExistingCardNumbers
+    fixExistingCardNumbers,
+    updateCardLastFour
 } from "../Controllers/SavedCardController.js";
 
 const router = Router();
@@ -14,6 +15,9 @@ router.post('/test-create-card', testCreateCard);
 
 // Fix existing cards with generic masking
 router.post('/fix-card-numbers', fixExistingCardNumbers);
+
+// Update card's last 4 digits manually
+router.put('/card/:cardId/update-last-four', updateCardLastFour);
 
 // Get all saved cards for a customer
 router.get('/customer/:customerId/cards', getCustomerSavedCards);
