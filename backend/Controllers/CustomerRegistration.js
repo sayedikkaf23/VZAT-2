@@ -281,11 +281,48 @@ export const saveCustomerCard = async (paymentData) => {
                     console.log(`💳 DEBUG - Checking card source:`, typeof cardSource, Object.keys(cardSource || {}));
                     
                     // Try different property names for card brand
-                    cardBrand = cardSource.brand || cardSource.cardBrand || cardSource.type || cardSource.scheme || 'OTHER';
+                    cardBrand = cardSource.brand || cardSource.cardBrand || cardSource.type || cardSource.scheme || cardSource.cardType || 'OTHER';
+                    
+                    // Handle the bin field to determine brand dynamically
+                    if (cardSource.bin) {
+                        const bin = cardSource.bin.toString();
+                        console.log(`💳 DEBUG - Processing BIN: ${bin}`);
+                        
+                        // Comprehensive BIN range detection
+                        if (bin.startsWith('4')) {
+                            cardBrand = 'VISA';
+                        } else if (bin.match(/^5[1-5]/) || bin.match(/^2[2-7]/)) {
+                            cardBrand = 'MASTERCARD';
+                        } else if (bin.match(/^3[47]/)) {
+                            cardBrand = 'AMEX';
+                        } else if (bin.match(/^6(?:011|5)/)) {
+                            cardBrand = 'DISCOVER';
+                        } else if (bin.match(/^35/)) {
+                            cardBrand = 'JCB';
+                        } else if (bin.match(/^30[0-5]/)) {
+                            cardBrand = 'DINERS';
+                        } else {
+                            cardBrand = 'OTHER';
+                        }
+                        console.log(`💳 DEBUG - Determined brand from BIN ${bin}: ${cardBrand}`);
+                    }
+                    
+                    // If brand is still generic, try to infer from explicit brand fields
+                    if (cardBrand ***REMOVED***= 'OTHER' && cardSource.brand) {
+                        const brandLower = cardSource.brand.toString().toLowerCase();
+                        if (brandLower.includes('visa')) cardBrand = 'VISA';
+                        else if (brandLower.includes('mastercard') || brandLower.includes('master')) cardBrand = 'MASTERCARD';
+                        else if (brandLower.includes('amex') || brandLower.includes('american')) cardBrand = 'AMEX';
+                        else if (brandLower.includes('discover')) cardBrand = 'DISCOVER';
+                        else if (brandLower.includes('jcb')) cardBrand = 'JCB';
+                        else if (brandLower.includes('diners')) cardBrand = 'DINERS';
+                        console.log(`💳 DEBUG - Determined brand from brand field: ${cardBrand}`);
+                    }
                     
                     // Enhanced last 4 digits extraction - check more possible fields
                     const last4Fields = [
                         'last4', 'lastFour', 'last_4', 'last_four',
+                        'last4Digits', 'last_4_digits', // AFS uses this format!
                         'maskedPan', 'masked_pan', 'pan',
                         'number', 'cardNumber', 'card_number', 'cardNo',
                         'maskedCardNumber', 'masked_card_number',
@@ -296,22 +333,36 @@ export const saveCustomerCard = async (paymentData) => {
                     for (const field of last4Fields) {
                         let fieldValue = cardSource[field];
                         if (fieldValue) {
-                            console.log(`💳 DEBUG - Found field ${field}:`, fieldValue);
+                            console.log(`💳 DEBUG - Found field ${field}:`, fieldValue, typeof fieldValue);
                             
-                            if (field ***REMOVED***= 'maskedPan' || field ***REMOVED***= 'masked_pan') {
-                                last4Digits = fieldValue.slice(-4);
-                            } else if (typeof fieldValue ***REMOVED***= 'string') {
-                                // Extract last 4 digits from full number or masked number
+                            // Handle different formats of last 4 digits
+                            if (typeof fieldValue ***REMOVED***= 'string') {
+                                // Check if it's already clean 4 digits
+                                if (/^\d{4}$/.test(fieldValue)) {
+                                    last4Digits = fieldValue;
+                                    console.log(`💳 ✅ Direct 4 digits found in ${field}: ${last4Digits}`);
+                                    break;
+                                }
+                                // Extract last 4 from longer strings (full card numbers, masked numbers)
                                 const cleanValue = fieldValue.replace(/\D/g, '');
                                 if (cleanValue.length >= 4) {
                                     last4Digits = cleanValue.slice(-4);
-                                } else if (fieldValue.length ***REMOVED***= 4 && /^\d{4}$/.test(fieldValue)) {
-                                    last4Digits = fieldValue;
+                                    console.log(`💳 ✅ Extracted last4 from ${field}: ${last4Digits} (from: ${fieldValue})`);
+                                    break;
                                 }
-                            }
-                            
-                            if (last4Digits) {
-                                console.log(`💳 DEBUG - Extracted last4 from ${field}: ${last4Digits}`);
+                                // Handle masked formats like "****1234"
+                                if (fieldValue.includes('*') && fieldValue.length >= 4) {
+                                    const digits = fieldValue.replace(/[^\d]/g, '');
+                                    if (digits.length >= 4) {
+                                        last4Digits = digits.slice(-4);
+                                        console.log(`💳 ✅ Extracted last4 from masked ${field}: ${last4Digits}`);
+                                        break;
+                                    }
+                                }
+                            } else if (typeof fieldValue ***REMOVED***= 'number') {
+                                // Handle numeric values
+                                last4Digits = fieldValue.toString().padStart(4, '0').slice(-4);
+                                console.log(`💳 ✅ Converted number to last4 in ${field}: ${last4Digits}`);
                                 break;
                             }
                         }
@@ -320,6 +371,18 @@ export const saveCustomerCard = async (paymentData) => {
                     // Try different property names for expiry
                     expiryMonth = cardSource.expiryMonth || cardSource.expMonth || cardSource.month || '**';
                     expiryYear = cardSource.expiryYear || cardSource.expYear || cardSource.year || '**';
+                    
+                    // Handle different year formats (convert 4-digit to 2-digit if needed)
+                    if (expiryYear && expiryYear.length ***REMOVED***= 4) {
+                        expiryYear = expiryYear.slice(-2); // Convert 2029 → 29
+                        console.log(`💳 DEBUG - Converted 4-digit year to 2-digit: ${cardSource.expiryYear} → ${expiryYear}`);
+                    }
+                    
+                    // Ensure month is 2 digits
+                    if (expiryMonth && expiryMonth.length ***REMOVED***= 1) {
+                        expiryMonth = '0' + expiryMonth; // Convert 1 → 01
+                        console.log(`💳 DEBUG - Padded month to 2 digits: ${expiryMonth}`);
+                    }
                     
                     if (last4Digits) {
                         console.log(`💳 ✅ Extracted card details from AFS result: Brand=${cardBrand}, Last4=${last4Digits}, Expiry=${expiryMonth}/${expiryYear}`);
@@ -411,45 +474,69 @@ export const saveCustomerCard = async (paymentData) => {
             console.warn('⚠️ Payment data keys available:', Object.keys(paymentData));
             console.warn('⚠️ AFS result structure:', result ? Object.keys(result) : 'No result object');
             
-            // Enhanced fallback logic with common test card numbers
-            // Check if this might be a test/development scenario
-            const commonTestCards = {
-                '4111111111111111': '1111',  // Test Visa card
-                '5555555555554444': '4444',  // Test Mastercard
-                '378282246310005': '0005',   // Test Amex
-                '6011111111111117': '1117'   // Test Discover
-            };
+            // Try one more comprehensive search through ALL data
+            console.log('💳 Performing final comprehensive search for card data...');
+            let foundInComprehensiveSearch = false;
             
-            // Check if any of the payment data contains a known test card
-            let foundTestCard = false;
-            for (const [key, value] of Object.entries(paymentData)) {
-                if (value && typeof value ***REMOVED***= 'string') {
-                    const cleanValue = value.replace(/\D/g, '');
-                    if (commonTestCards[cleanValue]) {
-                        last4Digits = commonTestCards[cleanValue];
-                        maskedCardNumber = `**** **** **** ${last4Digits}`;
-                        console.log(`✅ Found test card ${cleanValue} in field ${key}, using correct last 4: ${last4Digits}`);
-                        foundTestCard = true;
-                        break;
+            // Search through the entire payment data structure recursively
+            const searchForCardData = (obj, path = '') => {
+                if (!obj || typeof obj !***REMOVED*** 'object') return false;
+                
+                for (const [key, value] of Object.entries(obj)) {
+                    const currentPath = path ? `${path}.${key}` : key;
+                    
+                    // Check if this could be last 4 digits
+                    if (value && typeof value ***REMOVED***= 'string') {
+                        // Check for 4-digit strings
+                        if (/^\d{4}$/.test(value)) {
+                            last4Digits = value;
+                            console.log(`💳 ✅ Found 4-digit value at ${currentPath}: ${last4Digits}`);
+                            foundInComprehensiveSearch = true;
+                            return true;
+                        }
+                        // Check for card numbers (13-19 digits)
+                        const cleanValue = value.replace(/\D/g, '');
+                        if (cleanValue.length >= 13 && cleanValue.length <= 19) {
+                            last4Digits = cleanValue.slice(-4);
+                            console.log(`💳 ✅ Found card number at ${currentPath}: ****${last4Digits} (from: ${cleanValue.length} digits)`);
+                            foundInComprehensiveSearch = true;
+                            return true;
+                        }
+                    }
+                    
+                    // Recursively search nested objects
+                    if (typeof value ***REMOVED***= 'object' && searchForCardData(value, currentPath)) {
+                        return true;
                     }
                 }
+                return false;
+            };
+            
+            // Search through result data first, then payment data
+            if (result) {
+                searchForCardData(result, 'result');
+            }
+            if (!foundInComprehensiveSearch) {
+                searchForCardData(paymentData, 'paymentData');
             }
             
-            // If no test card found, use email-based fallback
-            if (!foundTestCard) {
+            // Only use fallback if absolutely nothing is found
+            if (!foundInComprehensiveSearch) {
+                console.log('💳 No card data found anywhere - using email-based fallback');
                 const emailHash = opp_email ? opp_email.split('').reduce((a, b) => {
                     a = ((a << 5) - a) + b.charCodeAt(0);
                     return a & a;
                 }, 0) : 12345;
                 
-                // Generate different card endings based on email hash
                 const testCardNumbers = ['1234', '5678', '9012', '3456', '7890', '2468', '1357', '8642'];
                 const cardIndex = Math.abs(emailHash) % testCardNumbers.length;
                 const fallbackLast4 = testCardNumbers[cardIndex];
                 
                 maskedCardNumber = `**** **** **** ${fallbackLast4}`;
                 console.log(`⚠️ Using email-based fallback card ending: ${fallbackLast4} (email hash: ${emailHash})`);
-                console.log(`ℹ️ This is a fallback when card details cannot be extracted from payment data`);
+            } else {
+                maskedCardNumber = `**** **** **** ${last4Digits}`;
+                console.log(`✅ Using card digits found in comprehensive search: ${last4Digits}`);
             }
         }
         

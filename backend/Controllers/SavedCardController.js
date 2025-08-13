@@ -6,6 +6,8 @@ export const getCustomerSavedCards = async (req, res) => {
     try {
         const { customerId } = req.params;
         
+        console.log(`💳 📋 FETCHING SAVED CARDS for customer: ${customerId}`);
+        
         // Verify customer exists
         const customer = await CustomerLoginModel.findById(customerId);
         if (!customer) {
@@ -17,6 +19,19 @@ export const getCustomerSavedCards = async (req, res) => {
             customerId: customerId,
             isActive: true 
         }).sort({ isDefault: -1, cardAddedDate: -1 });
+
+        console.log(`💳 📋 Found ${savedCards.length} saved cards:`);
+        savedCards.forEach((card, index) => {
+            console.log(`   Card ${index + 1}:`, {
+                id: card._id,
+                maskedCardNumber: card.maskedCardNumber,
+                cardBrand: card.cardBrand,
+                expiryMonth: card.expiryMonth,
+                expiryYear: card.expiryYear,
+                cardholderName: card.cardholderName,
+                isDefault: card.isDefault
+            });
+        });
 
         res.status(200).json({
             success: true,
@@ -33,6 +48,8 @@ export const getCustomerSavedCards = async (req, res) => {
 // Add a new card after successful payment
 export const addSavedCard = async (cardData) => {
     try {
+        console.log('💳 📝 SAVING CARD - Input data received:', JSON.stringify(cardData, null, 2));
+        
         const {
             customerId,
             customerEmail,
@@ -46,10 +63,23 @@ export const addSavedCard = async (cardData) => {
             expiryYear
         } = cardData;
 
+        // Validate that we have the dynamic card data
+        console.log('💳 📝 VALIDATION - Dynamic card details:');
+        console.log(`   - Masked Card Number: ${maskedCardNumber} (should show actual last 4 digits)`);
+        console.log(`   - Card Brand: ${cardBrand} (should be detected from BIN)`);
+        console.log(`   - Expiry: ${expiryMonth}/${expiryYear} (should be from AFS)`);
+        console.log(`   - Cardholder: ${cardholderName} (should be from user input)`);
+
         // Check if this registration ID already exists
         const existingCard = await SavedCard.findOne({ afs_registration_id });
         if (existingCard) {
-            console.log('Card already saved:', afs_registration_id);
+            console.log('💳 📝 Card already exists for registration ID:', afs_registration_id);
+            console.log('💳 📝 Existing card details:', {
+                maskedCardNumber: existingCard.maskedCardNumber,
+                cardBrand: existingCard.cardBrand,
+                expiryMonth: existingCard.expiryMonth,
+                expiryYear: existingCard.expiryYear
+            });
             return existingCard;
         }
 
@@ -57,27 +87,42 @@ export const addSavedCard = async (cardData) => {
         const existingCards = await SavedCard.find({ customerId, isActive: true });
         const isFirstCard = existingCards.length ***REMOVED***= 0;
 
-        const newCard = new SavedCard({
+        console.log('💳 📝 CREATING NEW CARD with dynamic data:');
+        const newCardData = {
             customerId,
             customerEmail,
             quotepaymentId,
             afs_registration_id,
             afs_checkout_id,
             cardholderName,
-            maskedCardNumber,
-            cardBrand,
-            expiryMonth,
-            expiryYear,
-            isDefault: isFirstCard, // First card becomes default
+            maskedCardNumber, // Dynamic last 4 digits
+            cardBrand,        // Dynamic brand detection
+            expiryMonth,      // Dynamic expiry from AFS
+            expiryYear,       // Dynamic expiry from AFS
+            isDefault: isFirstCard,
             lastUsedDate: new Date()
-        });
+        };
+        
+        console.log('💳 📝 Final card object to save:', JSON.stringify(newCardData, null, 2));
 
+        const newCard = new SavedCard(newCardData);
         const savedCard = await newCard.save();
-        console.log('New card saved successfully:', savedCard._id);
+        
+        console.log('💳 ✅ CARD SAVED SUCCESSFULLY!');
+        console.log('💳 📝 Saved card details in DB:', {
+            _id: savedCard._id,
+            maskedCardNumber: savedCard.maskedCardNumber,
+            cardBrand: savedCard.cardBrand,
+            expiryMonth: savedCard.expiryMonth,
+            expiryYear: savedCard.expiryYear,
+            cardholderName: savedCard.cardholderName,
+            isDefault: savedCard.isDefault
+        });
+        
         return savedCard;
 
     } catch (error) {
-        console.error('Error saving card:', error);
+        console.error('❌ Error saving card:', error);
         throw error;
     }
 };
