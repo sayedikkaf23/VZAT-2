@@ -41,17 +41,27 @@ const savedCardSchema = new Schema({
     cardBrand: {
         type: String,
         required: true, // VISA, MASTERCARD, AMEX, etc.
-        enum: ['VISA', 'MASTERCARD', 'AMEX', 'DISCOVER', 'OTHER']
+        enum: ['VISA', 'MASTERCARD', 'AMEX', 'DISCOVER', 'JCB', 'DINERS', 'OTHER']
     },
     expiryMonth: {
         type: String,
         required: true,
-        length: 2 // "01", "12", etc.
+        validate: {
+            validator: function(v) {
+                return /^(0[1-9]|1[0-2])$/.test(v); // 01-12
+            },
+            message: 'Expiry month must be 01-12'
+        }
     },
     expiryYear: {
         type: String,
         required: true,
-        length: 2 // "25", "26", etc.
+        validate: {
+            validator: function(v) {
+                return /^\d{2}$/.test(v); // 2 digits (e.g., 29 for 2029)
+            },
+            message: 'Expiry year must be 2 digits'
+        }
     },
     
     // Card Status
