@@ -78,16 +78,21 @@ export class ActiveServices implements OnInit {
 
       this.customerEmail = customerData.email;
       console.log('🔍 Loading active services for:', this.customerEmail);
+      console.log('📧 Customer data found:', customerData);
 
       this.activeServicesService.getActiveServices(this.customerEmail).subscribe({
         next: (response: ActiveServicesResponse) => {
-          console.log('✅ Active services loaded:', response);
+          console.log('✅ Active services response received:', response);
+          console.log('📊 Services count:', response.services?.length || 0);
+          console.log('📋 First service sample:', response.services?.[0] || 'No services');
           
           if (response.success) {
             this.activeServices = response.services;
             this.servicesSummary = response.summary;
             this.errorMessage = '';
+            console.log('✅ Active services loaded successfully. Total services:', this.activeServices.length);
           } else {
+            console.error('❌ Response success was false:', response);
             this.errorMessage = 'Failed to load services. Please try again.';
           }
           
@@ -95,6 +100,8 @@ export class ActiveServices implements OnInit {
         },
         error: (error) => {
           console.error('❌ Error loading active services:', error);
+          console.error('❌ Error details:', error.error);
+          console.error('❌ Error status:', error.status);
           this.errorMessage = 'Failed to load services. Please check your connection and try again.';
           this.loadingServices = false;
         }

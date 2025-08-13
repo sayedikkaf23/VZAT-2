@@ -18,13 +18,18 @@ export const getActiveServices = async (req, res) => {
       });
     }
 
-    // Find all active subscriptions for the customer
+    // Find all active subscriptions for the customer (including pending)
     const activeSubscriptions = await Vzat_Recurring_Data.find({
       opp_email: customerEmail,
-      subscription_status: { $in: ['active', 'completed'] }
+      subscription_status: { $in: ['active', 'completed', 'pending'] }
     }).sort({ createdAt: -1 });
 
     console.log(`📋 Found ${activeSubscriptions.length} active services for ${customerEmail}`);
+    console.log(`📊 Subscription statuses found:`, activeSubscriptions.map(sub => ({
+      quotepaymentId: sub.quotepaymentId,
+      status: sub.subscription_status,
+      customerName: sub.Customer_name
+    })));
 
     // Transform subscription data to payment schedule format
     const paymentScheduleServices = [];

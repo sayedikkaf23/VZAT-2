@@ -81,9 +81,11 @@ export class ActiveServicesService {
    * Get all active services (payment schedules) for the customer
    */
   getActiveServices(customerEmail: string): Observable<ActiveServicesResponse> {
-    console.log('🔍 Fetching active services for customer:', customerEmail);
+    console.log('🔍 Frontend Service: Fetching active services for customer:', customerEmail);
     
     const params = new HttpParams().set('customerEmail', customerEmail);
+    console.log('📡 Making HTTP request to:', `${this.baseUrl}/customer/active-services`);
+    console.log('📋 Request parameters:', params.toString());
     
     return this.http.get<ActiveServicesResponse>(`${this.baseUrl}/customer/active-services`, { params });
   }
