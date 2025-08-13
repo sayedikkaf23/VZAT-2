@@ -5,6 +5,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 import { SalesForceService } from '../../services/salesforce.service';
 import { PaymentScheduleService, VzatRecurringData } from '../../services/payment-schedule.service';
+import { SubscriptionCardService, PaymentMethod, CardChangeHistory } from '../../services/subscription-card.service';
 
 interface PaymentScheduleItem {
   id: string;
@@ -96,10 +97,20 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   quotepaymentId: string = '';
   afsPaymentLink: string = '';
   
+  // Card management properties
+  paymentMethods: PaymentMethod[] = [];
+  cardHistory: CardChangeHistory[] = [];
+  showCardManagement: boolean = false;
+  cardManagementLoading: boolean = false;
+  cardUpdateMessage: string = '';
+  selectedCardForUpdate: string = '';
+  customerEmail: string = '';
+  
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
     private salesForceService: SalesForceService,
     private paymentScheduleService: PaymentScheduleService,
+    private subscriptionCardService: SubscriptionCardService,
     private router: Router,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef
@@ -128,6 +139,9 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     });
 
     this.getSalesForceDetails();
+
+    // Check for card update status in URL
+    this.checkCardUpdateStatus();
   }
 
   ngAfterViewInit() {
@@ -301,6 +315,12 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
                            data.quotepayment_id || 
                            data.quote_payment_id ||
                            data.id;
+
+      // Extract customer email for card management
+      this.customerEmail = data.opp_email || 
+                          data.customer_email || 
+                          data.email || 
+                          '';
       
       // Set checkout ID if available from API response
       this.currentCheckoutId = data.afs_checkout_id || 
@@ -640,4 +660,186 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     console.log('🔄 Using fallback sales agent data:', this.salesAgent);
   }
 
+  // ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=
+  // CARD MANAGEMENT METHODS
+  // ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=
+
+  /**
+   * Check for card update status in URL and show appropriate message
+   */
+  private checkCardUpdateStatus(): void {
+    const status = this.subscriptionCardService.checkCardUpdateStatus();
+    
+    if (status.updated) {
+      if (status.success) {
+        this.cardUpdateMessage = '✅ Your payment card has been successfully updated for this subscription.';
+        // Load updated payment methods
+        if (this.customerEmail && this.quotepaymentId) {
+          this.loadPaymentMethods();
+        }
+      } else {
+        this.cardUpdateMessage = '❌ There was an issue updating your payment card. Please try again.';
+      }
+      
+      // Clear the status from URL after 5 seconds
+      setTimeout(() => {
+        this.subscriptionCardService.clearCardUpdateStatus();
+        this.cardUpdateMessage = '';
+      }, 5000);
+    }
+  }
+
+  /**
+   * Toggle card management panel visibility
+   */
+  toggleCardManagement(): void {
+    this.showCardManagement = !this.showCardManagement;
+    
+    if (this.showCardManagement && this.paymentMethods.length ***REMOVED***= 0) {
+      this.loadPaymentMethods();
+      this.loadCardHistory();
+    }
+  }
+
+  /**
+   * Load available payment methods for the customer
+   */
+  private loadPaymentMethods(): void {
+    if (!this.customerEmail) {
+      console.warn('⚠️ Customer email not available for loading payment methods');
+      return;
+    }
+
+    this.cardManagementLoading = true;
+    this.subscriptionCardService.getPaymentMethods(this.customerEmail).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.paymentMethods = response.paymentMethods;
+          console.log('✅ Payment methods loaded:', this.paymentMethods);
+        } else {
+          console.error('❌ Failed to load payment methods');
+        }
+        this.cardManagementLoading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error loading payment methods:', error);
+        this.cardManagementLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Load card change history for the subscription
+   */
+  private loadCardHistory(): void {
+    if (!this.customerEmail || !this.quotepaymentId) {
+      console.warn('⚠️ Customer email or quote payment ID not available for loading card history');
+      return;
+    }
+
+    this.subscriptionCardService.getCardHistory(this.quotepaymentId, this.customerEmail).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.cardHistory = response.cardHistory;
+          console.log('✅ Card history loaded:', this.cardHistory);
+        } else {
+          console.error('❌ Failed to load card history');
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error loading card history:', error);
+      }
+    });
+  }
+
+  /**
+   * Create a new payment form for adding/changing card
+   */
+  addNewCard(): void {
+    if (!this.customerEmail || !this.quotepaymentId) {
+      this.cardUpdateMessage = '❌ Unable to add new card. Missing customer information.';
+      return;
+    }
+
+    this.cardManagementLoading = true;
+    this.subscriptionCardService.createCardChangeForm(this.quotepaymentId, this.customerEmail).subscribe({
+      next: (response) => {
+        if (response.success && response.paymentFormUrl) {
+          // Redirect to payment form
+          window.location.href = response.paymentFormUrl;
+        } else {
+          this.cardUpdateMessage = '❌ Failed to create payment form for new card.';
+          this.cardManagementLoading = false;
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error creating card change form:', error);
+        this.cardUpdateMessage = '❌ Failed to create payment form. Please try again.';
+        this.cardManagementLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Update subscription to use a different existing card
+   */
+  useExistingCard(): void {
+    if (!this.selectedCardForUpdate) {
+      this.cardUpdateMessage = '⚠️ Please select a card to use for this subscription.';
+      return;
+    }
+
+    if (!this.customerEmail || !this.quotepaymentId) {
+      this.cardUpdateMessage = '❌ Unable to update card. Missing customer information.';
+      return;
+    }
+
+    this.cardManagementLoading = true;
+    this.subscriptionCardService.updateSubscriptionCard(
+      this.quotepaymentId, 
+      this.selectedCardForUpdate, 
+      this.customerEmail
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.cardUpdateMessage = '✅ Subscription payment method updated successfully!';
+          // Reload payment methods to show updated status
+          this.loadPaymentMethods();
+          this.loadCardHistory();
+        } else {
+          this.cardUpdateMessage = '❌ Failed to update subscription payment method.';
+        }
+        this.cardManagementLoading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error updating subscription card:', error);
+        this.cardUpdateMessage = '❌ Failed to update payment method. Please try again.';
+        this.cardManagementLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Get the display text for card brand
+   */
+  getCardBrandIcon(brand: string): string {
+    switch (brand.toUpperCase()) {
+      case 'VISA': return '💳 Visa';
+      case 'MASTERCARD': return '💳 Mastercard';
+      case 'AMEX': return '💳 American Express';
+      case 'DISCOVER': return '💳 Discover';
+      case 'JCB': return '💳 JCB';
+      case 'DINERS': return '💳 Diners Club';
+      default: return '💳 ' + brand;
+    }
+  }
+
+  /**
+   * Check if a card is currently used for this subscription
+   */
+  isCurrentSubscriptionCard(card: PaymentMethod): boolean {
+    // This would need to be checked against the subscription's current registration ID
+    // For now, we'll use a simple check
+    return card.isDefault;
+  }
 }

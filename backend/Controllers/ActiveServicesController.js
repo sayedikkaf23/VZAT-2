@@ -1,0 +1,241 @@
+import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
+import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
+
+/**
+ * Get active services (payment schedules) for customer portal
+ * This will show payment schedule details instead of static service data
+ */
+export const getActiveServices = async (req, res) => {
+  try {
+    const { customerEmail } = req.query;
+    
+    console.log(`🔍 Fetching active services for customer: ${customerEmail}`);
+    
+    if (!customerEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer email is required'
+      });
+    }
+
+    // Find all active subscriptions for the customer
+    const activeSubscriptions = await Vzat_Recurring_Data.find({
+      opp_email: customerEmail,
+      subscription_status: { $in: ['active', 'completed'] }
+    }).sort({ createdAt: -1 });
+
+    console.log(`📋 Found ${activeSubscriptions.length} active services for ${customerEmail}`);
+
+    // Transform subscription data to payment schedule format
+    const paymentScheduleServices = [];
+
+    for (const subscription of activeSubscriptions) {
+      // Use the payment_schedule array from database if available
+      if (subscription.payment_schedule && subscription.payment_schedule.length > 0) {
+        // Get payment schedule entries directly from database
+        for (const payment of subscription.payment_schedule) {
+          paymentScheduleServices.push({
+            id: `${subscription.quotepaymentId}_${payment.installment_number}`,
+            installment_number: payment.installment_number,
+            customerName: subscription.Customer_name || 'Customer',
+            quotepaymentId: subscription.quotepaymentId,
+            due_date: payment.due_date,
+            amount: payment.amount,
+            status: payment.status,
+            // Additional fields for reference
+            opportunityId: subscription.OpportunityId,
+            quoteId: subscription.QuoteId,
+            subscriptionStatus: subscription.subscription_status,
+            createdDate: subscription.createdAt
+          });
+        }
+      } else {
+        // Fallback: calculate payment schedule if not available in database
+        const totalInstallments = subscription.InstallmentLeft || 1;
+        const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / totalInstallments).toFixed(2));
+        const paymentsCompleted = subscription.payments_completed || 0;
+        
+        for (let i = 1; i <= totalInstallments; i++) {
+          const paymentDate = calculatePaymentDate(subscription.createdAt, i);
+          const isPaid = i <= paymentsCompleted;
+          const isDue = i ***REMOVED***= paymentsCompleted + 1 && subscription.subscription_status ***REMOVED***= 'active';
+          
+          let status = 'pending';
+          if (isPaid) status = 'paid';
+          else if (isDue) status = 'due';
+          
+          paymentScheduleServices.push({
+            id: `${subscription.quotepaymentId}_${i}`,
+            installment_number: i,
+            customerName: subscription.Customer_name || 'Customer',
+            quotepaymentId: subscription.quotepaymentId,
+            due_date: paymentDate.toLocaleDateString('en-CA'), // YYYY-MM-DD format
+            amount: installmentAmount,
+            status: status,
+            opportunityId: subscription.OpportunityId,
+            quoteId: subscription.QuoteId,
+            subscriptionStatus: subscription.subscription_status,
+            createdDate: subscription.createdAt
+          });
+        }
+      }
+    }
+
+    // Sort by due date (most recent first)
+    paymentScheduleServices.sort((a, b) => new Date(b.due_date) - new Date(a.due_date));
+
+    const response = {
+      success: true,
+      customerEmail: customerEmail,
+      totalServices: paymentScheduleServices.length,
+      activeSubscriptions: activeSubscriptions.length,
+      services: paymentScheduleServices,
+      summary: {
+        totalPaid: paymentScheduleServices.filter(s => s.status ***REMOVED***= 'paid').length,
+        totalDue: paymentScheduleServices.filter(s => s.status ***REMOVED***= 'due').length,
+        totalPending: paymentScheduleServices.filter(s => s.status ***REMOVED***= 'pending').length,
+        totalAmountPaid: paymentScheduleServices
+          .filter(s => s.status ***REMOVED***= 'paid')
+          .reduce((sum, s) => sum + s.amount, 0),
+        totalAmountDue: paymentScheduleServices
+          .filter(s => s.status ***REMOVED***= 'due')
+          .reduce((sum, s) => sum + s.amount, 0)
+      }
+    };
+
+    // Log the request
+    Post_Common_DB_Log_Data('/api/customer/active-services', { customerEmail }, response);
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('❌ Error fetching active services:', error);
+    
+    const errorResponse = {
+      success: false,
+      message: 'Failed to fetch active services',
+      error: error.message
+    };
+
+    Post_Common_DB_Log_Data('/api/customer/active-services', { customerEmail: req.query.customerEmail }, errorResponse);
+    
+    res.status(500).json(errorResponse);
+  }
+};
+
+/**
+ * Get specific service details
+ */
+export const getServiceDetails = async (req, res) => {
+  try {
+    const { quotepaymentId } = req.params;
+    const { customerEmail } = req.query;
+
+    console.log(`🔍 Fetching service details for: ${quotepaymentId}`);
+
+    const subscription = await Vzat_Recurring_Data.findOne({
+      quotepaymentId: quotepaymentId,
+      opp_email: customerEmail
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service not found'
+      });
+    }
+
+    // Calculate detailed payment schedule
+    const totalInstallments = subscription.InstallmentLeft || 1;
+    const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / totalInstallments).toFixed(2));
+    const paymentsCompleted = subscription.payments_completed || 0;
+    
+    const paymentSchedule = [];
+    for (let i = 1; i <= totalInstallments; i++) {
+      const paymentDate = calculatePaymentDate(subscription.createdAt, i);
+      const isPaid = i <= paymentsCompleted;
+      const isDue = i ***REMOVED***= paymentsCompleted + 1 && subscription.subscription_status ***REMOVED***= 'active';
+      
+      paymentSchedule.push({
+        paymentNumber: i,
+        scheduledDate: paymentDate,
+        amount: installmentAmount,
+        status: isPaid ? 'Paid' : (isDue ? 'Due' : 'Future'),
+        paidDate: isPaid ? (i ***REMOVED***= paymentsCompleted ? subscription.last_payment_date : null) : null
+      });
+    }
+
+    const serviceDetails = {
+      success: true,
+      quotepaymentId: subscription.quotepaymentId,
+      serviceName: getServiceName(subscription.InstallmentType),
+      customerName: subscription.Customer_name,
+      totalAmount: subscription.Total_After_VAT_Currency,
+      installmentAmount: installmentAmount,
+      totalInstallments: totalInstallments,
+      paymentsCompleted: paymentsCompleted,
+      subscriptionStatus: subscription.subscription_status,
+      nextChargeDate: subscription.next_charge_date,
+      lastPaymentDate: subscription.last_payment_date,
+      paymentSchedule: paymentSchedule,
+      opportunityId: subscription.OpportunityId,
+      quoteId: subscription.QuoteId,
+      createdDate: subscription.createdAt
+    };
+
+    res.json(serviceDetails);
+
+  } catch (error) {
+    console.error('❌ Error fetching service details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch service details',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Calculate payment date based on subscription creation and payment number
+ */
+function calculatePaymentDate(createdDate, paymentNumber) {
+  const baseDate = new Date(createdDate);
+  
+  // First payment is typically due immediately or within a few days
+  if (paymentNumber ***REMOVED***= 1) {
+    return baseDate;
+  }
+  
+  // Subsequent payments follow the monthly schedule
+  // Using the same logic as the subscription system (10th or 25th of month)
+  const monthsToAdd = paymentNumber - 1;
+  const paymentDate = new Date(baseDate);
+  paymentDate.setMonth(paymentDate.getMonth() + monthsToAdd);
+  
+  // Set to 10th or 25th based on original creation date
+  const day = baseDate.getDate();
+  const chargeDay = day <= 15 ? 10 : 25;
+  paymentDate.setDate(chargeDay);
+  
+  return paymentDate;
+}
+
+/**
+ * Get service name based on installment type
+ */
+function getServiceName(installmentType) {
+  const serviceNames = {
+    'Quarterly': 'Business Setup - Quarterly Plan',
+    'Monthly': 'Business Setup - Monthly Plan',
+    'Half-Yearly': 'Business Setup - Half-Yearly Plan',
+    'Yearly': 'Business Setup - Yearly Plan',
+    'One-time': 'Business Setup - One-time Payment'
+  };
+  
+  return serviceNames[installmentType] || `Business Service - ${installmentType}`;
+}
+
+export default {
+  getActiveServices,
+  getServiceDetails
+};
