@@ -197,16 +197,27 @@ export const fixExistingCardNumbers = async (req, res) => {
             // Generate realistic last 4 digits based on customer email or registration ID
             let last4Digits = '1234'; // Default fallback
             
+            // First, check if we can identify this as a common test card scenario
             if (card.customerEmail) {
-                // Use email to generate consistent last 4 digits
-                const emailHash = card.customerEmail.split('').reduce((a, b) => {
-                    a = ((a << 5) - a) + b.charCodeAt(0);
-                    return a & a;
-                }, 0);
+                // Check if this email was used with common test cards
+                const emailLower = card.customerEmail.toLowerCase();
                 
-                const testCardNumbers = ['1234', '5678', '9012', '3456', '7890', '2468', '1357', '8642'];
-                const cardIndex = Math.abs(emailHash) % testCardNumbers.length;
-                last4Digits = testCardNumbers[cardIndex];
+                // If it's a test/dev email or the registration ID suggests a test card
+                if (emailLower.includes('test') || emailLower.includes('demo') || 
+                    card.afs_registration_id?.includes('4111')) {
+                    last4Digits = '1111'; // Assume test Visa card
+                    console.log(`🔧 Detected test scenario for ${card.customerEmail}, using 1111`);
+                } else {
+                    // Use email to generate consistent last 4 digits
+                    const emailHash = card.customerEmail.split('').reduce((a, b) => {
+                        a = ((a << 5) - a) + b.charCodeAt(0);
+                        return a & a;
+                    }, 0);
+                    
+                    const testCardNumbers = ['1234', '5678', '9012', '3456', '7890', '2468', '1357', '8642'];
+                    const cardIndex = Math.abs(emailHash) % testCardNumbers.length;
+                    last4Digits = testCardNumbers[cardIndex];
+                }
             } else if (card.afs_registration_id) {
                 // Use registration ID to generate last 4 digits
                 const regHash = card.afs_registration_id.split('').reduce((a, b) => {
@@ -296,6 +307,61 @@ export const testCreateCard = async (req, res) => {
         res.status(500).json({
             status: 'error',
             message: 'Failed to create test card',
+            error: error.message
+        });
+    }
+};
+
+// Update card's last 4 digits manually
+export const updateCardLastFour = async (req, res) => {
+    try {
+        const { cardId } = req.params;
+        const { lastFourDigits, customerId } = req.body;
+        
+        // Validate input
+        if (!lastFourDigits || !/^\d{4}$/.test(lastFourDigits)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Last four digits must be exactly 4 numbers'
+            });
+        }
+        
+        // Find the card and verify ownership
+        const card = await SavedCard.findOne({
+            _id: cardId,
+            customerId: customerId,
+            isActive: true
+        });
+        
+        if (!card) {
+            return res.status(404).json({
+                success: false,
+                message: 'Card not found or access denied'
+            });
+        }
+        
+        // Update the masked card number
+        const newMaskedNumber = `**** **** **** ${lastFourDigits}`;
+        const oldMaskedNumber = card.maskedCardNumber;
+        
+        await SavedCard.findByIdAndUpdate(cardId, {
+            maskedCardNumber: newMaskedNumber
+        });
+        
+        console.log(`🔧 Manually updated card ${cardId}: ${oldMaskedNumber} → ${newMaskedNumber}`);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Card number updated successfully',
+            oldMaskedNumber: oldMaskedNumber,
+            newMaskedNumber: newMaskedNumber
+        });
+        
+    } catch (error) {
+        console.error('❌ Error updating card last four digits:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update card number',
             error: error.message
         });
     }
