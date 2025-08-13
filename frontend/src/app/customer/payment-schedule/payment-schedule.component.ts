@@ -106,6 +106,9 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   selectedCardForUpdate: string = '';
   customerEmail: string = '';
   
+  // Page type detection
+  isPaymentPage: boolean = true; // This is a payment page, so hide card management
+  
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
     private salesForceService: SalesForceService,
