@@ -1,15 +1,16 @@
-import { Component,Inject, PLATFORM_ID , Renderer2} from '@angular/core';
-import { DOCUMENT, NgIf } from '@angular/common';
+import { Component, Inject, PLATFORM_ID, Renderer2, OnInit } from '@angular/core';
+import { DOCUMENT, NgIf, NgFor, NgClass, TitleCasePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CustomerLoginService } from '../../services/customer-login.service';
 import { StyleLoader } from '../../services/style-loader';
+import { ActiveServicesService, PaymentScheduleService, ActiveServicesResponse } from '../../services/active-services.service';
 @Component({
   selector: 'app-active-services',
-  imports: [NgIf, RouterLink],
+  imports: [NgIf, NgFor, NgClass, RouterLink, TitleCasePipe],
   templateUrl: './active-services.html',
   styleUrl: './active-services.scss',  
 })
-export class ActiveServices {
+export class ActiveServices implements OnInit {
   private themeUrls = [
     'assets/CustomerPortal/css/style.css',
     'assets/CustomerPortal/css/responsive.css'
@@ -17,22 +18,133 @@ export class ActiveServices {
 
   loading = true; 
   isAdditionalModalOpen: boolean = false;
-  isServiceModalOpen:boolean = false;
-  isUploadModalOpen:boolean = false;
-    isSidebarHidden = false;
+  isServiceModalOpen: boolean = false;
+  isUploadModalOpen: boolean = false;
+  isSidebarHidden = false;
   isNavbarActive = false;
 
-   constructor(  @Inject(DOCUMENT) private document: Document, private styleLoader:StyleLoader, private renderer: Renderer2, private customerLogin: CustomerLoginService) {}
-    ngOnInit(): void {
-     this.styleLoader.loadThemes(this.themeUrls)
-    .then(() => {
-      // Styles loaded, show content
-      this.loading = false;
-    })
-    .catch(err => {
-      console.error(err);
-      this.loading = false; // Show anyway if failed
-    });
+  // Dynamic data properties
+  activeServices: PaymentScheduleService[] = [];
+  customerEmail: string = '';
+  servicesSummary: any = {};
+  loadingServices = true;
+  errorMessage: string = '';
+
+  constructor(
+    @Inject(DOCUMENT) private document: Document, 
+    private styleLoader: StyleLoader, 
+    private renderer: Renderer2, 
+    private customerLogin: CustomerLoginService,
+    private activeServicesService: ActiveServicesService
+  ) {}
+  ngOnInit(): void {
+    this.styleLoader.loadThemes(this.themeUrls)
+      .then(() => {
+        // Styles loaded, show content
+        this.loading = false;
+        
+        // Load customer email and fetch active services
+        this.loadActiveServices();
+      })
+      .catch(err => {
+        console.error(err);
+        this.loading = false; // Show anyway if failed
+        this.loadActiveServices();
+      });
+  }
+
+  /**
+   * Load active services for the logged-in customer
+   */
+  loadActiveServices(): void {
+    // Get customer email from localStorage
+    const customerDataStr = localStorage.getItem('customerData');
+    if (!customerDataStr) {
+      console.error('❌ Customer not logged in or data not found');
+      this.errorMessage = 'Customer session not found. Please log in again.';
+      this.loadingServices = false;
+      return;
+    }
+
+    try {
+      const customerData = JSON.parse(customerDataStr);
+      if (!customerData || !customerData.email) {
+        console.error('❌ Customer email not found in stored data');
+        this.errorMessage = 'Customer email not found. Please log in again.';
+        this.loadingServices = false;
+        return;
+      }
+
+      this.customerEmail = customerData.email;
+      console.log('🔍 Loading active services for:', this.customerEmail);
+
+      this.activeServicesService.getActiveServices(this.customerEmail).subscribe({
+        next: (response: ActiveServicesResponse) => {
+          console.log('✅ Active services loaded:', response);
+          
+          if (response.success) {
+            this.activeServices = response.services;
+            this.servicesSummary = response.summary;
+            this.errorMessage = '';
+          } else {
+            this.errorMessage = 'Failed to load services. Please try again.';
+          }
+          
+          this.loadingServices = false;
+        },
+        error: (error) => {
+          console.error('❌ Error loading active services:', error);
+          this.errorMessage = 'Failed to load services. Please check your connection and try again.';
+          this.loadingServices = false;
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error parsing customer data:', error);
+      this.errorMessage = 'Invalid customer session. Please log in again.';
+      this.loadingServices = false;
+    }
+  }
+
+  /**
+   * Get CSS class for payment status badge
+   */
+  getStatusClass(status: string): string {
+    return this.activeServicesService.getStatusBadgeClass(status);
+  }
+
+  /**
+   * Get icon for payment status
+   */
+  getStatusIcon(status: string): string {
+    return this.activeServicesService.getStatusIcon(status);
+  }
+
+  /**
+   * Format currency amount
+   */
+  formatCurrency(amount: number): string {
+    return this.activeServicesService.formatCurrency(amount);
+  }
+
+  /**
+   * Format date for display
+   */
+  formatDate(date: Date | string): string {
+    return this.activeServicesService.formatDate(date);
+  }
+
+  /**
+   * Check if payment is overdue
+   */
+  isOverdue(dueDate: Date | string, status: string): boolean {
+    return this.activeServicesService.isOverdue(dueDate, status);
+  }
+
+  /**
+   * Track by function for ngFor optimization
+   */
+  trackByServiceId(index: number, service: PaymentScheduleService): string {
+    return service.id;
   }
    openModal(): void {
     this.isAdditionalModalOpen = true;
@@ -55,7 +167,15 @@ export class ActiveServices {
     this.isUploadModalOpen = false;
   }
 
-     openServiceModal(): void {
+  /**
+   * Open service modal with specific service data
+   */
+  openServiceModal(service?: PaymentScheduleService): void {
+    if (service) {
+      console.log('Opening service modal for:', service.quotepaymentId);
+      // You can store the selected service for modal display
+      // this.selectedService = service;
+    }
     this.isServiceModalOpen = true;
   }
 

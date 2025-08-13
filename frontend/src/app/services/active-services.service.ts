@@ -1,0 +1,158 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface PaymentScheduleService {
+  id: string;
+  installment_number: number;
+  customerName: string;
+  quotepaymentId: string;
+  due_date: string;
+  amount: number;
+  status: 'paid' | 'due' | 'pending';
+  // Additional fields for reference
+  opportunityId: string;
+  quoteId: string;
+  subscriptionStatus: string;
+  createdDate: Date;
+}
+
+export interface ActiveServicesResponse {
+  success: boolean;
+  customerEmail: string;
+  totalServices: number;
+  activeSubscriptions: number;
+  services: PaymentScheduleService[];
+  summary: {
+    totalPaid: number;
+    totalDue: number;
+    totalPending: number;
+    totalAmountPaid: number;
+    totalAmountDue: number;
+  };
+}
+
+export interface ServiceDetails {
+  success: boolean;
+  quotepaymentId: string;
+  serviceName: string;
+  customerName: string;
+  totalAmount: number;
+  installmentAmount: number;
+  totalInstallments: number;
+  paymentsCompleted: number;
+  subscriptionStatus: string;
+  nextChargeDate?: Date;
+  lastPaymentDate?: Date;
+  paymentSchedule: Array<{
+    paymentNumber: number;
+    scheduledDate: Date;
+    amount: number;
+    status: 'Paid' | 'Due' | 'Future';
+    paidDate?: Date;
+  }>;
+  opportunityId: string;
+  quoteId: string;
+  createdDate: Date;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ActiveServicesService {
+  private baseUrl = environment.apiUrl;
+
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Get all active services (payment schedules) for the customer
+   */
+  getActiveServices(customerEmail: string): Observable<ActiveServicesResponse> {
+    console.log('🔍 Fetching active services for customer:', customerEmail);
+    
+    const params = new HttpParams().set('customerEmail', customerEmail);
+    
+    return this.http.get<ActiveServicesResponse>(`${this.baseUrl}/customer/active-services`, { params });
+  }
+
+  /**
+   * Get detailed information for a specific service
+   */
+  getServiceDetails(quotepaymentId: string, customerEmail: string): Observable<ServiceDetails> {
+    console.log('🔍 Fetching service details for:', quotepaymentId);
+    
+    const params = new HttpParams().set('customerEmail', customerEmail);
+    
+    return this.http.get<ServiceDetails>(`${this.baseUrl}/customer/service-details/${quotepaymentId}`, { params });
+  }
+
+  /**
+   * Format currency amount
+   */
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'SAR',
+      minimumFractionDigits: 2
+    }).format(amount);
+  }
+
+  /**
+   * Get status badge class for payment status
+   */
+  getStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'paid':
+        return 'badge badge-success';
+      case 'due':
+        return 'badge badge-warning';
+      case 'pending':
+        return 'badge badge-secondary';
+      default:
+        return 'badge badge-light';
+    }
+  }
+
+  /**
+   * Get status icon for payment status
+   */
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'paid':
+        return 'fas fa-check-circle text-success';
+      case 'due':
+        return 'fas fa-exclamation-circle text-warning';
+      case 'pending':
+        return 'fas fa-clock text-secondary';
+      default:
+        return 'fas fa-question-circle text-muted';
+    }
+  }
+
+  /**
+   * Format date for display
+   */
+  formatDate(date: Date | string): string {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }
+
+  /**
+   * Check if payment is overdue
+   */
+  isOverdue(dueDate: Date | string, status: string): boolean {
+    if (status === 'paid' || status === 'pending') return false;
+    
+    const dateObj = typeof dueDate === 'string' ? new Date(dueDate) : dueDate;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dateObj.setHours(0, 0, 0, 0);
+    
+    return dateObj < today && status === 'due';
+  }
+}

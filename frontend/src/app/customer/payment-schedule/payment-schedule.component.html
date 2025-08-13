@@ -149,6 +149,159 @@
         </div>
       </div>
     </div>
+
+    <!-- Card Management Section -->
+    <div class="card-management-section" *ngIf="quotepaymentId && customerEmail">
+      <div class="container">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-credit-card me-2"></i>
+                Payment Method Management
+              </h5>
+              <button 
+                type="button" 
+                class="btn btn-outline-light btn-sm" 
+                (click)="toggleCardManagement()">
+                <span *ngIf="!showCardManagement">Show</span>
+                <span *ngIf="showCardManagement">Hide</span>
+                <i class="fas" [ngClass]="{'fa-chevron-down': !showCardManagement, 'fa-chevron-up': showCardManagement}"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body" *ngIf="showCardManagement">
+            <!-- Card Update Message -->
+            <div *ngIf="cardUpdateMessage" class="alert" 
+                 [ngClass]="{'alert-success': cardUpdateMessage.includes('✅'), 'alert-danger': cardUpdateMessage.includes('❌'), 'alert-warning': cardUpdateMessage.includes('⚠️')}">
+              {{ cardUpdateMessage }}
+            </div>
+
+            <!-- Loading Indicator -->
+            <div *ngIf="cardManagementLoading" class="text-center py-3">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-2 mb-0">Processing...</p>
+            </div>
+
+            <!-- Card Management Content -->
+            <div *ngIf="!cardManagementLoading">
+              <!-- Add New Card -->
+              <div class="mb-4">
+                <h6 class="fw-bold mb-3">Add New Payment Method</h6>
+                <p class="text-muted mb-3">
+                  Add a new credit or debit card to use for your subscription payments.
+                </p>
+                <button 
+                  type="button" 
+                  class="btn btn-success"
+                  (click)="addNewCard()">
+                  <i class="fas fa-plus me-2"></i>
+                  Add New Card
+                </button>
+              </div>
+
+              <hr>
+
+              <!-- Existing Payment Methods -->
+              <div class="mb-4" *ngIf="paymentMethods.length > 0">
+                <h6 class="fw-bold mb-3">Use Existing Payment Method</h6>
+                <p class="text-muted mb-3">
+                  Select from your saved payment methods to use for this subscription.
+                </p>
+
+                <div class="row g-3">
+                  <div class="col-md-6" *ngFor="let card of paymentMethods">
+                    <div class="card border" 
+                         [ngClass]="{'border-primary': selectedCardForUpdate === card.cardId, 'border-success': isCurrentSubscriptionCard(card)}">
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                          <div>
+                            <h6 class="card-title mb-1">{{ getCardBrandIcon(card.cardBrand) }}</h6>
+                            <p class="card-text mb-1">{{ card.maskedCardNumber }}</p>
+                            <small class="text-muted">Expires: {{ card.expiryMonth }}/{{ card.expiryYear }}</small>
+                          </div>
+                          <div class="form-check">
+                            <input 
+                              class="form-check-input" 
+                              type="radio" 
+                              name="selectedCard" 
+                              [value]="card.cardId"
+                              [(ngModel)]="selectedCardForUpdate"
+                              [id]="'card-' + card.cardId">
+                            <label class="form-check-label" [for]="'card-' + card.cardId">
+                              Select
+                            </label>
+                          </div>
+                        </div>
+                        
+                        <div class="d-flex flex-wrap gap-1">
+                          <span *ngIf="card.isDefault" class="badge bg-primary">Default</span>
+                          <span *ngIf="isCurrentSubscriptionCard(card)" class="badge bg-success">Current Subscription Card</span>
+                          <span *ngIf="card.lastUsed" class="badge bg-secondary">
+                            Last used: {{ card.lastUsed | date:'short' }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-3">
+                  <button 
+                    type="button" 
+                    class="btn btn-primary"
+                    [disabled]="!selectedCardForUpdate"
+                    (click)="useExistingCard()">
+                    <i class="fas fa-check me-2"></i>
+                    Use Selected Card for Subscription
+                  </button>
+                </div>
+              </div>
+
+              <div class="alert alert-info" *ngIf="paymentMethods.length === 0">
+                <i class="fas fa-info-circle me-2"></i>
+                No saved payment methods found. Add a new card to get started.
+              </div>
+
+              <hr>
+
+              <!-- Card History -->
+              <div *ngIf="cardHistory.length > 0">
+                <h6 class="fw-bold mb-3">Payment Method History</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Card</th>
+                        <th>Brand</th>
+                        <th>Added</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let card of cardHistory">
+                        <td>{{ card.maskedCardNumber }}</td>
+                        <td>{{ card.cardBrand }}</td>
+                        <td>{{ card.addedDate | date:'medium' }}</td>
+                        <td>
+                          <span *ngIf="card.isActive" class="badge bg-success">Active</span>
+                          <span *ngIf="!card.isActive" class="badge bg-secondary">Inactive</span>
+                          <span *ngIf="card.isCurrentSubscriptionCard" class="badge bg-primary ms-1">Current</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="details-footer">
       <div class="d-block d-md-none">
         <hr/><h2><b>Need Assistance? </b></h2>

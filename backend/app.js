@@ -6,8 +6,10 @@ import AdminLogin from "./routes/AdminLoginRoute.js";
 import Customer from "./routes/CustomerRoute.js";
 import VzatRecurring from "./routes/VzatRecurring.js";
 import Subscription from "./routes/SubscriptionRoute.js";
+import SubscriptionCard from "./routes/SubscriptionCardRoute.js";
 import SalesforceRoute from "./routes/SalesforceRoute.js";
 import SavedCardRoute from "./routes/SavedCardRoute.js";
+import ActiveServicesRoute from "./routes/ActiveServicesRoute.js";
 import { getAFSPaymentResult } from "./Controllers/PostVzatRecurringData.js";
 import { connectDB, disconnectDB } from "./config/db.js";
 import Vzat_Recurring_Data from "./model/VzatRecurringDataModel.js";
@@ -54,8 +56,10 @@ app.use('/api/adminLogin', AdminLogin);
 app.use('/api/customer', Customer);
 app.use('/api/vzat_recurring_create_payment_link', VzatRecurring);
 app.use('/api/subscription', Subscription);
+app.use('/api/subscription-card', SubscriptionCard);
 app.use('/api/salesforce', SalesforceRoute);
 app.use('/api/saved-cards', SavedCardRoute);
+app.use('/api/customer', ActiveServicesRoute);
 
 // Payment schedule API endpoint for Angular component
 app.get('/api/payment_schedule/:checkoutId', async (req, res) => {

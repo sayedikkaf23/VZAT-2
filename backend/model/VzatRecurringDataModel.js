@@ -139,6 +139,15 @@ const vzatRecurringDataSchema = new Schema({
         type: Date,
         required: false // Tracks when this subscription was last processed by cron job (prevents duplicate processing)
     },
+    // Card change tracking fields
+    card_updated_date: {
+        type: Date,
+        required: false // When the card was last changed
+    },
+    old_registration_id: {
+        type: String,
+        required: false // Previous registration ID for reference
+    },
     subscription_created_date: {
         type: Date,
         default: Date.now
