@@ -91,6 +91,32 @@ export class ActiveServices implements OnInit {
             this.servicesSummary = response.summary;
             this.errorMessage = '';
             console.log('✅ Active services loaded successfully. Total services:', this.activeServices.length);
+            
+            // Debug: Log the first service structure
+            if (this.activeServices.length > 0) {
+              console.log('🔍 First service structure:', JSON.stringify(this.activeServices[0], null, 2));
+              console.log('🔍 Service keys:', Object.keys(this.activeServices[0]));
+              console.log('🔍 Customer_name:', this.activeServices[0].Customer_name);
+              console.log('🔍 opp_email:', this.activeServices[0].opp_email);
+              console.log('🔍 QuoteLineItemId:', this.activeServices[0].QuoteLineItemId);
+              console.log('🔍 subscription_status:', this.activeServices[0].subscription_status);
+              
+              // Log all services data for debugging
+              console.log('📋 All services data:', this.activeServices.map((service, index) => ({
+                index,
+                Customer_name: service.Customer_name,
+                opp_email: service.opp_email,
+                QuoteLineItemId: service.QuoteLineItemId,
+                subscription_status: service.subscription_status,
+                quotepaymentId: service.quotepaymentId
+              })));
+            }
+            
+            // Force change detection
+            console.log('🔄 Triggering change detection...');
+            setTimeout(() => {
+              console.log('⏰ After timeout - activeServices length:', this.activeServices.length);
+            }, 100);
           } else {
             console.error('❌ Response success was false:', response);
             this.errorMessage = 'Failed to load services. Please try again.';
@@ -152,7 +178,21 @@ export class ActiveServices implements OnInit {
    * Track by function for ngFor optimization
    */
   trackByServiceId(index: number, service: PaymentScheduleService): string {
-    return service.id;
+    return service.quotepaymentId || service.id || index.toString();
+  }
+
+  /**
+   * Debug method to log current data state
+   */
+  debugDataState(): void {
+    console.log('🔍 DEBUG - Current component state:');
+    console.log('  - loadingServices:', this.loadingServices);
+    console.log('  - errorMessage:', this.errorMessage);
+    console.log('  - activeServices length:', this.activeServices?.length || 0);
+    console.log('  - activeServices array:', this.activeServices);
+    if (this.activeServices && this.activeServices.length > 0) {
+      console.log('  - First service:', this.activeServices[0]);
+    }
   }
    openModal(): void {
     this.isAdditionalModalOpen = true;

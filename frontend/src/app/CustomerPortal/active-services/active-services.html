@@ -115,6 +115,10 @@
                     <div>
                         <h4>Active Service(s)</h4>
                         <p> <a href="#" (click)="$event.preventDefault()">Dashboard</a> / Active Service(s)</p>
+                        <!-- Debug button (remove in production) -->
+                        <button class="btn btn-sm btn-outline-primary" (click)="debugDataState()">
+                            Debug Data ({{ activeServices?.length || 0 }} services)
+                        </button>
                     </div>
                 </div>
                 <div class="col-auto d-flex align-items-center">
@@ -194,6 +198,17 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- Debug info row (remove in production) -->
+                                <tr *ngIf="!loadingServices" style="background-color: #f8f9fa; font-size: 0.8em;">
+                                    <td colspan="5" class="text-center py-2">
+                                        <small>
+                                            Debug: Loading={{ loadingServices }}, 
+                                            Services={{ activeServices?.length || 0 }}, 
+                                            Error="{{ errorMessage }}"
+                                        </small>
+                                    </td>
+                                </tr>
+
                                 <!-- Loading state -->
                                 <tr *ngIf="loadingServices">
                                     <td colspan="5" class="text-center py-4">
@@ -226,27 +241,30 @@
                                 </tr>
 
                                 <!-- Dynamic service data -->
-                                <tr *ngFor="let service of activeServices; trackBy: trackByServiceId">
+                                <tr *ngFor="let service of activeServices; trackBy: trackByServiceId; let i = index">
+                                    
+                                    <!-- Debug info (remove in production) -->
+                                    <!-- Debug: {{ i }}: {{ service.Customer_name }} | {{ service.opp_email }} | {{ service.QuoteLineItemId }} | {{ service.subscription_status }} -->
                                     
                                     <!-- Customer Name -->
                                     <td data-title="Customer Name">
-                                        {{ service.Customer_name }}
+                                        {{ service.Customer_name || service.customerName || 'N/A' }}
                                     </td>
                                     
                                     <!-- Email -->
                                     <td data-title="Email">
-                                        {{ service.opp_email }}
+                                        {{ service.opp_email || 'N/A' }}
                                     </td>
                                     
                                     <!-- Product Name -->
                                     <td data-title="Product Name">
-                                        {{ service.QuoteLineItemId }}
+                                        {{ service.QuoteLineItemId || 'N/A' }}
                                     </td>
                                     
                                     <!-- Subscription Status -->
                                     <td data-title="Subscription Status">
                                         <span class="badge" [ngClass]="getStatusClass(service.subscription_status)">
-                                            {{ service.subscription_status | titlecase }}
+                                            {{ (service.subscription_status || 'unknown') | titlecase }}
                                         </span>
                                     </td>
                                     
@@ -262,6 +280,7 @@
                                             </a>
                                         </div>
                                     </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
