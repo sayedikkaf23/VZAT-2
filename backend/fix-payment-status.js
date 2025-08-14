@@ -4,12 +4,15 @@
 
 import mongoose from 'mongoose';
 import Vzat_Recurring_Data from './model/VzatRecurringDataModel.js';
-import { MONGODB_URI } from './config.env.js';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const fixPaymentStatus = async () => {
   try {
     // Connect to MongoDB
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('🔌 Connected to MongoDB');
 
     // Specific transaction details

@@ -282,6 +282,11 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       afsData.append('merchantTransactionId', quotepaymentId);
       afsData.append('shopperResultUrl', shopperResultUrl);
       
+      // Add webhook notification URL for automatic payment status updates
+      const notificationUrl = `${backendUrl}/api/subscription/webhook/afs`;
+      afsData.append('notificationUrl', notificationUrl);
+      console.log(`🔔 Webhook notification URL: ${notificationUrl}`);
+      
       if (isSubscription) {
         console.log(`🔄 Creating subscription for ${InstallmentLeft} installments`);
         
