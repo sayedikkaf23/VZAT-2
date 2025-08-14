@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, Renderer2, OnInit } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, Renderer2, OnInit, ChangeDetectorRef } from '@angular/core';
 import { DOCUMENT, NgIf, NgFor, NgClass, TitleCasePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CustomerLoginService } from '../../services/customer-login.service';
@@ -36,7 +36,8 @@ export class ActiveServices implements OnInit {
     private styleLoader: StyleLoader, 
     private renderer: Renderer2, 
     private customerLogin: CustomerLoginService,
-    private activeServicesService: ActiveServicesService
+    private activeServicesService: ActiveServicesService,
+    private cdr: ChangeDetectorRef
   ) {}
   ngOnInit(): void {
     this.styleLoader.loadThemes(this.themeUrls)
@@ -114,15 +115,20 @@ export class ActiveServices implements OnInit {
             
             // Force change detection
             console.log('🔄 Triggering change detection...');
+            this.cdr.detectChanges();
             setTimeout(() => {
               console.log('⏰ After timeout - activeServices length:', this.activeServices.length);
+              this.cdr.detectChanges();
             }, 100);
           } else {
             console.error('❌ Response success was false:', response);
             this.errorMessage = 'Failed to load services. Please try again.';
           }
           
+          console.log('🔄 About to set loadingServices to false. Current value:', this.loadingServices);
           this.loadingServices = false;
+          console.log('🔄 Setting loadingServices to false, triggering change detection. New value:', this.loadingServices);
+          this.cdr.detectChanges();
         },
         error: (error) => {
           console.error('❌ Error loading active services:', error);
@@ -130,6 +136,7 @@ export class ActiveServices implements OnInit {
           console.error('❌ Error status:', error.status);
           this.errorMessage = 'Failed to load services. Please check your connection and try again.';
           this.loadingServices = false;
+          this.cdr.detectChanges();
         }
       });
     } catch (error) {
