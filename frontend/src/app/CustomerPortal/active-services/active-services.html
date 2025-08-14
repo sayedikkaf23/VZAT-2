@@ -193,7 +193,7 @@
                                     <th scope="col">Customer Name</th>
                                     <th scope="col">Email</th>
                                     <th scope="col">Product Name</th>
-                                    <th scope="col">Subscription Status</th>
+                                    <th scope="col">Payment Status</th>
                                     <th scope="col">Details</th>
                                 </tr>
                             </thead>
@@ -261,10 +261,10 @@
                                         {{ service.QuoteLineItemId || 'N/A' }}
                                     </td>
                                     
-                                    <!-- Subscription Status -->
-                                    <td data-title="Subscription Status">
-                                        <span class="badge" [ngClass]="getStatusClass(service.subscription_status)">
-                                            {{ (service.subscription_status || 'unknown') | titlecase }}
+                                    <!-- Payment Status -->
+                                    <td data-title="Payment Status">
+                                        <span class="badge" [ngClass]="getStatusClass(service.status)">
+                                            {{ (service.status || 'unknown') | titlecase }}
                                         </span>
                                     </td>
                                     

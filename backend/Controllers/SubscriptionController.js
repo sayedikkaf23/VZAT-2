@@ -10,6 +10,64 @@ import dotenv from "dotenv";
 dotenv.config();
 
 /**
+ * Update payment schedule status when a payment is completed
+ */
+async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transactionId) {
+  try {
+    console.log(`🔄 Updating payment schedule for subscription ${subscriptionId}, payment ${paymentNumber}`);
+    
+    const subscription = await Vzat_Recurring_Data.findById(subscriptionId);
+    if (!subscription) {
+      throw new Error('Subscription not found');
+    }
+
+    // Update the specific payment in the payment_schedule array
+    const updateResult = await Vzat_Recurring_Data.findOneAndUpdate(
+      { 
+        _id: subscriptionId,
+        'payment_schedule.installment_number': paymentNumber
+      },
+      {
+        $set: {
+          'payment_schedule.$.status': 'completed',
+          'payment_schedule.$.transaction_id': transactionId,
+          'payment_schedule.$.payment_date': new Date()
+        }
+      },
+      { new: true }
+    );
+
+    if (updateResult) {
+      console.log(`✅ Payment schedule updated for installment ${paymentNumber}`);
+      
+      // Update the next payment status to 'due' if it exists
+      const nextPaymentNumber = paymentNumber + 1;
+      await Vzat_Recurring_Data.findOneAndUpdate(
+        { 
+          _id: subscriptionId,
+          'payment_schedule.installment_number': nextPaymentNumber,
+          'payment_schedule.status': 'pending'
+        },
+        {
+          $set: {
+            'payment_schedule.$.status': 'due'
+          }
+        }
+      );
+      
+      console.log(`✅ Next payment (${nextPaymentNumber}) status updated to 'due'`);
+    } else {
+      console.warn(`⚠️ Could not find payment ${paymentNumber} in payment schedule`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error updating payment schedule:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Handle AFS webhook notifications for subscription events
  */
 export const handleAFSWebhook = async (req, res) => {
@@ -52,6 +110,9 @@ export const handleAFSWebhook = async (req, res) => {
         payments_completed: 1,
         last_payment_date: new Date(timestamp)
       });
+      
+      // Update payment schedule status for the first payment
+      await updatePaymentScheduleStatus(subscriptionRecord._id, 1, id);
       
       // Call Salesforce API for successful payment
       try {
@@ -127,6 +188,9 @@ export const handleAFSWebhook = async (req, res) => {
         },
         { new: true }
       );
+
+      // Update payment schedule status for the current payment
+      await updatePaymentScheduleStatus(subscriptionRecord._id, updatedRecord.payments_completed, id);
 
       // Call Salesforce API for successful recurring payment
       try {

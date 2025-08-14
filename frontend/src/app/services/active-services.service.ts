@@ -13,8 +13,8 @@ export interface PaymentScheduleService {
   quotepaymentId: string;
   due_date: string;
   amount: number;
-    status: 'due' | 'pending' | 'paid' | 'failed' | 'overdue';
-  subscription_status: 'active' | 'inactive' | 'cancelled' | 'pending' | 'expired' | 'failed' | 'overdue'; // Database field
+  status: 'due' | 'pending' | 'completed' | 'paid' | 'failed' | 'overdue' | 'cancelled';
+  subscription_status: 'active' | 'inactive' | 'cancelled' | 'pending' | 'expired' | 'failed' | 'overdue' | 'completed'; // Database field
   subscriptionStatus: string;
   // Additional fields for reference
   opportunityId: string;
@@ -118,11 +118,16 @@ export class ActiveServicesService {
   getStatusBadgeClass(status: string): string {
     switch (status) {
       case 'paid':
+      case 'completed':
         return 'badge badge-success';
       case 'due':
         return 'badge badge-warning';
       case 'pending':
         return 'badge badge-secondary';
+      case 'overdue':
+        return 'badge badge-danger';
+      case 'cancelled':
+        return 'badge badge-dark';
       default:
         return 'badge badge-light';
     }
@@ -134,11 +139,16 @@ export class ActiveServicesService {
   getStatusIcon(status: string): string {
     switch (status) {
       case 'paid':
+      case 'completed':
         return 'fas fa-check-circle text-success';
       case 'due':
         return 'fas fa-exclamation-circle text-warning';
       case 'pending':
         return 'fas fa-clock text-secondary';
+      case 'overdue':
+        return 'fas fa-exclamation-triangle text-danger';
+      case 'cancelled':
+        return 'fas fa-times-circle text-dark';
       default:
         return 'fas fa-question-circle text-muted';
     }
