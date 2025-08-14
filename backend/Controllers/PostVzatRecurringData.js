@@ -593,6 +593,92 @@ export const getAFSPaymentResult = async (req, res) => {
       resultData.paymentStatus = actualPaymentStatus;
       resultData.message = paymentMessage;
       
+      // 🆕 AUTOMATIC WEBHOOK TRIGGERING FOR SUCCESSFUL PAYMENTS
+      if (actualPaymentStatus ***REMOVED***= 'success' && quotepaymentId) {
+        console.log('🔄 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= AUTO-TRIGGERING WEBHOOK ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
+        console.log('💡 Reason: Payment successful but webhook may not have been received from AFS');
+        console.log(`📋 Payment Details: ID=${resultData.id}, Amount=${resultData.amount}, QuotePaymentId=${quotepaymentId}`);
+        
+        try {
+          // Import webhook handler
+          const { handleAFSWebhook } = await import('./SubscriptionController.js');
+          
+          // Create webhook data based on the payment result
+          const webhookData = {
+            id: resultData.id,
+            paymentType: 'DB', // Always DB for direct debit
+            result: {
+              code: resultData.result?.code || '000.100.110',
+              description: resultData.result?.description || 'Successful transaction'
+            },
+            amount: parseFloat(resultData.amount) || 210,
+            currency: resultData.currency || 'AED',
+            merchantTransactionId: quotepaymentId,
+            registrationId: resultData.registrationId || resultData.id,
+            timestamp: resultData.timestamp || new Date().toISOString()
+          };
+          
+          console.log('📋 Generated webhook data:', JSON.stringify(webhookData, null, 2));
+          
+          // Create mock request and response objects
+          const mockReq = {
+            body: webhookData,
+            ip: '127.0.0.1',
+            get: () => 'Auto-triggered webhook',
+            headers: { 'user-agent': 'VZAT-Auto-Webhook/1.0' },
+            query: {},
+            originalUrl: '/auto-webhook-trigger'
+          };
+          
+          const mockRes = {
+            status: function(code) { this.statusCode = code; return this; },
+            json: function(data) { 
+              this.responseData = data; 
+              console.log(`📤 Auto-webhook response [${this.statusCode}]:`, JSON.stringify(data, null, 2));
+              return this; 
+            },
+            statusCode: 200,
+            responseData: null
+          };
+          
+          console.log('🚀 Triggering webhook handler automatically...');
+          
+          // Call the webhook handler
+          await handleAFSWebhook(mockReq, mockRes);
+          
+          if (mockRes.statusCode ***REMOVED***= 200) {
+            console.log('✅ Auto-webhook triggered successfully!');
+            resultData.auto_webhook = {
+              status: 'triggered',
+              success: true,
+              message: 'Webhook automatically triggered for database update',
+              triggered_at: new Date().toISOString()
+            };
+          } else {
+            console.log('⚠️ Auto-webhook returned non-200 status:', mockRes.statusCode);
+            resultData.auto_webhook = {
+              status: 'failed',
+              success: false,
+              message: 'Webhook trigger returned error status',
+              status_code: mockRes.statusCode,
+              triggered_at: new Date().toISOString()
+            };
+          }
+          
+        } catch (webhookError) {
+          console.error('❌ Error auto-triggering webhook:', webhookError);
+          resultData.auto_webhook = {
+            status: 'error',
+            success: false,
+            error: webhookError.message,
+            message: 'Failed to auto-trigger webhook',
+            triggered_at: new Date().toISOString()
+          };
+        }
+        
+        console.log('🔄 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= AUTO-WEBHOOK COMPLETE ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
+      }
+      
       // 🆕 CREATE CUSTOMER ACCOUNT AND SAVE CARD FOR ALL SUCCESSFUL PAYMENTS
       if (actualPaymentStatus ***REMOVED***= 'success' && quotepaymentId) {
         console.log('🔍 CUSTOMER REGISTRATION DEBUG - Starting customer account and card save process...');
