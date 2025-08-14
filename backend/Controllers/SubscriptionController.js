@@ -240,34 +240,44 @@ export const handleAFSWebhook = async (req, res) => {
         }
         
         // 🆕 CREATE CUSTOMER ACCOUNT AFTER FIRST SUCCESSFUL PAYMENT
-        try {
-          console.log('🔄 Creating customer account for first payment...');
-          const customerCreationResult = await createCustomerAccount(subscriptionRecord);
-          
-          if (customerCreationResult.success) {
-            console.log('✅ Customer account created successfully');
-          } else {
-            console.error('❌ Failed to create customer account:', customerCreationResult.error);
+        // Skip customer creation if this is an auto-triggered webhook (already done in payment result)
+        if (!req.body.skipCustomerCreation) {
+          try {
+            console.log('🔄 Creating customer account for first payment...');
+            const customerCreationResult = await createCustomerAccount(subscriptionRecord);
+            
+            if (customerCreationResult.success) {
+              console.log('✅ Customer account created successfully');
+            } else {
+              console.error('❌ Failed to create customer account:', customerCreationResult.error);
+            }
+          } catch (customerError) {
+            console.error('❌ Error creating customer account:', customerError);
           }
-        } catch (customerError) {
-          console.error('❌ Error creating customer account:', customerError);
+        } else {
+          console.log('ℹ️ Skipping customer creation (auto-triggered webhook - already done in payment result)');
         }
         
         // 🆕 SAVE CUSTOMER CARD DETAILS AFTER FIRST SUCCESSFUL PAYMENT
-        try {
-          console.log('💳 Saving customer card details...');
-          const cardSaveResult = await saveCustomerCard({
-            ...subscriptionRecord.toObject(),
-            result: result // Pass AFS result for card details
-          });
-          
-          if (cardSaveResult.success) {
-            console.log('✅ Customer card saved successfully');
-          } else {
-            console.log('⚠️ Card saving failed:', cardSaveResult.message);
+        // Skip card saving if this is an auto-triggered webhook (already done in payment result)
+        if (!req.body.skipCustomerCreation) {
+          try {
+            console.log('💳 Saving customer card details...');
+            const cardSaveResult = await saveCustomerCard({
+              ...subscriptionRecord.toObject(),
+              result: result // Pass AFS result for card details
+            });
+            
+            if (cardSaveResult.success) {
+              console.log('✅ Customer card saved successfully');
+            } else {
+              console.log('⚠️ Card saving failed:', cardSaveResult.message);
+            }
+          } catch (cardError) {
+            console.error('❌ Error saving customer card:', cardError);
           }
-        } catch (cardError) {
-          console.error('❌ Error saving customer card:', cardError);
+        } else {
+          console.log('ℹ️ Skipping card saving (auto-triggered webhook - already done in payment result)');
         }
         
         // Schedule next payment if this is a subscription with multiple installments

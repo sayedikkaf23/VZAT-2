@@ -14,6 +14,72 @@
   padding-left: 0 !important;
 }
 
+// Custom payment status badges
+.badge-completed {
+  background-color: #28a745 !important; // Green
+  color: white !important;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-pending {
+  background-color: #dc3545 !important; // Red
+  color: white !important;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-due {
+  background-color: #ffc107 !important; // Yellow/Orange
+  color: #212529 !important; // Dark text for contrast
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-overdue {
+  background-color: #8b1538 !important; // Dark red
+  color: white !important;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-cancelled {
+  background-color: #6c757d !important; // Gray
+  color: white !important;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-unknown {
+  background-color: #e9ecef !important; // Light gray
+  color: #495057 !important; // Dark gray text
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 
 .custom-modal-backdrop {
   position: fixed;
@@ -23,4 +89,140 @@
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
+}
+
+// Payment Schedule Modal Styles
+.remaining-amount {
+  font-weight: 600;
+  color: #666;
+  font-size: 14px;
+}
+
+.payment-schedule-list {
+  .item {
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 60px;
+      width: 2px;
+      height: 16px;
+      background-color: #e0e0e0;
+    }
+    
+    .check-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #22c55e;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    
+    .active-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #ef4444;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      flex-shrink: 0;
+    }
+    
+    .pending-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      flex-shrink: 0;
+    }
+    
+    .payment-info {
+      .payment-title {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 4px;
+      }
+      
+      .payment-amount {
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 2px;
+      }
+      
+      .payment-date {
+        font-size: 14px;
+        color: #6b7280;
+      }
+    }
+    
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      
+      &.paid {
+        background-color: #dcfce7;
+        color: #16a34a;
+      }
+      
+      &.current {
+        background-color: #fecaca;
+        color: #dc2626;
+      }
+      
+      &.pending {
+        background-color: #f3f4f6;
+        color: #6b7280;
+      }
+    }
+    
+    &.success {
+      .payment-info {
+        .payment-title,
+        .payment-amount {
+          color: #22c55e;
+        }
+      }
+      
+      &:not(:last-child)::after {
+        background-color: #22c55e;
+      }
+    }
+    
+    &.active {
+      .payment-info {
+        .payment-title,
+        .payment-amount {
+          color: #ef4444;
+        }
+      }
+      
+      &:not(:last-child)::after {
+        background-color: #ef4444;
+      }
+    }
+  }
 }
