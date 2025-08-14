@@ -14,14 +14,29 @@ dotenv.config();
  */
 async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transactionId) {
   try {
-    console.log(`🔄 Updating payment schedule for subscription ${subscriptionId}, payment ${paymentNumber}`);
+    console.log('🔄 =============== UPDATING PAYMENT SCHEDULE ===============');
+    console.log('📋 Parameters:');
+    console.log('  - Subscription ID:', subscriptionId);
+    console.log('  - Payment Number:', paymentNumber);
+    console.log('  - Transaction ID:', transactionId);
     
     const subscription = await Vzat_Recurring_Data.findById(subscriptionId);
     if (!subscription) {
+      console.log('❌ Subscription not found during payment schedule update');
       throw new Error('Subscription not found');
     }
 
+    console.log('📊 Current payment schedule status:');
+    if (subscription.payment_schedule && subscription.payment_schedule.length > 0) {
+      subscription.payment_schedule.forEach((payment, index) => {
+        console.log(`  Payment ${payment.installment_number}: ${payment.status} (Due: ${payment.due_date}, Amount: ${payment.amount})`);
+      });
+    } else {
+      console.log('  ⚠️ No payment schedule found in subscription');
+    }
+
     // Update the specific payment in the payment_schedule array
+    console.log(`🔄 Updating payment #${paymentNumber} status to 'completed'...`);
     const updateResult = await Vzat_Recurring_Data.findOneAndUpdate(
       { 
         _id: subscriptionId,
@@ -38,11 +53,23 @@ async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transa
     );
 
     if (updateResult) {
-      console.log(`✅ Payment schedule updated for installment ${paymentNumber}`);
+      console.log(`✅ Payment #${paymentNumber} successfully marked as completed`);
+      
+      // Find the updated payment in the schedule
+      const updatedPayment = updateResult.payment_schedule.find(p => p.installment_number === paymentNumber);
+      if (updatedPayment) {
+        console.log('📋 Updated payment details:');
+        console.log('  - Installment:', updatedPayment.installment_number);
+        console.log('  - Status:', updatedPayment.status);
+        console.log('  - Transaction ID:', updatedPayment.transaction_id);
+        console.log('  - Payment Date:', updatedPayment.payment_date);
+      }
       
       // Update the next payment status to 'due' if it exists
       const nextPaymentNumber = paymentNumber + 1;
-      await Vzat_Recurring_Data.findOneAndUpdate(
+      console.log(`🔄 Checking for next payment (#${nextPaymentNumber}) to mark as 'due'...`);
+      
+      const nextPaymentUpdate = await Vzat_Recurring_Data.findOneAndUpdate(
         { 
           _id: subscriptionId,
           'payment_schedule.installment_number': nextPaymentNumber,
@@ -52,17 +79,37 @@ async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transa
           $set: {
             'payment_schedule.$.status': 'due'
           }
-        }
+        },
+        { new: true }
       );
       
-      console.log(`✅ Next payment (${nextPaymentNumber}) status updated to 'due'`);
+      if (nextPaymentUpdate) {
+        console.log(`✅ Next payment (#${nextPaymentNumber}) status updated to 'due'`);
+        
+        // Log updated schedule
+        console.log('📊 Updated payment schedule:');
+        nextPaymentUpdate.payment_schedule.forEach((payment, index) => {
+          console.log(`  Payment ${payment.installment_number}: ${payment.status} (Due: ${payment.due_date}, Amount: ${payment.amount})`);
+        });
+      } else {
+        console.log(`ℹ️ No next payment (#${nextPaymentNumber}) found or already processed`);
+      }
     } else {
-      console.warn(`⚠️ Could not find payment ${paymentNumber} in payment schedule`);
+      console.log(`❌ Could not find payment #${paymentNumber} in payment schedule`);
+      console.log('🔍 Available payments in schedule:');
+      const currentSub = await Vzat_Recurring_Data.findById(subscriptionId);
+      if (currentSub && currentSub.payment_schedule) {
+        currentSub.payment_schedule.forEach(payment => {
+          console.log(`  - Payment ${payment.installment_number}: ${payment.status}`);
+        });
+      }
     }
 
+    console.log('🔄 =============== PAYMENT SCHEDULE UPDATE COMPLETE ===============');
     return { success: true };
   } catch (error) {
     console.error('❌ Error updating payment schedule:', error);
+    console.error('❌ Error stack:', error.stack);
     return { success: false, error: error.message };
   }
 }
@@ -74,7 +121,9 @@ export const handleAFSWebhook = async (req, res) => {
   // Using persistent connection - no need to connect/disconnect
   
   try {
-    console.log('🔔 AFS Webhook received:', JSON.stringify(req.body, null, 2));
+    console.log('🔔 =================== AFS WEBHOOK RECEIVED ===================');
+    console.log('📅 Timestamp:', new Date().toISOString());
+    console.log('📋 Full webhook payload:', JSON.stringify(req.body, null, 2));
     
     const { 
       id, 
@@ -87,99 +136,151 @@ export const handleAFSWebhook = async (req, res) => {
       timestamp 
     } = req.body;
 
+    console.log('🔍 Extracted webhook data:');
+    console.log('  - Transaction ID:', id);
+    console.log('  - Payment Type:', paymentType);
+    console.log('  - Result Code:', result?.code);
+    console.log('  - Result Description:', result?.description);
+    console.log('  - Amount:', amount, currency);
+    console.log('  - Merchant Transaction ID:', merchantTransactionId);
+    console.log('  - Registration ID:', registrationId);
+    console.log('  - AFS Timestamp:', timestamp);
+
     // Find the subscription record
+    console.log('🔍 Looking for subscription with quotepaymentId:', merchantTransactionId);
     const subscriptionRecord = await Vzat_Recurring_Data.findOne({ 
       quotepaymentId: merchantTransactionId 
     });
 
     if (!subscriptionRecord) {
-      console.log(' Subscription record not found for merchantTransactionId:', merchantTransactionId);
+      console.log('❌ Subscription record not found for merchantTransactionId:', merchantTransactionId);
+      console.log('🔍 Let me check if there are any subscriptions in the database...');
+      
+      const allSubscriptions = await Vzat_Recurring_Data.find({}).select('quotepaymentId Customer_name opp_email').limit(5);
+      console.log('📋 Found these subscriptions:', allSubscriptions.map(sub => ({
+        quotepaymentId: sub.quotepaymentId,
+        customer: sub.Customer_name,
+        email: sub.opp_email
+      })));
+      
       return res.status(404).json({ message: 'Subscription not found' });
     }
 
-    console.log(`📋 Found subscription record: ${subscriptionRecord._id}`);
+    console.log('✅ Found subscription record:');
+    console.log('  - ID:', subscriptionRecord._id);
+    console.log('  - Customer:', subscriptionRecord.Customer_name);
+    console.log('  - Email:', subscriptionRecord.opp_email);
+    console.log('  - Current Status:', subscriptionRecord.subscription_status);
+    console.log('  - Payments Completed:', subscriptionRecord.payments_completed);
+    console.log('  - Total Installments:', subscriptionRecord.InstallmentLeft);
+    console.log('  - Payment Schedule Length:', subscriptionRecord.payment_schedule?.length || 0);
 
     // Handle different payment types
-    if (paymentType === 'PA' && result.code.startsWith('000.')) {
-      // Initial subscription setup successful
-      console.log('Initial subscription setup successful');
+    console.log('🔄 Processing payment based on type and result...');
+    console.log('📊 Payment Analysis:');
+    console.log('  - Is DB (Direct Debit):', paymentType === 'DB');
+    console.log('  - Result Code Starts with 000:', result.code.startsWith('000.'));
+    console.log('  - Current Subscription Status:', subscriptionRecord.subscription_status);
+    console.log('  - Is First Payment:', subscriptionRecord.subscription_status === 'pending' && (subscriptionRecord.payments_completed || 0) === 0);
+    console.log('  - Success Condition Met:', paymentType === 'DB' && result.code.startsWith('000.'));
+    
+    if (paymentType === 'DB' && result.code.startsWith('000.')) {
+      // Check if this is the first payment (subscription status is pending)
+      const isFirstPayment = subscriptionRecord.subscription_status === 'pending' && (subscriptionRecord.payments_completed || 0) === 0;
       
-      await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
-        subscription_status: 'active',
-        afs_registration_id: registrationId,
-        payments_completed: 1,
-        last_payment_date: new Date(timestamp)
-      });
-      
-      // Update payment schedule status for the first payment
-      await updatePaymentScheduleStatus(subscriptionRecord._id, 1, id);
-      
-      // Call Salesforce API for successful payment
-      try {
-        console.log('🔄 Calling Salesforce API for initial subscription payment...');
+      if (isFirstPayment) {
+        // First payment successful - activate subscription
+        console.log('🎉 =============== FIRST PAYMENT SUCCESSFUL ===============');
+        console.log('💳 Processing first payment and activating subscription...');
         
-        const salesforcePaymentData = {
-          quotepaymentId: subscriptionRecord.quotepaymentId,
-          amount: amount,
-          transactionId: id,
-          paymentType: 'Online_payment',
-          paymentStatus: 'success',
-          resultCode: result.code,
-          resultDescription: result.description,
-          timestamp: timestamp
-        };
+        console.log('🔄 Updating subscription status to active...');
+        const updateResult = await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
+          subscription_status: 'active',
+          afs_registration_id: registrationId,
+          payments_completed: 1,
+          last_payment_date: new Date(timestamp)
+        }, { new: true });
+        
+        console.log('✅ Subscription updated successfully:');
+        console.log('  - New Status:', updateResult.subscription_status);
+        console.log('  - Payments Completed:', updateResult.payments_completed);
+        console.log('  - Registration ID:', updateResult.afs_registration_id);
+        
+        // Update payment schedule status for the first payment
+        console.log('🔄 Updating payment schedule for payment #1...');
+        const scheduleUpdateResult = await updatePaymentScheduleStatus(subscriptionRecord._id, 1, id);
+        console.log('📋 Payment schedule update result:', scheduleUpdateResult);
+        
+        // Call Salesforce API for successful payment
+        try {
+          console.log('🔄 Calling Salesforce API for first payment...');
+          
+          const salesforcePaymentData = {
+            quotepaymentId: subscriptionRecord.quotepaymentId,
+            amount: amount,
+            transactionId: id,
+            paymentType: 'Online_payment',
+            paymentStatus: 'success',
+            resultCode: result.code,
+            resultDescription: result.description,
+            timestamp: timestamp
+          };
 
-        const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
-        
-        if (salesforceResult.success) {
-          const statusText = salesforceResult.payment_was_successful ? 'successful' : 'failed';
-          console.log(`✅ Salesforce has been notified of ${statusText} initial payment`);
-        } else {
-          console.warn('⚠️ Salesforce update failed for initial payment:', salesforceResult.error);
+          const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+          
+          if (salesforceResult.success) {
+            const statusText = salesforceResult.payment_was_successful ? 'successful' : 'failed';
+            console.log(`✅ Salesforce has been notified of ${statusText} first payment`);
+          } else {
+            console.warn('⚠️ Salesforce update failed for first payment:', salesforceResult.error);
+          }
+          
+        } catch (salesforceError) {
+          console.error('❌ Error calling Salesforce API for first payment:', salesforceError);
         }
         
-      } catch (salesforceError) {
-        console.error('❌ Error calling Salesforce API for initial payment:', salesforceError);
-      }
-      
-      // 🆕 CREATE CUSTOMER ACCOUNT AFTER FIRST SUCCESSFUL PAYMENT
-      try {
-        console.log('🔄 Creating customer account for first payment...');
-        const customerCreationResult = await createCustomerAccount(subscriptionRecord);
-        
-        if (customerCreationResult.success) {
-          console.log('✅ Customer account created successfully');
-        } else {
-          console.error('❌ Failed to create customer account:', customerCreationResult.error);
+        // 🆕 CREATE CUSTOMER ACCOUNT AFTER FIRST SUCCESSFUL PAYMENT
+        try {
+          console.log('🔄 Creating customer account for first payment...');
+          const customerCreationResult = await createCustomerAccount(subscriptionRecord);
+          
+          if (customerCreationResult.success) {
+            console.log('✅ Customer account created successfully');
+          } else {
+            console.error('❌ Failed to create customer account:', customerCreationResult.error);
+          }
+        } catch (customerError) {
+          console.error('❌ Error creating customer account:', customerError);
         }
-      } catch (customerError) {
-        console.error('❌ Error creating customer account:', customerError);
-      }
-      
-      // 🆕 SAVE CUSTOMER CARD DETAILS AFTER FIRST SUCCESSFUL PAYMENT
-      try {
-        console.log('💳 Saving customer card details...');
-        const cardSaveResult = await saveCustomerCard({
-          ...subscriptionRecord.toObject(),
-          result: webhookData.result // Pass AFS result for card details
-        });
         
-        if (cardSaveResult.success) {
-          console.log('✅ Customer card saved successfully');
-        } else {
-          console.log('⚠️ Card saving failed:', cardSaveResult.message);
+        // 🆕 SAVE CUSTOMER CARD DETAILS AFTER FIRST SUCCESSFUL PAYMENT
+        try {
+          console.log('💳 Saving customer card details...');
+          const cardSaveResult = await saveCustomerCard({
+            ...subscriptionRecord.toObject(),
+            result: result // Pass AFS result for card details
+          });
+          
+          if (cardSaveResult.success) {
+            console.log('✅ Customer card saved successfully');
+          } else {
+            console.log('⚠️ Card saving failed:', cardSaveResult.message);
+          }
+        } catch (cardError) {
+          console.error('❌ Error saving customer card:', cardError);
         }
-      } catch (cardError) {
-        console.error('❌ Error saving customer card:', cardError);
-      }
+        
+        // Schedule next payment if this is a subscription with multiple installments
+        if (subscriptionRecord.InstallmentLeft > 1) {
+          await scheduleNextPayment(subscriptionRecord._id);
+        }
+        
+      } else {
+        // Recurring payment successful
+        console.log('🎉 =============== RECURRING PAYMENT SUCCESSFUL ===============');
+        console.log('💳 Processing recurring payment...');
       
-      // Schedule next payment
-      await scheduleNextPayment(subscriptionRecord._id);
-      
-    } else if (paymentType === 'DB' && result.code.startsWith('000.')) {
-      // Recurring payment successful
-      console.log('Recurring payment successful');
-      
+      console.log('🔄 Incrementing payments_completed counter...');
       const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
         subscriptionRecord._id,
         {
@@ -189,8 +290,15 @@ export const handleAFSWebhook = async (req, res) => {
         { new: true }
       );
 
+      console.log('✅ Subscription updated successfully:');
+      console.log('  - Payments Completed:', updatedRecord.payments_completed);
+      console.log('  - Total Installments:', updatedRecord.InstallmentLeft);
+      console.log('  - Last Payment Date:', updatedRecord.last_payment_date);
+
       // Update payment schedule status for the current payment
-      await updatePaymentScheduleStatus(subscriptionRecord._id, updatedRecord.payments_completed, id);
+      console.log(`🔄 Updating payment schedule for payment #${updatedRecord.payments_completed}...`);
+      const scheduleUpdateResult = await updatePaymentScheduleStatus(subscriptionRecord._id, updatedRecord.payments_completed, id);
+      console.log('📋 Payment schedule update result:', scheduleUpdateResult);
 
       // Call Salesforce API for successful recurring payment
       try {
@@ -257,6 +365,7 @@ export const handleAFSWebhook = async (req, res) => {
       } else {
         // Schedule next payment
         await scheduleNextPayment(subscriptionRecord._id);
+      }
       }
       
     } else {
