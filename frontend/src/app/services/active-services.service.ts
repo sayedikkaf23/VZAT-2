@@ -119,17 +119,17 @@ export class ActiveServicesService {
     switch (status) {
       case 'paid':
       case 'completed':
-        return 'badge badge-success';
+        return 'badge-completed'; // Green with white text
       case 'due':
-        return 'badge badge-warning';
+        return 'badge-due'; // Orange/yellow
       case 'pending':
-        return 'badge badge-secondary';
+        return 'badge-pending'; // Red with white text
       case 'overdue':
-        return 'badge badge-danger';
+        return 'badge-overdue'; // Dark red
       case 'cancelled':
-        return 'badge badge-dark';
+        return 'badge-cancelled'; // Dark gray
       default:
-        return 'badge badge-light';
+        return 'badge-unknown'; // Light gray
     }
   }
 

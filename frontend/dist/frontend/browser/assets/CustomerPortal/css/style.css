@@ -220,7 +220,7 @@ section.login_section .form_wrp .link {
     text-underline-offset: 4px;
 }
 html .btn {
-    background-color: var(--primary);
+    background-color: var(--dark); /* Start with black color */
     color: var(--white);
     font-size: 18px;
     font-weight: 700;
@@ -239,9 +239,17 @@ html .btn {
     vertical-align: top;
 }
 html .btn:focus,
-html .btn:hover{
-    background-color: var(--dark);
+html .btn:hover,
+html .btn:not(:disabled):hover,
+html .btn:not(:disabled):focus{
+    background-color: var(--primary); /* Change to red on hover/focus when enabled */
     color: var(--white);
+}
+html .btn:disabled {
+    background-color: var(--dark); /* Keep black when disabled */
+    color: var(--white);
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 .btn.btn-md {
     font-size: 17px;

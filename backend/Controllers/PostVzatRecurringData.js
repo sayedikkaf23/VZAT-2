@@ -622,7 +622,11 @@ export const getAFSPaymentResult = async (req, res) => {
           
           // Create mock request and response objects
           const mockReq = {
-            body: webhookData,
+            body: {
+              ...webhookData,
+              isAutoTriggered: true, // Flag to indicate this is auto-triggered
+              skipCustomerCreation: true // Skip customer creation since it was already done
+            },
             ip: '127.0.0.1',
             get: () => 'Auto-triggered webhook',
             headers: { 'user-agent': 'VZAT-Auto-Webhook/1.0' },

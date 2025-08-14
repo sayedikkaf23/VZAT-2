@@ -31,6 +31,55 @@ export class ActiveServices implements OnInit {
   loadingServices = true;
   errorMessage: string = '';
 
+  /**
+   * Get sorted active services with completed payments at the top
+   */
+  get sortedActiveServices(): PaymentScheduleService[] {
+    return [...this.activeServices].sort((a, b) => {
+      // Put completed/paid services first
+      const aIsCompleted = a.status ***REMOVED***= 'completed' || a.status ***REMOVED***= 'paid';
+      const bIsCompleted = b.status ***REMOVED***= 'completed' || b.status ***REMOVED***= 'paid';
+      
+      if (aIsCompleted && !bIsCompleted) return -1;
+      if (!aIsCompleted && bIsCompleted) return 1;
+      
+      // Then sort by Customer_name alphabetically
+      const aName = a.Customer_name || '';
+      const bName = b.Customer_name || '';
+      return aName.localeCompare(bName);
+    });
+  }
+
+  /**
+   * Get unique services grouped by quotepaymentId for table display
+   */
+  get uniqueServices(): PaymentScheduleService[] {
+    const serviceMap = new Map<string, PaymentScheduleService>();
+    
+    this.activeServices.forEach(service => {
+      const key = service.quotepaymentId || service.id || Math.random().toString();
+      
+      // If this quotepaymentId already exists, keep the first one
+      if (!serviceMap.has(key)) {
+        serviceMap.set(key, service);
+      }
+    });
+    
+    return Array.from(serviceMap.values()).sort((a, b) => {
+      // Put completed/paid services first
+      const aIsCompleted = a.status ***REMOVED***= 'completed' || a.status ***REMOVED***= 'paid';
+      const bIsCompleted = b.status ***REMOVED***= 'completed' || b.status ***REMOVED***= 'paid';
+      
+      if (aIsCompleted && !bIsCompleted) return -1;
+      if (!aIsCompleted && bIsCompleted) return 1;
+      
+      // Then sort by Customer_name alphabetically
+      const aName = a.Customer_name || '';
+      const bName = b.Customer_name || '';
+      return aName.localeCompare(bName);
+    });
+  }
+
   constructor(
     @Inject(DOCUMENT) private document: Document, 
     private styleLoader: StyleLoader, 
@@ -189,18 +238,69 @@ export class ActiveServices implements OnInit {
   }
 
   /**
-   * Debug method to log current data state
+   * Get all payment schedules for a specific quotepaymentId
    */
-  debugDataState(): void {
-    console.log('🔍 DEBUG - Current component state:');
-    console.log('  - loadingServices:', this.loadingServices);
-    console.log('  - errorMessage:', this.errorMessage);
-    console.log('  - activeServices length:', this.activeServices?.length || 0);
-    console.log('  - activeServices array:', this.activeServices);
-    if (this.activeServices && this.activeServices.length > 0) {
-      console.log('  - First service:', this.activeServices[0]);
-    }
+  getPaymentSchedulesForService(service: PaymentScheduleService): PaymentScheduleService[] {
+    if (!service.quotepaymentId) return [service];
+    
+    return this.activeServices.filter(s => s.quotepaymentId ***REMOVED***= service.quotepaymentId)
+      .sort((a, b) => {
+        // Sort by installment number if available
+        const aInstallment = a.installment_number || 0;
+        const bInstallment = b.installment_number || 0;
+        return aInstallment - bInstallment;
+      });
   }
+
+  /**
+   * Get completed payments for the payment schedule modal
+   */
+  getCompletedPayments(service: PaymentScheduleService): PaymentScheduleService[] {
+    const payments = this.getPaymentSchedulesForService(service);
+    return payments.filter(p => p.status ***REMOVED***= 'paid' || p.status ***REMOVED***= 'completed');
+  }
+
+  /**
+   * Get current payment for the payment schedule modal
+   */
+  getCurrentPayment(service: PaymentScheduleService): PaymentScheduleService | null {
+    const payments = this.getPaymentSchedulesForService(service);
+    return payments.find(p => p.status ***REMOVED***= 'pending' || p.status ***REMOVED***= 'due' || p.status ***REMOVED***= 'overdue') || null;
+  }
+
+  /**
+   * Get pending payments for the payment schedule modal
+   */
+  getPendingPayments(service: PaymentScheduleService): PaymentScheduleService[] {
+    const payments = this.getPaymentSchedulesForService(service);
+    const currentPayment = this.getCurrentPayment(service);
+    
+    return payments.filter(p => 
+      p.status !***REMOVED*** 'paid' && 
+      p.status !***REMOVED*** 'completed' && 
+      p !***REMOVED*** currentPayment
+    );
+  }
+
+  /**
+   * Get current payment index (for display purposes)
+   */
+  getCurrentPaymentIndex(service: PaymentScheduleService): number {
+    const completedCount = this.getCompletedPayments(service).length;
+    return completedCount + 1;
+  }
+
+  /**
+   * Format amount for display
+   */
+  formatAmount(amount: number | string): string {
+    const numAmount = typeof amount ***REMOVED***= 'string' ? parseFloat(amount) : amount;
+    return numAmount.toLocaleString('en-AE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
    openModal(): void {
     this.isAdditionalModalOpen = true;
     console.log('modal open --', this.isAdditionalModalOpen);
