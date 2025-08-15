@@ -226,3 +226,91 @@
     }
   }
 }
+
+// Payment Summary Section
+.payment-summary {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  border-top: 2px solid #e9ecef;
+  
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    
+    .summary-label {
+      font-weight: 500;
+      color: #6c757d;
+      font-size: 14px;
+    }
+    
+    .summary-value {
+      font-weight: 600;
+      color: #212529;
+      font-size: 14px;
+      
+      &.text-success {
+        color: #28a745 !important;
+      }
+      
+      &.text-primary {
+        color: #007bff !important;
+      }
+      
+      &.fw-bold {
+        font-weight: 700 !important;
+      }
+    }
+  }
+}
+
+// Pagination Styles
+.pagination {
+  .page-item {
+    &.disabled {
+      .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        background-color: #fff;
+        border-color: #dee2e6;
+        opacity: 0.5;
+      }
+    }
+    
+    &.active {
+      .page-link {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+      }
+    }
+    
+    .page-link {
+      color: #212529;
+      border: 1px solid #dee2e6;
+      padding: 0.5rem 0.75rem;
+      
+      &:hover:not(.active) {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+        color: #212529;
+      }
+      
+      &.active {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+      }
+    }
+  }
+}
+
+.dropdown-item {
+  cursor: pointer;
+  
+  &:hover {
+    background-color: #f8f9fa;
+  }
+}
