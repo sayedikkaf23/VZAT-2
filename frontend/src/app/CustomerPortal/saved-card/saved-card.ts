@@ -1,6 +1,6 @@
 import { Component,Inject, PLATFORM_ID , Renderer2 , ElementRef, OnInit, OnDestroy, ChangeDetectorRef} from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { CustomerLoginService } from '../../services/customer-login.service';
 import { StyleLoader } from '../../services/style-loader';
@@ -35,7 +35,8 @@ export class SavedCard implements OnInit, OnDestroy {
     private styleLoader: StyleLoader,
     private savedCardsService: SavedCardsService,
     private cookieService: CookieService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router
   ) {}
   
   ngOnInit(): void {
@@ -428,7 +429,15 @@ export class SavedCard implements OnInit, OnDestroy {
     }
   }
 
-      ngOnDestroy(): void {
+  /**
+   * Navigate to add card page
+   */
+  addCard(): void {
+    console.log('🔄 Navigating to add card page...');
+    this.router.navigate(['/saved-card/add-card']);
+  }
+
+  ngOnDestroy(): void {
     this.styleLoader.removeThemes(this.themeUrls);
     if (this.loadingTimeout) {
       clearTimeout(this.loadingTimeout);

@@ -1,0 +1,34 @@
+{
+  "name": "vzat-backend-tests",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:addcard": "jest --testNamePattern=\"AddCard\"",
+    "test:integration": "jest --testPathPattern=\"Integration\"",
+    "test:manual": "node test/test-add-card-manual.js",
+    "test:all": "npm run test && npm run test:manual"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "Controllers/**/*.js",
+      "services/**/*.js",
+      "model/**/*.js",
+      "!**/node_modules/**"
+    ],
+    "testMatch": [
+      "**/test/**/*.test.js"
+    ],
+    "setupFilesAfterEnv": ["<rootDir>/test/setup.js"],
+    "verbose": true,
+    "coverageReporters": ["text", "lcov", "html"]
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "supertest": "^6.3.0",
+    "mongodb-memory-server": "^8.10.0",
+    "colors": "^1.4.0"
+  }
+}

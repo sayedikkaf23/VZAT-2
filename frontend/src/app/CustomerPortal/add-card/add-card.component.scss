@@ -1,0 +1,229 @@
+@use '../css/style.css' as *;
+@use '../css/responsive.css' as *;
+
+.admin_body {
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.main-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-title {
+  color: #212529;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+  color: #6c757d;
+  margin-bottom: 0;
+}
+
+.header-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.security-notice {
+  .alert {
+    border-left: 4px solid #0dcaf0;
+  }
+  
+  .fas.fa-shield-alt {
+    color: #0dcaf0;
+    font-size: 1.2rem;
+  }
+}
+
+.instructions-card {
+  .card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  .card-title {
+    color: #212529;
+    font-weight: 600;
+  }
+  
+  .fas.fa-credit-card {
+    color: #dc3545;
+  }
+}
+
+.accepted-cards {
+  .card-brands {
+    .badge {
+      font-size: 0.875rem;
+      padding: 0.5rem 0.75rem;
+      
+      i {
+        margin-right: 0.25rem;
+      }
+    }
+  }
+}
+
+.payment-form-container {
+  .card {
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  
+  .card-header {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    border-bottom: none;
+    
+    h5 {
+      font-weight: 600;
+    }
+    
+    .fas.fa-lock {
+      color: #fff;
+    }
+  }
+  
+  .card-body {
+    padding: 2rem;
+  }
+}
+
+// AFS Widget Styling
+.paymentWidgets {
+  // Override default AFS widget styles if needed
+  .wpwl-form {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  .wpwl-form-card {
+    .wpwl-group {
+      margin-bottom: 1.5rem;
+      
+      .wpwl-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.5rem;
+      }
+      
+      .wpwl-control {
+        border: 2px solid #e9ecef;
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        
+        &:focus {
+          border-color: #dc3545;
+          box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+          outline: none;
+        }
+      }
+    }
+    
+    .wpwl-button {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      border: none;
+      border-radius: 6px;
+      padding: 0.875rem 2rem;
+      font-weight: 600;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+      width: 100%;
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      }
+      
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+    }
+  }
+}
+
+.form-footer {
+  border-top: 1px solid #e9ecef;
+  padding-top: 1rem;
+  
+  .fas {
+    color: #28a745;
+  }
+}
+
+.test-cards-info {
+  .card {
+    border-color: #ffc107 !important;
+    
+    code {
+      background-color: #f8f9fa;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+  }
+}
+
+// Loading and Processing States
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .admin_body {
+    padding: 10px;
+  }
+  
+  .main-container {
+    max-width: 100%;
+  }
+  
+  .header-section {
+    padding: 1rem;
+    
+    .d-flex {
+      flex-direction: column;
+      align-items: flex-start !important;
+      
+      .btn {
+        margin-top: 1rem;
+        align-self: stretch;
+      }
+    }
+  }
+  
+  .payment-form-container .card-body {
+    padding: 1.5rem;
+  }
+}
+
+// Animation for form appearance
+.card-registration-container {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
