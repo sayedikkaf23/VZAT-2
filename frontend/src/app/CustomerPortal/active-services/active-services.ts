@@ -31,6 +31,11 @@ export class ActiveServices implements OnInit {
   loadingServices = true;
   errorMessage: string = '';
 
+  // Pagination properties
+  currentPage: number = 1;
+  itemsPerPage: number = 10;
+  totalPages: number = 0;
+
   /**
    * Get sorted active services with completed payments at the top
    */
@@ -65,7 +70,7 @@ export class ActiveServices implements OnInit {
       }
     });
     
-    return Array.from(serviceMap.values()).sort((a, b) => {
+    const uniqueArray = Array.from(serviceMap.values()).sort((a, b) => {
       // Put completed/paid services first
       const aIsCompleted = a.status === 'completed' || a.status === 'paid';
       const bIsCompleted = b.status === 'completed' || b.status === 'paid';
@@ -78,6 +83,114 @@ export class ActiveServices implements OnInit {
       const bName = b.Customer_name || '';
       return aName.localeCompare(bName);
     });
+
+    // Update total pages when unique services change
+    this.updatePagination(uniqueArray.length);
+    
+    return uniqueArray;
+  }
+
+  /**
+   * Get paginated services for current page
+   */
+  get paginatedServices(): PaymentScheduleService[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    return this.uniqueServices.slice(startIndex, endIndex);
+  }
+
+  /**
+   * Update pagination calculations
+   */
+  updatePagination(totalItems: number): void {
+    this.totalPages = Math.ceil(totalItems / this.itemsPerPage);
+    
+    // Ensure current page is valid
+    if (this.currentPage > this.totalPages && this.totalPages > 0) {
+      this.currentPage = this.totalPages;
+    }
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+  }
+
+  /**
+   * Get pagination info text
+   */
+  get paginationInfo(): string {
+    const totalItems = this.uniqueServices.length;
+    if (totalItems === 0) return 'Showing 0 entries';
+    
+    const startItem = (this.currentPage - 1) * this.itemsPerPage + 1;
+    const endItem = Math.min(this.currentPage * this.itemsPerPage, totalItems);
+    
+    return `Showing ${startItem} to ${endItem} of ${totalItems} entries`;
+  }
+
+  /**
+   * Get array of page numbers for pagination display
+   */
+  get pageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    
+    if (this.totalPages <= maxVisiblePages) {
+      // Show all pages if total is less than max visible
+      for (let i = 1; i <= this.totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show pages around current page
+      let startPage = Math.max(1, this.currentPage - 2);
+      let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+      
+      // Adjust if we're near the end
+      if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  }
+
+  /**
+   * Navigate to specific page
+   */
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
+      this.currentPage = page;
+    }
+  }
+
+  /**
+   * Navigate to previous page
+   */
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  /**
+   * Navigate to next page
+   */
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  /**
+   * Change items per page
+   */
+  changeItemsPerPage(newItemsPerPage: number): void {
+    this.itemsPerPage = newItemsPerPage;
+    this.currentPage = 1; // Reset to first page
+    this.updatePagination(this.uniqueServices.length);
   }
 
   constructor(
@@ -299,6 +412,73 @@ export class ActiveServices implements OnInit {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
+  }
+
+  /**
+   * Calculate remaining amount based on completed payments
+   */
+  getRemainingAmount(service: PaymentScheduleService): number {
+    if (!service) return 0;
+    
+    const totalAmount = service.Total_After_VAT_Currency || 0;
+    const completedPayments = this.getCompletedPayments(service);
+    const totalPaid = completedPayments.reduce((sum, payment) => {
+      const amount = typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount;
+      return sum + (amount || 0);
+    }, 0);
+    
+    return totalAmount - totalPaid;
+  }
+
+  /**
+   * Format remaining amount for display
+   */
+  formatRemainingAmount(service: PaymentScheduleService): string {
+    const remaining = this.getRemainingAmount(service);
+    return `AED ${remaining.toLocaleString('en-AE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  }
+
+  /**
+   * Get total paid amount
+   */
+  getTotalPaidAmount(service: PaymentScheduleService): number {
+    if (!service) return 0;
+    
+    const completedPayments = this.getCompletedPayments(service);
+    return completedPayments.reduce((sum, payment) => {
+      const amount = typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount;
+      return sum + (amount || 0);
+    }, 0);
+  }
+
+  /**
+   * Format total paid amount for display
+   */
+  formatTotalPaidAmount(service: PaymentScheduleService): string {
+    const totalPaid = this.getTotalPaidAmount(service);
+    return `AED ${totalPaid.toLocaleString('en-AE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  }
+
+  /**
+   * Get total amount for display
+   */
+  formatTotalAmount(service: PaymentScheduleService): string {
+    if (!service || !service.Total_After_VAT_Currency) return 'AED 0.00';
+    
+    const totalAmount = typeof service.Total_After_VAT_Currency === 'string' 
+      ? parseFloat(service.Total_After_VAT_Currency) 
+      : service.Total_After_VAT_Currency;
+    
+    return `AED ${totalAmount.toLocaleString('en-AE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   }
 
    openModal(): void {
