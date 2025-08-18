@@ -118,13 +118,44 @@ export class AddCardService {
    * Initialize AFS registration form
    */
   initializeRegistrationForm(shopperResultUrl: string): void {
+    // First check if the form element exists
     const formElement = document.querySelector('.paymentWidgets') as HTMLFormElement;
-    if (formElement) {
-      formElement.setAttribute('action', shopperResultUrl);
-      formElement.setAttribute('data-brands', 'VISA MASTER AMEX');
-      console.log('✅ AFS registration form initialized');
+    if (!formElement) {
+      console.error('❌ Payment form element (.paymentWidgets) not found in DOM');
+      console.log('🔍 Available forms:', document.querySelectorAll('form'));
+      return;
+    }
+
+    console.log('✅ Payment form element found:', formElement);
+
+    // Set form attributes
+    formElement.setAttribute('action', shopperResultUrl);
+    formElement.setAttribute('data-brands', 'VISA MASTER AMEX');
+    
+    // Check if wpwl is available globally (AFS widget library)
+    if (typeof (window as any).wpwl !***REMOVED*** 'undefined') {
+      console.log('✅ AFS wpwl library is available');
+      
+      // Initialize AFS widget
+      try {
+        (window as any).wpwl.configure({
+          locale: 'en',
+          style: {
+            base: {
+              color: '#495057',
+              fontSize: '16px',
+              fontFamily: '"Poppins", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+            }
+          }
+        });
+        
+        console.log('✅ AFS registration form initialized successfully');
+      } catch (error) {
+        console.error('❌ Error initializing AFS widget:', error);
+      }
     } else {
-      console.error('❌ Payment form element not found');
+      console.error('❌ AFS wpwl library not available. Script may not be loaded properly.');
+      console.log('🔍 Available window properties:', Object.keys(window).filter(key => key.includes('wp') || key.includes('afs') || key.includes('oppwa')));
     }
   }
 }

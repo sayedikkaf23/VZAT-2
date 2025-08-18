@@ -292,8 +292,8 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
                       data.invoiceNumber || 
                       data.invoice_number || 
                       "INV-001",
-        totalAmount: data.subscription_info?.total_amount || 
-                     data.Total_After_VAT_Currency || 
+        totalAmount: data.Total_After_VAT_Currency || 
+                     data.subscription_info?.total_amount || 
                      data.TotalPrice || 
                      data.total_amount ||
                      data.amount ||
@@ -540,11 +540,29 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // Calculate remaining amount based on unpaid installments
-  get remainingAmount(): number {
+  // Calculate total amount from API data (Total_After_VAT_Currency)
+  get totalAmount(): number {
+    return this.apiData?.Total_After_VAT_Currency || this.customerData.totalAmount || 0;
+  }
+
+  // Calculate paid amount based on completed payments
+  get paidAmount(): number {
     return this.paymentSchedule
-      .filter(payment => payment.status !***REMOVED*** 'completed')
+      .filter(payment => payment.status ***REMOVED***= 'completed')
       .reduce((total, payment) => total + payment.amount, 0);
+  }
+
+  // Calculate remaining amount based on total - paid
+  get remainingAmount(): number {
+    return this.totalAmount - this.paidAmount;
+  }
+
+  // Get next payment date
+  get nextPaymentDate(): Date | null {
+    const nextPayment = this.paymentSchedule.find(payment => 
+      payment.status ***REMOVED***= 'due' && payment.isNextPayment
+    );
+    return nextPayment ? nextPayment.dueDate : null;
   }
 
   // Check if there's an active payment available
