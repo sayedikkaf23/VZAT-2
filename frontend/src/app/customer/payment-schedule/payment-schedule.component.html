@@ -149,42 +149,6 @@
       </div>
     </div>
 
-    <!-- Payment Summary Section -->
-    <div class="payment-summary-section">
-      <div class="container">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="summary-item">
-              <span class="summary-label">Total Amount:</span>
-              <span class="summary-value">AED {{ totalAmount | number:'1.2-2' }}</span>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="summary-item">
-              <span class="summary-label">Paid Amount:</span>
-              <span class="summary-value text-success">AED {{ paidAmount | number:'1.2-2' }}</span>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="summary-item">
-              <span class="summary-label">Remaining:</span>
-              <span class="summary-value" [ngClass]="remainingAmount < 0 ? 'text-primary' : 'text-warning'">
-                AED {{ remainingAmount | number:'1.2-2' }}
-              </span>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="summary-item">
-              <span class="summary-label">Next Payment:</span>
-              <span class="summary-value">
-                {{ nextPaymentDate ? (nextPaymentDate | date:'dd/MM/yyyy') : 'N/A' }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Card Management Section -->
     <div class="card-management-section" *ngIf="quotepaymentId && customerEmail && !isPaymentPage">
       <div class="container">
