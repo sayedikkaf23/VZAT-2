@@ -650,6 +650,9 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         if (res && res.name) {
           this.salesAgent.name = res.name;
           this.salesAgent.position = res.position;
+          this.salesAgent.phoneNumber = res.phoneNumber || res.phone || "+971 4 457 8271";
+          this.salesAgent.faxNumber = res.faxNumber || res.fax || "+971 4 457 8271";
+          this.salesAgent.email = res.email || "support@virtuzone.com";
           this.salesAgent.mobNo1 = res.mobNo1;
           this.salesAgent.mobNo2 = res.mobNo2;
           this.salesAgent.token = res.token;
