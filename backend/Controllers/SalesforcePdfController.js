@@ -10,7 +10,6 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
     try {
         console.log('📨 Received Salesforce PDF webhook request');
         console.log('Request body:', JSON.stringify(req.body, null, 2));
-        console.log('🧑‍💼 Customer name from webhook:', Customer_name);
 
         // Extract data from request
         const {
@@ -28,6 +27,8 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             QuoteId,
             OpportunityId
         } = req.body;
+
+        console.log('🧑‍💼 Customer name from webhook:', Customer_name);
 
         // Validate required fields
         const requiredFields = {
