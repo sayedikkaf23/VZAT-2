@@ -3,6 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+// Declare global window properties for AFS
+declare global {
+  interface Window {
+    wpwlOptions?: any;
+  }
+}
+
 export interface PrepareRegistrationResponse {
   success: boolean;
   checkoutId: string;
@@ -92,25 +99,45 @@ export class AddCardService {
    */
   loadAfsScript(scriptUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      console.log('🔄 Loading AFS script:', scriptUrl);
+      
       // Remove existing AFS scripts to avoid conflicts
       const existingScript = document.getElementById('afs-widget-script');
       if (existingScript) {
+        console.log('🗑️ Removing existing AFS script');
         existingScript.remove();
       }
 
       const script = document.createElement('script');
       script.id = 'afs-widget-script';
       script.src = scriptUrl;
+      script.type = 'text/javascript';
+      
+      // Add error handling for CSP issues
       script.onload = () => {
         console.log('✅ AFS widget script loaded successfully');
+        console.log('🔍 Checking if wpwlOptions is available:', typeof window.wpwlOptions);
         resolve();
       };
-      script.onerror = () => {
-        console.error('❌ Failed to load AFS widget script');
-        reject(new Error('Failed to load AFS widget script'));
+      
+      script.onerror = (error) => {
+        console.error('❌ Failed to load AFS widget script:', error);
+        console.error('📋 This might be due to Content Security Policy restrictions');
+        console.error('💡 Script URL:', scriptUrl);
+        reject(new Error('Failed to load AFS widget script - possible CSP issue'));
       };
 
+      // Log before appending
+      console.log('📝 Appending script to document head');
       document.head.appendChild(script);
+      
+      // Set a timeout as backup
+      setTimeout(() => {
+        if (!script.onload) {
+          console.error('⏰ Script loading timeout after 10 seconds');
+          reject(new Error('Script loading timeout'));
+        }
+      }, 10000);
     });
   }
 
