@@ -823,3 +823,69 @@ html .schedule-list-box  .form-check .form-check-label {
     border-color: var(--bs-primary);
   }
 }
+
+/* Payment Summary Section */
+.payment-summary-section {
+  background-color: #f8f9fa;
+  padding: 2rem 0;
+  margin-top: 2rem;
+  border-top: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e9ecef;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.summary-item:hover {
+  border-color: #FA2E52;
+  box-shadow: 0 2px 4px rgba(250, 46, 82, 0.1);
+}
+
+.summary-label {
+  font-weight: 500;
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.summary-value {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #212529;
+}
+
+.summary-value.text-success {
+  color: #28a745 !important;
+}
+
+.summary-value.text-warning {
+  color: #ffc107 !important;
+}
+
+.summary-value.text-primary {
+  color: #FA2E52 !important;
+}
+
+@media (max-width: 768px) {
+  .payment-summary-section {
+    padding: 1.5rem 0;
+  }
+  
+  .summary-item {
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.4rem;
+  }
+  
+  .summary-label,
+  .summary-value {
+    font-size: 0.9rem;
+  }
+}
