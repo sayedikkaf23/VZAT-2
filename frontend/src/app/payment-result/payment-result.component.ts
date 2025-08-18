@@ -15,6 +15,11 @@ export class PaymentResultComponent implements OnInit {
   result: any;
   error: string = '';
   loading = true;
+  
+  // Dynamic data properties
+  customerName: string = '';
+  paymentAmount: number = 0;
+  showDebugInfo: boolean = false; // Set to true to show debug information
 
   constructor(private route: ActivatedRoute, private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
@@ -43,10 +48,15 @@ export class PaymentResultComponent implements OnInit {
     
     this.http.get(backendUrl, { params }).subscribe({
       next: (res: any) => {
+        console.log('📋 Payment Result Response:', res);
+        
         // Update component state
         this.result = res;
         this.loading = false;
         this.error = '';
+        
+        // Extract dynamic data
+        this.extractDynamicData(res);
         
         // Force change detection
         this.cdr.detectChanges();
@@ -59,5 +69,36 @@ export class PaymentResultComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  /**
+   * Extract dynamic data from payment result
+   */
+  private extractDynamicData(result: any): void {
+    console.log('🔍 Extracting dynamic data from result:', result);
+    
+    // Extract customer name from various possible sources
+    this.customerName = result?.customer_name || 
+                       result?.Customer_name ||
+                       result?.customerName ||
+                       result?.paymentData?.customer_name ||
+                       result?.subscription_info?.customer_name ||
+                       'Customer';
+    
+    // Extract payment amount from various possible sources
+    this.paymentAmount = parseFloat(result?.amount) || 
+                        parseFloat(result?.Amount) ||
+                        parseFloat(result?.paid_amount) ||
+                        parseFloat(result?.Paid_Amount) ||
+                        parseFloat(result?.subscription_info?.amount) ||
+                        parseFloat(result?.paymentData?.amount) ||
+                        0;
+    
+    console.log('📋 Extracted Data:');
+    console.log('   - Customer Name:', this.customerName);
+    console.log('   - Payment Amount:', this.paymentAmount);
+    
+    // Enable debug info in development environment
+    this.showDebugInfo = !environment.production;
   }
 }
