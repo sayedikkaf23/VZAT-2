@@ -59,6 +59,13 @@ export const prepareCardRegistration = async (req, res) => {
     });
 
     console.log('📋 Checkout data being sent to AFS:', Object.fromEntries(checkoutData.entries()));
+    
+    // Log specific redirect URL parameter
+    const allData = Object.fromEntries(checkoutData.entries());
+    console.log('🎯 CRITICAL - shopperResultUrl parameter:', allData.shopperResultUrl);
+    console.log('🔍 All parameters with "shopperResultUrl":', Object.keys(allData).filter(key => key.toLowerCase().includes('shopper')));
+    console.log('🔍 All parameters with "redirect":', Object.keys(allData).filter(key => key.toLowerCase().includes('redirect')));
+    console.log('🔍 All parameters with "url":', Object.keys(allData).filter(key => key.toLowerCase().includes('url')));
 
     const response = await axios.post(
       `${AFS_CONFIG.baseUrl}/v1/checkouts`,
