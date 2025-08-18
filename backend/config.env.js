@@ -5,6 +5,9 @@ const config = {
     PORT: 3000,
     MONGODB_URI: 'mongodb+srv://saaral-naveen_31:Saaral%403112025@sneha.1kspldn.mongodb.net/vzat_sandbox',
     
+    // Frontend URL for redirects - using production URL for testing
+    FRONTEND_URL: 'https://vzatnew.yeepeey.com',
+    
     // AFS Payment Gateway Configuration (Test Environment)
     AFS_BASE_URL: 'https://eu-test.oppwa.com',
     AFS_ENTITY_ID: '8ac7a4c97d8d45be017d8e96389e020a',
@@ -15,6 +18,9 @@ const config = {
     NODE_ENV: 'production',
     PORT: process.env.PORT || 3000,
     MONGODB_URI: process.env.MONGODB_URI || 'mongodb+srv://saaral-naveen_31:Saaral%403112025@sneha.1kspldn.mongodb.net/vzat_sandbox',
+    
+    // Frontend URL for redirects
+    FRONTEND_URL: process.env.FRONTEND_URL || 'https://vzatnew.yeepeey.com',
     
     // AFS Payment Gateway Configuration (Production Environment)
     AFS_BASE_URL: process.env.AFS_BASE_URL || 'https://eu-test.oppwa.com',

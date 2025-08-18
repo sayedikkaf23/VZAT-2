@@ -1,12 +1,13 @@
 import axios from 'axios';
 import SavedCard from '../model/SavedCardModel.js';
 import VzatRecurringData from '../model/VzatRecurringDataModel.js';
+import config from '../config.env.js';
 
 // AFS Configuration (move to env file in production)
 const AFS_CONFIG = {
-  baseUrl: process.env.AFS_BASE_URL || 'https://eu-test.oppwa.com',
-  entityId: process.env.AFS_ENTITY_ID || '8ac7a4c97d8d45be017d8e96389e020a',
-  authorization: process.env.AFS_AUTHORIZATION || 'Bearer OGFjN2E0Yzk3ZDhkNDViZTAxN2Q4ZTk2Mzk3NjAyMGV8R3hQS0gyNjY5dA***REMOVED***',
+  baseUrl: process.env.AFS_BASE_URL || config.AFS_BASE_URL,
+  entityId: process.env.AFS_ENTITY_ID || config.AFS_ENTITY_ID,
+  authorization: process.env.AFS_AUTHORIZATION || config.AFS_AUTHORIZATION,
   testMode: 'EXTERNAL'
 };
 
@@ -27,13 +28,24 @@ export const prepareCardRegistration = async (req, res) => {
     console.log('🔄 Preparing AFS checkout for card registration...');
     console.log('📧 Customer email:', customerEmail);
 
-    // Prepare AFS checkout request
+    // Get the base URL from the request or environment
+    const baseUrl = process.env.FRONTEND_URL || config.FRONTEND_URL || req.get('origin') || 'http://localhost:4200';
+    
+    console.log('🌐 Base URL for redirects:', baseUrl);
+
+    // Prepare AFS checkout request with proper redirect URLs
     const checkoutData = new URLSearchParams({
       entityId: AFS_CONFIG.entityId,
       testMode: AFS_CONFIG.testMode,
       createRegistration: 'true',
-      'customer.email': customerEmail
+      'customer.email': customerEmail,
+      // Add redirect URLs to prevent the error
+      'shopperResultUrl': `${baseUrl}/CustomerPortal/add-card?resourcePath={{resourcePath}}`,
+      'defaultPaymentMethod': 'CARD',
+      'recurringType': 'INITIAL'
     });
+
+    console.log('📋 Checkout data being sent to AFS:', Object.fromEntries(checkoutData.entries()));
 
     const response = await axios.post(
       `${AFS_CONFIG.baseUrl}/v1/checkouts`,
@@ -48,6 +60,7 @@ export const prepareCardRegistration = async (req, res) => {
 
     console.log('✅ AFS checkout prepared successfully');
     console.log('🔑 Checkout ID:', response.data.id);
+    console.log('📄 Full AFS response:', JSON.stringify(response.data, null, 2));
 
     res.json({
       success: true,

@@ -81,15 +81,21 @@ export class AddCardComponent implements OnInit, OnDestroy {
    */
   private initializeCardRegistration(): void {
     if (!this.customerEmail) {
+      console.error('❌ No customer email found');
+      this.errorMessage = 'Customer email not found. Please log in again.';
       this.loading = false;
       return;
     }
 
     console.log('🔄 Initializing card registration for:', this.customerEmail);
+    console.log('🌐 Current URL:', window.location.href);
+    console.log('🏠 Origin:', window.location.origin);
 
     this.addCardService.prepareCardRegistration(this.customerEmail).subscribe({
       next: (response: PrepareRegistrationResponse) => {
         console.log('✅ Registration preparation successful:', response);
+        console.log('🔑 Checkout ID received:', response.checkoutId);
+        console.log('📋 AFS Config:', response.afsConfig);
         
         this.checkoutId = response.checkoutId;
         this.loading = false; // Stop loading state so form can render
@@ -99,11 +105,13 @@ export class AddCardComponent implements OnInit, OnDestroy {
         
         // Give Angular time to render the form template now that checkoutId is set
         setTimeout(() => {
+          console.log('⏰ Loading AFS widget after timeout');
           this.loadAfsWidget(response.afsConfig.scriptUrl);
         }, 200); // Increased timeout
       },
       error: (error) => {
         console.error('❌ Error preparing registration:', error);
+        console.error('📋 Error details:', error.error);
         this.errorMessage = 'Failed to initialize card registration. Please try again.';
         this.loading = false;
       }
@@ -279,16 +287,30 @@ export class AddCardComponent implements OnInit, OnDestroy {
    */
   private handleAfsCallback(resourcePath: string): void {
     console.log('🔄 Handling AFS callback with resourcePath:', resourcePath);
+    console.log('🌐 Full URL:', window.location.href);
+    console.log('📋 Query params:', this.route.snapshot.queryParams);
+    
+    // Check for error in URL params first
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('error')) {
+      console.error('❌ Error in callback URL:', urlParams.get('error'));
+      this.errorMessage = `Payment error: ${urlParams.get('error')}`;
+      this.loading = false;
+      return;
+    }
     
     // Extract checkout ID from resource path
     const checkoutIdMatch = resourcePath.match(/\/checkouts\/([^\/]+)\/registration/);
     if (!checkoutIdMatch) {
-      this.errorMessage = 'Invalid callback from payment provider.';
+      console.error('❌ Could not extract checkout ID from resourcePath:', resourcePath);
+      this.errorMessage = 'Invalid callback from payment provider. Please try again.';
       this.loading = false;
       return;
     }
 
     const callbackCheckoutId = checkoutIdMatch[1];
+    console.log('🔑 Extracted checkout ID from callback:', callbackCheckoutId);
+    
     this.processingRegistration = true;
 
     this.addCardService.handleRegistrationCallback(callbackCheckoutId, this.customerEmail).subscribe({
@@ -309,6 +331,7 @@ export class AddCardComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('❌ Error handling registration callback:', error);
+        console.error('📋 Error details:', error.error);
         this.errorMessage = 'Failed to complete card registration. Please try again.';
         this.processingRegistration = false;
         this.loading = false;
