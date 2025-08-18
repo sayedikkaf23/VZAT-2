@@ -262,7 +262,10 @@ export const sendPdfEmail = async (emailData) => {
       paymentLink,
       Installment_amount,
       Total_Installments,
-      quotePdf
+      quotePdf,
+      Customer_name,
+      opp_owner,
+      installmentSchedule // New parameter for dynamic payment schedule
     } = emailData;
 
     // Get base URL from environment
@@ -286,6 +289,39 @@ export const sendPdfEmail = async (emailData) => {
       }
     }
 
+    // Generate payment schedule table rows
+    let paymentScheduleRows = '';
+    if (installmentSchedule && Array.isArray(installmentSchedule)) {
+      installmentSchedule.forEach((installment, index) => {
+        const paymentDate = new Date(installment.date || installment.dueDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        paymentScheduleRows += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${index + 1}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${paymentDate}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${installment.amount || Installment_amount}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${index ***REMOVED***= 0 ? 'Upfront Payment' : index ***REMOVED***= installmentSchedule.length - 1 ? 'Final Installment' : 'Monthly Installment'}</td>
+          </tr>
+        `;
+      });
+    } else {
+      // Fallback if no schedule provided
+      for (let i = 0; i < (Total_Installments || 1); i++) {
+        paymentScheduleRows += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${i + 1}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">TBD</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${Installment_amount || Total_After_VAT_Currency}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${i ***REMOVED***= 0 ? 'Upfront Payment' : i ***REMOVED***= (Total_Installments - 1) ? 'Final Installment' : 'Monthly Installment'}</td>
+          </tr>
+        `;
+      }
+    }
+
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
@@ -294,9 +330,9 @@ export const sendPdfEmail = async (emailData) => {
       to: quote_email,
       subject: `Virtuzone | Proforma Invoice & Payment Link – PI QP- No-${quote_payment_number}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
           <div style="padding: 20px;">
-            <p>Hello,</p>
+            <p>Hello ${Customer_name || 'Mary'},</p>
             
             <p>Thank you for choosing Virtuzone as your preferred Corporate Services Provider.</p>
             
@@ -304,32 +340,52 @@ export const sendPdfEmail = async (emailData) => {
             along with the Payment Link embedded therein for your reference. A summary of the Proforma 
             Invoice is as below:</p>
             
-            <table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
-              <tr>
-                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Quote Payment Number</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${quote_payment_number}</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Total Amount Requested</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${Total_After_VAT_Currency}</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Installment Amount</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${Installment_amount}</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Total Installments</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${Total_Installments}</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold;">Payment Link</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">
-                  <a href="${fullPaymentLink}" style="color: #007bff; text-decoration: none;">${fullPaymentLink}</a>
-                </td>
-              </tr>
-            </table>
+            <div style="border: 2px solid #000; margin: 20px 0;">
+              <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #000;">
+                <h3 style="margin: 0; text-align: center;">Proforma Invoice Summary</h3>
+              </div>
+              <table style="border-collapse: collapse; width: 100%;">
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 40%;">Details</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Information</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 12px;">Proforma Invoice #</td>
+                  <td style="border: 1px solid #ddd; padding: 12px;">PI QP- No-${quotepaymentId || quote_payment_number}</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 12px;">Invoice Value with VAT</td>
+                  <td style="border: 1px solid #ddd; padding: 12px;">AED ${Total_After_VAT_Currency}</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 12px;">Payment Link</td>
+                  <td style="border: 1px solid #ddd; padding: 12px;">
+                    <a href="${fullPaymentLink}" style="color: #007bff; text-decoration: none; word-break: break-all;">${fullPaymentLink}</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 12px;">Amount Requested</td>
+                  <td style="border: 1px solid #ddd; padding: 12px;">AED ${Total_After_VAT_Currency}</td>
+                </tr>
+              </table>
+            </div>
             
-            <p>You may also click on the below button to view the payment options available to you.</p>
+            <div style="border: 2px solid #000; margin: 20px 0;">
+              <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #000;">
+                <h3 style="margin: 0; text-align: center;">Payment Schedule</h3>
+              </div>
+              <table style="border-collapse: collapse; width: 100%;">
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Installment No.</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Amount (AED)</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Type</td>
+                </tr>
+                ${paymentScheduleRows}
+              </table>
+            </div>
+            
+            <p>You may also click on the below button to proceed with payment.</p>
             
             <div style="text-align: center; margin: 30px 0;">
               <a href="${fullPaymentLink}" 
@@ -346,7 +402,7 @@ export const sendPdfEmail = async (emailData) => {
             
             <p style="margin-top: 40px;">
               Regards,<br>
-              VZ Payment API API
+              ${opp_owner || 'Rodney Raymond Lewis'}
             </p>
           </div>
         </div>
