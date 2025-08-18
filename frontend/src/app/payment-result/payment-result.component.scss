@@ -172,106 +172,94 @@
     font-size: 0.9rem;
   }
 
-  // Payment summary styling
+  // Payment summary styling - centered single column
   .payment-summary {
     background-color: #f8f9fa;
     border-radius: 10px;
-    padding: 20px;
-    margin: 20px 0;
+    padding: 30px;
+    margin: 30px auto;
     border: 1px solid #e9ecef;
+    max-width: 400px;
 
     h6 {
       color: #666;
-      font-size: 0.8rem;
+      font-size: 0.9rem;
       font-weight: 600;
       letter-spacing: 1px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
 
     h3 {
       font-weight: 700;
       margin-bottom: 0;
-    }
-
-    .text-primary {
-      color: #007bff !important;
+      font-size: 2.2rem;
     }
 
     .text-success {
       color: #28a745 !important;
     }
 
-    .text-warning {
-      color: #ffc107 !important;
-    }
-
     @media (max-width: 768px) {
-      padding: 15px;
+      padding: 20px;
+      margin: 20px auto;
       
       h3 {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
       }
     }
   }
 }
 
-// Footer styling
-.details-footer {
-  background-color: #f8f9fa;
-  padding: 20px;
-  margin-top: 30px;
+// Footer styling - Clean design without grey background
+.footer-links {
+  padding: 20px 0;
   border-top: 1px solid #e9ecef;
 
-  .contact-section {
-    h5 {
+  a {
+    color: #666;
+    font-size: 0.9rem;
+    
+    &:hover {
       color: #333;
-      margin-bottom: 15px;
-    }
-
-    p {
-      color: #666;
-      margin-bottom: 5px;
-
-      a {
-        color: #007bff;
-        
-        &:hover {
-          color: #0056b3;
-          text-decoration: underline !important;
-        }
-      }
-    }
-  }
-
-  .footer-links {
-    border-top: 1px solid #e9ecef;
-    padding-top: 15px;
-
-    a {
-      color: #666;
-      font-size: 0.9rem;
-      
-      &:hover {
-        color: #333;
-        text-decoration: underline !important;
-      }
+      text-decoration: underline !important;
     }
   }
 
   // Responsive adjustments
   @media (max-width: 768px) {
-    padding: 15px;
+    padding: 15px 0;
+    text-align: center !important;
     
-    .contact-section h5 {
-      font-size: 1.1rem;
-    }
-    
-    .footer-links {
+    .col-12:last-child {
       text-align: center !important;
+    }
+  }
+}
+
+// Contact section styling
+.contact-section {
+  h5 {
+    color: #333;
+    margin-bottom: 15px;
+  }
+
+  p {
+    color: #666;
+    margin-bottom: 5px;
+
+    a {
+      color: #007bff;
       
-      .col-12:last-child {
-        text-align: center !important;
+      &:hover {
+        color: #0056b3;
+        text-decoration: underline !important;
       }
+    }
+  }
+
+  @media (max-width: 768px) {
+    h5 {
+      font-size: 1.1rem;
     }
   }
 }
