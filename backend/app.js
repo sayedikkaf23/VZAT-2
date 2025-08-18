@@ -24,6 +24,8 @@ import { fileURLToPath } from 'url';
 
 // Load environment variables
 dotenv.config();
+// Load environment configuration
+import envConfig from './config.env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -380,8 +382,9 @@ const startServer = async () => {
     console.log("Database connection established");
     
     // Start the server
-    app.listen(3000, () => {
-      console.log("Server is running on port 3000");
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
       
       // Initialize cron jobs for subscription management
       try {

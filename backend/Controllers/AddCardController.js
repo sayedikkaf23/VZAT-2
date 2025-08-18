@@ -32,7 +32,6 @@ export const prepareCardRegistration = async (req, res) => {
       entityId: AFS_CONFIG.entityId,
       testMode: AFS_CONFIG.testMode,
       createRegistration: 'true',
-      customer: customerEmail,
       'customer.email': customerEmail
     });
 
