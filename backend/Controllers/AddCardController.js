@@ -42,8 +42,13 @@ export const prepareCardRegistration = async (req, res) => {
       testMode: AFS_CONFIG.testMode,
       createRegistration: 'true',
       'customer.email': customerEmail,
-      // Essential redirect URLs - AFS requires this exact parameter name
+      // Multiple redirect URL parameter attempts for AFS compatibility
       shopperResultUrl: shopperResultUrl,
+      'shopper.resultUrl': shopperResultUrl,
+      notificationUrl: shopperResultUrl,
+      redirectUrl: shopperResultUrl,
+      'redirect.url': shopperResultUrl,
+      returnUrl: shopperResultUrl,
       // Payment method configuration for registration
       'paymentType': 'PA',
       'amount': '0.01',
