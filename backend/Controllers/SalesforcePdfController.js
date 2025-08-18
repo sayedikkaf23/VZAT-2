@@ -1,5 +1,6 @@
 import { sendPdfEmail } from '../services/emailService.js';
 import Post_Common_DB_Log_Data from './PostCommonDBLogData.js';
+import VzatRecurringData from '../model/VzatRecurringDataModel.js';
 
 /**
  * Handle Salesforce PDF webhook
@@ -19,7 +20,12 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             Payment_Link: paymentLink,
             Installment_amount,
             Total_Installments,
-            quotePdf
+            quotePdf,
+            Customer_name,
+            opp_owner,
+            installmentSchedule,
+            QuoteId,
+            OpportunityId
         } = req.body;
 
         // Validate required fields
@@ -115,6 +121,32 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
         console.log(`📧 Preparing to send PDF email to: ${quote_email}`);
         console.log(`📄 Number of PDFs to attach: ${quotePdf.length}`);
 
+        // Fetch payment schedule from database if quotepaymentId exists
+        let paymentScheduleFromDB = null;
+        try {
+            if (quotepaymentId) {
+                console.log(`🔍 Looking up payment schedule for quotepaymentId: ${quotepaymentId}`);
+                const recurringData = await VzatRecurringData.findOne({ quotepaymentId: quotepaymentId });
+                
+                if (recurringData && recurringData.payment_schedule && recurringData.payment_schedule.length > 0) {
+                    paymentScheduleFromDB = recurringData.payment_schedule.map(payment => ({
+                        installment_number: payment.installment_number,
+                        date: payment.due_date,
+                        amount: payment.amount,
+                        status: payment.status,
+                        paymentType: payment.installment_number === 1 ? 'Upfront Payment' : 
+                                   payment.installment_number === recurringData.payment_schedule.length ? 'Final Installment' : 'Monthly Installment'
+                    }));
+                    console.log(`✅ Found ${paymentScheduleFromDB.length} payment schedule entries in database`);
+                } else {
+                    console.log(`⚠️ No payment schedule found in database for quotepaymentId: ${quotepaymentId}`);
+                }
+            }
+        } catch (dbError) {
+            console.error('❌ Error fetching payment schedule from database:', dbError);
+            // Continue with email sending even if DB lookup fails
+        }
+
         // Prepare email data
         const emailData = {
             quote_payment_number,
@@ -124,7 +156,12 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             paymentLink,
             Installment_amount,
             Total_Installments,
-            quotePdf
+            quotePdf,
+            Customer_name,
+            opp_owner,
+            installmentSchedule: paymentScheduleFromDB || installmentSchedule, // Use DB data if available, fallback to webhook data
+            QuoteId,
+            OpportunityId
         };
 
         // Send the PDF email
