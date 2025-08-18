@@ -10,6 +10,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
     try {
         console.log('📨 Received Salesforce PDF webhook request');
         console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('🧑‍💼 Customer name from webhook:', Customer_name);
 
         // Extract data from request
         const {
