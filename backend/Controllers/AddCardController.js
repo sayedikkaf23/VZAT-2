@@ -41,11 +41,10 @@ export const prepareCardRegistration = async (req, res) => {
       'customer.email': customerEmail,
       // Essential redirect URLs
       'shopperResultUrl': `${baseUrl}/saved-card/add-card?resourcePath={{resourcePath}}`,
-      // Additional parameters for card registration
-      'defaultPaymentMethod': 'CARD',
-      'recurringType': 'INITIAL',
-      // Payment method configuration
-      'paymentType': 'DB',
+      // Payment method configuration for registration
+      'paymentType': 'PA',
+      'amount': '0.01',
+      'currency': 'AED',
       // Billing details
       'billing.country': 'AE',
       'billing.city': 'Dubai',
