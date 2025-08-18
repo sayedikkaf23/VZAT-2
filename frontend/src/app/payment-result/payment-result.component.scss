@@ -1,85 +1,35 @@
+// Import the main payment schedule styles
+@import '../../assets/css/payment-schedual.css';
+
 .payment-result {
-  max-width: 600px;
-  margin: 40px auto;
-  padding: 24px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px #eee;
+  min-height: 100vh;
+  font-family: 'Arial', sans-serif;
 }
 
-h2 {
-  margin-bottom: 16px;
-  color: #333;
-}
-
-.success {
-  color: #198754;
-  font-weight: bold;
-  font-size: 1.2em;
-  margin-bottom: 20px;
-}
-
-.partial-success {
-  color: #fd7e14;
-  font-weight: bold;
-  font-size: 1.2em;
-  margin-bottom: 20px;
-}
-
-.error {
-  color: #dc3545;
-  font-weight: bold;
-}
-
-.warning {
-  color: #fd7e14;
-  font-style: italic;
-  margin-top: 10px;
-}
-
-.payment-details {
-  background: #f8f9fa;
-  padding: 16px;
-  border-radius: 6px;
-  margin-top: 16px;
-  border-left: 4px solid #198754;
-}
-
-.payment-details h3 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  color: #333;
-  font-size: 1.1em;
-}
-
-.payment-details p {
-  margin: 8px 0;
-  font-family: monospace;
-}
-
-.payment-details strong {
-  color: #495057;
-  font-weight: 600;
-}
-
-p {
-  margin: 8px 0;
-}
-
-/* Loading States */
+// Loading styles
 .loading-container {
-  text-align: center;
-  padding: 40px 20px;
-}
-
-.spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f8f9fa;
+  
+  .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #dc3545;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+  }
+  
+  .loading-steps {
+    color: #666;
+    line-height: 1.8;
+    text-align: center;
+  }
 }
 
 @keyframes spin {
@@ -87,105 +37,138 @@ p {
   100% { transform: rotate(360deg); }
 }
 
-.loading-steps {
-  font-family: monospace;
-  color: #666;
-  line-height: 1.6;
-  margin-top: 15px;
-}
-
-/* Salesforce Status Indicators */
-.salesforce-status {
-  margin-top: 20px;
-  padding: 16px;
-  border-radius: 6px;
-  border: 1px solid;
-}
-
-.salesforce-status.success {
-  background: #d1edff;
-  border-color: #0d6efd;
-  color: #0d6efd;
-}
-
-.salesforce-status.warning {
-  background: #fff3cd;
-  border-color: #fd7e14;
-  color: #856404;
-}
-
-.salesforce-status.info {
-  background: #e2f3ff;
-  border-color: #17a2b8;
-  color: #0c5460;
-}
-
-.salesforce-status h4 {
-  margin: 0 0 10px 0;
-  font-size: 1.1em;
-}
-
-.salesforce-status p {
-  margin: 8px 0;
-  font-family: inherit;
-}
-
-.salesforce-status .error-detail {
-  font-size: 0.9em;
-  color: #dc3545;
-  font-family: monospace;
-  background: rgba(220, 53, 69, 0.1);
-  padding: 8px;
-  border-radius: 4px;
-  margin-top: 10px;
-}
-
-.salesforce-status .note {
-  font-style: italic;
-  font-size: 0.95em;
-  margin-top: 12px;
-}
-
-/* Failed Payment Styles */
-.error-details {
-  border-left: 4px solid #dc3545;
+// Error styles
+.error {
   background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px;
+  text-align: center;
+  
+  h2 {
+    margin-bottom: 10px;
+    color: #721c24;
+  }
 }
 
-.failure-reason {
-  background: #fff;
-  border: 1px solid #dc3545;
-  border-radius: 6px;
-  padding: 12px;
-  margin: 16px 0;
+// Success page specific styles
+.pm-submit-info {
+  padding: 40px 20px;
+  
+  .icon {
+    margin-bottom: 30px;
+    
+    img {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+    }
+  }
+  
+  h3 {
+    color: #28a745;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+  }
+  
+  h5 {
+    color: #666;
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+  }
+  
+  hr {
+    width: 80px;
+    margin: 30px auto;
+    border-top: 2px solid #dc3545;
+  }
+  
+  h6 {
+    color: #666;
+    font-size: 1rem;
+    font-weight: normal;
+    margin-bottom: 10px;
+  }
+  
+  h2 {
+    color: #dc3545;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 30px;
+  }
 }
 
-.failure-reason h4 {
-  color: #dc3545;
-  margin: 0 0 8px 0;
-  font-size: 1em;
+.pmnotes {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 30px auto;
+  max-width: 500px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #666;
+  
+  strong {
+    color: #333;
+  }
+  
+  b {
+    color: #dc3545;
+  }
 }
 
-.next-steps {
-  background: #e9ecef;
-  border: 1px solid #6c757d;
-  border-radius: 6px;
-  padding: 12px;
-  margin-top: 16px;
+// Debug information styles
+.payment-details {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  text-align: left;
+  
+  h6 {
+    color: #495057;
+    margin-bottom: 15px;
+  }
+  
+  p {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #666;
+    
+    strong {
+      color: #333;
+      margin-right: 5px;
+    }
+  }
 }
 
-.next-steps h4 {
-  color: #495057;
-  margin: 0 0 10px 0;
-  font-size: 1em;
-}
-
-.next-steps ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.next-steps li {
-  margin: 6px 0;
-  color: #495057;
+// Responsive design
+@media (max-width: 768px) {
+  .pm-submit-info {
+    padding: 30px 15px;
+    
+    h3 {
+      font-size: 1.5rem;
+    }
+    
+    h5 {
+      font-size: 1rem;
+    }
+    
+    h2 {
+      font-size: 2rem;
+    }
+    
+    .icon img {
+      width: 80px;
+      height: 80px;
+    }
+  }
+  
+  .pmnotes {
+    margin: 20px;
+    padding: 15px;
+    font-size: 0.9rem;
+  }
 }
