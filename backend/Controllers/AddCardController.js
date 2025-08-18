@@ -55,7 +55,7 @@ export const prepareCardRegistration = async (req, res) => {
       message: 'Checkout prepared successfully',
       afsConfig: {
         baseUrl: AFS_CONFIG.baseUrl,
-        scriptUrl: `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${response.data.id}/registration`
+        scriptUrl: `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${response.data.id}`
       }
     });
 

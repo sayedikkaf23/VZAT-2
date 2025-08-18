@@ -159,8 +159,43 @@ export class AddCardComponent implements OnInit, OnDestroy {
   private initializeForm(): void {
     // Wait for Angular to render the form element
     setTimeout(() => {
+      console.log('🔍 Looking for payment form element...');
+      const formElement = document.querySelector('.paymentWidgets') as HTMLFormElement;
+      
+      if (!formElement) {
+        console.error('❌ Payment form element (.paymentWidgets) not found in DOM');
+        console.log('📋 Available elements with class "paymentWidgets":', document.querySelectorAll('.paymentWidgets'));
+        console.log('📋 All form elements:', document.querySelectorAll('form'));
+        this.errorMessage = 'Payment form failed to load. Please refresh the page.';
+        this.loading = false;
+        return;
+      }
+
+      console.log('✅ Payment form element found:', formElement);
+      
+      // Set the action URL for the form (callback URL)
       const shopperResultUrl = `${window.location.origin}/saved-card/add-card`;
-      this.addCardService.initializeRegistrationForm(shopperResultUrl);
+      formElement.action = shopperResultUrl;
+      
+      // Check if AFS widgets are being rendered
+      console.log('🔍 Checking AFS widget rendering...');
+      console.log('📋 Form innerHTML before AFS:', formElement.innerHTML);
+      
+      // Wait a bit more for AFS to render the widgets
+      setTimeout(() => {
+        console.log('📋 Form innerHTML after AFS rendering:', formElement.innerHTML);
+        
+        if (formElement.innerHTML.trim() ***REMOVED***= '') {
+          console.warn('⚠️ AFS widgets not rendered yet, trying manual trigger...');
+          // Try to manually trigger widget rendering if available
+          if (typeof (window as any).wpwl !***REMOVED*** 'undefined' && (window as any).wpwl.render) {
+            (window as any).wpwl.render();
+            console.log('🔄 Manually triggered AFS widget rendering');
+          }
+        }
+      }, 1000);
+      
+      console.log('✅ Form action set to:', shopperResultUrl);
       
       // Set form ready state
       this.isFormReady = true;
@@ -169,7 +204,7 @@ export class AddCardComponent implements OnInit, OnDestroy {
       
       // Force change detection to ensure UI updates
       this.cdr.detectChanges();
-    }, 100);
+    }, 500); // Increased timeout to ensure DOM is ready
   }
 
   /**

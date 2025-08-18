@@ -128,34 +128,55 @@ export class AddCardService {
 
     console.log('✅ Payment form element found:', formElement);
 
-    // Set form attributes
+    // Set form attributes for AFS widget
     formElement.setAttribute('action', shopperResultUrl);
     formElement.setAttribute('data-brands', 'VISA MASTER AMEX');
     
-    // Check if wpwl is available globally (AFS widget library)
-    if (typeof (window as any).wpwl !***REMOVED*** 'undefined') {
-      console.log('✅ AFS wpwl library is available');
+    // AFS widgets are automatically initialized when the script loads
+    // The script URL already contains the checkout ID, so the form should auto-populate
+    
+    // Check if the AFS library has created the form fields
+    const checkFormFields = () => {
+      const cardNumberField = formElement.querySelector('input[name="card.number"]');
+      const expiryField = formElement.querySelector('input[name="card.expiryMonth"]') || 
+                          formElement.querySelector('input[name="card.expiry"]');
+      const cvvField = formElement.querySelector('input[name="card.cvv"]');
       
-      // Initialize AFS widget
-      try {
-        (window as any).wpwl.configure({
-          locale: 'en',
-          style: {
-            base: {
-              color: '#495057',
-              fontSize: '16px',
-              fontFamily: '"Poppins", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-            }
-          }
+      if (cardNumberField || expiryField || cvvField) {
+        console.log('✅ AFS payment form fields detected');
+        console.log('🔍 Found fields:', {
+          cardNumber: !!cardNumberField,
+          expiry: !!expiryField,
+          cvv: !!cvvField
         });
-        
-        console.log('✅ AFS registration form initialized successfully');
-      } catch (error) {
-        console.error('❌ Error initializing AFS widget:', error);
+        return true;
       }
-    } else {
-      console.error('❌ AFS wpwl library not available. Script may not be loaded properly.');
-      console.log('🔍 Available window properties:', Object.keys(window).filter(key => key.includes('wp') || key.includes('afs') || key.includes('oppwa')));
-    }
+      return false;
+    };
+
+    // Check for form fields with retries
+    let retryCount = 0;
+    const maxRetries = 10;
+    const checkInterval = setInterval(() => {
+      retryCount++;
+      
+      if (checkFormFields()) {
+        clearInterval(checkInterval);
+        console.log('✅ AFS registration form initialized successfully');
+      } else if (retryCount >= maxRetries) {
+        clearInterval(checkInterval);
+        console.error('❌ AFS form fields not created after', maxRetries, 'attempts');
+        console.log('🔍 Form content:', formElement.innerHTML);
+        
+        // Log what's available in the window object
+        console.log('🔍 Available window properties:', Object.keys(window).filter(key => 
+          key.toLowerCase().includes('wp') || 
+          key.toLowerCase().includes('afs') || 
+          key.toLowerCase().includes('oppwa')
+        ));
+      } else {
+        console.log(`🔄 Waiting for AFS form fields... (attempt ${retryCount}/${maxRetries})`);
+      }
+    }, 500);
   }
 }
