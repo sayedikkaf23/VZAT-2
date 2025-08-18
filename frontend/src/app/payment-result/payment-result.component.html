@@ -29,8 +29,8 @@
           <h3>Hey,</h3>
           <h2>{{ customerName || 'Customer' }}!</h2>
           <hr/>
-          <p class="mb-2">Your Payment for is</p>
-          <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+          <p class="mb-2">Your Total Amount is</p>
+          <h2 class="price">AED {{ totalAmount | number:'1.2-2' }}</h2>
           <p class="small-text">Thank you for your payment.</p>
         </div>
         <div class="col-auto d-none d-md-block">
@@ -62,58 +62,67 @@
           <h3>Payment Successful!</h3>
           <h5>Hooray! You have completed your payment</h5>
           <hr/>
-          <h6>AMOUNT PAID</h6>
-          <h2>AED {{ paymentAmount | number:'1.2-2' }}</h2>
+          
+          <!-- Payment Summary -->
+          <div class="payment-summary">
+            <div class="row text-center">
+              <div class="col-md-4 col-12 mb-3">
+                <h6>TOTAL AMOUNT</h6>
+                <h3 class="text-primary">AED {{ totalAmount | number:'1.2-2' }}</h3>
+              </div>
+              <div class="col-md-4 col-12 mb-3">
+                <h6>AMOUNT PAID</h6>
+                <h3 class="text-success">AED {{ paymentAmount | number:'1.2-2' }}</h3>
+              </div>
+              <div class="col-md-4 col-12 mb-3">
+                <h6>REMAINING AMOUNT</h6>
+                <h3 class="text-warning">AED {{ remainingAmount | number:'1.2-2' }}</h3>
+              </div>
+            </div>
+          </div>
 
           <div class="pmnotes">
             <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
-          </div>
-
-          <!-- Payment Details (Debug Info - can be hidden in production) -->
-          <div *ngIf="showDebugInfo" class="payment-details mt-4" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-size: 12px;">
-            <h6><strong>Payment Details:</strong></h6>
-            <p><strong>Transaction ID:</strong> {{ result.id }}</p>
-            <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
-            <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
-            <p><strong>Payment Type:</strong> {{ result.paymentType }}</p>
-            <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
-            <p *ngIf="result.salesforce_update?.success"><strong>Records Updated:</strong> ✅ Successfully</p>
           </div>
         </div>
       </div>
 
       <div class="details-footer">
-        <div class="d-block d-md-none">
-          <h2><b>Need Assistance? </b></h2>
-          <h3>Contact us:</h3>
-          <hr/>
-          <div class="row gx-0 justify-content-between">
-            <div class="col-auto">
-              <p><b>Customer Support</b></p>
-              <h6>Virtuzone Support Team</h6>
-            </div>
-            <div class="col-auto">
-              <div class="row gx-1">
-                <div class="col">
-                  <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
-                </div>
-              </div>
-            </div>
-            <div class="col-auto">
-              <div class="row gx-1">
-                <div class="col text-end">
-                  <h6><a href="tel:+97144578271">+971 4 457 8271</a></h6>
-                  <h6 class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></h6>
-                </div>
-              </div>
+        <!-- Contact section - responsive -->
+        <div class="contact-section mb-4">
+          <div class="row align-items-center">
+            <div class="col-md-6 col-12 mb-3 mb-md-0">
+              <h5><b>Need Assistance?</b></h5>
+              <p class="mb-1"><b>Contact us</b></p>
+              <p class="mb-1">
+                <a href="mailto:support&#64;virtuzone.com" class="text-decoration-none">
+                  support&#64;virtuzone.com
+                </a>
+              </p>
+              <p class="mb-0">
+                <a href="tel:+97144578271" class="text-decoration-none">
+                  +971 4 457 8271
+                </a>
+              </p>
             </div>
           </div>
         </div>
 
-        <ul>
-          <li><a target="_blank" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
-          <li><a style="text-align: right;" href="https://www.yeepeey.com" target="_blank"><b>© 2025, Powered by Yeepeey Technologies</b></a></li>
-        </ul>
+        <!-- Footer links - responsive -->
+        <div class="footer-links">
+          <div class="row align-items-center">
+            <div class="col-md-6 col-12 mb-2 mb-md-0">
+              <a target="_blank" href="https://virtuzone.com/privacy-policy/" class="text-decoration-none">
+                Privacy Policy
+              </a>
+            </div>
+            <div class="col-md-6 col-12 text-md-end">
+              <a href="https://www.yeepeey.com" target="_blank" class="text-decoration-none">
+                <b>© 2025, Powered by Yeepeey Technologies</b>
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
