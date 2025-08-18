@@ -332,7 +332,7 @@ export const sendPdfEmail = async (emailData) => {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
           <div style="padding: 20px;">
-            <p>Hello ${Customer_name || 'Mary'},</p>
+            <p>Hello ${Customer_name || 'Sir/Madam'},</p>
             
             <p>Thank you for choosing Virtuzone as your preferred Corporate Services Provider.</p>
             
