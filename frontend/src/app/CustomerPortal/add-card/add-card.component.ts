@@ -1,13 +1,13 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { NgIf, NgFor, CommonModule } from '@angular/common';
+import { NgIf, CommonModule } from '@angular/common';
 import { AddCardService, PrepareRegistrationResponse } from '../../services/add-card.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-add-card',
   standalone: true,
-  imports: [NgIf, NgFor, CommonModule],
+  imports: [NgIf, CommonModule],
   templateUrl: './add-card.component.html',
   styleUrls: ['./add-card.component.scss']
 })
@@ -28,15 +28,22 @@ export class AddCardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    console.log('🚀 AddCardComponent initialized');
+    console.log('🌐 Current URL:', window.location.href);
+    console.log('📋 Query params:', this.route.snapshot.queryParams);
+    
     // Get customer email from localStorage
     this.loadCustomerData();
     
     // Check if this is a callback from AFS
     this.route.queryParams.subscribe(params => {
+      console.log('📋 Route params changed:', params);
       const resourcePath = params['resourcePath'];
       if (resourcePath) {
+        console.log('🔄 Detected AFS callback with resourcePath:', resourcePath);
         this.handleAfsCallback(resourcePath);
       } else {
+        console.log('🔄 No resourcePath found, initializing new card registration');
         this.initializeCardRegistration();
       }
     });
@@ -316,13 +323,29 @@ export class AddCardComponent implements OnInit, OnDestroy {
     this.addCardService.handleRegistrationCallback(callbackCheckoutId, this.customerEmail).subscribe({
       next: (response) => {
         console.log('✅ Registration callback handled successfully:', response);
+        console.log('📋 Response details:', JSON.stringify(response, null, 2));
         
         if (response.success) {
           this.successMessage = response.message;
+          console.log('🎉 Card registration successful! Redirecting to saved cards page...');
+          
+          // Show success message for 2 seconds then redirect
           setTimeout(() => {
-            this.router.navigate(['/saved-card']);
+            console.log('🔄 Navigating to saved cards page');
+            this.router.navigate(['/saved-card']).then(
+              (navigated: boolean) => {
+                if (navigated) {
+                  console.log('✅ Successfully navigated to saved cards page');
+                } else {
+                  console.error('❌ Navigation to saved cards page failed');
+                }
+              }
+            ).catch(navError => {
+              console.error('❌ Navigation error:', navError);
+            });
           }, 2000);
         } else {
+          console.error('❌ Card registration failed:', response.message);
           this.errorMessage = response.message || 'Card registration failed.';
         }
         
