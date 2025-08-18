@@ -109,6 +109,12 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   // Page type detection
   isPaymentPage: boolean = true; // This is a payment page, so hide card management
   
+  // SalesForce data loading flag
+  salesForceDataLoaded: boolean = false;
+  
+  // Store the original API sales agent data to prevent overwriting
+  originalSalesAgentData: SalesAgent | null = null;
+  
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
     private salesForceService: SalesForceService,
@@ -244,7 +250,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
 
     this.customerData = {
       name: "Hina Aslam",
-      invoiceNumber: "VZ2104858",
+      invoiceNumber: "tessst-subssz-2025-001", // Using quotepaymentId
       totalAmount: demoSubscriptionInfo.total_amount
     };
 
@@ -286,7 +292,8 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
               data.customerName || 
               data.name || 
               "Customer",
-        invoiceNumber: data.quote_payment_number || 
+        invoiceNumber: data.quotepaymentId || 
+                      data.quote_payment_number || 
                       data.QuoteId || 
                       data.quote_id || 
                       data.invoiceNumber || 
@@ -644,18 +651,30 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   }
 
    getSalesForceDetails()  {
+    // Prevent multiple calls if data already loaded
+    if (this.salesForceDataLoaded) {
+      console.log('🔄 SalesForce data already loaded, skipping API call');
+      return;
+    }
+    
     this.salesForceService.getSalesForceDetails().subscribe({
       next: (res: any) => {
         console.log('✅ SalesForce response:', res);
         if (res && res.name) {
-          this.salesAgent.name = res.name;
-          this.salesAgent.position = res.position;
-          this.salesAgent.phoneNumber = res.phoneNumber || res.phone || "+971 4 457 8271";
-          this.salesAgent.faxNumber = res.faxNumber || res.fax || "+971 4 457 8271";
-          this.salesAgent.email = res.email || "support@virtuzone.com";
-          this.salesAgent.mobNo1 = res.mobNo1;
-          this.salesAgent.mobNo2 = res.mobNo2;
-          this.salesAgent.token = res.token;
+          this.salesAgent = {
+            name: res.name,
+            position: res.position,
+            phoneNumber: res.phoneNumber || res.phone || "+971 4 457 8271",
+            faxNumber: res.faxNumber || res.fax || "+971 4 457 8271",
+            email: res.email || "support@virtuzone.com",
+            mobNo1: res.mobNo1,
+            mobNo2: res.mobNo2,
+            token: res.token
+          };
+          
+          // Store a copy of the original data to prevent future overwrites
+          this.originalSalesAgentData = { ...this.salesAgent };
+          this.salesForceDataLoaded = true; // Mark as loaded
           console.log('✅ Updated sales agent:', this.salesAgent);
         } else {
           console.warn('⚠️ Invalid SalesForce response, using fallback data');
@@ -681,6 +700,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       mobNo2: "", 
       token: 0
     };
+    this.salesForceDataLoaded = true; // Mark as loaded even for fallback
     console.log('🔄 Using fallback sales agent data:', this.salesAgent);
   }
 
