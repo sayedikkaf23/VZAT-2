@@ -366,6 +366,27 @@ export class ActiveServices implements OnInit {
   }
 
   /**
+   * Get total amount - either from Total_After_VAT_Currency or calculate from payment schedule
+   */
+  getTotalAmount(service: PaymentScheduleService): number {
+    if (!service) return 0;
+    
+    // Try to get from Total_After_VAT_Currency first
+    let totalAmount = service.Total_After_VAT_Currency || 0;
+    
+    // If Total_After_VAT_Currency is 0 or not available, calculate from payment schedule
+    if (totalAmount ***REMOVED***= 0) {
+      const allPayments = this.getPaymentSchedulesForService(service);
+      totalAmount = allPayments.reduce((sum, payment) => {
+        const amount = typeof payment.amount ***REMOVED***= 'string' ? parseFloat(payment.amount) : payment.amount;
+        return sum + (amount || 0);
+      }, 0);
+    }
+    
+    return totalAmount;
+  }
+
+  /**
    * Get completed payments for the payment schedule modal
    */
   getCompletedPayments(service: PaymentScheduleService): PaymentScheduleService[] {
@@ -420,7 +441,7 @@ export class ActiveServices implements OnInit {
   getRemainingAmount(service: PaymentScheduleService): number {
     if (!service) return 0;
     
-    const totalAmount = service.Total_After_VAT_Currency || 0;
+    const totalAmount = this.getTotalAmount(service);
     const completedPayments = this.getCompletedPayments(service);
     const totalPaid = completedPayments.reduce((sum, payment) => {
       const amount = typeof payment.amount ***REMOVED***= 'string' ? parseFloat(payment.amount) : payment.amount;
@@ -469,11 +490,9 @@ export class ActiveServices implements OnInit {
    * Get total amount for display
    */
   formatTotalAmount(service: PaymentScheduleService): string {
-    if (!service || !service.Total_After_VAT_Currency) return 'AED 0.00';
+    if (!service) return 'AED 0.00';
     
-    const totalAmount = typeof service.Total_After_VAT_Currency ***REMOVED***= 'string' 
-      ? parseFloat(service.Total_After_VAT_Currency) 
-      : service.Total_After_VAT_Currency;
+    const totalAmount = this.getTotalAmount(service);
     
     return `AED ${totalAmount.toLocaleString('en-AE', {
       minimumFractionDigits: 2,
