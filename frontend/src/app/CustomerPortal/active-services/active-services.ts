@@ -527,6 +527,9 @@ export class ActiveServices implements OnInit {
   openServiceModal(service?: PaymentScheduleService): void {
     if (service) {
       console.log('Opening service modal for:', service.quotepaymentId);
+      console.log('Customer Name from service:', service.Customer_name);
+      console.log('Customer Name fallback:', service.customerName);
+      console.log('Customer Email:', service.opp_email);
       this.selectedService = service;
     }
     this.isServiceModalOpen = true;
@@ -562,6 +565,22 @@ export class ActiveServices implements OnInit {
         toggleElement.classList.remove('active');
       }
     }
+  }
+
+  /**
+   * Get customer name from selected service
+   */
+  getCustomerName(service?: PaymentScheduleService): string {
+    if (!service) return 'Customer';
+    return service.Customer_name || service.customerName || 'Customer';
+  }
+
+  /**
+   * Get customer email from selected service
+   */
+  getCustomerEmail(service?: PaymentScheduleService): string {
+    if (!service) return '';
+    return service.opp_email || this.customerEmail || '';
   }
 
     ngOnDestroy(): void {
