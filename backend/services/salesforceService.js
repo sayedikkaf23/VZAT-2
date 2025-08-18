@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { logSalesforceApiCall } from './salesforceApiLogService.js';
 
 dotenv.config();
 
@@ -18,6 +19,9 @@ let accessTokenCache = {
  * @returns {string} - Access token
  */
 const getSalesforceAccessToken = async () => {
+  const startTime = Date.now();
+  const endpoint = `${process.env.SALESFORCE_LOGIN_URL}/services/oauth2/token`;
+  
   try {
     // Check if we have a valid cached token
     if (accessTokenCache.token && accessTokenCache.expiresAt > Date.now()) {
@@ -34,8 +38,15 @@ const getSalesforceAccessToken = async () => {
     authData.append('username', process.env.SALESFORCE_USERNAME);
     authData.append('password', process.env.SALESFORCE_PASSWORD + process.env.SALESFORCE_SECURITY_TOKEN);
 
+    const requestData = {
+      grant_type: 'password',
+      client_id: process.env.SALESFORCE_CLIENT_ID,
+      username: process.env.SALESFORCE_USERNAME,
+      // Don't log sensitive data like client_secret, password, security_token
+    };
+
     const response = await axios.post(
-      `${process.env.SALESFORCE_LOGIN_URL}/services/oauth2/token`,
+      endpoint,
       authData,
       {
         headers: {
@@ -51,10 +62,40 @@ const getSalesforceAccessToken = async () => {
     accessTokenCache.token = access_token;
     accessTokenCache.expiresAt = Date.now() + (expires_in - 300) * 1000; // 5 minutes buffer
 
+    // Log successful authentication
+    await logSalesforceApiCall({
+      endpoint,
+      method: 'POST',
+      requestData,
+      responseData: { 
+        token_type: response.data.token_type,
+        expires_in: response.data.expires_in,
+        // Don't log the actual access token for security
+      },
+      statusCode: response.status,
+      isSuccess: true,
+      executionTime: Date.now() - startTime
+    });
+
     console.log('✅ Salesforce access token obtained successfully');
     return access_token;
 
   } catch (error) {
+    // Log failed authentication
+    await logSalesforceApiCall({
+      endpoint,
+      method: 'POST',
+      requestData: {
+        grant_type: 'password',
+        client_id: process.env.SALESFORCE_CLIENT_ID,
+        username: process.env.SALESFORCE_USERNAME
+      },
+      statusCode: error.response?.status,
+      isSuccess: false,
+      errorMessage: error.message,
+      executionTime: Date.now() - startTime
+    });
+
     console.error('❌ Failed to get Salesforce access token:', error);
     throw new Error(`Failed to authenticate with Salesforce: ${error.message}`);
   }
@@ -66,6 +107,9 @@ const getSalesforceAccessToken = async () => {
  * @returns {Object} - Result of the Salesforce API call
  */
 export const updateQuotePaymentStatus = async (paymentData) => {
+  const startTime = Date.now();
+  const endpoint = process.env.SALESFORCE_API_URL;
+  
   try {
     console.log('🔄 Calling Salesforce API to update quote payment status...');
     
@@ -111,7 +155,7 @@ export const updateQuotePaymentStatus = async (paymentData) => {
 
     // Make the API call to Salesforce
     const salesforceResponse = await axios.put(
-      process.env.SALESFORCE_API_URL,
+      endpoint,
       salesforcePayload,
       {
         headers: {
@@ -128,8 +172,34 @@ export const updateQuotePaymentStatus = async (paymentData) => {
     // Check if the response contains an error
     if (salesforceResponse.data && salesforceResponse.data.error) {
       console.error('❌ Salesforce returned an error:', salesforceResponse.data.error);
+      
+      // Log failed API call
+      await logSalesforceApiCall({
+        endpoint,
+        method: 'PUT',
+        requestData: salesforcePayload,
+        responseData: salesforceResponse.data,
+        statusCode: salesforceResponse.status,
+        isSuccess: false,
+        errorMessage: salesforceResponse.data.error,
+        executionTime: Date.now() - startTime,
+        quotepaymentId
+      });
+      
       throw new Error(`Salesforce API returned error: ${salesforceResponse.data.error}`);
     }
+    
+    // Log successful API call
+    await logSalesforceApiCall({
+      endpoint,
+      method: 'PUT',
+      requestData: salesforcePayload,
+      responseData: salesforceResponse.data,
+      statusCode: salesforceResponse.status,
+      isSuccess: true,
+      executionTime: Date.now() - startTime,
+      quotepaymentId
+    });
     
     // Create appropriate success message based on payment status
     const paymentStatusText = isSuccess ? 'successful payment' : 'failed payment';
@@ -160,16 +230,55 @@ export const updateQuotePaymentStatus = async (paymentData) => {
         headers: error.response.headers
       };
       console.error('❌ Salesforce response error:', error.response.data);
+      
+      // Log failed API call with response
+      await logSalesforceApiCall({
+        endpoint,
+        method: 'PUT',
+        requestData: paymentData,
+        responseData: error.response.data,
+        statusCode: error.response.status,
+        isSuccess: false,
+        errorMessage: error.message,
+        executionTime: Date.now() - startTime,
+        quotepaymentId: paymentData.quotepaymentId
+      });
+      
     } else if (error.request) {
       // The request was made but no response was received
       errorMessage = 'No response received from Salesforce API';
       errorDetails = { request: error.request };
       console.error('❌ No response from Salesforce:', error.request);
+      
+      // Log failed API call without response
+      await logSalesforceApiCall({
+        endpoint,
+        method: 'PUT',
+        requestData: paymentData,
+        statusCode: 0,
+        isSuccess: false,
+        errorMessage: 'No response received',
+        executionTime: Date.now() - startTime,
+        quotepaymentId: paymentData.quotepaymentId
+      });
+      
     } else {
       // Something happened in setting up the request that triggered an Error
       errorMessage = `Request setup error: ${error.message}`;
       errorDetails = { message: error.message };
       console.error('❌ Request setup error:', error.message);
+      
+      // Log failed API call setup error
+      await logSalesforceApiCall({
+        endpoint,
+        method: 'PUT',
+        requestData: paymentData,
+        statusCode: 0,
+        isSuccess: false,
+        errorMessage: error.message,
+        executionTime: Date.now() - startTime,
+        quotepaymentId: paymentData.quotepaymentId
+      });
     }
 
     // Log the error but don't fail the payment processing
@@ -189,6 +298,9 @@ export const updateQuotePaymentStatus = async (paymentData) => {
  * @returns {Object} - Test result
  */
 export const testSalesforceConnection = async () => {
+  const startTime = Date.now();
+  const endpoint = process.env.SALESFORCE_API_URL;
+  
   try {
     console.log('🧪 Testing Salesforce API connection...');
     
@@ -207,7 +319,7 @@ export const testSalesforceConnection = async () => {
     };
 
     const response = await axios.put(
-      process.env.SALESFORCE_API_URL,
+      endpoint,
       testPayload,
       {
         headers: {
@@ -218,6 +330,18 @@ export const testSalesforceConnection = async () => {
         timeout: 15000 // 15 seconds timeout for test
       }
     );
+
+    // Log successful test
+    await logSalesforceApiCall({
+      endpoint,
+      method: 'PUT',
+      requestData: testPayload,
+      responseData: response.data,
+      statusCode: response.status,
+      isSuccess: true,
+      executionTime: Date.now() - startTime,
+      quotepaymentId: testPayload.QuotePaymentId
+    });
 
     console.log('✅ Salesforce test connection successful');
     return {
@@ -238,8 +362,32 @@ export const testSalesforceConnection = async () => {
         status: error.response.status,
         data: error.response.data
       };
+      
+      // Log failed test with response
+      await logSalesforceApiCall({
+        endpoint,
+        method: 'PUT',
+        requestData: { test: true },
+        responseData: error.response.data,
+        statusCode: error.response.status,
+        isSuccess: false,
+        errorMessage: error.message,
+        executionTime: Date.now() - startTime
+      });
+      
     } else {
       errorDetails = { message: error.message };
+      
+      // Log failed test without response
+      await logSalesforceApiCall({
+        endpoint,
+        method: 'PUT',
+        requestData: { test: true },
+        statusCode: 0,
+        isSuccess: false,
+        errorMessage: error.message,
+        executionTime: Date.now() - startTime
+      });
     }
 
     return {
