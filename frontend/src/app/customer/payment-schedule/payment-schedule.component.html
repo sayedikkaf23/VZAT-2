@@ -94,7 +94,6 @@
       <div class="schedule-list-box">
         <div class="payment-schedule-head d-flex justify-content-between align-items-center">
           <h3 class="m-0">Payment Schedule</h3>
-          <h6 class="fw-normal m-0 text-end">Remaining : <b>AED {{ remainingAmount | number:'1.2-2' }}</b></h6>
         </div>
         <div class="payment-schedule-list">
           <div class="wrp">
@@ -127,7 +126,7 @@
               <h5 class="m-0 fw-semibold">Total</h5>
             </div>
             <div class="price text-end">
-              <h5 class="m-0 fw-semibold">AED {{ customerData.totalAmount | number:'1.2-2' }}</h5>
+              <h5 class="m-0 fw-semibold">AED {{ totalAmount | number:'1.2-2' }}</h5>
             </div>
           </div>
         </div>
@@ -146,6 +145,42 @@
                   class="btn btn-primary">
             Click here to Pay
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Summary Section -->
+    <div class="payment-summary-section">
+      <div class="container">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="summary-item">
+              <span class="summary-label">Total Amount:</span>
+              <span class="summary-value">AED {{ totalAmount | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="summary-item">
+              <span class="summary-label">Paid Amount:</span>
+              <span class="summary-value text-success">AED {{ paidAmount | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="summary-item">
+              <span class="summary-label">Remaining:</span>
+              <span class="summary-value" [ngClass]="remainingAmount < 0 ? 'text-primary' : 'text-warning'">
+                AED {{ remainingAmount | number:'1.2-2' }}
+              </span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="summary-item">
+              <span class="summary-label">Next Payment:</span>
+              <span class="summary-value">
+                {{ nextPaymentDate ? (nextPaymentDate | date:'dd/MM/yyyy') : 'N/A' }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgIf, NgFor, CommonModule } from '@angular/common';
 import { AddCardService, PrepareRegistrationResponse } from '../../services/add-card.service';
@@ -23,7 +23,8 @@ export class AddCardComponent implements OnInit, OnDestroy {
   constructor(
     private addCardService: AddCardService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -107,9 +108,16 @@ export class AddCardComponent implements OnInit, OnDestroy {
   private loadAfsWidget(scriptUrl: string): void {
     this.addCardService.loadAfsScript(scriptUrl)
       .then(() => {
-        setTimeout(() => {
-          this.initializeForm();
-        }, 500); // Small delay to ensure script is fully loaded
+        // Wait for script to be fully loaded and AFS library to be available
+        this.waitForAfsLibrary()
+          .then(() => {
+            this.initializeForm();
+          })
+          .catch((error) => {
+            console.error('❌ AFS library not available after loading:', error);
+            this.errorMessage = 'Payment form library not available. Please try again.';
+            this.loading = false;
+          });
       })
       .catch((error) => {
         console.error('❌ Error loading AFS script:', error);
@@ -119,14 +127,49 @@ export class AddCardComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Wait for AFS library to be available
+   */
+  private waitForAfsLibrary(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 20; // 10 seconds total (500ms * 20)
+      
+      const checkLibrary = () => {
+        attempts++;
+        
+        if (typeof (window as any).wpwl !== 'undefined') {
+          console.log('✅ AFS library detected after', attempts, 'attempts');
+          resolve();
+        } else if (attempts >= maxAttempts) {
+          console.error('❌ AFS library not available after', maxAttempts, 'attempts');
+          reject(new Error('AFS library timeout'));
+        } else {
+          console.log('🔄 Waiting for AFS library... attempt', attempts);
+          setTimeout(checkLibrary, 500);
+        }
+      };
+      
+      checkLibrary();
+    });
+  }
+
+  /**
    * Initialize the registration form
    */
   private initializeForm(): void {
-    const shopperResultUrl = `${window.location.origin}/saved-card/add-card`;
-    this.addCardService.initializeRegistrationForm(shopperResultUrl);
-    this.isFormReady = true;
-    this.loading = false;
-    console.log('✅ Card registration form ready');
+    // Wait for Angular to render the form element
+    setTimeout(() => {
+      const shopperResultUrl = `${window.location.origin}/saved-card/add-card`;
+      this.addCardService.initializeRegistrationForm(shopperResultUrl);
+      
+      // Set form ready state
+      this.isFormReady = true;
+      this.loading = false;
+      console.log('✅ Card registration form ready');
+      
+      // Force change detection to ensure UI updates
+      this.cdr.detectChanges();
+    }, 100);
   }
 
   /**
