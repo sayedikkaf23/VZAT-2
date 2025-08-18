@@ -92,7 +92,15 @@ export class AddCardComponent implements OnInit, OnDestroy {
         console.log('✅ Registration preparation successful:', response);
         
         this.checkoutId = response.checkoutId;
-        this.loadAfsWidget(response.afsConfig.scriptUrl);
+        this.loading = false; // Stop loading state so form can render
+        
+        // Use ChangeDetectorRef to ensure change detection completes
+        this.cdr.detectChanges();
+        
+        // Give Angular time to render the form template now that checkoutId is set
+        setTimeout(() => {
+          this.loadAfsWidget(response.afsConfig.scriptUrl);
+        }, 200); // Increased timeout
       },
       error: (error) => {
         console.error('❌ Error preparing registration:', error);
@@ -111,7 +119,10 @@ export class AddCardComponent implements OnInit, OnDestroy {
         // Wait for script to be fully loaded and AFS library to be available
         this.waitForAfsLibrary()
           .then(() => {
-            this.initializeForm();
+            // Additional wait to ensure DOM is fully rendered
+            setTimeout(() => {
+              this.initializeForm();
+            }, 300);
           })
           .catch((error) => {
             console.error('❌ AFS library not available after loading:', error);
@@ -154,57 +165,113 @@ export class AddCardComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Check if all conditions are met for form rendering
+   */
+  private canRenderForm(): boolean {
+    const conditions = {
+      hasCheckoutId: !!this.checkoutId,
+      notLoading: !this.loading,
+      noErrorMessage: !this.errorMessage,
+      noSuccessMessage: !this.successMessage
+    };
+    
+    console.log('📋 Form render conditions:', conditions);
+    return Object.values(conditions).every(condition => condition);
+  }
+
+  /**
    * Initialize the registration form
    */
   private initializeForm(): void {
-    // Wait for Angular to render the form element
-    setTimeout(() => {
-      console.log('🔍 Looking for payment form element...');
-      const formElement = document.querySelector('.paymentWidgets') as HTMLFormElement;
+    console.log('🔄 Initializing form...');
+    
+    // Check if all conditions are met for form rendering
+    if (!this.canRenderForm()) {
+      console.log('⚠️ Form render conditions not met, waiting...');
+      setTimeout(() => this.initializeForm(), 500);
+      return;
+    }
+    
+    // Trigger change detection to ensure DOM is up to date
+    this.cdr.detectChanges();
+    
+    const formElement = document.querySelector('.paymentWidgets') as HTMLFormElement;
+    
+    if (!formElement) {
+      console.error('❌ Payment form element (.paymentWidgets) not found in DOM');
+      console.log('📋 Available elements with class "paymentWidgets":', document.querySelectorAll('.paymentWidgets'));
+      console.log('📋 All form elements:', document.querySelectorAll('form'));
       
-      if (!formElement) {
-        console.error('❌ Payment form element (.paymentWidgets) not found in DOM');
-        console.log('📋 Available elements with class "paymentWidgets":', document.querySelectorAll('.paymentWidgets'));
-        console.log('📋 All form elements:', document.querySelectorAll('form'));
-        this.errorMessage = 'Payment form failed to load. Please refresh the page.';
+      const containerElement = document.querySelector('.card-registration-container');
+      console.log('📋 Container element content:', containerElement?.innerHTML || 'No container');
+      console.log('📋 CheckoutId exists:', !!this.checkoutId);
+      console.log('📋 Error message:', this.errorMessage);
+      console.log('📋 Success message:', this.successMessage);
+      console.log('📋 Loading state:', this.loading);
+      
+      // Force template re-render and retry
+      this.errorMessage = '';
+      this.successMessage = '';
+      
+      // Ensure loading is false so form can render
+      if (this.loading) {
         this.loading = false;
-        return;
+        this.cdr.detectChanges();
       }
-
-      console.log('✅ Payment form element found:', formElement);
       
-      // Set the action URL for the form (callback URL)
-      const shopperResultUrl = `${window.location.origin}/saved-card/add-card`;
-      formElement.action = shopperResultUrl;
-      
-      // Check if AFS widgets are being rendered
-      console.log('🔍 Checking AFS widget rendering...');
-      console.log('📋 Form innerHTML before AFS:', formElement.innerHTML);
-      
-      // Wait a bit more for AFS to render the widgets
       setTimeout(() => {
-        console.log('📋 Form innerHTML after AFS rendering:', formElement.innerHTML);
-        
-        if (formElement.innerHTML.trim() === '') {
-          console.warn('⚠️ AFS widgets not rendered yet, trying manual trigger...');
-          // Try to manually trigger widget rendering if available
-          if (typeof (window as any).wpwl !== 'undefined' && (window as any).wpwl.render) {
-            (window as any).wpwl.render();
-            console.log('🔄 Manually triggered AFS widget rendering');
-          }
+        const retryFormElement = document.querySelector('.paymentWidgets') as HTMLFormElement;
+        if (retryFormElement) {
+          console.log('✅ Form element found on retry');
+          this.finalizeFormSetup(retryFormElement);
+        } else {
+          console.error('❌ Form element still not found after retry');
+          this.errorMessage = 'Payment form failed to load. Please refresh the page.';
         }
       }, 1000);
-      
-      console.log('✅ Form action set to:', shopperResultUrl);
-      
-      // Set form ready state
-      this.isFormReady = true;
-      this.loading = false;
-      console.log('✅ Card registration form ready');
-      
-      // Force change detection to ensure UI updates
-      this.cdr.detectChanges();
-    }, 500); // Increased timeout to ensure DOM is ready
+      return;
+    }
+
+    this.finalizeFormSetup(formElement);
+  }
+
+  private finalizeFormSetup(formElement: HTMLFormElement): void {
+
+    console.log('✅ Payment form element found:', formElement);
+    
+    // Set the action URL for the form (callback URL)
+    // Use the backend endpoint to handle AFS callback and redirect properly
+    const backendUrl = environment.apiUrl.replace('/api', ''); // Remove /api suffix to get base URL
+    const shopperResultUrl = `${backendUrl}/card-registration-result`;
+    formElement.action = shopperResultUrl;
+    
+    console.log('✅ Form action set to:', shopperResultUrl);
+    console.log('📋 Backend URL:', backendUrl);
+    console.log('📋 Environment API URL:', environment.apiUrl);
+    
+    // AFS should automatically render the payment widgets now
+    this.isFormReady = true;
+    this.loading = false;
+    console.log('✅ Card registration form ready');
+    
+    // Check if widgets rendered after a delay
+    setTimeout(() => {
+      const widgetElements = document.querySelectorAll('.wpwl-form, .wpwl-container, input[data-brands]');
+      console.log('🔍 AFS widget elements found:', widgetElements.length);
+      if (widgetElements.length === 0) {
+        console.warn('⚠️ AFS widgets may not have rendered. Form content:', formElement.innerHTML);
+        // Try manual rendering if available
+        if (typeof (window as any).wpwl !== 'undefined' && (window as any).wpwl.render) {
+          (window as any).wpwl.render();
+          console.log('🔄 Manually triggered AFS widget rendering');
+        }
+      } else {
+        console.log('✅ AFS widgets successfully rendered');
+      }
+    }, 2000);
+    
+    // Force change detection
+    this.cdr.detectChanges();
   }
 
   /**

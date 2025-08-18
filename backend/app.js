@@ -236,6 +236,35 @@ app.get('/payment-result', async (req, res) => {
   res.redirect(redirectUrl);
 });
 
+// AFS Card Registration widget form submission endpoint
+app.post('/card-registration-result', (req, res) => {
+  console.log('💳 AFS Card Registration widget form submitted!');
+  console.log('💳 Body:', req.body);
+  console.log('💳 Query params:', req.query);
+  console.log('💳 Headers:', req.headers);
+  
+  // Extract parameters from AFS response
+  const resourcePath = req.body.resourcePath || req.query.resourcePath;
+  
+  console.log('💳 ResourcePath:', resourcePath);
+  
+  // Redirect to Angular add-card page with resourcePath parameter
+  const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/saved-card/add-card?resourcePath=${encodeURIComponent(resourcePath || '')}`;
+  console.log('💳 Redirecting to:', redirectUrl);
+  
+  // Log to database
+  Post_Common_DB_Log_Data('/card-registration-result', {
+    body: req.body,
+    query: req.query
+  }, {
+    resourcePath: resourcePath,
+    redirectUrl: redirectUrl,
+    message: 'AFS Card Registration widget form submission processed'
+  });
+  
+  res.redirect(redirectUrl);
+});
+
 // Debug endpoint to capture AFS payment data
 app.post('/debug/payment-data', (req, res) => {
   console.log('🔍 DEBUG ENDPOINT CALLED');
