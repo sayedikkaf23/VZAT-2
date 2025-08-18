@@ -351,7 +351,7 @@ export const sendPdfEmail = async (emailData) => {
                 </tr>
                 <tr>
                   <td style="border: 1px solid #ddd; padding: 12px;">Proforma Invoice #</td>
-                  <td style="border: 1px solid #ddd; padding: 12px;">PI QP- No-${quotepaymentId || quote_payment_number}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px;">${quotepaymentId || quote_payment_number}</td>
                 </tr>
                 <tr>
                   <td style="border: 1px solid #ddd; padding: 12px;">Invoice Value with VAT</td>
