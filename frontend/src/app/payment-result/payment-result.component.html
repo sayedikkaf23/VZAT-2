@@ -18,80 +18,39 @@
 
   <!-- Success State -->
   <div *ngIf="result && !loading && !error" class="payment-schedule">
-    <div class="detils-sidebar">
-      <div class="row justify-content-between sidebar-row gx-0">
-        <div class="col-auto">
-          <div class="logo">
-            <a href="#">
-              <img src="assets/images/main-logo.svg" alt="" class="d-block"/>
-            </a>
-          </div>
-          <h3>Hey,</h3>
-          <h2>{{ customerName || 'Customer' }}!</h2>
-          <hr/>
-          <p class="mb-2">Your Total Amount is</p>
-          <h2 class="price">AED {{ totalAmount | number:'1.2-2' }}</h2>
-          <p class="small-text">Thank you for your payment.</p>
-        </div>
-        <div class="col-auto d-none d-md-block">
-          <hr/> 
-          <h3 class="mb-0"><b>Need Assistance? </b></h3>
-          <p>Contact us</p>
-          <div class="mb-3">
-            <div class="row align-items-center gx-1 mb-1">
-              <div class="col">
-                <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
+    <!-- Main Success Layout -->
+    <div *ngIf="result.paymentStatus ***REMOVED***= 'success' && !result.overall_status?.includes('salesforce_failed')" class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="pm-submit-info text-center">
+            <!-- Virtuzone Logo -->
+            <div class="logo-section mb-4">
+              <img src="assets/images/main-logo.svg" alt="Virtuzone" class="d-block mx-auto" style="max-height: 60px; max-width: 200px;"/>
+            </div>
+            
+            <div class="icon">
+              <img src="assets/images/payment-success.png" class="d-block mx-auto" alt="Payment Success"/>
+            </div>
+            <h3>Payment Successful!</h3>
+            <h5>Hooray! You have completed your payment</h5>
+            <hr/>
+            
+            <!-- Payment Summary - Only Amount Paid -->
+            <div class="payment-summary">
+              <div class="row justify-content-center">
+                <div class="col-md-6 col-12 mb-3">
+                  <h6>AMOUNT PAID</h6>
+                  <h3 class="text-success">AED {{ paymentAmount | number:'1.2-2' }}</h3>
+                </div>
               </div>
             </div>
-            <div class="row align-items-center gx-1">
-              <div class="col">
-                <h6 class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></h6>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-     
-    <div class="details-content">
-      <div class="container">
-        <div class="pm-submit-info text-center">
-          <div class="icon">
-            <img src="assets/images/payment-success.png" class="d-block mx-auto" alt="Payment Success"/>
-          </div>
-          <h3>Payment Successful!</h3>
-          <h5>Hooray! You have completed your payment</h5>
-          <hr/>
-          
-          <!-- Payment Summary -->
-          <div class="payment-summary">
-            <div class="row text-center">
-              <div class="col-md-4 col-12 mb-3">
-                <h6>TOTAL AMOUNT</h6>
-                <h3 class="text-primary">AED {{ totalAmount | number:'1.2-2' }}</h3>
-              </div>
-              <div class="col-md-4 col-12 mb-3">
-                <h6>AMOUNT PAID</h6>
-                <h3 class="text-success">AED {{ paymentAmount | number:'1.2-2' }}</h3>
-              </div>
-              <div class="col-md-4 col-12 mb-3">
-                <h6>REMAINING AMOUNT</h6>
-                <h3 class="text-warning">AED {{ remainingAmount | number:'1.2-2' }}</h3>
-              </div>
-            </div>
-          </div>
 
-          <div class="pmnotes">
-            <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
-          </div>
-        </div>
-      </div>
-
-      <div class="details-footer">
-        <!-- Contact section - responsive -->
-        <div class="contact-section mb-4">
-          <div class="row align-items-center">
-            <div class="col-md-6 col-12 mb-3 mb-md-0">
+            <div class="pmnotes">
+              <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
+            </div>
+            
+            <!-- Contact section -->
+            <div class="contact-section mt-5 mb-4">
               <h5><b>Need Assistance?</b></h5>
               <p class="mb-1"><b>Contact us</b></p>
               <p class="mb-1">
@@ -107,19 +66,23 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Footer links - responsive -->
-        <div class="footer-links">
-          <div class="row align-items-center">
-            <div class="col-md-6 col-12 mb-2 mb-md-0">
-              <a target="_blank" href="https://virtuzone.com/privacy-policy/" class="text-decoration-none">
-                Privacy Policy
-              </a>
-            </div>
-            <div class="col-md-6 col-12 text-md-end">
-              <a href="https://www.yeepeey.com" target="_blank" class="text-decoration-none">
-                <b>© 2025, Powered by Yeepeey Technologies</b>
-              </a>
+      <!-- Footer links - Clean design without grey background -->
+      <div class="footer-links text-center mt-4 pt-4">
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            <div class="row align-items-center">
+              <div class="col-md-6 col-12 mb-2 mb-md-0">
+                <a target="_blank" href="https://virtuzone.com/privacy-policy/" class="text-decoration-none">
+                  Privacy Policy
+                </a>
+              </div>
+              <div class="col-md-6 col-12 text-md-end">
+                <a href="https://www.yeepeey.com" target="_blank" class="text-decoration-none">
+                  <b>© 2025, Powered by Yeepeey Technologies</b>
+                </a>
+              </div>
             </div>
           </div>
         </div>
