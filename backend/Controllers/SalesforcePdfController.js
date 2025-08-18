@@ -124,29 +124,47 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
 
         // Fetch payment schedule from database if quotepaymentId exists
         let paymentScheduleFromDB = null;
+        let customerNameFromDB = null;
+        
         try {
             if (quotepaymentId) {
                 console.log(`🔍 Looking up payment schedule for quotepaymentId: ${quotepaymentId}`);
                 const recurringData = await VzatRecurringData.findOne({ quotepaymentId: quotepaymentId });
                 
-                if (recurringData && recurringData.payment_schedule && recurringData.payment_schedule.length > 0) {
-                    paymentScheduleFromDB = recurringData.payment_schedule.map(payment => ({
-                        installment_number: payment.installment_number,
-                        date: payment.due_date,
-                        amount: payment.amount,
-                        status: payment.status,
-                        paymentType: payment.installment_number === 1 ? 'Upfront Payment' : 
-                                   payment.installment_number === recurringData.payment_schedule.length ? 'Final Installment' : 'Monthly Installment'
-                    }));
-                    console.log(`✅ Found ${paymentScheduleFromDB.length} payment schedule entries in database`);
+                if (recurringData) {
+                    // Get customer name from database
+                    customerNameFromDB = recurringData.Customer_name;
+                    console.log('🧑‍💼 Customer name from DB:', customerNameFromDB);
+                    
+                    // Get payment schedule from database
+                    if (recurringData.payment_schedule && recurringData.payment_schedule.length > 0) {
+                        paymentScheduleFromDB = recurringData.payment_schedule.map(payment => ({
+                            installment_number: payment.installment_number,
+                            date: payment.due_date,
+                            amount: payment.amount,
+                            status: payment.status,
+                            paymentType: payment.installment_number === 1 ? 'Upfront Payment' : 
+                                       payment.installment_number === recurringData.payment_schedule.length ? 'Final Installment' : 'Monthly Installment'
+                        }));
+                        console.log(`✅ Found ${paymentScheduleFromDB.length} payment schedule entries in database`);
+                    } else {
+                        console.log(`⚠️ No payment schedule found in database for quotepaymentId: ${quotepaymentId}`);
+                    }
                 } else {
-                    console.log(`⚠️ No payment schedule found in database for quotepaymentId: ${quotepaymentId}`);
+                    console.log(`⚠️ No record found in database for quotepaymentId: ${quotepaymentId}`);
                 }
             }
         } catch (dbError) {
-            console.error('❌ Error fetching payment schedule from database:', dbError);
+            console.error('❌ Error fetching data from database:', dbError);
             // Continue with email sending even if DB lookup fails
         }
+
+        // Use database customer name if webhook data is invalid or looks like test data
+        const finalCustomerName = (Customer_name && Customer_name !== 'Mary' && Customer_name !== 'Test Customer') 
+            ? Customer_name 
+            : customerNameFromDB || Customer_name || 'Sir/Madam';
+        
+        console.log('🎯 Final customer name to use:', finalCustomerName);
 
         // Prepare email data
         const emailData = {
@@ -158,7 +176,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             Installment_amount,
             Total_Installments,
             quotePdf,
-            Customer_name,
+            Customer_name: finalCustomerName, // Use the corrected customer name
             opp_owner,
             installmentSchedule: paymentScheduleFromDB || installmentSchedule, // Use DB data if available, fallback to webhook data
             QuoteId,
