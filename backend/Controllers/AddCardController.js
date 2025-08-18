@@ -34,13 +34,16 @@ export const prepareCardRegistration = async (req, res) => {
     console.log('🌐 Base URL for redirects:', baseUrl);
 
     // Prepare AFS checkout request with proper redirect URLs
+    const shopperResultUrl = `${baseUrl}/saved-card/add-card?resourcePath={{resourcePath}}`;
+    console.log('🔗 Setting shopperResultUrl:', shopperResultUrl);
+    
     const checkoutData = new URLSearchParams({
       entityId: AFS_CONFIG.entityId,
       testMode: AFS_CONFIG.testMode,
       createRegistration: 'true',
       'customer.email': customerEmail,
-      // Essential redirect URLs
-      'shopperResultUrl': `${baseUrl}/saved-card/add-card?resourcePath={{resourcePath}}`,
+      // Essential redirect URLs - AFS requires this exact parameter name
+      shopperResultUrl: shopperResultUrl,
       // Payment method configuration for registration
       'paymentType': 'PA',
       'amount': '0.01',
