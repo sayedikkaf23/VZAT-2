@@ -28,6 +28,11 @@
               },
               {
                 "glob": "**/*",
+                "input": "public",
+                "output": ""
+              },
+              {
+                "glob": "**/*",
                 "input": "src/environments",
                 "output": "environments"
               }
