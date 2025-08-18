@@ -39,10 +39,21 @@ export const prepareCardRegistration = async (req, res) => {
       testMode: AFS_CONFIG.testMode,
       createRegistration: 'true',
       'customer.email': customerEmail,
-      // Add redirect URLs to prevent the error
-      'shopperResultUrl': `${baseUrl}/CustomerPortal/add-card?resourcePath={{resourcePath}}`,
+      // Essential redirect URLs
+      'shopperResultUrl': `${baseUrl}/saved-card/add-card?resourcePath={{resourcePath}}`,
+      // Additional parameters for card registration
       'defaultPaymentMethod': 'CARD',
-      'recurringType': 'INITIAL'
+      'recurringType': 'INITIAL',
+      // Payment method configuration
+      'paymentType': 'DB',
+      // Billing details
+      'billing.country': 'AE',
+      'billing.city': 'Dubai',
+      // Additional security and validation
+      'merchantTransactionId': `card_reg_${Date.now()}`,
+      'customer.merchantCustomerId': customerEmail.split('@')[0],
+      // UI customization
+      'customParameters[SHOPPER_locale]': 'en_US'
     });
 
     console.log('📋 Checkout data being sent to AFS:', Object.fromEntries(checkoutData.entries()));
