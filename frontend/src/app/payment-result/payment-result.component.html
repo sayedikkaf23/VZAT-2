@@ -1,53 +1,122 @@
 <div class="payment-result">
-  <h2>Payment Checkout</h2>
-  
-  <!-- Debug information (remove in production) -->
-  <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;">
-    <strong>Debug Info:</strong><br>
-    Loading: {{ loading }}<br>
-    Result exists: {{ !!result }}<br>
-    Payment Status: {{ result?.paymentStatus || 'undefined' }}<br>
-    Overall Status: {{ result?.overall_status || 'undefined' }}<br>
-    Salesforce Status: {{ result?.salesforce_update?.status || 'undefined' }}<br>
-    Error: {{ error || 'none' }}
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Processing your payment...</p>
+    <p class="loading-steps">
+      ✅ Validating payment details<br>
+      🔄 Updating payment records<br>
+      ⏳ Please wait...
+    </p>
   </div>
-  
-  <div *ngIf="loading">
-    <div class="loading-container">
-      <div class="spinner"></div>
-      <p>Processing your payment...</p>
-      <p class="loading-steps">
-        ✅ Validating payment details<br>
-        🔄 Updating payment records<br>
-        ⏳ Please wait...
-      </p>
-    </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error">
+    <h2>Payment Error</h2>
+    <p>{{ error }}</p>
   </div>
-  <div *ngIf="error" class="error">{{ error }}</div>
-  <div *ngIf="result">
-    <!-- Complete Success: Both Payment and Salesforce successful -->
-    <div *ngIf="result.overall_status === 'complete_success' || (result.paymentStatus === 'success' && result.salesforce_update?.success)">
-      <p class="success">🎉 Payment Paid Successfully!</p>
-      <div class="payment-details">
-        <h3>Payment Details:</h3>
-        <p><strong>Amount:</strong> {{ result.amount }} {{ result.currency }}</p>
-        <p><strong>Transaction ID:</strong> {{ result.id }}</p>
-        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
-        <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
-        <p><strong>Payment Type:</strong> {{ result.paymentType }}</p>
-        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
-        
-        <!-- Salesforce Success Status -->
-        <div class="salesforce-status success">
-          <h4>✅ Records Updated Successfully</h4>
-          <p>Your payment has been processed and your account has been updated.</p>
-          <p *ngIf="result.salesforce_update?.data?.Status"><strong>Update Status:</strong> {{ result.salesforce_update.data.Status }}</p>
+
+  <!-- Success State -->
+  <div *ngIf="result && !loading && !error" class="payment-schedule">
+    <div class="detils-sidebar">
+      <div class="row justify-content-between sidebar-row gx-0">
+        <div class="col-auto">
+          <div class="logo">
+            <a href="#">
+              <img src="assets/images/main-logo.svg" alt="" class="d-block"/>
+            </a>
+          </div>
+          <h3>Hey,</h3>
+          <h2>{{ customerName || 'Customer' }}!</h2>
+          <hr/>
+          <p class="mb-2">Your Payment for is</p>
+          <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+          <p class="small-text">Thank you for your payment.</p>
         </div>
-        
-        <p *ngIf="result.warning" class="warning">⚠️ {{ result.warning }}</p>
+        <div class="col-auto d-none d-md-block">
+          <hr/> 
+          <h3 class="mb-0"><b>Need Assistance? </b></h3>
+          <p>Contact us</p>
+          <div class="mb-3">
+            <div class="row align-items-center gx-1 mb-1">
+              <div class="col">
+                <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
+              </div>
+            </div>
+            <div class="row align-items-center gx-1">
+              <div class="col">
+                <h6 class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></h6>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    
+     
+    <div class="details-content">
+      <div class="container">
+        <div class="pm-submit-info text-center">
+          <div class="icon">
+            <img src="assets/images/payment-success.png" class="d-block mx-auto" alt="Payment Success"/>
+          </div>
+          <h3>Payment Successful!</h3>
+          <h5>Hooray! You have completed your payment</h5>
+          <hr/>
+          <h6>AMOUNT PAID</h6>
+          <h2>AED {{ paymentAmount | number:'1.2-2' }}</h2>
+
+          <div class="pmnotes">
+            <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
+          </div>
+
+          <!-- Payment Details (Debug Info - can be hidden in production) -->
+          <div *ngIf="showDebugInfo" class="payment-details mt-4" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-size: 12px;">
+            <h6><strong>Payment Details:</strong></h6>
+            <p><strong>Transaction ID:</strong> {{ result.id }}</p>
+            <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
+            <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
+            <p><strong>Payment Type:</strong> {{ result.paymentType }}</p>
+            <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
+            <p *ngIf="result.salesforce_update?.success"><strong>Records Updated:</strong> ✅ Successfully</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="details-footer">
+        <div class="d-block d-md-none">
+          <h2><b>Need Assistance? </b></h2>
+          <h3>Contact us:</h3>
+          <hr/>
+          <div class="row gx-0 justify-content-between">
+            <div class="col-auto">
+              <p><b>Customer Support</b></p>
+              <h6>Virtuzone Support Team</h6>
+            </div>
+            <div class="col-auto">
+              <div class="row gx-1">
+                <div class="col">
+                  <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
+                </div>
+              </div>
+            </div>
+            <div class="col-auto">
+              <div class="row gx-1">
+                <div class="col text-end">
+                  <h6><a href="tel:+97144578271">+971 4 457 8271</a></h6>
+                  <h6 class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></h6>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ul>
+          <li><a target="_blank" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
+          <li><a style="text-align: right;" href="https://www.yeepeey.com" target="_blank"><b>© 2025, Powered by Yeepeey Technologies</b></a></li>
+        </ul>
+      </div>
+    </div>
+
     <!-- Payment Success but Salesforce Failed -->
     <div *ngIf="result.overall_status === 'payment_success_salesforce_failed' || (result.paymentStatus === 'success' && result.salesforce_update?.success === false)">
       <p class="success">✅ Payment Completed Successfully</p>
