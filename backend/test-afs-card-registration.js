@@ -14,21 +14,21 @@ async function testAFSCardRegistration() {
     
     const customerEmail = 'test@example.com';
     const baseUrl = 'https://vzatnew.yeepeey.com';
-    const shopperResultUrl = `${baseUrl}/saved-card/add-card?resourcePath={{resourcePath}}`;
+    const shopperResultUrl = `${baseUrl}/saved-card/add-card`;
     
     const checkoutData = new URLSearchParams({
       entityId: AFS_CONFIG.entityId,
       testMode: AFS_CONFIG.testMode,
       createRegistration: 'true',
       'customer.email': customerEmail,
+      'customer.merchantCustomerId': customerEmail.split('@')[0],
       shopperResultUrl: shopperResultUrl,
       'paymentType': 'PA',
-      'amount': '0.01',
+      'amount': '1.00',
       'currency': 'AED',
       'billing.country': 'AE',
       'billing.city': 'Dubai',
-      'merchantTransactionId': `card_reg_${Date.now()}`,
-      'customer.merchantCustomerId': customerEmail.split('@')[0],
+      'merchantTransactionId': `card_reg_${Date.now()}_${customerEmail.split('@')[0]}`,
       'customParameters[SHOPPER_locale]': 'en_US'
     });
 
@@ -46,13 +46,21 @@ async function testAFSCardRegistration() {
     );
 
     console.log('✅ Success! Response:', response.data);
+    console.log('🔗 Checkout URL would be:', `${AFS_CONFIG.baseUrl}/v1/checkouts/${response.data.id}`);
     
   } catch (error) {
     console.error('❌ Error details:');
     console.error('Status:', error.response?.status);
     console.error('Status Text:', error.response?.statusText);
-    console.error('Headers:', error.response?.headers);
-    console.error('Data:', error.response?.data);
+    console.error('Data:', JSON.stringify(error.response?.data, null, 2));
+    
+    // Show parameter errors specifically
+    if (error.response?.data?.result?.parameterErrors) {
+      console.error('❌ Parameter Errors:');
+      error.response.data.result.parameterErrors.forEach((err, index) => {
+        console.error(`  ${index + 1}. ${JSON.stringify(err)}`);
+      });
+    }
     console.error('Full error:', error.message);
   }
 }

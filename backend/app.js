@@ -44,7 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 // Global CORS middleware
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = ['http://localhost:4200', 'http://localhost:3000','https://vzatnew.yeepeey.com'];
+    const allowedOrigins = ['http://localhost:4200', 'http://localhost:3000','https://vzatnew.yeepeey.com', 'https://p11.techlab-cdn.com'];
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
