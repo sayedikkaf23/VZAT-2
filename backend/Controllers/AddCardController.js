@@ -8,7 +8,9 @@ import config from '../config.env.js';
 const AFS_CONFIG = {
   baseUrl: process.env.AFS_BASE_URL || config.AFS_BASE_URL,
   entityId: process.env.AFS_ENTITY_ID || config.AFS_ENTITY_ID,
-  authorization: process.env.AFS_AUTHORIZATION || config.AFS_AUTHORIZATION,
+  authorization: `Bearer ${(
+    (process.env.AFS_AUTHORIZATION || config.AFS_AUTHORIZATION) || ''
+  ).replace(/^Bearer /, '')}`,
   testMode: 'EXTERNAL'
 };
 
@@ -52,6 +54,10 @@ export const prepareCardRegistration = async (req, res) => {
       shopperResultUrl: `${process.env.FRONTEND_URL}/saved-card/add-card`,
       testMode: AFS_CONFIG.testMode
     };
+    // Convert to x-www-form-urlencoded string
+    const urlEncodedCheckoutData = Object.entries(checkoutData)
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join('&');
 
     console.log('📝 Creating AFS checkout for registration...');
     console.log('🔗 AFS Endpoint:', `${AFS_CONFIG.baseUrl}/v1/checkouts`);
@@ -60,12 +66,16 @@ export const prepareCardRegistration = async (req, res) => {
     console.log('🔑 Entity ID:', AFS_CONFIG.entityId);
     console.log('📧 Customer:', customerEmail);
 
-    const response = await axios.post(`${AFS_CONFIG.baseUrl}/v1/checkouts`, checkoutData, {
-      headers: {
-        'Authorization': AFS_CONFIG.authorization,
-        'Content-Type': 'application/x-www-form-urlencoded'
+    const response = await axios.post(
+      `${AFS_CONFIG.baseUrl}/v1/checkouts`,
+      urlEncodedCheckoutData,
+      {
+        headers: {
+          'Authorization': AFS_CONFIG.authorization,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
       }
-    });
+    );
 
     const checkoutResult = response.data;
     console.log('✅ AFS checkout created successfully');
