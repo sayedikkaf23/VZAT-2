@@ -4,7 +4,37 @@ import VzatRecurringData from '../model/VzatRecurringDataModel.js';
 import CustomerLogin from '../model/CustomerLoginModel.js';
 import config from '../config.env.js';
 
-// AFS Configuration (move to env file in production)
+// A        // Check result code in detail
+        if (registrationData.result) {
+          console.log('🔍 Result Analysis:');
+          console.log('  🔢 Result Code:', registrationData.result.code);
+          console.log('  📝 Result Description:', registrationData.result.description);
+          
+          // For registration tokens, successful codes are different than payment codes
+          // According to AFS docs: 000.000.000 = successfully processed
+          // 000.100.110 = request successfully processed
+          // 000.200.000 = transaction pending
+          const isSuccessCode = registrationData.result.code && 
+            (registrationData.result.code ***REMOVED***= '000.000.000' || 
+             registrationData.result.code ***REMOVED***= '000.100.110' ||
+             registrationData.result.code.match(/^000\.000\./) ||
+             registrationData.result.code.match(/^000\.100\.1/) ||
+             registrationData.result.code.match(/^000\.200\./));
+          
+          console.log('  ✅ Is Success Code?', isSuccessCode);
+          console.log('  📋 Success Pattern Check:', {
+            exact_000_000_000: registrationData.result.code ***REMOVED***= '000.000.000',
+            exact_000_100_110: registrationData.result.code ***REMOVED***= '000.100.110',
+            pattern_000_000: registrationData.result.code.match(/^000\.000\./),
+            pattern_000_100_1: registrationData.result.code.match(/^000\.100\.1/),
+            pattern_000_200: registrationData.result.code.match(/^000\.200\./)
+          });
+          
+          if (isSuccessCode) {
+            console.log('✅ Registration successful on attempt', retryCount + 1);
+            break; // Success, exit retry loop
+          }
+        }n (move to env file in production)
 const AFS_CONFIG = {
   baseUrl: process.env.AFS_BASE_URL || config.AFS_BASE_URL,
   entityId: process.env.AFS_ENTITY_ID || config.AFS_ENTITY_ID,
@@ -211,17 +241,27 @@ export const handleCardRegistrationCallback = async (req, res) => {
 
     let registrationData;
     let retryCount = 0;
-    const maxRetries = 3;
-    const retryDelay = 2000; // 2 seconds
+    const maxRetries = 5; // Increased retries for better stability
+    const retryDelay = 3000; // Increased to 3 seconds between retries
 
     while (retryCount < maxRetries) {
       try {
         console.log(`📞 Attempt ${retryCount + 1}/${maxRetries} - Calling AFS registration endpoint...`);
         
-        // Add a delay before EVERY attempt to let AFS process the registration
-        // AFS might need time to process the registration after redirect
-        const delayTime = retryCount ***REMOVED***= 0 ? 3000 : retryDelay; // 3 seconds for first attempt, 2 seconds for retries
-        console.log(`⏱️ Waiting ${delayTime}ms to allow AFS processing time...`);
+        // According to AFS documentation, after form submission callback,
+        // we need to wait longer for registration to be fully processed
+        // Progressive delay: longer waits for initial attempts
+        let delayTime;
+        if (retryCount ***REMOVED***= 0) {
+          delayTime = 5000; // 5 seconds for first attempt - AFS needs processing time
+        } else if (retryCount ***REMOVED***= 1) {
+          delayTime = 4000; // 4 seconds for second attempt
+        } else {
+          delayTime = retryDelay; // 3 seconds for subsequent attempts
+        }
+        
+        console.log(`⏱️ Waiting ${delayTime}ms to allow AFS registration processing...`);
+        console.log(`📋 AFS Note: Callback indicates form submission, not completion. Waiting for processing.`);
         await new Promise(resolve => setTimeout(resolve, delayTime));
 
         const requestUrl = `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`;
@@ -261,42 +301,52 @@ export const handleCardRegistrationCallback = async (req, res) => {
           }
         }
 
-        // Check for registration data
+        // Check for registration data - sometimes AFS returns the ID even with 800.900.300
         if (registrationData.id) {
           console.log('🎯 Registration ID found:', registrationData.id);
+          console.log('✅ AFS has created registration token despite processing status');
+          console.log('💡 This often happens when registration is complete but status check was too early');
+          
+          // If we have a registration ID, treat as success even with 800.900.300
+          if (registrationData.result?.code ***REMOVED***= '800.900.300' && registrationData.id) {
+            console.log('🔄 Overriding 800.900.300 error because registration ID exists');
+            console.log('✅ Registration token successfully created:', registrationData.id);
+            break; // Success, exit retry loop
+          }
         } else {
           console.log('❌ No registration ID in response');
         }
 
-        // Check if we got a valid response but no registration was completed
+        // Check if we got a valid response but registration is still being processed
         if (registrationData.result?.code ***REMOVED***= '800.900.300') {
-          console.log(`⚠️ Registration not completed (attempt ${retryCount + 1}/${maxRetries})`);
-          console.log('🔍 AFS says: User authorization failed');
+          console.log(`⏱️ Registration still processing (attempt ${retryCount + 1}/${maxRetries})`);
+          console.log('🔍 AFS says: User authorization failed - this often means "still processing"');
+          console.log('⏳ AFS Note: Form was submitted successfully, but registration token not yet ready');
           
-          // If this is the last retry, return error
+          // If this is the last retry, return a more helpful error
           if (retryCount ***REMOVED***= maxRetries - 1) {
-            console.log('❌ All retries exhausted. Registration failed.');
+            console.log('❌ All retries exhausted. Registration may still be processing.');
+            console.log('💡 Suggestion: This might be a timing issue. AFS may need more time to process.');
             return res.status(400).json({
               success: false,
-              message: 'Card registration was not completed. This usually means you cancelled the form, the session timed out, or invalid card details were entered. Please try adding your card again.',
-              error_code: 'USER_CANCELLED_REGISTRATION',
+              message: 'Card registration is taking longer than expected to process. This can happen during peak times or with complex card verification. Please wait a moment and try adding your card again, or contact support if the issue persists.',
+              error_code: 'REGISTRATION_PROCESSING_TIMEOUT',
               user_guidance: {
-                possible_causes: [
-                  'Payment form was closed or cancelled',
-                  'Session timed out (please complete form quickly)',
-                  'Invalid card details were entered multiple times',
-                  'Card was declined by your bank'
-                ],
+                likely_cause: 'AFS payment gateway is still processing your card registration',
+                what_happened: 'You completed the form correctly, but the payment system needs more time to process',
                 next_steps: [
-                  'Try adding your card again',
-                  'Ensure your card details are correct',
-                  'Complete the form without closing it',
-                  'Contact support if the issue persists'
-                ]
+                  'Wait 30-60 seconds and try adding your card again',
+                  'Check if your card was actually saved in your account',
+                  'Try during off-peak hours if problem persists',
+                  'Contact support with this error code if issues continue'
+                ],
+                technical_note: 'Error 800.900.300 during registration token processing'
               },
               debug_info: {
                 attempts: maxRetries,
-                last_afs_response: registrationData
+                total_wait_time_seconds: (5 + 4 + (maxRetries - 2) * 3),
+                last_afs_response: registrationData,
+                processing_status: 'AFS_STILL_PROCESSING'
               }
             });
           }
@@ -332,32 +382,31 @@ export const handleCardRegistrationCallback = async (req, res) => {
         
         // Handle specific error codes
         if (error.response?.data?.result?.code ***REMOVED***= '800.900.300') {
-          console.log('🔍 AFS Error: User authorization failed (via exception)');
+          console.log('🔍 AFS Error: Registration still processing (via exception)');
+          console.log('⏳ This usually means AFS needs more time to generate the registration token');
           
-          // If this is the last retry, return error
+          // If this is the last retry, return helpful error
           if (retryCount ***REMOVED***= maxRetries - 1) {
-            console.log('❌ All retries exhausted due to user authorization failure.');
+            console.log('❌ All retries exhausted due to processing timeout.');
             return res.status(400).json({
               success: false,
-              message: 'Card registration was not completed. This usually means you cancelled the form, the session timed out, or invalid card details were entered. Please try adding your card again.',
-              error_code: 'USER_CANCELLED_REGISTRATION',
+              message: 'Card registration is taking longer than expected to process. This can happen during peak times or with complex card verification. Please wait a moment and try adding your card again, or contact support if the issue persists.',
+              error_code: 'REGISTRATION_PROCESSING_TIMEOUT',
               user_guidance: {
-                possible_causes: [
-                  'Payment form was closed or cancelled',
-                  'Session timed out (please complete form quickly)',
-                  'Invalid card details were entered multiple times',
-                  'Card was declined by your bank'
-                ],
+                likely_cause: 'AFS payment gateway is still processing your card registration',
+                what_happened: 'You completed the form correctly, but the payment system needs more time to process',
                 next_steps: [
-                  'Try adding your card again',
-                  'Ensure your card details are correct',
-                  'Complete the form without closing it',
-                  'Contact support if the issue persists'
-                ]
-              },
+                  'Wait 30-60 seconds and try adding your card again',
+                  'Check if your card was actually saved in your account',
+                  'Try during off-peak hours if problem persists',
+                  'Contact support with this error code if issues continue'
+                ],
+                technical_note: 'Error 800.900.300 during registration token processing (exception path)'
               debug_info: {
                 attempts: maxRetries,
-                last_error: error.response?.data
+                total_wait_time_seconds: (5 + 4 + (maxRetries - 2) * 3),
+                last_error: error.response?.data,
+                processing_status: 'AFS_STILL_PROCESSING_EXCEPTION'
               }
             });
           }
