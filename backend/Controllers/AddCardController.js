@@ -48,18 +48,15 @@ export const prepareCardRegistration = async (req, res) => {
     // Configure AFS checkout for standalone registration
     const checkoutData = {
       entityId: AFS_CONFIG.entityId,
-      amount: '0.00', // For registration, amount is 0
-      currency: 'USD',
-      paymentType: 'DB', // Debit registration
-      createRegistration: true, // This is the key for standalone registration
-      notificationUrl: `${process.env.FRONTEND_URL}/api/webhook/afs-notification`,
-      // Registration specific settings
+      createRegistration: true,
+      customer: {
+        email: customerEmail,
+        merchantCustomerId: customer._id?.toString() || customerEmail
+      },
+      shopperResultUrl: `${process.env.FRONTEND_URL}/saved-card/add-card`,
       testMode: AFS_CONFIG.testMode
+      // Optionally add notificationUrl, billing, merchantTransactionId, etc.
     };
-    // Add shopperResultUrl for redirect after registration
-    checkoutData.shopperResultUrl = `${process.env.FRONTEND_URL}/saved-card/add-card`;
-    // Add shopperResultUrl for redirect after registration
-    checkoutData.shopperResultUrl = `${process.env.FRONTEND_URL}/saved-card/add-card`;
 
     console.log('📝 Creating AFS checkout for registration...');
     console.log('🔗 AFS Endpoint:', `${AFS_CONFIG.baseUrl}/v1/checkouts`);
