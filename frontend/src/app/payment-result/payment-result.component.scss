@@ -6,6 +6,25 @@
   font-family: 'Arial', sans-serif;
 }
 
+// Override sidebar styles for payment result to fix positioning
+.payment-result .payment-schedule .detils-sidebar {
+  height: auto; // Remove fixed height
+  min-height: 100vh; // Ensure it's at least full height but can grow
+  position: relative; // Ensure proper positioning
+}
+
+// Ensure the content is properly positioned
+.payment-result .payment-schedule {
+  position: relative;
+  width: 100%;
+}
+
+// Fix the main content area positioning
+.payment-result .details-content {
+  position: relative;
+  z-index: 1;
+}
+
 // Loading styles
 .loading-container {
   display: flex;
