@@ -8,10 +8,10 @@ const config = {
     // Frontend URL for redirects - using production URL for testing
     FRONTEND_URL: 'https://vzatnew.yeepeey.com',
     
-    // AFS Payment Gateway Configuration (Test Environment)
+    // AFS Payment Gateway Configuration (Test Environment) - Registration specific
     AFS_BASE_URL: 'https://eu-test.oppwa.com',
-    AFS_ENTITY_ID: '8ac7a4c97d8d45be017d8e96389e020a',
-    AFS_AUTHORIZATION: 'Bearer OGFjN2E0Yzk3ZDhkNDViZTAxN2Q4ZTk2Mzk3NjAyMGV8R3hQS0gyNjY5dA==',
+    AFS_ENTITY_ID: '8ac7a4c797e1beca0197e482a8200127', // Registration-specific entity ID
+    AFS_AUTHORIZATION: 'Bearer OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWHA=', // Registration-specific authorization
   },
   
   production: {
