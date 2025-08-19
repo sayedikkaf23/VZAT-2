@@ -109,6 +109,11 @@ const vzatRecurringDataSchema = new Schema({
         type: String,
         required: false
     },
+    salesPersonDetails: {
+        salesPersonEmail: { type: String, required: false },
+        salesPersonMobile: { type: String, required: false },
+        salesPersonName: { type: String, required: false }
+    },
     // Subscription-related fields
     is_subscription: {
         type: Boolean,
