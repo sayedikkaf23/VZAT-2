@@ -7,21 +7,45 @@
 }
 
 // Override sidebar styles for payment result to fix positioning
-.payment-result .payment-schedule .detils-sidebar {
-  height: auto; // Remove fixed height
-  min-height: 100vh; // Ensure it's at least full height but can grow
-  position: relative; // Ensure proper positioning
-  flex-shrink: 0; // Prevent sidebar from shrinking
-}
-
-// Ensure the content is properly positioned
 .payment-result .payment-schedule {
   position: relative;
   width: 100%;
-  display: flex; // Ensure flex layout
+  display: flex;
   min-height: 100vh;
-  overflow-x: hidden; // Prevent horizontal scroll
-  overflow-y: auto; // Allow vertical scroll if needed
+  overflow-x: hidden;
+  overflow-y: auto;
+  
+  .detils-sidebar {
+    background-color: var(--light-primary, #F8E8E9);
+    width: var(--sidebar-width, 320px);
+    min-height: 100vh;
+    flex-shrink: 0;
+    height: auto;
+    position: relative;
+    
+    .sidebar-row {
+      padding: 20px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .contact-section {
+      margin-top: auto; // Push contact section to bottom
+    }
+  }
+  
+  .details-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: auto;
+  }
 }
 
 // Fix the main content area positioning
@@ -266,18 +290,23 @@
 }
 
 // Contact section styling
-.contact-section {
-  h5 {
+.payment-result .contact-section {
+  h3, h6 {
     color: #333;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
   }
 
   p {
     color: #666;
     margin-bottom: 5px;
+  }
 
-    a {
+  .contact-item {
+    margin-bottom: 8px;
+    
+    h6 a {
       color: #007bff;
+      text-decoration: none;
       
       &:hover {
         color: #0056b3;
@@ -302,6 +331,15 @@
       width: 100%;
       min-height: auto;
       height: auto;
+      
+      .sidebar-row {
+        padding: 15px;
+        min-height: auto;
+      }
+      
+      .contact-section {
+        margin-top: 20px; // Reset margin for mobile
+      }
     }
     
     .details-content {
@@ -313,13 +351,14 @@
 }
 
 @media (max-width: 768px) {
-  .payment-result .payment-schedule .detils-sidebar .sidebar-row {
-    padding: 15px;
-    min-height: auto;
-  }
-  
-  .payment-result .payment-schedule .details-content {
-    padding: 10px;
+  .payment-result .payment-schedule {
+    .detils-sidebar .sidebar-row {
+      padding: 15px;
+    }
+    
+    .details-content {
+      padding: 10px;
+    }
   }
   
   .payment-result .pm-submit-info {
