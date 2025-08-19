@@ -49,13 +49,8 @@ export const prepareCardRegistration = async (req, res) => {
     const checkoutData = {
       entityId: AFS_CONFIG.entityId,
       createRegistration: true,
-      customer: {
-        email: customerEmail,
-        merchantCustomerId: customer._id?.toString() || customerEmail
-      },
       shopperResultUrl: `${process.env.FRONTEND_URL}/saved-card/add-card`,
       testMode: AFS_CONFIG.testMode
-      // Optionally add notificationUrl, billing, merchantTransactionId, etc.
     };
 
     console.log('📝 Creating AFS checkout for registration...');
