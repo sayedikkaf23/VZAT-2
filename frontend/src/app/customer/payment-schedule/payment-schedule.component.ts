@@ -691,11 +691,11 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
 
   private setFallbackSalesAgent() {
     this.salesAgent = {
-      name: "Sales Representative", 
-      position: "Customer Service Specialist", 
-      faxNumber: "+971 4 457 8271",
-      phoneNumber: "+971 4 457 8271",
-      email: "support@virtuzone.com",
+      name: "", 
+      position: "", 
+      faxNumber: "",
+      phoneNumber: "",
+      email: "",
       mobNo1: "", 
       mobNo2: "", 
       token: 0
