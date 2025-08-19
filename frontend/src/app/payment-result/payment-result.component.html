@@ -19,42 +19,40 @@
   <!-- Success State -->
   <div *ngIf="result && !loading && !error" class="payment-schedule">
     <!-- Main Success Layout with Sidebar -->
-    <div *ngIf="result.paymentStatus ***REMOVED***= 'success' && !result.overall_status?.includes('salesforce_failed')">
+    <div *ngIf="result.paymentStatus ***REMOVED***= 'success' && !result.overall_status?.includes('salesforce_failed')" class="d-flex w-100">
+      <!-- Sidebar -->
       <div class="detils-sidebar">
-        <div class="row justify-content-between sidebar-row gx-0">
-          <div class="col-auto">
-            <div class="logo">
-              <a href="#">
-                <img src="assets/images/main-logo.svg" alt="Virtuzone" class="d-block"/>
-              </a>
-            </div>
-            <h3>Hey,</h3>
-            <h2>{{ customerName || 'Customer' }}!</h2>
-            <hr/>
-            <p class="mb-2">Your Payment for is</p>
-            <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
-            <p class="small-text">Thank you for your payment.</p>
+        <div class="sidebar-row">
+          <div class="logo">
+            <a href="#">
+              <img src="assets/images/main-logo.svg" alt="Virtuzone" class="d-block"/>
+            </a>
           </div>
-          <div class="col-auto d-none d-md-block">
+          <h3>Hey,</h3>
+          <h2>{{ customerName || 'Customer' }}!</h2>
+          <hr/>
+          <p class="mb-2">Your Payment for is</p>
+          <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+          <p class="small-text">Thank you for your payment.</p>
+          
+          <!-- Contact Section -->
+          <div class="contact-section mt-4">
             <hr/> 
             <h3 class="mb-0"><b>Need Assistance? </b></h3>
             <p>Contact us</p>
             <div class="mb-3">
-              <div class="row align-items-center gx-1 mb-1">
-                <div class="col">
-                  <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
-                </div>
+              <div class="contact-item mb-2">
+                <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
               </div>
-              <div class="row align-items-center gx-1">
-                <div class="col">
-                  <h6 class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></h6>
-                </div>
+              <div class="contact-item">
+                <h6 class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></h6>
               </div>
             </div>
           </div>
         </div>
       </div>
-       
+      
+      <!-- Main Content -->
       <div class="details-content">
         <div class="container">
           <div class="pm-submit-info text-center">
