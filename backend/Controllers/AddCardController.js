@@ -54,11 +54,6 @@ export const prepareCardRegistration = async (req, res) => {
       createRegistration: true, // This is the key for standalone registration
       notificationUrl: `${process.env.FRONTEND_URL}/api/webhook/afs-notification`,
       
-      // Customer information
-      customer: {
-        email: customerEmail
-      },
-      
       // Registration specific settings
       testMode: AFS_CONFIG.testMode
     };
