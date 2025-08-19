@@ -13,24 +13,39 @@ const AFS_CONFIG = {
 
 /**
  * Step 1: Prepare AFS checkout for card registration
+ * Based on AFS Server-to-Server integration: https://afs.docs.oppwa.com/integrations/server-to-server
  */
 export const prepareCardRegistration = async (req, res) => {
   try {
+    console.log('🔄 prepareCardRegistration called');
+    console.log('📋 Request body:', req.body);
+    
     const { customerEmail } = req.body;
 
     if (!customerEmail) {
+      console.log('❌ No customer email provided');
       return res.status(400).json({
         success: false,
-        message: 'Customer email is required'
+        message: 'Customer email is required',
+        error: 'MISSING_EMAIL'
       });
     }
 
     console.log('🔄 Preparing AFS checkout for card registration...');
     console.log('📧 Customer email:', customerEmail);
 
+    // Validate AFS configuration
+    if (!AFS_CONFIG.baseUrl || !AFS_CONFIG.entityId || !AFS_CONFIG.authorization) {
+      console.error('❌ AFS configuration is incomplete');
+      return res.status(500).json({
+        success: false,
+        message: 'Payment gateway configuration error',
+        error: 'INVALID_AFS_CONFIG'
+      });
+    }
+
     // Get the base URL from the request or environment
-    const baseUrl = process.env.FRONTEND_URL || config.FRONTEND_URL || req.get('origin') || 'http://localhost:4200';
-    
+    const baseUrl = process.env.FRONTEND_URL || config.FRONTEND_URL || req.get('origin') || 'https://vzatnew.yeepeey.com';
     console.log('🌐 Base URL for redirects:', baseUrl);
 
     // Prepare AFS checkout request with proper redirect URLs
@@ -40,38 +55,32 @@ export const prepareCardRegistration = async (req, res) => {
     const checkoutData = new URLSearchParams({
       entityId: AFS_CONFIG.entityId,
       testMode: AFS_CONFIG.testMode,
-      createRegistration: 'true',
+      createRegistration: 'true', // This creates a registration instead of a payment
       'customer.email': customerEmail,
-      // Multiple redirect URL parameter attempts for AFS compatibility
+      'customer.merchantCustomerId': customerEmail.split('@')[0],
+      
+      // Redirect URL for after payment widget interaction
       shopperResultUrl: shopperResultUrl,
-      'shopper.resultUrl': shopperResultUrl,
-      notificationUrl: shopperResultUrl,
-      redirectUrl: shopperResultUrl,
-      'redirect.url': shopperResultUrl,
-      returnUrl: shopperResultUrl,
-      // Payment method configuration for registration
-      'paymentType': 'PA',
+      
+      // Minimal payment for registration (as per AFS docs)
+      'paymentType': 'PA', // Pre-authorization
       'amount': '0.01',
       'currency': 'AED',
-      // Billing details
+      
+      // Required billing information
       'billing.country': 'AE',
       'billing.city': 'Dubai',
-      // Additional security and validation
-      'merchantTransactionId': `card_reg_${Date.now()}`,
-      'customer.merchantCustomerId': customerEmail.split('@')[0],
+      
+      // Unique transaction identifier
+      'merchantTransactionId': `card_reg_${Date.now()}_${customerEmail.split('@')[0]}`,
+      
       // UI customization
-      'customParameters[SHOPPER_locale]': 'en_US'
+      'customParameters[SHOPPER_locale]': 'en_US',
+      'customParameters[SHOPPER_endpointVariant]': 'lightbox'
     });
 
     console.log('📋 Checkout data being sent to AFS:', Object.fromEntries(checkoutData.entries()));
     
-    // Log specific redirect URL parameter
-    const allData = Object.fromEntries(checkoutData.entries());
-    console.log('🎯 CRITICAL - shopperResultUrl parameter:', allData.shopperResultUrl);
-    console.log('🔍 All parameters with "shopperResultUrl":', Object.keys(allData).filter(key => key.toLowerCase().includes('shopper')));
-    console.log('🔍 All parameters with "redirect":', Object.keys(allData).filter(key => key.toLowerCase().includes('redirect')));
-    console.log('🔍 All parameters with "url":', Object.keys(allData).filter(key => key.toLowerCase().includes('url')));
-
     const response = await axios.post(
       `${AFS_CONFIG.baseUrl}/v1/checkouts`,
       checkoutData,
@@ -79,13 +88,25 @@ export const prepareCardRegistration = async (req, res) => {
         headers: {
           'Authorization': AFS_CONFIG.authorization,
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        timeout: 10000 // 10 second timeout
       }
     );
 
     console.log('✅ AFS checkout prepared successfully');
     console.log('🔑 Checkout ID:', response.data.id);
+    console.log('📊 AFS Response code:', response.data.result?.code);
     console.log('📄 Full AFS response:', JSON.stringify(response.data, null, 2));
+
+    // Validate AFS response
+    if (!response.data.id) {
+      console.error('❌ AFS response missing checkout ID');
+      return res.status(500).json({
+        success: false,
+        message: 'Invalid response from payment gateway',
+        error: 'MISSING_CHECKOUT_ID'
+      });
+    }
 
     res.json({
       success: true,
@@ -94,15 +115,31 @@ export const prepareCardRegistration = async (req, res) => {
       afsConfig: {
         baseUrl: AFS_CONFIG.baseUrl,
         scriptUrl: `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${response.data.id}`
+      },
+      debug: {
+        entityId: AFS_CONFIG.entityId,
+        testMode: AFS_CONFIG.testMode,
+        resultCode: response.data.result?.code,
+        resultDescription: response.data.result?.description
       }
     });
 
   } catch (error) {
     console.error('❌ Error preparing AFS checkout:', error.response?.data || error.message);
+    
+    // Detailed error logging
+    if (error.response) {
+      console.error('📊 Response Status:', error.response.status);
+      console.error('📊 Response Headers:', error.response.headers);
+      console.error('📊 Response Data:', error.response.data);
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to prepare checkout',
-      error: error.response?.data || error.message
+      error: error.response?.data || error.message,
+      errorType: error.response ? 'AFS_API_ERROR' : 'NETWORK_ERROR',
+      statusCode: error.response?.status
     });
   }
 };
