@@ -1,6 +1,7 @@
 import axios from 'axios';
 import SavedCard from '../model/SavedCardModel.js';
 import VzatRecurringData from '../model/VzatRecurringDataModel.js';
+import CustomerLogin from '../model/CustomerLoginModel.js';
 import config from '../config.env.js';
 
 // AFS Configuration (move to env file in production)
@@ -50,7 +51,7 @@ export const prepareCardRegistration = async (req, res) => {
 
     // For card registration, AFS expects the frontend callback URL
     // AFS will redirect to this URL with ?resourcePath=/v1/checkouts/{id}/registration
-    const shopperResultUrl = `${baseUrl}/customer-portal/add-card`;
+    const shopperResultUrl = `${baseUrl}/saved-card/add-card`;
     
     console.log('🔗 Setting shopperResultUrl:', shopperResultUrl);
     
@@ -149,17 +150,28 @@ export const prepareCardRegistration = async (req, res) => {
  */
 export const handleCardRegistrationCallback = async (req, res) => {
   try {
+    console.log('🔔 === CARD REGISTRATION CALLBACK HANDLER CALLED ===');
+    console.log('📋 Request body:', JSON.stringify(req.body, null, 2));
+    console.log('📋 Request query params:', JSON.stringify(req.query, null, 2));
+    console.log('📋 Request headers:', JSON.stringify(req.headers, null, 2));
+    
     const { checkoutId, customerEmail } = req.body;
 
     if (!checkoutId || !customerEmail) {
+      console.error('❌ Missing required parameters');
+      console.error('📋 checkoutId:', checkoutId);
+      console.error('📋 customerEmail:', customerEmail);
+      
       return res.status(400).json({
         success: false,
         message: 'Checkout ID and customer email are required'
       });
     }
 
+    console.log('✅ Required parameters validated');
     console.log('🔄 Getting registration status from AFS...');
     console.log('🔑 Checkout ID:', checkoutId);
+    console.log('👤 Customer Email:', customerEmail);
     console.log('🌐 AFS Base URL:', AFS_CONFIG.baseUrl);
     console.log('🔐 Entity ID:', AFS_CONFIG.entityId);
 
@@ -302,51 +314,114 @@ export const handleCardRegistrationCallback = async (req, res) => {
     // Check if registration was successful
     if (registrationData.result?.code && registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
       console.log('✅ Card registration successful');
+      console.log('📋 Registration data received:', JSON.stringify(registrationData, null, 2));
 
-      // Extract card details
+      // Validate that we have registration data
+      if (!registrationData.id) {
+        console.error('❌ Missing registration ID in successful response');
+        return res.status(400).json({
+          success: false,
+          message: 'Registration completed but no registration ID received',
+          debug_info: { afs_response: registrationData }
+        });
+      }
+
+      console.log('🔍 Extracting card details from AFS response...');
+
+      // First, look up the customer to get their ID
+      console.log('👤 Looking up customer by email:', customerEmail);
+      const customer = await CustomerLogin.findOne({ email: customerEmail });
+      
+      if (!customer) {
+        console.error('❌ Customer not found for email:', customerEmail);
+        return res.status(400).json({
+          success: false,
+          message: 'Customer not found. Please ensure you are logged in correctly.',
+          error_code: 'CUSTOMER_NOT_FOUND'
+        });
+      }
+      
+      console.log('✅ Customer found:', customer._id);
+
+      // Extract card details - mapping to correct SavedCard model fields
       const cardData = {
         customerEmail: customerEmail,
+        customerId: customer._id,
+        quotepaymentId: customer.quotepaymentId || checkoutId, // Use customer's payment ID or checkout ID as fallback
         afs_registration_id: registrationData.id,
         afs_checkout_id: checkoutId,
-        card_brand: registrationData.paymentBrand,
-        card_last_four: registrationData.card?.last4Digits || '****',
-        card_holder_name: registrationData.card?.holder || 'N/A',
-        card_expiry_month: registrationData.card?.expiryMonth || '',
-        card_expiry_year: registrationData.card?.expiryYear || '',
+        cardholderName: registrationData.card?.holder || 'N/A',
+        maskedCardNumber: registrationData.card?.last4Digits ? `**** **** **** ${registrationData.card.last4Digits}` : '**** **** **** ****',
+        cardBrand: (registrationData.paymentBrand || 'OTHER').toUpperCase(),
+        expiryMonth: registrationData.card?.expiryMonth || '12',
+        expiryYear: registrationData.card?.expiryYear ? registrationData.card.expiryYear.slice(-2) : '99', // Last 2 digits
         isDefault: false, // Will be set to true below
-        createdAt: new Date(),
-        status: 'active'
+        isActive: true,
+        cardAddedDate: new Date()
       };
 
-      // Set all existing cards as non-default for this customer
-      await SavedCard.updateMany(
-        { customerEmail: customerEmail },
-        { $set: { isDefault: false } }
-      );
+      console.log('💳 Card data to be saved:', JSON.stringify(cardData, null, 2));
 
-      // Save the new card as default
-      cardData.isDefault = true;
-      const savedCard = new SavedCard(cardData);
-      await savedCard.save();
+      try {
+        console.log('🔄 Setting all existing cards as non-default for customer:', customerEmail);
+        
+        // Set all existing cards as non-default for this customer
+        const updateResult = await SavedCard.updateMany(
+          { customerEmail: customerEmail },
+          { $set: { isDefault: false } }
+        );
+        
+        console.log('📊 Update result for existing cards:', updateResult);
 
-      console.log('💾 Card saved successfully as default');
+        // Save the new card as default
+        cardData.isDefault = true;
+        console.log('💾 Creating new SavedCard document...');
+        
+        const savedCard = new SavedCard(cardData);
+        const saveResult = await savedCard.save();
+        
+        console.log('✅ Card saved successfully!');
+        console.log('📋 Saved card details:', JSON.stringify(saveResult.toObject(), null, 2));
 
-      // 🔄 MIGRATE SUBSCRIPTION TOKENS TO NEW CARD
-      await migrateSubscriptionTokens(customerEmail, registrationData.id, checkoutId);
+        // 🔄 MIGRATE SUBSCRIPTION TOKENS TO NEW CARD
+        console.log('🔄 Starting subscription token migration...');
+        await migrateSubscriptionTokens(customerEmail, registrationData.id, checkoutId);
+        console.log('✅ Subscription token migration completed');
 
-      res.json({
-        success: true,
-        message: 'Card registered and saved successfully. All subscriptions updated to use new card.',
-        card: {
-          id: savedCard._id,
-          last4: cardData.card_last_four,
-          brand: cardData.card_brand,
-          holder: cardData.card_holder_name,
-          isDefault: true
-        },
-        registrationId: registrationData.id,
-        subscriptionsUpdated: true
-      });
+        res.json({
+          success: true,
+          message: 'Card registered and saved successfully. All subscriptions updated to use new card.',
+          card: {
+            id: saveResult._id,
+            last4: cardData.maskedCardNumber.slice(-4),
+            brand: cardData.cardBrand,
+            holder: cardData.cardholderName,
+            isDefault: true
+          },
+          registrationId: registrationData.id,
+          subscriptionsUpdated: true,
+          debug_info: {
+            afs_registration_id: registrationData.id,
+            checkout_id: checkoutId,
+            card_saved: true
+          }
+        });
+
+      } catch (saveError) {
+        console.error('❌ Error saving card to database:', saveError);
+        console.error('📋 Save error details:', saveError.message);
+        console.error('📋 Card data that failed to save:', cardData);
+        
+        return res.status(500).json({
+          success: false,
+          message: 'Card registration successful but failed to save to database',
+          error: saveError.message,
+          debug_info: {
+            afs_registration_id: registrationData.id,
+            save_error: saveError.message
+          }
+        });
+      }
 
     } else {
       console.error('❌ Card registration failed:', registrationData.result);
