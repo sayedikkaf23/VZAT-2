@@ -271,16 +271,17 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
 
   // Populate component data from API response
   private populateComponentData(data: any): void {
-    console.log('📊 Populating component with data:', data);
-    console.log('🔍 Data structure analysis:');
-    console.log('  - Keys available:', Object.keys(data));
-    console.log('  - Data type:', typeof data);
-    console.log('  - Has subscription_info:', !!data.subscription_info);
-    console.log('  - Has subscriptionInfo:', !!data.subscriptionInfo);
-    console.log('  - Has paymentSchedule:', !!data.paymentSchedule);
-    console.log('  - Has installments:', !!data.installments);
-    
-    try {
+      console.log('📊 Populating component with data:', data);
+      console.log('🔍 Data structure analysis:');
+      console.log('  - Keys available:', Object.keys(data));
+      console.log('  - Data type:', typeof data);
+      console.log('  - Has subscription_info:', !!data.subscription_info);
+      console.log('  - Has subscriptionInfo:', !!data.subscriptionInfo);
+      console.log('  - Has paymentSchedule:', !!data.paymentSchedule);
+      console.log('  - Has installments:', !!data.installments);
+      console.log('🔍 Current sales agent before processing:', this.salesAgent);
+      console.log('🔍 Sales force data loaded flag:', this.salesForceDataLoaded);
+      console.log('🔍 Original sales agent data:', this.originalSalesAgentData);    try {
       // Store API data for reference
       this.apiData = data;
       
@@ -308,17 +309,32 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       };
 
       // Update sales agent data with dynamic fields from API
-      this.salesAgent = {
-        name: data.opp_owner || "Sales Representative",
-        position: data.opp_title || "Sales Specialist",
-        faxNumber: data.opp_number || "+971 4 457 8271",
-        phoneNumber: data.opp_phone || "+971 4 457 8271",
-        email: data.opp_email || "sales@virtuzone.com"
-      };
+      // Only update if we haven't already loaded SalesForce data or if the API provides better data
+      if (!this.salesForceDataLoaded || !this.originalSalesAgentData) {
+        this.salesAgent = {
+          name: data.opp_owner || "Sales Representative",
+          position: data.opp_title || "Sales Specialist",
+          faxNumber: data.opp_number || "+971 4 457 8271",
+          phoneNumber: data.opp_phone || "+971 4 457 8271",
+          email: data.opp_email || "sales@virtuzone.com"
+        };
 
-      // Add mobile number if available
-      if (data.opp_mobile) {
-        this.salesAgent.mobNo1 = data.opp_mobile;
+        // Add mobile number if available
+        if (data.opp_mobile) {
+          this.salesAgent.mobNo1 = data.opp_mobile;
+        }
+      } else {
+        // Use the original SalesForce data but supplement with API data if fields are missing
+        this.salesAgent = {
+          name: this.originalSalesAgentData.name || data.opp_owner || "Sales Representative",
+          position: this.originalSalesAgentData.position || data.opp_title || "Sales Specialist",
+          faxNumber: this.originalSalesAgentData.faxNumber || data.opp_number || "+971 4 457 8271",
+          phoneNumber: this.originalSalesAgentData.phoneNumber || data.opp_phone || "+971 4 457 8271",
+          email: this.originalSalesAgentData.email || data.opp_email || "sales@virtuzone.com",
+          mobNo1: this.originalSalesAgentData.mobNo1 || data.opp_mobile,
+          mobNo2: this.originalSalesAgentData.mobNo2,
+          token: this.originalSalesAgentData.token
+        };
       }
 
       this.quotepaymentId = data.quotepaymentId || 
@@ -657,6 +673,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       return;
     }
     
+    console.log('🔄 Fetching SalesForce details...');
     this.salesForceService.getSalesForceDetails().subscribe({
       next: (res: any) => {
         console.log('✅ SalesForce response:', res);
@@ -675,7 +692,8 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           // Store a copy of the original data to prevent future overwrites
           this.originalSalesAgentData = { ...this.salesAgent };
           this.salesForceDataLoaded = true; // Mark as loaded
-          console.log('✅ Updated sales agent:', this.salesAgent);
+          console.log('✅ Updated sales agent from SalesForce:', this.salesAgent);
+          console.log('✅ Stored original sales agent data:', this.originalSalesAgentData);
         } else {
           console.warn('⚠️ Invalid SalesForce response, using fallback data');
           this.setFallbackSalesAgent();
@@ -690,18 +708,23 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   }
 
   private setFallbackSalesAgent() {
-    this.salesAgent = {
-      name: "", 
-      position: "", 
-      faxNumber: "",
-      phoneNumber: "",
-      email: "",
-      mobNo1: "", 
-      mobNo2: "", 
-      token: 0
-    };
+    // Only set fallback if we don't already have sales agent data
+    if (!this.salesAgent.name && !this.salesAgent.email && !this.salesAgent.phoneNumber) {
+      this.salesAgent = {
+        name: "", 
+        position: "", 
+        faxNumber: "",
+        phoneNumber: "",
+        email: "",
+        mobNo1: "", 
+        mobNo2: "", 
+        token: 0
+      };
+      console.log('🔄 Using fallback sales agent data:', this.salesAgent);
+    } else {
+      console.log('✅ Sales agent data already exists, skipping fallback:', this.salesAgent);
+    }
     this.salesForceDataLoaded = true; // Mark as loaded even for fallback
-    console.log('🔄 Using fallback sales agent data:', this.salesAgent);
   }
 
   // ===============================
