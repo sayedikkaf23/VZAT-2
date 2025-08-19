@@ -33,21 +33,12 @@
         <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
         <p class="small-text">Thank you for your payment.</p>
         
-        <hr/> 
-        <h3 class="mb-0"><b>Need Assistance? </b></h3>
+        <!-- Need Assistance Section in Sidebar -->
+        <hr/>
+        <h3 class="mb-0"><b>Need Assistance?</b></h3>
         <p>Contact us</p>
-        <div class="mb-3">
-          <div class="row align-items-center gx-1 mb-1">
-            <div class="col">
-              <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
-            </div>
-          </div>
-          <div class="row align-items-center gx-1">
-            <div class="col">
-              <h6 class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></h6>
-            </div>
-          </div>
-        </div>
+        <p class="mb-1"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></p>
+        <p class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></p>
       </div>
     </div>
     
@@ -70,34 +61,11 @@
         </div>
       </div>
       
+      <!-- Footer -->
       <div class="details-footer">
-        <div class="d-block d-md-none">
-          <h2><b>Need Assistance? </b></h2>
-          <h3>Contact us</h3>
-          <hr/>
-          <div class="row gx-0 justify-content-between">
-            <div class="col-auto">
-              <p><b>Support Team</b></p>
-              <h6>Customer Support</h6>
-            </div>
-            <div class="col-auto">
-              <div class="row gx-1">
-                <div class="col">
-                  <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
-                </div>
-              </div>
-              <div class="row gx-1">
-                <div class="col text-end">
-                  <h6><a href="tel:+97144578271">+971 4 457 8271</a></h6>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <ul>
-          <li><a target="_blank" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
-          <li><a style="text-align: right;" href="https://www.yeepeey.com" target="_blank"><b>© 2025, Powered by Virtuzone & Developed by yeepeey</b></a></li>
+          <li><a target="_blank" style="color: grey;" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
+          <li>© 2025, Powered by Virtuzone & Developed by <a style="color: red;" href="https://www.yeepeey.com" target="_blank"><b>yeepeey</b></a></li>
         </ul>
       </div>
     </div>
@@ -107,28 +75,5 @@
   <div *ngIf="result && !loading && !error && result.paymentStatus === 'failed'" class="error">
     <h2>Payment Failed</h2>
     <p>{{ result.message || 'Your payment could not be processed. Please try again.' }}</p>
-  </div>
-
-  <!-- Debug Information (Development Only) -->
-  <div *ngIf="showDebugInfo && result && !loading" class="mt-4">
-    <div class="container">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">Debug Information (Development Only)</h5>
-        </div>
-        <div class="card-body payment-details">
-          <h6>Payment Result Data:</h6>
-          <p><strong>Payment Status:</strong> {{ result.paymentStatus || 'N/A' }}</p>
-          <p><strong>Customer Name:</strong> {{ customerName || 'N/A' }}</p>
-          <p><strong>Amount Paid:</strong> AED {{ paymentAmount | number:'1.2-2' }}</p>
-          <p><strong>Quote Payment ID:</strong> {{ result.qpId || 'N/A' }}</p>
-          <p><strong>Transaction ID:</strong> {{ result.id || 'N/A' }}</p>
-          
-          <hr>
-          <h6>Raw API Response:</h6>
-          <pre>{{ result | json }}</pre>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
