@@ -4,47 +4,6 @@ import VzatRecurringData from '../model/VzatRecurringDataModel.js';
 import CustomerLogin from '../model/CustomerLoginModel.js';
 import config from '../config.env.js';
 
-// A        // Check result code in detail
-        if (registrationData.result) {
-          console.log('🔍 Result Analysis:');
-          console.log('  🔢 Result Code:', registrationData.result.code);
-          console.log('  📝 Result Description:', registrationData.result.description);
-          
-          // For registration tokens, successful codes are different than payment codes
-          // According to AFS docs: 000.000.000 = successfully processed
-          // 000.100.110 = request successfully processed
-          // 000.200.000 = transaction pending
-          const isSuccessCode = registrationData.result.code && 
-            (registrationData.result.code ***REMOVED***= '000.000.000' || 
-             registrationData.result.code ***REMOVED***= '000.100.110' ||
-             registrationData.result.code.match(/^000\.000\./) ||
-             registrationData.result.code.match(/^000\.100\.1/) ||
-             registrationData.result.code.match(/^000\.200\./));
-          
-          console.log('  ✅ Is Success Code?', isSuccessCode);
-          console.log('  📋 Success Pattern Check:', {
-            exact_000_000_000: registrationData.result.code ***REMOVED***= '000.000.000',
-            exact_000_100_110: registrationData.result.code ***REMOVED***= '000.100.110',
-            pattern_000_000: registrationData.result.code.match(/^000\.000\./),
-            pattern_000_100_1: registrationData.result.code.match(/^000\.100\.1/),
-            pattern_000_200: registrationData.result.code.match(/^000\.200\./)
-          });
-          
-          if (isSuccessCode) {
-            console.log('✅ Registration successful on attempt', retryCount + 1);
-            break; // Success, exit retry loop
-          }
-        }
-        // Handle retry or failure logic here (detailed implementation follows)
-      } catch (retryError) {
-        console.log('❌ Retry error:', retryError.message);
-      }
-    }
-  } catch (error) {
-    console.error('💥 Error in handleRegistrationCallback:', error);
-  }
-};
-
 // AFS Configuration - Registration specific credentials
 const AFS_CONFIG = {
   baseUrl: process.env.AFS_BASE_URL || config.AFS_BASE_URL,
@@ -68,112 +27,76 @@ export const prepareCardRegistration = async (req, res) => {
       console.log('❌ No customer email provided');
       return res.status(400).json({
         success: false,
-        message: 'Customer email is required',
-        error: 'MISSING_EMAIL'
+        message: 'Customer email is required'
       });
     }
 
-    console.log('🔄 Preparing AFS checkout for card registration...');
-    console.log('📧 Customer email:', customerEmail);
+    console.log('👤 Customer Email:', customerEmail);
 
-    // Validate AFS configuration
-    if (!AFS_CONFIG.baseUrl || !AFS_CONFIG.entityId || !AFS_CONFIG.authorization) {
-      console.error('❌ AFS configuration is incomplete');
-      return res.status(500).json({
+    // Verify customer exists
+    const customer = await CustomerLogin.findOne({ email: customerEmail });
+    if (!customer) {
+      console.log('❌ Customer not found:', customerEmail);
+      return res.status(404).json({
         success: false,
-        message: 'Payment gateway configuration error',
-        error: 'INVALID_AFS_CONFIG'
+        message: 'Customer not found'
       });
     }
 
-    // Get the base URL from the request or environment
-    const baseUrl = process.env.FRONTEND_URL || config.FRONTEND_URL || req.get('origin') || 'https://vzatnew.yeepeey.com';
-    console.log('🌐 Base URL for redirects:', baseUrl);
+    console.log('✅ Customer verified:', customer.email);
 
-    // For card registration, AFS expects the frontend callback URL
-    // AFS will redirect to this URL with ?resourcePath=/v1/checkouts/{id}/registration
-    const shopperResultUrl = `${baseUrl}/saved-card/add-card`;
-    
-    console.log('🔗 Setting shopperResultUrl:', shopperResultUrl);
-    
-    const checkoutData = new URLSearchParams({
+    // Configure AFS checkout for standalone registration
+    const checkoutData = {
       entityId: AFS_CONFIG.entityId,
-      testMode: AFS_CONFIG.testMode,
-      createRegistration: 'true', // This creates a registration token only
+      amount: '0.00', // For registration, amount is 0
+      currency: 'USD',
+      paymentType: 'DB', // Debit registration
+      createRegistration: true, // This is the key for standalone registration
+      notificationUrl: `${process.env.FRONTEND_URL}/api/webhook/afs-notification`,
       
       // Customer information
-      'customer.email': customerEmail,
-      'customer.merchantCustomerId': customerEmail.split('@')[0],
+      customer: {
+        email: customerEmail
+      },
       
-      // The shopperResultUrl is where the customer will be redirected after registration
-      shopperResultUrl: shopperResultUrl,
-      
-      // Billing information (optional for registration)
-      'billing.country': 'AE',
-      'billing.city': 'Dubai',
-      
-      // Transaction identifier
-      'merchantTransactionId': `card_reg_${Date.now()}_${customerEmail.split('@')[0]}`,
-      
-      // UI and locale settings
-      'customParameters[SHOPPER_locale]': 'en_US'
+      // Registration specific settings
+      testMode: AFS_CONFIG.testMode
+    };
+
+    console.log('📝 Creating AFS checkout for registration...');
+    console.log('🔗 AFS Endpoint:', `${AFS_CONFIG.baseUrl}/v1/checkouts`);
+    console.log('🎯 Purpose: Standalone card registration (no payment)');
+    console.log('💰 Amount: $0.00 (registration only)');
+    console.log('🔑 Entity ID:', AFS_CONFIG.entityId);
+    console.log('📧 Customer:', customerEmail);
+
+    const response = await axios.post(`${AFS_CONFIG.baseUrl}/v1/checkouts`, checkoutData, {
+      headers: {
+        'Authorization': AFS_CONFIG.authorization,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     });
 
-    console.log('📋 Checkout data being sent to AFS:', Object.fromEntries(checkoutData.entries()));
-    
-    const response = await axios.post(
-      `${AFS_CONFIG.baseUrl}/v1/checkouts`,
-      checkoutData,
-      {
-        headers: {
-          'Authorization': AFS_CONFIG.authorization,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        timeout: 10000 // 10 second timeout
-      }
-    );
+    const checkoutResult = response.data;
+    console.log('✅ AFS checkout created successfully');
+    console.log('🆔 Checkout ID:', checkoutResult.id);
+    console.log('📋 Full Response:', JSON.stringify(checkoutResult, null, 2));
 
-    console.log('✅ AFS checkout prepared successfully');
-    console.log('🔑 Checkout ID:', response.data.id);
-    console.log('📊 AFS Response code:', response.data.result?.code);
-    console.log('📄 Full AFS response:', JSON.stringify(response.data, null, 2));
-
-    // Validate AFS response
-    if (!response.data.id) {
-      console.error('❌ AFS response missing checkout ID');
-      return res.status(500).json({
-        success: false,
-        message: 'Invalid response from payment gateway',
-        error: 'MISSING_CHECKOUT_ID'
-      });
-    }
-
+    // Return checkout ID and widget script URL for frontend
     res.json({
       success: true,
-      checkoutId: response.data.id,
-      message: 'Checkout prepared successfully',
-      afsConfig: {
-        baseUrl: AFS_CONFIG.baseUrl,
-        // Standard widget script URL for registration checkouts
-        scriptUrl: `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${response.data.id}`
-      },
-      debug: {
-        entityId: AFS_CONFIG.entityId,
-        testMode: AFS_CONFIG.testMode,
-        resultCode: response.data.result?.code,
-        resultDescription: response.data.result?.description,
-        shopperResultUrl: shopperResultUrl
-      }
+      checkoutId: checkoutResult.id,
+      widgetScriptUrl: `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${checkoutResult.id}`,
+      message: 'Checkout prepared successfully for card registration'
     });
 
   } catch (error) {
-    console.error('❌ Error preparing AFS checkout:', error.response?.data || error.message);
+    console.error('❌ Error preparing checkout:', error.response?.data || error.message);
+    console.error('📊 Error status:', error.response?.status);
+    console.error('📋 Error headers:', error.response?.headers);
     
-    // Detailed error logging
-    if (error.response) {
-      console.error('📊 Response Status:', error.response.status);
-      console.error('📊 Response Headers:', error.response.headers);
-      console.error('📊 Response Data:', error.response.data);
+    if (error.response?.data?.result) {
+      console.error('🔍 AFS Error details:', error.response.data.result);
     }
     
     res.status(500).json({
@@ -192,7 +115,7 @@ export const prepareCardRegistration = async (req, res) => {
 export const handleCardRegistrationCallback = async (req, res) => {
   try {
     console.log('\n🔔 ***REMOVED******REMOVED***= AFS CARD REGISTRATION CALLBACK ***REMOVED******REMOVED***=');
-    console.log('� Timestamp:', new Date().toISOString());
+    console.log('⏰ Timestamp:', new Date().toISOString());
     console.log('🎯 Process: Adding NEW card for existing subscription user');
     console.log('📖 Reference: https://afs.docs.oppwa.com/integrations/widget/registration-tokens');
     console.log('📋 Request body:', JSON.stringify(req.body, null, 2));
@@ -200,38 +123,36 @@ export const handleCardRegistrationCallback = async (req, res) => {
     
     const { checkoutId, customerEmail } = req.body;
 
-    console.log('\n🔍 STEP 1: PARAMETER VALIDATION');
     if (!checkoutId || !customerEmail) {
-      console.error('❌ Missing required parameters');
+      console.log('❌ Missing required fields');
       return res.status(400).json({
         success: false,
-        message: 'Checkout ID and customer email are required'
+        message: 'Missing checkoutId or customerEmail'
       });
     }
-    console.log('✅ Parameters valid - checkoutId:', checkoutId);
-    console.log('✅ Parameters valid - customerEmail:', customerEmail);
 
-    console.log('\n� STEP 2: CUSTOMER & EXISTING CARDS CHECK');
+    console.log('\n🔍 STEP 1: VALIDATION');
+    console.log('✅ Checkout ID:', checkoutId);
+    console.log('✅ Customer Email:', customerEmail);
+
+    // Verify customer exists
     const customer = await CustomerLogin.findOne({ email: customerEmail });
-    
     if (!customer) {
-      console.error('❌ Customer not found');
-      return res.status(400).json({
+      console.log('❌ Customer not found:', customerEmail);
+      return res.status(404).json({
         success: false,
-        message: 'Customer not found. Please ensure you are logged in correctly.',
-        error_code: 'CUSTOMER_NOT_FOUND'
+        message: 'Customer not found'
       });
     }
-    
-    console.log('✅ Customer found:', {
-      id: customer._id,
-      email: customer.email,
-      quotepaymentId: customer.quotepaymentId
-    });
+
+    console.log('✅ Customer verified:', customer.email);
+
+    console.log('\n🔍 STEP 2: EXISTING CARDS CHECK');
+    console.log('🎯 Purpose: Check current card setup before adding new one');
 
     // Check existing cards for context
-    const existingCards = await SavedCard.find({ customerEmail: customerEmail });
-    console.log('� Existing cards count:', existingCards.length);
+    const existingCards = await SavedCard.find({ customer_email: customerEmail });
+    console.log('📊 Existing cards count:', existingCards.length);
     
     if (existingCards.length > 0) {
       console.log('💳 Current cards:');
@@ -241,9 +162,9 @@ export const handleCardRegistrationCallback = async (req, res) => {
     }
 
     console.log('\n🔍 STEP 3: AFS REGISTRATION STATUS QUERY');
-    console.log('� AFS API: GET /v1/checkouts/{checkoutId}/registration');
-    console.log('� Checkout ID to query:', checkoutId);
-    console.log('� Purpose: Check if user completed card entry in AFS widget');
+    console.log('🔗 AFS API: GET /v1/checkouts/{checkoutId}/registration');
+    console.log('🆔 Checkout ID to query:', checkoutId);
+    console.log('🎯 Purpose: Check if user completed card entry in AFS widget');
     
     const requestUrl = `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`;
     const requestParams = { entityId: AFS_CONFIG.entityId };
@@ -275,14 +196,6 @@ export const handleCardRegistrationCallback = async (req, res) => {
         console.log(`📋 AFS Note: Callback indicates form submission, not completion. Waiting for processing.`);
         await new Promise(resolve => setTimeout(resolve, delayTime));
 
-        const requestUrl = `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`;
-        const requestParams = { entityId: AFS_CONFIG.entityId };
-        
-        console.log('🌍 Making request to:', requestUrl);
-        console.log('📋 Request params:', requestParams);
-        console.log('🔑 Authorization header:', AFS_CONFIG.authorization.substring(0, 20) + '...');
-
-        // Get registration status directly from AFS (no payment involved for standalone registration)
         const registrationResponse = await axios.get(requestUrl, {
           params: requestParams,
           headers: {
@@ -291,19 +204,28 @@ export const handleCardRegistrationCallback = async (req, res) => {
         });
 
         registrationData = registrationResponse.data;
+        
         console.log('📋 RAW AFS Response received:');
         console.log('📊 Status:', registrationResponse.status);
-        console.log('📄 Headers:', registrationResponse.headers);
         console.log('💾 Full Response Data:', JSON.stringify(registrationData, null, 2));
 
         // Check result code in detail
         if (registrationData.result) {
           console.log('🔍 Result Analysis:');
-          console.log('  � Result Code:', registrationData.result.code);
+          console.log('  🔢 Result Code:', registrationData.result.code);
           console.log('  📝 Result Description:', registrationData.result.description);
           
-          // Check if registration is successful
-          const isSuccessCode = registrationData.result.code && registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/);
+          // For registration tokens, successful codes are different than payment codes
+          // According to AFS docs: 000.000.000 = successfully processed
+          // 000.100.110 = request successfully processed
+          // 000.200.000 = transaction pending
+          const isSuccessCode = registrationData.result.code && 
+            (registrationData.result.code ***REMOVED***= '000.000.000' || 
+             registrationData.result.code ***REMOVED***= '000.100.110' ||
+             registrationData.result.code.match(/^000\.000\./) ||
+             registrationData.result.code.match(/^000\.100\.1/) ||
+             registrationData.result.code.match(/^000\.200\./));
+          
           console.log('  ✅ Is Success Code?', isSuccessCode);
           
           if (isSuccessCode) {
@@ -316,7 +238,6 @@ export const handleCardRegistrationCallback = async (req, res) => {
         if (registrationData.id) {
           console.log('🎯 Registration ID found:', registrationData.id);
           console.log('✅ AFS has created registration token despite processing status');
-          console.log('💡 This often happens when registration is complete but status check was too early');
           
           // If we have a registration ID, treat as success even with 800.900.300
           if (registrationData.result?.code ***REMOVED***= '800.900.300' && registrationData.id) {
@@ -324,35 +245,18 @@ export const handleCardRegistrationCallback = async (req, res) => {
             console.log('✅ Registration token successfully created:', registrationData.id);
             break; // Success, exit retry loop
           }
-        } else {
-          console.log('❌ No registration ID in response');
         }
 
         // Check if we got a valid response but registration is still being processed
         if (registrationData.result?.code ***REMOVED***= '800.900.300') {
           console.log(`⏱️ Registration still processing (attempt ${retryCount + 1}/${maxRetries})`);
-          console.log('🔍 AFS says: User authorization failed - this often means "still processing"');
-          console.log('⏳ AFS Note: Form was submitted successfully, but registration token not yet ready');
           
           // If this is the last retry, return a more helpful error
           if (retryCount ***REMOVED***= maxRetries - 1) {
-            console.log('❌ All retries exhausted. Registration may still be processing.');
-            console.log('💡 Suggestion: This might be a timing issue. AFS may need more time to process.');
             return res.status(400).json({
               success: false,
               message: 'Card registration is taking longer than expected to process. This can happen during peak times or with complex card verification. Please wait a moment and try adding your card again, or contact support if the issue persists.',
               error_code: 'REGISTRATION_PROCESSING_TIMEOUT',
-              user_guidance: {
-                likely_cause: 'AFS payment gateway is still processing your card registration',
-                what_happened: 'You completed the form correctly, but the payment system needs more time to process',
-                next_steps: [
-                  'Wait 30-60 seconds and try adding your card again',
-                  'Check if your card was actually saved in your account',
-                  'Try during off-peak hours if problem persists',
-                  'Contact support with this error code if issues continue'
-                ],
-                technical_note: 'Error 800.900.300 during registration token processing'
-              },
               debug_info: {
                 attempts: maxRetries,
                 total_wait_time_seconds: (5 + 4 + (maxRetries - 2) * 3),
@@ -387,32 +291,18 @@ export const handleCardRegistrationCallback = async (req, res) => {
       } catch (error) {
         console.log(`❌ Error calling AFS registration endpoint (attempt ${retryCount + 1}):`);
         console.log('📊 Error Status:', error.response?.status);
-        console.log('📋 Error Headers:', error.response?.headers);
         console.log('💾 Error Data:', JSON.stringify(error.response?.data, null, 2));
-        console.log('🔍 Error Message:', error.message);
-        
+
         // Handle specific error codes
         if (error.response?.data?.result?.code ***REMOVED***= '800.900.300') {
           console.log('🔍 AFS Error: Registration still processing (via exception)');
-          console.log('⏳ This usually means AFS needs more time to generate the registration token');
           
           // If this is the last retry, return helpful error
           if (retryCount ***REMOVED***= maxRetries - 1) {
-            console.log('❌ All retries exhausted due to processing timeout.');
             return res.status(400).json({
               success: false,
               message: 'Card registration is taking longer than expected to process. This can happen during peak times or with complex card verification. Please wait a moment and try adding your card again, or contact support if the issue persists.',
               error_code: 'REGISTRATION_PROCESSING_TIMEOUT',
-              user_guidance: {
-                likely_cause: 'AFS payment gateway is still processing your card registration',
-                what_happened: 'You completed the form correctly, but the payment system needs more time to process',
-                next_steps: [
-                  'Wait 30-60 seconds and try adding your card again',
-                  'Check if your card was actually saved in your account',
-                  'Try during off-peak hours if problem persists',
-                  'Contact support with this error code if issues continue'
-                ],
-                technical_note: 'Error 800.900.300 during registration token processing (exception path)'
               debug_info: {
                 attempts: maxRetries,
                 total_wait_time_seconds: (5 + 4 + (maxRetries - 2) * 3),
@@ -450,64 +340,43 @@ export const handleCardRegistrationCallback = async (req, res) => {
 
       console.log('🔍 Extracting card details from AFS response...');
 
-      // First, look up the customer to get their ID
-      console.log('👤 Looking up customer by email:', customerEmail);
-      const customer = await CustomerLogin.findOne({ email: customerEmail });
-      
-      if (!customer) {
-        console.error('❌ Customer not found for email:', customerEmail);
-        return res.status(400).json({
-          success: false,
-          message: 'Customer not found. Please ensure you are logged in correctly.',
-          error_code: 'CUSTOMER_NOT_FOUND'
-        });
-      }
-      
-      console.log('✅ Customer found:', customer._id);
-
-      // Extract card details - mapping to correct SavedCard model fields
+      // Extract card data from registration response
       const cardData = {
-        customerEmail: customerEmail,
-        customerId: customer._id,
-        quotepaymentId: customer.quotepaymentId || checkoutId, // Use customer's payment ID or checkout ID as fallback
+        customer_id: customer._id,
+        customer_email: customerEmail,
         afs_registration_id: registrationData.id,
         afs_checkout_id: checkoutId,
-        cardholderName: registrationData.card?.holder || 'N/A',
-        maskedCardNumber: registrationData.card?.last4Digits ? `**** **** **** ${registrationData.card.last4Digits}` : '**** **** **** ****',
-        cardBrand: (registrationData.paymentBrand || 'OTHER').toUpperCase(),
-        expiryMonth: registrationData.card?.expiryMonth || '12',
-        expiryYear: registrationData.card?.expiryYear ? registrationData.card.expiryYear.slice(-2) : '99', // Last 2 digits
-        isDefault: false, // Will be set to true below
+        
+        // Card details from AFS response
+        maskedCardNumber: registrationData.card?.number || `****-****-****-${registrationData.card?.last4 || '****'}`,
+        cardBrand: registrationData.card?.brand || registrationData.paymentBrand || 'UNKNOWN',
+        cardholderName: registrationData.card?.holder || registrationData.card?.cardHolder || 'Not provided',
+        expiryMonth: registrationData.card?.expiryMonth || '**',
+        expiryYear: registrationData.card?.expiryYear || '****',
+        
+        // Registration metadata
+        isDefault: existingCards.length ***REMOVED***= 0, // First card becomes default
         isActive: true,
-        cardAddedDate: new Date()
+        registrationDate: new Date(),
+        lastUsed: new Date(),
+        
+        // AFS specific data
+        afs_card_token: registrationData.id, // Same as registration ID for standalone registration
+        afs_result_code: registrationData.result?.code,
+        afs_result_description: registrationData.result?.description
       };
 
-      console.log('💳 Card data to be saved:', JSON.stringify(cardData, null, 2));
+      console.log('💳 Card data prepared for saving:', JSON.stringify(cardData, null, 2));
 
       try {
-        console.log('🔄 Setting all existing cards as non-default for customer:', customerEmail);
-        
-        // Set all existing cards as non-default for this customer
-        const updateResult = await SavedCard.updateMany(
-          { customerEmail: customerEmail },
-          { $set: { isDefault: false } }
-        );
-        
-        console.log('📊 Update result for existing cards:', updateResult);
-
-        // Save the new card as default
-        cardData.isDefault = true;
-        console.log('💾 Creating new SavedCard document...');
-        
-        const savedCard = new SavedCard(cardData);
-        const saveResult = await savedCard.save();
-        
+        // Save card to database
+        console.log('💾 Saving card to database...');
+        const saveResult = await SavedCard.create(cardData);
         console.log('✅ Card saved successfully!');
-        console.log('📋 Saved card details:', JSON.stringify(saveResult.toObject(), null, 2));
 
         // 🔄 MIGRATE SUBSCRIPTION TOKENS TO NEW CARD
         console.log('🔄 Starting subscription token migration...');
-        await migrateSubscriptionTokens(customerEmail, registrationData.id, checkoutId);
+        const migrationResult = await migrateSubscriptionTokens(customerEmail, registrationData.id, checkoutId);
         console.log('✅ Subscription token migration completed');
 
         res.json({
@@ -522,6 +391,7 @@ export const handleCardRegistrationCallback = async (req, res) => {
           },
           registrationId: registrationData.id,
           subscriptionsUpdated: true,
+          migrationResult: migrationResult,
           debug_info: {
             afs_registration_id: registrationData.id,
             checkout_id: checkoutId,
@@ -531,8 +401,6 @@ export const handleCardRegistrationCallback = async (req, res) => {
 
       } catch (saveError) {
         console.error('❌ Error saving card to database:', saveError);
-        console.error('📋 Save error details:', saveError.message);
-        console.error('📋 Card data that failed to save:', cardData);
         
         return res.status(500).json({
           success: false,
@@ -565,12 +433,12 @@ export const handleCardRegistrationCallback = async (req, res) => {
 };
 
 /**
- * Get customer's saved cards
+ * Get all saved cards for a customer
  */
 export const getCustomerCards = async (req, res) => {
   try {
     const { customerEmail } = req.params;
-
+    
     if (!customerEmail) {
       return res.status(400).json({
         success: false,
@@ -578,39 +446,42 @@ export const getCustomerCards = async (req, res) => {
       });
     }
 
-    const cards = await SavedCard.find({ customerEmail }).sort({ createdAt: -1 });
+    const cards = await SavedCard.find({ 
+      customer_email: customerEmail,
+      isActive: true 
+    }).sort({ registrationDate: -1 });
 
     res.json({
       success: true,
       cards: cards.map(card => ({
         id: card._id,
-        last4: card.card_last_four,
-        brand: card.card_brand,
-        holder: card.card_holder_name,
-        expiryMonth: card.card_expiry_month,
-        expiryYear: card.card_expiry_year,
+        maskedCardNumber: card.maskedCardNumber,
+        cardBrand: card.cardBrand,
+        cardholderName: card.cardholderName,
+        expiryMonth: card.expiryMonth,
+        expiryYear: card.expiryYear,
         isDefault: card.isDefault,
-        createdAt: card.createdAt,
-        hasRegistrationId: !!card.afs_registration_id
+        registrationDate: card.registrationDate,
+        lastUsed: card.lastUsed
       }))
     });
-
   } catch (error) {
     console.error('❌ Error fetching customer cards:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch cards',
+      message: 'Failed to fetch customer cards',
       error: error.message
     });
   }
 };
 
 /**
- * Set a card as default
+ * Set a card as default for a customer
  */
 export const setDefaultCard = async (req, res) => {
   try {
-    const { cardId, customerEmail } = req.body;
+    const { cardId } = req.params;
+    const { customerEmail } = req.body;
 
     if (!cardId || !customerEmail) {
       return res.status(400).json({
@@ -619,37 +490,30 @@ export const setDefaultCard = async (req, res) => {
       });
     }
 
-    // Set all cards as non-default
-    await SavedCard.updateMany(
-      { customerEmail: customerEmail },
-      { $set: { isDefault: false } }
-    );
-
-    // Set the selected card as default
-    const updatedCard = await SavedCard.findByIdAndUpdate(
-      cardId,
-      { $set: { isDefault: true } },
-      { new: true }
-    );
-
-    if (!updatedCard) {
+    // Find the card to set as default
+    const card = await SavedCard.findById(cardId);
+    if (!card || card.customer_email !***REMOVED*** customerEmail) {
       return res.status(404).json({
         success: false,
         message: 'Card not found'
       });
     }
 
-    console.log('✅ Default card updated successfully');
+    // Remove default from all other cards for this customer
+    await SavedCard.updateMany(
+      { customer_email: customerEmail },
+      { isDefault: false }
+    );
+
+    // Set this card as default
+    await SavedCard.findByIdAndUpdate(cardId, { 
+      isDefault: true,
+      lastUsed: new Date()
+    });
 
     res.json({
       success: true,
-      message: 'Default card updated successfully',
-      card: {
-        id: updatedCard._id,
-        last4: updatedCard.card_last_four,
-        brand: updatedCard.card_brand,
-        isDefault: true
-      }
+      message: 'Default card updated successfully'
     });
 
   } catch (error) {
@@ -663,46 +527,44 @@ export const setDefaultCard = async (req, res) => {
 };
 
 /**
- * Migrate subscription tokens to new card
+ * Migrate subscription tokens to use new card registration ID
+ * This function updates all active subscriptions for a customer to use the new card
  */
-const migrateSubscriptionTokens = async (customerEmail, newRegistrationId, newCheckoutId) => {
+export const migrateSubscriptionTokens = async (customerEmail, newRegistrationId, newCheckoutId) => {
   try {
-    console.log('🔄 Starting subscription token migration for customer:', customerEmail);
-    console.log('📝 New registration ID:', newRegistrationId);
-    console.log('📝 New checkout ID:', newCheckoutId);
+    console.log('\n🔄 ***REMOVED******REMOVED***= SUBSCRIPTION TOKEN MIGRATION ***REMOVED******REMOVED***=');
+    console.log('📧 Customer Email:', customerEmail);
+    console.log('🆔 New Registration ID:', newRegistrationId);
+    console.log('🛒 New Checkout ID:', newCheckoutId);
+    console.log('🎯 Goal: Update all active subscriptions to use new card');
 
-    // Get customer data to find quotepaymentId
-    const customer = await CustomerLogin.findOne({ email: customerEmail });
-    if (!customer) {
-      console.log('❌ Customer not found for subscription migration');
-      return { updated: 0, message: 'Customer not found' };
-    }
-
-    console.log('👤 Customer quotepaymentId:', customer.quotepaymentId);
-
-    // Find all active subscriptions for this customer using multiple search criteria
+    // Find all active subscriptions for this customer
+    // Look for subscriptions by various email field names that might be used
     const subscriptions = await VzatRecurringData.find({
       $and: [
         {
           $or: [
+            { customer_email: customerEmail },
             { Customer_email: customerEmail },
             { opp_email: customerEmail },
-            { quotepaymentId: customer.quotepaymentId }
+            { email: customerEmail }
           ]
         },
-        { subscription_status: { $in: ['active', 'pending'] } }
+        {
+          $or: [
+            { subscription_status: 'active' },
+            { subscription_status: 'pending' },
+            { status: 'active' },
+            { status: 'pending' }
+          ]
+        }
       ]
     });
 
-    console.log(`📊 Found ${subscriptions.length} active subscriptions to update`);
+    console.log(`📊 Found ${subscriptions.length} active subscription(s) for ${customerEmail}`);
 
     if (subscriptions.length ***REMOVED***= 0) {
-      console.log('ℹ️ No active subscriptions found for this customer');
-      console.log('🔍 Searched by:', {
-        Customer_email: customerEmail,
-        opp_email: customerEmail,
-        quotepaymentId: customer.quotepaymentId
-      });
+      console.log('⚠️ No active subscriptions found for customer');
       return { updated: 0, message: 'No active subscriptions to update' };
     }
 
@@ -766,6 +628,3 @@ export default {
   getCustomerCards,
   setDefaultCard
 };
-
-// Also export the migration function for testing
-export { migrateSubscriptionTokens };
