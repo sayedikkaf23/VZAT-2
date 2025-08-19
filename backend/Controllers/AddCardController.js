@@ -161,11 +161,39 @@ export const handleCardRegistrationCallback = async (req, res) => {
       });
     }
 
-    console.log('🔄 Getting registration status from AFS...');
+    console.log('🔄 Getting payment status from AFS...');
     console.log('🔑 Checkout ID:', checkoutId);
 
-    // Get registration status from AFS
-    const response = await axios.get(
+    // First, get payment status from AFS
+    const paymentResponse = await axios.get(
+      `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/payment`,
+      {
+        params: {
+          entityId: AFS_CONFIG.entityId
+        },
+        headers: {
+          'Authorization': AFS_CONFIG.authorization
+        }
+      }
+    );
+
+    const paymentData = paymentResponse.data;
+    console.log('📋 Payment data received:', paymentData);
+
+    // Check if payment was successful
+    if (!paymentData.result?.code || !paymentData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
+      console.log('❌ Payment not successful:', paymentData.result);
+      return res.status(400).json({
+        success: false,
+        message: 'Payment was not completed successfully',
+        error: paymentData.result
+      });
+    }
+
+    console.log('✅ Payment successful, getting registration details...');
+
+    // Now get registration details from AFS
+    const registrationResponse = await axios.get(
       `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`,
       {
         params: {
@@ -177,7 +205,7 @@ export const handleCardRegistrationCallback = async (req, res) => {
       }
     );
 
-    const registrationData = response.data;
+    const registrationData = registrationResponse.data;
     console.log('📋 Registration data received:', registrationData);
 
     // Check if registration was successful
