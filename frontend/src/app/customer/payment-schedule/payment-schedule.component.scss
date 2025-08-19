@@ -114,15 +114,29 @@ html a {
     background-position: right bottom;
     font-family: poppins;
     background-attachment: fixed;
-    overflow: hidden;
     min-height: 100vh;
     width: 100%;
+    
+    // Fix overflow issues
+    overflow-x: hidden;
+    overflow-y: auto;
+    
+    // Ensure proper flex behavior
+    position: relative;
 }
 
 .payment-schedule .detils-sidebar {
     background-color: var(--light-primary);
     width: var(--sidebar-width);
-    height: 100vh;
+    min-height: 100vh;
+    flex-shrink: 0;
+    
+    // Remove fixed height that can cause positioning issues
+    height: auto;
+    
+    // Ensure proper positioning
+    position: relative;
+    overflow-y: auto;
 }
 
 .payment-schedule .sidebar-row .logo {
@@ -234,9 +248,12 @@ html a {
     justify-content: center;
     flex: 1;
     padding: 20px;
-    height: 100vh;
-    overflow: auto;
+    min-height: 100vh;
+    overflow-y: auto;
     overflow-x: hidden;
+    
+    // Remove fixed height that can cause issues
+    height: auto;
 }
 .payment-schedule .details-content .details-footer {
     position: absolute;
