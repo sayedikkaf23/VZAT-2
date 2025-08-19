@@ -11,12 +11,17 @@
   height: auto; // Remove fixed height
   min-height: 100vh; // Ensure it's at least full height but can grow
   position: relative; // Ensure proper positioning
+  flex-shrink: 0; // Prevent sidebar from shrinking
 }
 
 // Ensure the content is properly positioned
 .payment-result .payment-schedule {
   position: relative;
   width: 100%;
+  display: flex; // Ensure flex layout
+  min-height: 100vh;
+  overflow-x: hidden; // Prevent horizontal scroll
+  overflow-y: auto; // Allow vertical scroll if needed
 }
 
 // Fix the main content area positioning
@@ -285,5 +290,39 @@
     h5 {
       font-size: 1.1rem;
     }
+  }
+}
+
+// Responsive layout fixes for payment result
+@media (max-width: 992px) {
+  .payment-result .payment-schedule {
+    flex-direction: column;
+    
+    .detils-sidebar {
+      width: 100%;
+      min-height: auto;
+      height: auto;
+    }
+    
+    .details-content {
+      width: 100%;
+      min-height: auto;
+      padding: 15px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-result .payment-schedule .detils-sidebar .sidebar-row {
+    padding: 15px;
+    min-height: auto;
+  }
+  
+  .payment-result .payment-schedule .details-content {
+    padding: 10px;
+  }
+  
+  .payment-result .pm-submit-info {
+    padding: 20px 10px;
   }
 }
