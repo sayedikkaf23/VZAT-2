@@ -48,35 +48,38 @@ export const prepareCardRegistration = async (req, res) => {
     const baseUrl = process.env.FRONTEND_URL || config.FRONTEND_URL || req.get('origin') || 'https://vzatnew.yeepeey.com';
     console.log('🌐 Base URL for redirects:', baseUrl);
 
-    // Prepare AFS checkout request with proper redirect URLs
-    const shopperResultUrl = `${baseUrl}/saved-card/add-card?resourcePath={{resourcePath}}`;
+    // For card registration, AFS expects specific redirect URL format
+    // The resourcePath will be appended by AFS automatically
+    const shopperResultUrl = `${baseUrl}/saved-card/add-card`;
+    
     console.log('🔗 Setting shopperResultUrl:', shopperResultUrl);
     
     const checkoutData = new URLSearchParams({
       entityId: AFS_CONFIG.entityId,
       testMode: AFS_CONFIG.testMode,
-      createRegistration: 'true', // This creates a registration instead of a payment
+      createRegistration: 'true', // This creates a registration
+      
+      // Customer information
       'customer.email': customerEmail,
       'customer.merchantCustomerId': customerEmail.split('@')[0],
       
-      // Redirect URL for after payment widget interaction
+      // The shopperResultUrl is where the customer will be redirected after registration
       shopperResultUrl: shopperResultUrl,
       
-      // Minimal payment for registration (as per AFS docs)
-      'paymentType': 'PA', // Pre-authorization
-      'amount': '0.01',
+      // Payment details (minimal amount for registration)
+      'paymentType': 'DB', // Debit transaction
+      'amount': '1.00', // Minimum amount required
       'currency': 'AED',
       
-      // Required billing information
+      // Billing information
       'billing.country': 'AE',
       'billing.city': 'Dubai',
       
-      // Unique transaction identifier
+      // Transaction identifier
       'merchantTransactionId': `card_reg_${Date.now()}_${customerEmail.split('@')[0]}`,
       
-      // UI customization
-      'customParameters[SHOPPER_locale]': 'en_US',
-      'customParameters[SHOPPER_endpointVariant]': 'lightbox'
+      // UI and locale settings
+      'customParameters[SHOPPER_locale]': 'en_US'
     });
 
     console.log('📋 Checkout data being sent to AFS:', Object.fromEntries(checkoutData.entries()));

@@ -38,12 +38,21 @@ export class AddCardComponent implements OnInit, OnDestroy {
     // Check if this is a callback from AFS
     this.route.queryParams.subscribe(params => {
       console.log('📋 Route params changed:', params);
+      
+      // AFS sends different parameters depending on the type of integration
       const resourcePath = params['resourcePath'];
-      if (resourcePath) {
-        console.log('🔄 Detected AFS callback with resourcePath:', resourcePath);
-        this.handleAfsCallback(resourcePath);
+      const checkoutId = params['id']; // AFS sometimes uses 'id' parameter
+      const afsCheckoutId = params['checkoutId']; // Alternative parameter name
+      const resultCode = params['resultCode'];
+      
+      // Check for any AFS callback parameters
+      if (resourcePath || checkoutId || afsCheckoutId || resultCode) {
+        console.log('🔄 Detected AFS callback with parameters:', {
+          resourcePath, checkoutId, afsCheckoutId, resultCode
+        });
+        this.handleAfsCallback(resourcePath || checkoutId || afsCheckoutId);
       } else {
-        console.log('🔄 No resourcePath found, initializing new card registration');
+        console.log('🔄 No AFS callback parameters found, initializing new card registration');
         this.initializeCardRegistration();
       }
     });
