@@ -144,7 +144,7 @@ export const updateQuotePaymentStatus = async (paymentData) => {
       Paid_Amount: processedAmount, // Round to nearest integer
       Transaction_Number: transactionId || 'N/A',
       Message: isSuccess ? 'Transaction completed successfully' : (resultDescription || 'Transaction failed'),
-      Next_due_date: formattedNextDueDate,
+      // Next_due_date: formattedNextDueDate,
       Payment_Type: paymentType
     };
 
