@@ -210,10 +210,15 @@
   }
 }
 
-// Footer styling - Clean design without grey background
+// Footer styling - Clean design below content
 .footer-links {
+  position: relative;
+  bottom: 0;
+  width: 100%;
   padding: 20px 0;
   border-top: 1px solid #e9ecef;
+  background-color: #fff;
+  z-index: 10;
 
   a {
     color: #666;
