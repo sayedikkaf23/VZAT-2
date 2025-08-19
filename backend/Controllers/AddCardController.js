@@ -48,9 +48,9 @@ export const prepareCardRegistration = async (req, res) => {
     const baseUrl = process.env.FRONTEND_URL || config.FRONTEND_URL || req.get('origin') || 'https://vzatnew.yeepeey.com';
     console.log('🌐 Base URL for redirects:', baseUrl);
 
-    // For card registration, AFS expects specific redirect URL format
-    // The resourcePath will be appended by AFS automatically
-    const shopperResultUrl = `${baseUrl}/saved-card/add-card`;
+    // For card registration, AFS expects the frontend callback URL
+    // AFS will redirect to this URL with ?resourcePath=/v1/checkouts/{id}/registration
+    const shopperResultUrl = `${baseUrl}/customer-portal/add-card`;
     
     console.log('🔗 Setting shopperResultUrl:', shopperResultUrl);
     
@@ -112,13 +112,15 @@ export const prepareCardRegistration = async (req, res) => {
       message: 'Checkout prepared successfully',
       afsConfig: {
         baseUrl: AFS_CONFIG.baseUrl,
+        // Standard widget script URL for registration checkouts
         scriptUrl: `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${response.data.id}`
       },
       debug: {
         entityId: AFS_CONFIG.entityId,
         testMode: AFS_CONFIG.testMode,
         resultCode: response.data.result?.code,
-        resultDescription: response.data.result?.description
+        resultDescription: response.data.result?.description,
+        shopperResultUrl: shopperResultUrl
       }
     });
 
@@ -158,6 +160,8 @@ export const handleCardRegistrationCallback = async (req, res) => {
 
     console.log('🔄 Getting registration status from AFS...');
     console.log('🔑 Checkout ID:', checkoutId);
+    console.log('🌐 AFS Base URL:', AFS_CONFIG.baseUrl);
+    console.log('🔐 Entity ID:', AFS_CONFIG.entityId);
 
     let registrationData;
     let retryCount = 0;
@@ -174,38 +178,66 @@ export const handleCardRegistrationCallback = async (req, res) => {
           await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
 
+        const requestUrl = `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`;
+        const requestParams = { entityId: AFS_CONFIG.entityId };
+        
+        console.log('🌍 Making request to:', requestUrl);
+        console.log('📋 Request params:', requestParams);
+        console.log('🔑 Authorization header:', AFS_CONFIG.authorization.substring(0, 20) + '...');
+
         // Get registration status directly from AFS (no payment involved for standalone registration)
-        const registrationResponse = await axios.get(
-          `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`,
-          {
-            params: {
-              entityId: AFS_CONFIG.entityId
-            },
-            headers: {
-              'Authorization': AFS_CONFIG.authorization
-            }
+        const registrationResponse = await axios.get(requestUrl, {
+          params: requestParams,
+          headers: {
+            'Authorization': AFS_CONFIG.authorization
           }
-        );
+        });
 
         registrationData = registrationResponse.data;
-        console.log('📋 Registration data received:', registrationData);
+        console.log('📋 RAW AFS Response received:');
+        console.log('📊 Status:', registrationResponse.status);
+        console.log('📄 Headers:', registrationResponse.headers);
+        console.log('💾 Full Response Data:', JSON.stringify(registrationData, null, 2));
 
-        // Check if registration is successful
-        if (registrationData.result?.code && registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
-          console.log('✅ Registration successful on attempt', retryCount + 1);
-          break; // Success, exit retry loop
+        // Check result code in detail
+        if (registrationData.result) {
+          console.log('🔍 Result Analysis:');
+          console.log('  � Result Code:', registrationData.result.code);
+          console.log('  📝 Result Description:', registrationData.result.description);
+          
+          // Check if registration is successful
+          const isSuccessCode = registrationData.result.code && registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/);
+          console.log('  ✅ Is Success Code?', isSuccessCode);
+          
+          if (isSuccessCode) {
+            console.log('✅ Registration successful on attempt', retryCount + 1);
+            break; // Success, exit retry loop
+          }
+        }
+
+        // Check for registration data
+        if (registrationData.id) {
+          console.log('🎯 Registration ID found:', registrationData.id);
+        } else {
+          console.log('❌ No registration ID in response');
         }
 
         // Check if we got a valid response but no registration was completed
         if (registrationData.result?.code ***REMOVED***= '800.900.300') {
           console.log(`⚠️ Registration not completed (attempt ${retryCount + 1}/${maxRetries})`);
+          console.log('🔍 AFS says: User authorization failed');
           
           // If this is the last retry, return error
           if (retryCount ***REMOVED***= maxRetries - 1) {
+            console.log('❌ All retries exhausted. Registration failed.');
             return res.status(400).json({
               success: false,
               message: 'Card registration was not completed. Please try again.',
-              error_code: 'REGISTRATION_NOT_COMPLETED'
+              error_code: 'REGISTRATION_NOT_COMPLETED',
+              debug_info: {
+                attempts: maxRetries,
+                last_afs_response: registrationData
+              }
             });
           }
           
@@ -220,24 +252,39 @@ export const handleCardRegistrationCallback = async (req, res) => {
           return res.status(400).json({
             success: false,
             message: `Registration failed: ${registrationData.result.description}`,
-            error_code: registrationData.result.code
+            error_code: registrationData.result.code,
+            debug_info: {
+              afs_response: registrationData
+            }
           });
         }
 
         // If we reach here, we got a successful response
+        console.log('✅ Registration appears successful');
         break;
 
       } catch (error) {
-        console.log(`❌ Error calling AFS registration endpoint (attempt ${retryCount + 1}):`, error.response?.data || error.message);
+        console.log(`❌ Error calling AFS registration endpoint (attempt ${retryCount + 1}):`);
+        console.log('📊 Error Status:', error.response?.status);
+        console.log('📋 Error Headers:', error.response?.headers);
+        console.log('💾 Error Data:', JSON.stringify(error.response?.data, null, 2));
+        console.log('🔍 Error Message:', error.message);
         
         // Handle specific error codes
         if (error.response?.data?.result?.code ***REMOVED***= '800.900.300') {
+          console.log('🔍 AFS Error: User authorization failed (via exception)');
+          
           // If this is the last retry, return error
           if (retryCount ***REMOVED***= maxRetries - 1) {
+            console.log('❌ All retries exhausted due to user authorization failure.');
             return res.status(400).json({
               success: false,
               message: 'Card registration was not completed by the user. Please try again.',
-              error_code: 'USER_CANCELLED_REGISTRATION'
+              error_code: 'USER_CANCELLED_REGISTRATION',
+              debug_info: {
+                attempts: maxRetries,
+                last_error: error.response?.data
+              }
             });
           }
           
@@ -247,6 +294,7 @@ export const handleCardRegistrationCallback = async (req, res) => {
         }
         
         // For other errors, don't retry
+        console.log('💥 Non-retryable error occurred');
         throw error;
       }
     }

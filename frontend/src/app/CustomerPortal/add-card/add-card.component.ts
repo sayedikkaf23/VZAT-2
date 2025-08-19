@@ -264,14 +264,14 @@ export class AddCardComponent implements OnInit, OnDestroy {
     console.log('✅ Payment form element found:', formElement);
     
     // Set the action URL for the form (callback URL)
-    // Use the backend endpoint to handle AFS callback and redirect properly
-    const backendUrl = environment.apiUrl.replace('/api', ''); // Remove /api suffix to get base URL
-    const shopperResultUrl = `${backendUrl}/card-registration-result`;
+    // For standalone registration, this should be the frontend URL where AFS will redirect
+    // AFS will append ?resourcePath=/v1/checkouts/{id}/registration to this URL
+    const shopperResultUrl = window.location.origin + '/customer-portal/add-card';
     formElement.action = shopperResultUrl;
     
     console.log('✅ Form action set to:', shopperResultUrl);
-    console.log('📋 Backend URL:', backendUrl);
-    console.log('📋 Environment API URL:', environment.apiUrl);
+    console.log('📋 Current origin:', window.location.origin);
+    console.log('📋 Full form action URL:', formElement.action);
     
     // AFS should automatically render the payment widgets now
     this.isFormReady = true;
@@ -291,6 +291,13 @@ export class AddCardComponent implements OnInit, OnDestroy {
         }
       } else {
         console.log('✅ AFS widgets successfully rendered');
+        
+        // Log form details for debugging
+        console.log('📋 Form details:');
+        console.log('  Action:', formElement.action);
+        console.log('  Method:', formElement.method);
+        console.log('  Data-brands:', formElement.getAttribute('data-brands'));
+        console.log('  Class:', formElement.className);
       }
     }, 2000);
     
