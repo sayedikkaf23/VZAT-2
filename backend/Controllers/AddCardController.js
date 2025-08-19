@@ -577,16 +577,38 @@ const migrateSubscriptionTokens = async (customerEmail, newRegistrationId, newCh
     console.log('📝 New registration ID:', newRegistrationId);
     console.log('📝 New checkout ID:', newCheckoutId);
 
-    // Find all active subscriptions for this customer
+    // Get customer data to find quotepaymentId
+    const customer = await CustomerLogin.findOne({ email: customerEmail });
+    if (!customer) {
+      console.log('❌ Customer not found for subscription migration');
+      return { updated: 0, message: 'Customer not found' };
+    }
+
+    console.log('👤 Customer quotepaymentId:', customer.quotepaymentId);
+
+    // Find all active subscriptions for this customer using multiple search criteria
     const subscriptions = await VzatRecurringData.find({
-      Customer_email: customerEmail,
-      subscription_status: { $in: ['active', 'pending'] }
+      $and: [
+        {
+          $or: [
+            { Customer_email: customerEmail },
+            { opp_email: customerEmail },
+            { quotepaymentId: customer.quotepaymentId }
+          ]
+        },
+        { subscription_status: { $in: ['active', 'pending'] } }
+      ]
     });
 
     console.log(`📊 Found ${subscriptions.length} active subscriptions to update`);
 
     if (subscriptions.length === 0) {
       console.log('ℹ️ No active subscriptions found for this customer');
+      console.log('🔍 Searched by:', {
+        Customer_email: customerEmail,
+        opp_email: customerEmail,
+        quotepaymentId: customer.quotepaymentId
+      });
       return { updated: 0, message: 'No active subscriptions to update' };
     }
 
@@ -650,3 +672,6 @@ export default {
   getCustomerCards,
   setDefaultCard
 };
+
+// Also export the migration function for testing
+export { migrateSubscriptionTokens };
