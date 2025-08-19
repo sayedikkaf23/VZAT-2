@@ -314,7 +314,7 @@ export const testSalesforceConnection = async () => {
       Paid_Amount: 1, // Simple integer
       Transaction_Number: "TEST-TRANSACTION-" + Date.now(),
       Message: "Test connection from VZAT payment system",
-      Next_due_date: new Date().toISOString().slice(0, 10),
+      // Next_due_date: new Date().toISOString().slice(0, 10),
       Payment_Type: "Test_payment"
     };
 
