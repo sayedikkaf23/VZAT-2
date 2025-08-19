@@ -48,7 +48,9 @@ export const prepareCardRegistration = async (req, res) => {
     // Configure AFS checkout for standalone registration
     const checkoutData = {
       entityId: AFS_CONFIG.entityId,
-      paymentType: 'RG', // Registration only, no payment
+      amount: '0.00', // For registration, amount is 0
+      currency: 'USD',
+      paymentType: 'DB', // Debit registration
       createRegistration: true, // This is the key for standalone registration
       notificationUrl: `${process.env.FRONTEND_URL}/api/webhook/afs-notification`,
       // Registration specific settings
