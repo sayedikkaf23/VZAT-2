@@ -244,8 +244,22 @@ export const handleCardRegistrationCallback = async (req, res) => {
             console.log('❌ All retries exhausted. Registration failed.');
             return res.status(400).json({
               success: false,
-              message: 'Card registration was not completed. Please try again.',
-              error_code: 'REGISTRATION_NOT_COMPLETED',
+              message: 'Card registration was not completed. This usually means you cancelled the form, the session timed out, or invalid card details were entered. Please try adding your card again.',
+              error_code: 'USER_CANCELLED_REGISTRATION',
+              user_guidance: {
+                possible_causes: [
+                  'Payment form was closed or cancelled',
+                  'Session timed out (please complete form quickly)',
+                  'Invalid card details were entered multiple times',
+                  'Card was declined by your bank'
+                ],
+                next_steps: [
+                  'Try adding your card again',
+                  'Ensure your card details are correct',
+                  'Complete the form without closing it',
+                  'Contact support if the issue persists'
+                ]
+              },
               debug_info: {
                 attempts: maxRetries,
                 last_afs_response: registrationData
@@ -291,8 +305,22 @@ export const handleCardRegistrationCallback = async (req, res) => {
             console.log('❌ All retries exhausted due to user authorization failure.');
             return res.status(400).json({
               success: false,
-              message: 'Card registration was not completed by the user. Please try again.',
+              message: 'Card registration was not completed. This usually means you cancelled the form, the session timed out, or invalid card details were entered. Please try adding your card again.',
               error_code: 'USER_CANCELLED_REGISTRATION',
+              user_guidance: {
+                possible_causes: [
+                  'Payment form was closed or cancelled',
+                  'Session timed out (please complete form quickly)',
+                  'Invalid card details were entered multiple times',
+                  'Card was declined by your bank'
+                ],
+                next_steps: [
+                  'Try adding your card again',
+                  'Ensure your card details are correct',
+                  'Complete the form without closing it',
+                  'Contact support if the issue persists'
+                ]
+              },
               debug_info: {
                 attempts: maxRetries,
                 last_error: error.response?.data
