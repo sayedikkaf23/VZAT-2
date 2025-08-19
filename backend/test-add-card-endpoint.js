@@ -10,7 +10,7 @@ async function testAddCardEndpoint() {
     };
     
     const response = await axios.post(
-      'http://localhost:3001/api/add-card/prepare-registration',
+      'http://localhost:3000/api/add-card/prepare-registration',
       testData,
       {
         headers: {

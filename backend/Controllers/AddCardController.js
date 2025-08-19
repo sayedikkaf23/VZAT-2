@@ -150,30 +150,64 @@ export const prepareCardRegistration = async (req, res) => {
  */
 export const handleCardRegistrationCallback = async (req, res) => {
   try {
-    console.log('🔔 ***REMOVED***= CARD REGISTRATION CALLBACK HANDLER CALLED ***REMOVED***=');
+    console.log('\n🔔 ***REMOVED******REMOVED***= AFS CARD REGISTRATION CALLBACK ***REMOVED******REMOVED***=');
+    console.log('� Timestamp:', new Date().toISOString());
+    console.log('🎯 Process: Adding NEW card for existing subscription user');
+    console.log('📖 Reference: https://afs.docs.oppwa.com/integrations/widget/registration-tokens');
     console.log('📋 Request body:', JSON.stringify(req.body, null, 2));
-    console.log('📋 Request query params:', JSON.stringify(req.query, null, 2));
-    console.log('📋 Request headers:', JSON.stringify(req.headers, null, 2));
+    console.log('📋 Query params:', JSON.stringify(req.query, null, 2));
     
     const { checkoutId, customerEmail } = req.body;
 
+    console.log('\n🔍 STEP 1: PARAMETER VALIDATION');
     if (!checkoutId || !customerEmail) {
       console.error('❌ Missing required parameters');
-      console.error('📋 checkoutId:', checkoutId);
-      console.error('📋 customerEmail:', customerEmail);
-      
       return res.status(400).json({
         success: false,
         message: 'Checkout ID and customer email are required'
       });
     }
+    console.log('✅ Parameters valid - checkoutId:', checkoutId);
+    console.log('✅ Parameters valid - customerEmail:', customerEmail);
 
-    console.log('✅ Required parameters validated');
-    console.log('🔄 Getting registration status from AFS...');
-    console.log('🔑 Checkout ID:', checkoutId);
-    console.log('👤 Customer Email:', customerEmail);
-    console.log('🌐 AFS Base URL:', AFS_CONFIG.baseUrl);
-    console.log('🔐 Entity ID:', AFS_CONFIG.entityId);
+    console.log('\n� STEP 2: CUSTOMER & EXISTING CARDS CHECK');
+    const customer = await CustomerLogin.findOne({ email: customerEmail });
+    
+    if (!customer) {
+      console.error('❌ Customer not found');
+      return res.status(400).json({
+        success: false,
+        message: 'Customer not found. Please ensure you are logged in correctly.',
+        error_code: 'CUSTOMER_NOT_FOUND'
+      });
+    }
+    
+    console.log('✅ Customer found:', {
+      id: customer._id,
+      email: customer.email,
+      quotepaymentId: customer.quotepaymentId
+    });
+
+    // Check existing cards for context
+    const existingCards = await SavedCard.find({ customerEmail: customerEmail });
+    console.log('� Existing cards count:', existingCards.length);
+    
+    if (existingCards.length > 0) {
+      console.log('💳 Current cards:');
+      existingCards.forEach((card, index) => {
+        console.log(`   ${index + 1}. ${card.maskedCardNumber} (${card.cardBrand}) - Default: ${card.isDefault}, AFS RegID: ${card.afs_registration_id}`);
+      });
+    }
+
+    console.log('\n🔍 STEP 3: AFS REGISTRATION STATUS QUERY');
+    console.log('� AFS API: GET /v1/checkouts/{checkoutId}/registration');
+    console.log('� Checkout ID to query:', checkoutId);
+    console.log('� Purpose: Check if user completed card entry in AFS widget');
+    
+    const requestUrl = `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`;
+    const requestParams = { entityId: AFS_CONFIG.entityId };
+    
+    console.log('🌍 Full request URL:', `${requestUrl}?entityId=${requestParams.entityId}`);
 
     let registrationData;
     let retryCount = 0;
@@ -184,11 +218,11 @@ export const handleCardRegistrationCallback = async (req, res) => {
       try {
         console.log(`📞 Attempt ${retryCount + 1}/${maxRetries} - Calling AFS registration endpoint...`);
         
-        // Add a small delay for the first retry to let AFS process
-        if (retryCount > 0) {
-          console.log(`⏱️ Waiting ${retryDelay}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
+        // Add a delay before EVERY attempt to let AFS process the registration
+        // AFS might need time to process the registration after redirect
+        const delayTime = retryCount ***REMOVED***= 0 ? 3000 : retryDelay; // 3 seconds for first attempt, 2 seconds for retries
+        console.log(`⏱️ Waiting ${delayTime}ms to allow AFS processing time...`);
+        await new Promise(resolve => setTimeout(resolve, delayTime));
 
         const requestUrl = `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`;
         const requestParams = { entityId: AFS_CONFIG.entityId };
