@@ -34,7 +34,18 @@ import config from '../config.env.js';
             console.log('✅ Registration successful on attempt', retryCount + 1);
             break; // Success, exit retry loop
           }
-        }n (move to env file in production)
+        }
+        // Handle retry or failure logic here (detailed implementation follows)
+      } catch (retryError) {
+        console.log('❌ Retry error:', retryError.message);
+      }
+    }
+  } catch (error) {
+    console.error('💥 Error in handleRegistrationCallback:', error);
+  }
+};
+
+// AFS Configuration - Registration specific credentials
 const AFS_CONFIG = {
   baseUrl: process.env.AFS_BASE_URL || config.AFS_BASE_URL,
   entityId: process.env.AFS_ENTITY_ID || config.AFS_ENTITY_ID,
