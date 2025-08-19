@@ -77,12 +77,15 @@ export const prepareCardRegistration = async (req, res) => {
     console.log('🆔 Checkout ID:', checkoutResult.id);
     console.log('📋 Full Response:', JSON.stringify(checkoutResult, null, 2));
 
-    // Return checkout ID and widget script URL for frontend
+    // Return checkout ID and AFS config for frontend
     res.json({
       success: true,
       checkoutId: checkoutResult.id,
-      widgetScriptUrl: `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${checkoutResult.id}`,
-      message: 'Checkout prepared successfully for card registration'
+      message: 'Checkout prepared successfully for card registration',
+      afsConfig: {
+        baseUrl: AFS_CONFIG.baseUrl,
+        scriptUrl: `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${checkoutResult.id}`
+      }
     });
 
   } catch (error) {
