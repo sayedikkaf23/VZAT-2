@@ -266,7 +266,7 @@ export class AddCardComponent implements OnInit, OnDestroy {
     // Set the action URL for the form (callback URL)
     // For standalone registration, this should be the frontend URL where AFS will redirect
     // AFS will append ?resourcePath=/v1/checkouts/{id}/registration to this URL
-    const shopperResultUrl = window.location.origin + '/customer-portal/add-card';
+    const shopperResultUrl = window.location.origin + '/saved-card/add-card';
     formElement.action = shopperResultUrl;
     
     console.log('✅ Form action set to:', shopperResultUrl);
