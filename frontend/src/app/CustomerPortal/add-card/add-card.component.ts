@@ -373,7 +373,17 @@ export class AddCardComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('❌ Error handling registration callback:', error);
         console.error('📋 Error details:', error.error);
-        this.errorMessage = 'Failed to complete card registration. Please try again.';
+        
+        // Handle specific error cases
+        if (error.error?.error_code ***REMOVED***= 'REGISTRATION_NOT_COMPLETED' || 
+            error.error?.error_code ***REMOVED***= 'USER_CANCELLED_REGISTRATION') {
+          this.errorMessage = 'Card registration was not completed. Please click "Try Again" to restart the process.';
+        } else if (error.error?.message) {
+          this.errorMessage = error.error.message;
+        } else {
+          this.errorMessage = 'Failed to complete card registration. Please try again.';
+        }
+        
         this.processingRegistration = false;
         this.loading = false;
       }
