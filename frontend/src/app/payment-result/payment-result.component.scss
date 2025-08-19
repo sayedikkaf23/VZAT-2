@@ -46,6 +46,7 @@
     justify-content: center;
     align-items: center;
     padding: 20px;
+<<<<<<< HEAD
     height: 100vh;
     overflow: hidden; // Prevent scrolling
     
@@ -81,6 +82,35 @@
             &:hover {
               text-decoration: underline;
             }
+***REMOVED******REMOVED******REMOVED***=
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: auto;
+    
+    .need-assistance-section {
+      margin-top: 40px;
+      padding: 20px 0;
+      text-align: left;
+      border-top: 1px solid #eee;
+      
+      h3 {
+        color: #333;
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+      
+      p {
+        color: #666;
+        margin-bottom: 5px;
+        
+        a {
+          color: #007bff;
+          text-decoration: none;
+          
+          &:hover {
+            text-decoration: underline;
+>>>>>>> 1846518132d3b40156788a94e80e30e567c2d89a
           }
         }
       }
