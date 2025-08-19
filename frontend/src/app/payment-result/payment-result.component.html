@@ -16,211 +16,118 @@
     <p>{{ error }}</p>
   </div>
 
-  <!-- Success State -->
+  <!-- Success State with Clean Layout -->
   <div *ngIf="result && !loading && !error" class="payment-schedule">
-    <!-- Main Success Layout with Sidebar -->
-    <div *ngIf="result.paymentStatus === 'success' && !result.overall_status?.includes('salesforce_failed')" class="d-flex w-100">
-      <!-- Sidebar -->
-      <div class="detils-sidebar">
-        <div class="sidebar-row">
-          <div class="logo">
-            <a href="#">
-              <img src="assets/images/main-logo.svg" alt="Virtuzone" class="d-block"/>
-            </a>
+    <!-- Sidebar -->
+    <div class="detils-sidebar">
+      <div class="sidebar-row">
+        <div class="logo">
+          <a href="#">
+            <img src="assets/images/main-logo.svg" alt="Virtuzone" class="d-block"/>
+          </a>
+        </div>
+        <h3>Hey,</h3>
+        <h2>{{ customerName || 'Customer' }}!</h2>
+        <hr/>
+        <p class="mb-2">Your Payment for is</p>
+        <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+        <p class="small-text">Thank you for your payment.</p>
+        
+        <hr/> 
+        <h3 class="mb-0"><b>Need Assistance? </b></h3>
+        <p>Contact us</p>
+        <div class="mb-3">
+          <div class="row align-items-center gx-1 mb-1">
+            <div class="col">
+              <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
+            </div>
           </div>
-          <h3>Hey,</h3>
-          <h2>{{ customerName || 'Customer' }}!</h2>
-          <hr/>
-          <p class="mb-2">Your Payment for is</p>
-          <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
-          <p class="small-text">Thank you for your payment.</p>
-          
-          <!-- Contact Section -->
-          <div class="contact-section mt-4">
-            <hr/> 
-            <h3 class="mb-0"><b>Need Assistance? </b></h3>
-            <p>Contact us</p>
-            <div class="mb-3">
-              <div class="contact-item mb-2">
-                <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
-              </div>
-              <div class="contact-item">
-                <h6 class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></h6>
-              </div>
+          <div class="row align-items-center gx-1">
+            <div class="col">
+              <h6 class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></h6>
             </div>
           </div>
         </div>
       </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="details-content">
+      <div class="container">
+        <div class="pm-submit-info text-center">
+          <div class="icon">
+            <img src="assets/images/payment-success.png" class="d-block mx-auto" alt="Payment Success"/>
+          </div>
+          <h3>Payment Successful!</h3>
+          <h5>Hooray! You have completed your payment</h5>
+          <hr/>
+          <h6>AMOUNT PAID</h6>
+          <h2>AED {{ paymentAmount | number:'1.2-2' }}</h2>
+
+          <div class="pmnotes">
+            <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
+          </div>
+        </div>
+      </div>
       
-      <!-- Main Content -->
-      <div class="details-content">
-        <div class="container">
-          <div class="pm-submit-info text-center">
-            <div class="icon">
-              <img src="assets/images/payment-success.png" class="d-block mx-auto" alt="Payment Success"/>
+      <div class="details-footer">
+        <div class="d-block d-md-none">
+          <h2><b>Need Assistance? </b></h2>
+          <h3>Contact us</h3>
+          <hr/>
+          <div class="row gx-0 justify-content-between">
+            <div class="col-auto">
+              <p><b>Support Team</b></p>
+              <h6>Customer Support</h6>
             </div>
-            <h3>Payment Successful!</h3>
-            <h5>Hooray! You have completed your payment</h5>
-            <hr/>
-            
-            <!-- Payment Summary - Only Amount Paid -->
-            <div class="payment-summary">
-              <div class="row justify-content-center">
-                <div class="col-md-6 col-12 mb-3">
-                  <h6>AMOUNT PAID</h6>
-                  <h3 class="text-success">AED {{ paymentAmount | number:'1.2-2' }}</h3>
+            <div class="col-auto">
+              <div class="row gx-1">
+                <div class="col">
+                  <h6 class="mb-0"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></h6>
+                </div>
+              </div>
+              <div class="row gx-1">
+                <div class="col text-end">
+                  <h6><a href="tel:+97144578271">+971 4 457 8271</a></h6>
                 </div>
               </div>
             </div>
-
-            <div class="pmnotes">
-              <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
-            </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Footer links - Clean design without grey background -->
-      <div class="footer-links text-center mt-4 pt-4">
-        <div class="row justify-content-center">
-          <div class="col-md-8">
-            <div class="row align-items-center">
-              <div class="col-md-6 col-12 mb-2 mb-md-0">
-                <a target="_blank" href="https://virtuzone.com/privacy-policy/" class="text-decoration-none">
-                  Terms and Conditions
-                </a>
-              </div>
-              <div class="col-md-6 col-12 text-md-end">
-                <a href="https://www.yeepeey.com" target="_blank" class="text-decoration-none">
-                  <b>© 2025, Powered by Virtuzone & Developed by yeepeey</b>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Payment Success but Salesforce Failed -->
-    <div *ngIf="result.overall_status === 'payment_success_salesforce_failed' || (result.paymentStatus === 'success' && result.salesforce_update?.success === false)">
-      <p class="success">✅ Payment Completed Successfully</p>
-      <div class="payment-details">
-        <h3>Payment Details:</h3>
-        <p><strong>Amount:</strong> {{ result.amount }} {{ result.currency }}</p>
-        <p><strong>Transaction ID:</strong> {{ result.id }}</p>
-        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
-        <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
-        <p><strong>Payment Type:</strong> {{ result.paymentType }}</p>
-        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
-        
-        <!-- Salesforce Failure Status -->
-        <div class="salesforce-status warning">
-          <h4>⚠️ Record Update Pending</h4>
-          <p>Your payment was successful, but we're still updating your account records.</p>
-          <p><strong>Status:</strong> {{ result.salesforce_update?.message || 'Update in progress' }}</p>
-          <p *ngIf="result.salesforce_update?.error" class="error-detail">
-            <strong>Technical details:</strong> {{ result.salesforce_update.error }}
-          </p>
-          <p class="note">Don't worry - your payment is secure. Our team will ensure your account is updated shortly.</p>
-        </div>
+        <ul>
+          <li><a target="_blank" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
+          <li><a style="text-align: right;" href="https://www.yeepeey.com" target="_blank"><b>© 2025, Powered by Virtuzone & Developed by yeepeey</b></a></li>
+        </ul>
       </div>
     </div>
-    
-    <!-- Payment Success but Salesforce Skipped -->
-    <div *ngIf="result.overall_status === 'payment_success_salesforce_skipped'">
-      <p class="success">✅ Payment Completed Successfully</p>
-      <div class="payment-details">
-        <h3>Payment Details:</h3>
-        <p><strong>Amount:</strong> {{ result.amount }} {{ result.currency }}</p>
-        <p><strong>Transaction ID:</strong> {{ result.id }}</p>
-        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId || 'Not provided' }}</p>
-        <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
-        <p><strong>Payment Type:</strong> {{ result.paymentType }}</p>
-        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
-        
-        <div class="salesforce-status info">
-          <h4>ℹ️ Payment Processed</h4>
-          <p>Your payment has been completed successfully.</p>
+  </div>
+
+  <!-- Failed Payment State -->
+  <div *ngIf="result && !loading && !error && result.paymentStatus === 'failed'" class="error">
+    <h2>Payment Failed</h2>
+    <p>{{ result.message || 'Your payment could not be processed. Please try again.' }}</p>
+  </div>
+
+  <!-- Debug Information (Development Only) -->
+  <div *ngIf="showDebugInfo && result && !loading" class="mt-4">
+    <div class="container">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Debug Information (Development Only)</h5>
         </div>
-      </div>
-    </div>
-    
-    <!-- Payment Failed -->
-    <div *ngIf="result.paymentStatus === 'failed' || result.overall_status?.includes('payment_failed')">
-      <p class="error">❌ Payment Failed</p>
-      <div class="payment-details error-details">
-        <h3>Payment Information:</h3>
-        <p><strong>Amount Attempted:</strong> {{ result.amount }} {{ result.currency }}</p>
-        <p><strong>Transaction ID:</strong> {{ result.id }}</p>
-        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
-        <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
-        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
-        
-        <!-- Failure Reason -->
-        <div class="failure-reason">
-          <h4>Reason for Failure:</h4>
-          <p><strong>Code:</strong> {{ result.result?.code }}</p>
-          <p><strong>Description:</strong> {{ result.result?.description || result.message }}</p>
-          <p *ngIf="result.resultDetails?.ExtendedDescription"><strong>Details:</strong> {{ result.resultDetails.ExtendedDescription }}</p>
+        <div class="card-body payment-details">
+          <h6>Payment Result Data:</h6>
+          <p><strong>Payment Status:</strong> {{ result.paymentStatus || 'N/A' }}</p>
+          <p><strong>Customer Name:</strong> {{ customerName || 'N/A' }}</p>
+          <p><strong>Amount Paid:</strong> AED {{ paymentAmount | number:'1.2-2' }}</p>
+          <p><strong>Quote Payment ID:</strong> {{ result.qpId || 'N/A' }}</p>
+          <p><strong>Transaction ID:</strong> {{ result.id || 'N/A' }}</p>
+          
+          <hr>
+          <h6>Raw API Response:</h6>
+          <pre>{{ result | json }}</pre>
         </div>
-        
-        <!-- Salesforce Status for Failed Payment -->
-        <div *ngIf="result.salesforce_update" class="salesforce-status info">
-          <h4>📋 Record Status</h4>
-          <p *ngIf="result.salesforce_update.success">
-            ✅ Your account has been notified of the payment failure.
-            <br><small>Status: {{ result.salesforce_update.message }}</small>
-          </p>
-          <p *ngIf="!result.salesforce_update.success">
-            ⚠️ Failed payment notification is pending.
-            <br><small>Error: {{ result.salesforce_update.error }}</small>
-          </p>
-        </div>
-        
-        <!-- Next Steps -->
-        <div class="next-steps">
-          <h4>What to do next:</h4>
-          <ul>
-            <li>Check your card details and try again</li>
-            <li>Ensure sufficient funds are available</li>
-            <li>Contact your bank if the issue persists</li>
-            <li>Contact our support team for assistance</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Handle partial success (with warnings) -->
-    <div *ngIf="result.paymentStatus === 'partial_success'">
-      <p class="partial-success">⚠️ Payment completed with warnings</p>
-      <div class="payment-details">
-        <h3>Payment Details:</h3>
-        <p><strong>Amount:</strong> {{ result.amount }} {{ result.currency }}</p>
-        <p><strong>Transaction ID:</strong> {{ result.id }}</p>
-        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
-        <p *ngIf="result.card"><strong>Card:</strong> **** **** **** {{ result.card.last4Digits }}</p>
-        <p><strong>Payment Type:</strong> {{ result.paymentType }}</p>
-        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
-        <p class="warning">Please contact support if you have concerns.</p>
-      </div>
-    </div>
-    
-    <!-- Handle legacy AFS response format (fallback) -->
-    <div *ngIf="!result.paymentStatus && result.result && result.result.code === '000.100.110'">
-      <p class="success">Payment completed successfully!</p>
-    </div>
-    
-    <!-- Handle errors or unknown status -->
-    <div *ngIf="!result.paymentStatus || (result.paymentStatus !== 'success' && result.paymentStatus !== 'partial_success')">
-      <div *ngIf="!result.result || result.result.code !== '000.100.110'">
-        <p class="error"> Payment cannot be completed.</p>
-        <p>Please contact support with following information:</p>
-        <p><strong>Checkout ID:</strong> {{ result.id }}</p>
-        <p><strong>Quote Payment ID:</strong> {{ result.quotepaymentId }}</p>
-        <p><strong>Status:</strong> {{ result.paymentStatus || 'unknown' }}</p>
-        <p><strong>Result:</strong> {{ result.result?.description || result.message || 'invalid' }}</p>
-        <p><strong>NDC:</strong> {{ result.ndc }}</p>
-        <p><strong>Timestamp:</strong> {{ result.timestamp }}</p>
       </div>
     </div>
   </div>
