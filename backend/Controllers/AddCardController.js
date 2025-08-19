@@ -57,6 +57,8 @@ export const prepareCardRegistration = async (req, res) => {
       // Registration specific settings
       testMode: AFS_CONFIG.testMode
     };
+    // Add shopperResultUrl for redirect after registration
+    checkoutData.shopperResultUrl = `${process.env.FRONTEND_URL}/saved-card/add-card`;
 
     console.log('📝 Creating AFS checkout for registration...');
     console.log('🔗 AFS Endpoint:', `${AFS_CONFIG.baseUrl}/v1/checkouts`);
