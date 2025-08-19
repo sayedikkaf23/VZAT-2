@@ -704,6 +704,17 @@ export const getAFSPaymentResult = async (req, res) => {
             console.log(`   - Customer Name: ${paymentRecord.Customer_name}`);
             console.log(`   - Subscription Status: ${paymentRecord.subscription_status}`);
             
+            // Add customer information to result data for frontend display
+            resultData.customer_name = paymentRecord.Customer_name;
+            resultData.Customer_name = paymentRecord.Customer_name; // Backward compatibility
+            resultData.customer_email = paymentRecord.opp_email;
+            resultData.Total_After_VAT_Currency = paymentRecord.Total_After_VAT_Currency;
+            
+            console.log('✅ Added customer information to result data:');
+            console.log(`   - Customer Name: ${resultData.customer_name}`);
+            console.log(`   - Customer Email: ${resultData.customer_email}`);
+            console.log(`   - Total Amount: ${resultData.Total_After_VAT_Currency}`);
+            
             // Handle customer account creation (subscription payments only)
             if (paymentRecord.is_subscription && paymentRecord.opp_email) {
               console.log('✅ SUBSCRIPTION CRITERIA MET - Creating customer account...');
@@ -815,6 +826,50 @@ export const getAFSPaymentResult = async (req, res) => {
           } else {
             console.error('❌ CRITICAL ERROR - Payment record not found in database');
             console.log(`   - Searched for quotepaymentId: ${quotepaymentId}`);
+            
+            // Try to get customer data from Salesforce API if payment record not found
+            if (quotepaymentId) {
+              try {
+                console.log('🔄 Attempting to fetch customer data from Salesforce API...');
+                const { GetVzatRecurringDataById } = await import('./GetVzatRecurringDataById.js');
+                
+                // Create mock request object for the API call
+                const mockReq = {
+                  params: { quotepaymentId: quotepaymentId },
+                  query: {}
+                };
+                
+                let customerData = null;
+                const mockRes = {
+                  json: function(data) { 
+                    customerData = data;
+                    return this; 
+                  },
+                  status: function(code) { 
+                    this.statusCode = code; 
+                    return this; 
+                  },
+                  statusCode: 200
+                };
+                
+                await GetVzatRecurringDataById(mockReq, mockRes);
+                
+                if (customerData && customerData.Customer_name) {
+                  console.log('✅ Retrieved customer data from Salesforce API');
+                  resultData.customer_name = customerData.Customer_name;
+                  resultData.Customer_name = customerData.Customer_name;
+                  resultData.customer_email = customerData.opp_email;
+                  resultData.Total_After_VAT_Currency = customerData.Total_After_VAT_Currency;
+                  
+                  console.log(`✅ Added customer data from API: ${customerData.Customer_name}`);
+                } else {
+                  console.warn('⚠️ No customer data available from Salesforce API');
+                }
+              } catch (apiError) {
+                console.error('❌ Error fetching customer data from API:', apiError);
+              }
+            }
+            
             resultData.customer_account = {
               status: 'failed',
               error: 'Payment record not found in database'
