@@ -57,7 +57,7 @@ export const prepareCardRegistration = async (req, res) => {
     const checkoutData = new URLSearchParams({
       entityId: AFS_CONFIG.entityId,
       testMode: AFS_CONFIG.testMode,
-      createRegistration: 'true', // This creates a registration
+      createRegistration: 'true', // This creates a registration token only
       
       // Customer information
       'customer.email': customerEmail,
@@ -66,12 +66,7 @@ export const prepareCardRegistration = async (req, res) => {
       // The shopperResultUrl is where the customer will be redirected after registration
       shopperResultUrl: shopperResultUrl,
       
-      // Payment details (minimal amount for registration)
-      'paymentType': 'DB', // Debit transaction
-      'amount': '1.00', // Minimum amount required
-      'currency': 'AED',
-      
-      // Billing information
+      // Billing information (optional for registration)
       'billing.country': 'AE',
       'billing.city': 'Dubai',
       
@@ -161,38 +156,10 @@ export const handleCardRegistrationCallback = async (req, res) => {
       });
     }
 
-    console.log('🔄 Getting payment status from AFS...');
+    console.log('🔄 Getting registration status from AFS...');
     console.log('🔑 Checkout ID:', checkoutId);
 
-    // First, get payment status from AFS
-    const paymentResponse = await axios.get(
-      `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/payment`,
-      {
-        params: {
-          entityId: AFS_CONFIG.entityId
-        },
-        headers: {
-          'Authorization': AFS_CONFIG.authorization
-        }
-      }
-    );
-
-    const paymentData = paymentResponse.data;
-    console.log('📋 Payment data received:', paymentData);
-
-    // Check if payment was successful
-    if (!paymentData.result?.code || !paymentData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
-      console.log('❌ Payment not successful:', paymentData.result);
-      return res.status(400).json({
-        success: false,
-        message: 'Payment was not completed successfully',
-        error: paymentData.result
-      });
-    }
-
-    console.log('✅ Payment successful, getting registration details...');
-
-    // Now get registration details from AFS
+    // Get registration status directly from AFS (no payment involved for standalone registration)
     const registrationResponse = await axios.get(
       `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`,
       {
