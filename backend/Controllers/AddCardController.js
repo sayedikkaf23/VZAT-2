@@ -160,57 +160,95 @@ export const handleCardRegistrationCallback = async (req, res) => {
     console.log('🔑 Checkout ID:', checkoutId);
 
     let registrationData;
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds
 
-    try {
-      // Get registration status directly from AFS (no payment involved for standalone registration)
-      const registrationResponse = await axios.get(
-        `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`,
-        {
-          params: {
-            entityId: AFS_CONFIG.entityId
-          },
-          headers: {
-            'Authorization': AFS_CONFIG.authorization
-          }
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`📞 Attempt ${retryCount + 1}/${maxRetries} - Calling AFS registration endpoint...`);
+        
+        // Add a small delay for the first retry to let AFS process
+        if (retryCount > 0) {
+          console.log(`⏱️ Waiting ${retryDelay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
-      );
 
-      registrationData = registrationResponse.data;
-      console.log('📋 Registration data received:', registrationData);
+        // Get registration status directly from AFS (no payment involved for standalone registration)
+        const registrationResponse = await axios.get(
+          `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`,
+          {
+            params: {
+              entityId: AFS_CONFIG.entityId
+            },
+            headers: {
+              'Authorization': AFS_CONFIG.authorization
+            }
+          }
+        );
 
-      // Check if we got a valid response but no registration was completed
-      if (registrationData.result?.code ***REMOVED***= '800.900.300') {
-        console.log('⚠️ Registration was not completed by user');
-        return res.status(400).json({
-          success: false,
-          message: 'Card registration was not completed. Please try again.',
-          error_code: 'REGISTRATION_NOT_COMPLETED'
-        });
+        registrationData = registrationResponse.data;
+        console.log('📋 Registration data received:', registrationData);
+
+        // Check if registration is successful
+        if (registrationData.result?.code && registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
+          console.log('✅ Registration successful on attempt', retryCount + 1);
+          break; // Success, exit retry loop
+        }
+
+        // Check if we got a valid response but no registration was completed
+        if (registrationData.result?.code ***REMOVED***= '800.900.300') {
+          console.log(`⚠️ Registration not completed (attempt ${retryCount + 1}/${maxRetries})`);
+          
+          // If this is the last retry, return error
+          if (retryCount ***REMOVED***= maxRetries - 1) {
+            return res.status(400).json({
+              success: false,
+              message: 'Card registration was not completed. Please try again.',
+              error_code: 'REGISTRATION_NOT_COMPLETED'
+            });
+          }
+          
+          // Otherwise, continue to next retry
+          retryCount++;
+          continue;
+        }
+
+        // Check for other error codes
+        if (registrationData.result?.code && !registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
+          console.log('❌ Registration failed with code:', registrationData.result);
+          return res.status(400).json({
+            success: false,
+            message: `Registration failed: ${registrationData.result.description}`,
+            error_code: registrationData.result.code
+          });
+        }
+
+        // If we reach here, we got a successful response
+        break;
+
+      } catch (error) {
+        console.log(`❌ Error calling AFS registration endpoint (attempt ${retryCount + 1}):`, error.response?.data || error.message);
+        
+        // Handle specific error codes
+        if (error.response?.data?.result?.code ***REMOVED***= '800.900.300') {
+          // If this is the last retry, return error
+          if (retryCount ***REMOVED***= maxRetries - 1) {
+            return res.status(400).json({
+              success: false,
+              message: 'Card registration was not completed by the user. Please try again.',
+              error_code: 'USER_CANCELLED_REGISTRATION'
+            });
+          }
+          
+          // Otherwise, continue to next retry
+          retryCount++;
+          continue;
+        }
+        
+        // For other errors, don't retry
+        throw error;
       }
-
-      // Check for other error codes
-      if (registrationData.result?.code && !registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
-        console.log('❌ Registration failed with code:', registrationData.result);
-        return res.status(400).json({
-          success: false,
-          message: `Registration failed: ${registrationData.result.description}`,
-          error_code: registrationData.result.code
-        });
-      }
-
-    } catch (error) {
-      console.log('❌ Error calling AFS registration endpoint:', error.response?.data || error.message);
-      
-      // Handle specific error codes
-      if (error.response?.data?.result?.code ***REMOVED***= '800.900.300') {
-        return res.status(400).json({
-          success: false,
-          message: 'Card registration was not completed by the user. Please try again.',
-          error_code: 'USER_CANCELLED_REGISTRATION'
-        });
-      }
-      
-      throw error; // Re-throw for general error handling
     }
 
     // Check if registration was successful
