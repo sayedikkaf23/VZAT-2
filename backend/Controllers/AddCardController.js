@@ -159,21 +159,59 @@ export const handleCardRegistrationCallback = async (req, res) => {
     console.log('🔄 Getting registration status from AFS...');
     console.log('🔑 Checkout ID:', checkoutId);
 
-    // Get registration status directly from AFS (no payment involved for standalone registration)
-    const registrationResponse = await axios.get(
-      `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`,
-      {
-        params: {
-          entityId: AFS_CONFIG.entityId
-        },
-        headers: {
-          'Authorization': AFS_CONFIG.authorization
-        }
-      }
-    );
+    let registrationData;
 
-    const registrationData = registrationResponse.data;
-    console.log('📋 Registration data received:', registrationData);
+    try {
+      // Get registration status directly from AFS (no payment involved for standalone registration)
+      const registrationResponse = await axios.get(
+        `${AFS_CONFIG.baseUrl}/v1/checkouts/${checkoutId}/registration`,
+        {
+          params: {
+            entityId: AFS_CONFIG.entityId
+          },
+          headers: {
+            'Authorization': AFS_CONFIG.authorization
+          }
+        }
+      );
+
+      registrationData = registrationResponse.data;
+      console.log('📋 Registration data received:', registrationData);
+
+      // Check if we got a valid response but no registration was completed
+      if (registrationData.result?.code === '800.900.300') {
+        console.log('⚠️ Registration was not completed by user');
+        return res.status(400).json({
+          success: false,
+          message: 'Card registration was not completed. Please try again.',
+          error_code: 'REGISTRATION_NOT_COMPLETED'
+        });
+      }
+
+      // Check for other error codes
+      if (registrationData.result?.code && !registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
+        console.log('❌ Registration failed with code:', registrationData.result);
+        return res.status(400).json({
+          success: false,
+          message: `Registration failed: ${registrationData.result.description}`,
+          error_code: registrationData.result.code
+        });
+      }
+
+    } catch (error) {
+      console.log('❌ Error calling AFS registration endpoint:', error.response?.data || error.message);
+      
+      // Handle specific error codes
+      if (error.response?.data?.result?.code === '800.900.300') {
+        return res.status(400).json({
+          success: false,
+          message: 'Card registration was not completed by the user. Please try again.',
+          error_code: 'USER_CANCELLED_REGISTRATION'
+        });
+      }
+      
+      throw error; // Re-throw for general error handling
+    }
 
     // Check if registration was successful
     if (registrationData.result?.code && registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
