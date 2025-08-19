@@ -315,8 +315,17 @@ export class AddCardComponent implements OnInit, OnDestroy {
       return;
     }
     
-    // Extract checkout ID from resource path
-    const checkoutIdMatch = resourcePath.match(/\/checkouts\/([^\/]+)\/registration/);
+    // Extract checkout ID from resource path - handle both /registration and /payment endpoints
+    let checkoutIdMatch = resourcePath.match(/\/checkouts\/([^\/]+)\/registration/);
+    if (!checkoutIdMatch) {
+      // Try with /payment endpoint
+      checkoutIdMatch = resourcePath.match(/\/checkouts\/([^\/]+)\/payment/);
+    }
+    if (!checkoutIdMatch) {
+      // Try with just checkout ID (no endpoint suffix)
+      checkoutIdMatch = resourcePath.match(/\/checkouts\/([^\/]+)$/);
+    }
+    
     if (!checkoutIdMatch) {
       console.error('❌ Could not extract checkout ID from resourcePath:', resourcePath);
       this.errorMessage = 'Invalid callback from payment provider. Please try again.';
