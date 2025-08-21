@@ -98,8 +98,8 @@ async function triggerRealWebhook() {
     
     console.log('');
     console.log('✅ =============== WEBHOOK PROCESSING COMPLETE ===============');
-    console.log(`📊 Final Status Code: ${mockRes.statusCode}`);
-    console.log(`📊 Success: ${mockRes.statusCode === 200 ? 'YES' : 'NO'}`);
+    console.log(`Final Status Code: ${mockRes.statusCode}`);
+    console.log(`Success: ${mockRes.statusCode === 200 ? 'YES' : 'NO'}`);
     
     if (mockRes.statusCode === 200) {
       console.log('🎉 Real payment webhook triggered successfully!');
@@ -111,7 +111,6 @@ async function triggerRealWebhook() {
     
   } catch (error) {
     console.error('❌ Error triggering webhook:', error);
-    console.error('❌ Stack trace:', error.stack);
   }
 }
 
