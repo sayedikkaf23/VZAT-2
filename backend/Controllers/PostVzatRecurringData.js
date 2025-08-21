@@ -627,7 +627,7 @@ export const getAFSPaymentResult = async (req, res) => {
       // 🆕 CREATE CUSTOMER ACCOUNT AND SAVE CARD FOR ALL SUCCESSFUL PAYMENTS
       if (actualPaymentStatus ***REMOVED***= 'success' && quotepaymentId) {
         try {
-          
+          {
           // Find the original payment record
           const paymentRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
           
