@@ -53,7 +53,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
                 req.body,
                 { success: false, error: errorMessage }
             );
-            console.log(logData);
+            
 
             return res.status(400).json({
                 success: false,
@@ -72,7 +72,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
                 req.body,
                 { success: false, error: errorMessage }
             );
-            console.log(logData);
+            
 
             return res.status(400).json({
                 success: false,
@@ -92,7 +92,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
                     req.body,
                     { success: false, error: errorMessage }
                 );
-                console.log(logData);
+                
 
                 return res.status(400).json({
                     success: false,
@@ -112,7 +112,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
                 req.body,
                 { success: false, error: errorMessage }
             );
-            console.log(logData);
+            
 
             return res.status(400).json({
                 success: false,
@@ -209,7 +209,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
                 req.body,
                 responseData
             );
-            console.log(logData);
+            
 
             return res.status(200).json(responseData);
 
@@ -228,7 +228,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
                 req.body,
                 responseData
             );
-            console.log(logData);
+            
 
             return res.status(500).json(responseData);
         }
@@ -248,7 +248,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             req.body || {},
             responseData
         );
-        console.log(logData);
+        
 
         return res.status(500).json(responseData);
     }

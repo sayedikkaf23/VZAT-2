@@ -34,12 +34,10 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
   ) {}
 
   ngOnInit(): void {
-    console.log('PaymentWidgetComponent initialized');
-    console.log('Input paymentLink:', this.paymentLink);
+
     
     // Get payment details from query parameters
     this.route.queryParams.subscribe(params => {
-      console.log('Query parameters received:', params);
       
       if (params['paymentId']) {
         this.paymentDetails = {
@@ -52,18 +50,9 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
           paymentLink: params['paymentLink'] ? decodeURIComponent(params['paymentLink']) : undefined
         };
         
-        console.log('Raw paymentLink from URL:', params['paymentLink']);
-        console.log('Decoded paymentLink:', this.paymentDetails.paymentLink);
-        
-        console.log('Payment details parsed:', this.paymentDetails);
         
         // Check if this is an AFS payment
         this.isAfsPayment = !!(this.paymentDetails.checkoutId && this.paymentDetails.paymentLink);
-        console.log('Is AFS payment:', this.isAfsPayment);
-        console.log('CheckoutId present:', !!this.paymentDetails.checkoutId);
-        console.log('PaymentLink present:', !!this.paymentDetails.paymentLink);
-        console.log('CheckoutId value:', this.paymentDetails.checkoutId);
-        console.log('PaymentLink value:', this.paymentDetails.paymentLink);
         
         // Don't initialize payment gateway here - wait for ngAfterViewInit
       } else {
@@ -73,7 +62,7 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
     });
 
     if (this.paymentLink && !this.paymentDetails?.paymentLink) {
-      console.log('Using direct paymentLink input');
+
       this.paymentDetails = {
         ...this.paymentDetails!,
         paymentLink: this.paymentLink
@@ -83,27 +72,22 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   ngAfterViewInit(): void {
-    console.log('PaymentWidgetComponent view initialized');
-    console.log('DOM ready, checking payment details...');
+ 
     
     // Force change detection to ensure DOM is rendered
     this.cdr.detectChanges();
     
     // Wait a bit more for DOM to be fully rendered
     setTimeout(() => {
-      console.log('After timeout, checking DOM again...');
       const allForms = document.querySelectorAll('form');
       const paymentContainers = document.querySelectorAll('.afs-payment-container, .payment-gateway-section');
-      console.log('Forms in DOM after timeout:', allForms);
-      console.log('Payment containers after timeout:', paymentContainers);
+
       
       // Now that the view is initialized and DOM is rendered, initialize the payment gateway
       if (this.paymentDetails) {
         if (this.isAfsPayment) {
-          console.log('Initializing AFS payment gateway after view init...');
           this.initializeAfsPaymentGateway();
         } else {
-          console.log('Falling back to manual payment gateway');
           this.initializeManualPaymentGateway();
         }
       }
@@ -112,11 +96,10 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
 
   private initializeAfsPaymentGateway(): void {
     this.isLoading = true;
-    console.log('Initializing AFS payment gateway...');
     
     // Load the AFS payment widget script
     if (this.paymentDetails?.paymentLink) {
-      console.log('Loading AFS script from:', this.paymentDetails.paymentLink);
+
       
       this.scriptElement = document.createElement('script');
       this.scriptElement.src = this.paymentDetails.paymentLink;
@@ -153,17 +136,12 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   private setupAfsPaymentWidget(): void {
-    console.log('Setting up AFS payment widget...');
-    console.log('Current payment details:', this.paymentDetails);
-    console.log('Checkout ID:', this.paymentDetails?.checkoutId);
-    console.log('Is AFS payment:', this.isAfsPayment);
+
     
     // Wait for the AFS script to be fully loaded and DOM to be available
     setTimeout(() => {
-      console.log('🔍 Checking DOM after 500ms delay...');
       const widgetContainer = document.querySelector('.paymentWidgets');
-      console.log('Widget container found:', !!widgetContainer);
-      console.log('Container element:', widgetContainer);
+
       
       if (widgetContainer && this.paymentDetails?.checkoutId) {
         // Ensure the container has the required attributes for AFS
@@ -187,10 +165,9 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
         setTimeout(() => {
           const formFields = widgetContainer.querySelectorAll('input, select, iframe');
           if (formFields.length > 0) {
-            console.log('AFS widget form fields detected:', formFields.length);
+          
             this.isLoading = false; // Stop loading when fields appear
           } else {
-            console.warn('AFS widget form fields not found after 2 seconds, checking if widget is still loading...');
             
             // Give it more time, sometimes AFS widgets load slowly
             setTimeout(() => {
@@ -206,13 +183,8 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
           }
         }, 2000);
       } else {
-        console.error('AFS widget container not found or missing checkout ID');
-        console.error('Widget container found:', !!widgetContainer);
-        console.error('Checkout ID available:', !!this.paymentDetails?.checkoutId);
-        console.error('Payment details:', this.paymentDetails);
         
         if (!widgetContainer) {
-          console.error('Cannot find element with class .paymentWidgets');
           // Let's check if the element exists in the DOM at all
           const allForms = document.querySelectorAll('form');
           console.error('All forms in DOM:', allForms);
@@ -230,7 +202,6 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
   }
   
   private handleAfsWidgetFailure(): void {
-    console.warn('AFS widget failed to initialize, falling back to manual payment');
     this.isAfsPayment = false;
     this.isLoading = false;
   }
@@ -265,7 +236,6 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   onPaymentFailure(): void {
-    console.log('Payment failed');
     this.router.navigate(['/payment/result'], {
       queryParams: {
         status: 'failure',

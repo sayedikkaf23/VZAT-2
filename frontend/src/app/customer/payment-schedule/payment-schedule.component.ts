@@ -165,19 +165,15 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   }
 
   // Load payment schedule by checkout ID (from URL like /payment/{checkoutId})
-  private loadPaymentScheduleByCheckoutId(checkoutId: string): void {
-    console.log('🔄 Loading payment schedule for checkoutId:', checkoutId);
-    this.isLoading = true;
+  private loadPaymentScheduleByCheckoutId(checkoutId: string): void {    this.isLoading = true;
     this.errorMessage = ''; // Clear any previous error
     this.paymentScheduleService.getPaymentScheduleByCheckoutId(checkoutId).subscribe({
       next: (data: any) => {
-        console.log('✅ Payment schedule data received:', data);
         this.populateComponentData(data);
         this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
         // isLoading is set to false in populateComponentData
       },
       error: (error: any) => {
-        console.error('❌ Error loading payment schedule:', error);
         console.error('❌ Error details:', {
           status: error.status,
           statusText: error.statusText,
@@ -238,7 +234,6 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
 
   // Load demo data (for testing)
   private loadDemoData(): void {
-    console.log('🎭 Loading demo data');
     // Demo data matching your API response structure
     const demoSubscriptionInfo = {
       total_installments: 6,
@@ -271,17 +266,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
 
   // Populate component data from API response
   private populateComponentData(data: any): void {
-      console.log('📊 Populating component with data:', data);
-      console.log('🔍 Data structure analysis:');
-      console.log('  - Keys available:', Object.keys(data));
-      console.log('  - Data type:', typeof data);
-      console.log('  - Has subscription_info:', !!data.subscription_info);
-      console.log('  - Has subscriptionInfo:', !!data.subscriptionInfo);
-      console.log('  - Has paymentSchedule:', !!data.paymentSchedule);
-      console.log('  - Has installments:', !!data.installments);
-      console.log('🔍 Current sales agent before processing:', this.salesAgent);
-      console.log('🔍 Sales force data loaded flag:', this.salesForceDataLoaded);
-      console.log('🔍 Original sales agent data:', this.originalSalesAgentData);    try {
+  try {
       // Store API data for reference
       this.apiData = data;
       
@@ -358,39 +343,24 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       // If we have a checkout ID, build the AFS payment link
       if (this.currentCheckoutId) {
         this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.currentCheckoutId}`;
-        console.log('💳 AFS checkout ID found:', this.currentCheckoutId);
-        console.log('💳 AFS payment link:', this.afsPaymentLink);
       } else {
-        console.log('⚠️ No checkout ID found in API response, AFS payment not available');
         console.log('� Available fields in API response:', Object.keys(data));
       }
       
-      console.log('�💾 Updated customer data:', this.customerData);
-      console.log('💾 Updated sales agent data:', this.salesAgent);
-      console.log('💾 Quote payment ID:', this.quotepaymentId);
-      console.log('💾 Checkout ID:', this.currentCheckoutId);
       
       // If payment_schedule exists in data, use it directly (new structured approach)
       if (data.payment_schedule && Array.isArray(data.payment_schedule)) {
-        console.log('📅 Using structured payment_schedule from API:', data.payment_schedule);
         this.paymentSchedule = this.convertStructuredPaymentSchedule(data.payment_schedule);
       } 
       // If paymentSchedule exists in data, use it (legacy format)
       else if (data.paymentSchedule && Array.isArray(data.paymentSchedule)) {
         this.paymentSchedule = data.paymentSchedule;
-        console.log('📅 Using existing payment schedule:', this.paymentSchedule);
       } else {
         // Generate payment schedule from subscription info (fallback)
-        console.log('🔄 Generating payment schedule from subscription data');
         this.generatePaymentScheduleFromData(data);
       }
       
-      console.log('✅ Component data population completed successfully');
-      
-      // Set loading to false after successful data population
-      console.log('🔄 Setting isLoading to false...');
-      this.isLoading = false;
-      console.log('✅ isLoading is now:', this.isLoading);
+  
       
       // Force change detection
       this.cdr.detectChanges();
@@ -406,8 +376,6 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   
   // Generate payment schedule from subscription data
   private generatePaymentScheduleFromData(data: any): void {
-    console.log('🏗️ Generating payment schedule from data:', data);
-    console.log('🔍 Available data keys:', Object.keys(data));
     
     // Try different possible subscription info structures
     const subscriptionInfo = data.subscription_info || 
@@ -418,14 +386,12 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     
     // Check if we have direct payment schedule data
     if (data.installments || data.payment_schedule || data.paymentPlan) {
-      console.log('📋 Direct payment schedule found in data');
       const installments = data.installments || data.payment_schedule || data.paymentPlan;
       this.paymentSchedule = this.convertToPaymentSchedule(installments);
       return;
     }
     
     if (subscriptionInfo) {
-      console.log('📋 Subscription info found:', subscriptionInfo);
       const installmentAmount = subscriptionInfo.installment_amount || 
                               subscriptionInfo.installmentAmount || 
                               subscriptionInfo.amount || 300;
@@ -470,10 +436,8 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         });
       }
       
-      console.log('📅 Generated payment schedule:', this.paymentSchedule);
     } else {
       // Try to generate from direct data properties
-      console.log('🔄 Attempting to generate from direct data properties');
       this.generateFromDirectData(data);
     }
   }
@@ -502,7 +466,6 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
 
   // Try to generate payment schedule from direct data properties
   private generateFromDirectData(data: any): void {
-    console.log('🎯 Trying to extract payment info from direct data properties');
     
     // Look for total amount and try to create installments
     const totalAmount = data.Total_After_VAT_Currency || 
@@ -512,7 +475,6 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
                        this.customerData.totalAmount;
     
     if (totalAmount && totalAmount > 0) {
-      console.log('💰 Found total amount:', totalAmount);
       
       // Default to 6 installments if not specified
       const installmentCount = data.installment_count || 
@@ -555,10 +517,8 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         });
       }
       
-      console.log('📅 Generated payment schedule from direct data:', this.paymentSchedule);
     } else {
       // Fallback to demo data
-      console.log('⚠️ No usable payment data found, loading demo data');
       this.loadDemoData();
     }
   }
@@ -599,14 +559,11 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   initiatePayment(payment: PaymentScheduleItem): void {
     if (payment.status === 'due' && payment.isNextPayment) {
       this.selectedPayment = payment;
-      console.log('Initiating payment for:', payment);
-      console.log('Current checkout ID:', this.currentCheckoutId);
-      console.log('Quote payment ID:', this.quotepaymentId);
-      console.log('AFS payment link:', this.afsPaymentLink);
+
       
       // Navigate to payment widget with AFS checkout data
       if (this.currentCheckoutId) {
-        console.log('✅ Using AFS payment with checkout ID');
+
         // If we have a checkout ID, navigate to the AFS payment widget
         this.router.navigate(['/payment-widget'], {
           queryParams: {
@@ -619,7 +576,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           }
         });
       } else {
-        console.log('⚠️ No checkout ID available, using manual payment');
+
         // Fallback to manual payment widget
         this.router.navigate(['/payment-widget'], {
           queryParams: {
@@ -692,8 +649,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           // Store a copy of the original data to prevent future overwrites
           this.originalSalesAgentData = { ...this.salesAgent };
           this.salesForceDataLoaded = true; // Mark as loaded
-          console.log('✅ Updated sales agent from SalesForce:', this.salesAgent);
-          console.log('✅ Stored original sales agent data:', this.originalSalesAgentData);
+
         } else {
           console.warn('⚠️ Invalid SalesForce response, using fallback data');
           this.setFallbackSalesAgent();
@@ -782,7 +738,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       next: (response) => {
         if (response.success) {
           this.paymentMethods = response.paymentMethods;
-          console.log('✅ Payment methods loaded:', this.paymentMethods);
+
         } else {
           console.error('❌ Failed to load payment methods');
         }

@@ -15,7 +15,6 @@ const Get_Vzat_Recurring_Data_By_Id = async (req, res) => {
             return res.status(400).json(data);
         }
 
-        console.log(`🔍 Searching for quotepaymentId: ${quotepaymentId}`);
         const data = await Vzat_Recurring_Data.findOne({ quotepaymentId: quotepaymentId });
         
         if (!data) {
@@ -26,7 +25,6 @@ const Get_Vzat_Recurring_Data_By_Id = async (req, res) => {
             return res.status(404).json(resData);
         }
 
-        console.log(`✅ Found record for quotepaymentId: ${quotepaymentId}`);
         const resData = {
             success: true,
             data: data

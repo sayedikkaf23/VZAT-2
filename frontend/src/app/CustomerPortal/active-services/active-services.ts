@@ -211,7 +211,6 @@ export class ActiveServices implements OnInit {
         this.loadActiveServices();
       })
       .catch(err => {
-        console.error(err);
         this.loading = false; // Show anyway if failed
         this.loadActiveServices();
       });
@@ -233,21 +232,17 @@ export class ActiveServices implements OnInit {
     try {
       const customerData = JSON.parse(customerDataStr);
       if (!customerData || !customerData.email) {
-        console.error('❌ Customer email not found in stored data');
         this.errorMessage = 'Customer email not found. Please log in again.';
         this.loadingServices = false;
         return;
       }
 
       this.customerEmail = customerData.email;
-      console.log('🔍 Loading active services for:', this.customerEmail);
-      console.log('📧 Customer data found:', customerData);
+
 
       this.activeServicesService.getActiveServices(this.customerEmail).subscribe({
         next: (response: ActiveServicesResponse) => {
-          console.log('✅ Active services response received:', response);
-          console.log('📊 Services count:', response.services?.length || 0);
-          console.log('📋 First service sample:', response.services?.[0] || 'No services');
+
           
           if (response.success) {
             this.activeServices = response.services;
@@ -257,12 +252,7 @@ export class ActiveServices implements OnInit {
             
             // Debug: Log the first service structure
             if (this.activeServices.length > 0) {
-              console.log('🔍 First service structure:', JSON.stringify(this.activeServices[0], null, 2));
-              console.log('🔍 Service keys:', Object.keys(this.activeServices[0]));
-              console.log('🔍 Customer_name:', this.activeServices[0].Customer_name);
-              console.log('🔍 opp_email:', this.activeServices[0].opp_email);
-              console.log('🔍 QuoteLineItemId:', this.activeServices[0].QuoteLineItemId);
-              console.log('🔍 subscription_status:', this.activeServices[0].subscription_status);
+             
               
               // Log all services data for debugging
               console.log('📋 All services data:', this.activeServices.map((service, index) => ({
@@ -275,8 +265,6 @@ export class ActiveServices implements OnInit {
               })));
             }
             
-            // Force change detection
-            console.log('🔄 Triggering change detection...');
             this.cdr.detectChanges();
             setTimeout(() => {
               console.log('⏰ After timeout - activeServices length:', this.activeServices.length);
@@ -287,22 +275,17 @@ export class ActiveServices implements OnInit {
             this.errorMessage = 'Failed to load services. Please try again.';
           }
           
-          console.log('🔄 About to set loadingServices to false. Current value:', this.loadingServices);
           this.loadingServices = false;
-          console.log('🔄 Setting loadingServices to false, triggering change detection. New value:', this.loadingServices);
           this.cdr.detectChanges();
         },
         error: (error) => {
-          console.error('❌ Error loading active services:', error);
-          console.error('❌ Error details:', error.error);
-          console.error('❌ Error status:', error.status);
+
           this.errorMessage = 'Failed to load services. Please check your connection and try again.';
           this.loadingServices = false;
           this.cdr.detectChanges();
         }
       });
     } catch (error) {
-      console.error('❌ Error parsing customer data:', error);
       this.errorMessage = 'Invalid customer session. Please log in again.';
       this.loadingServices = false;
     }
@@ -502,7 +485,7 @@ export class ActiveServices implements OnInit {
 
    openModal(): void {
     this.isAdditionalModalOpen = true;
-    console.log('modal open --', this.isAdditionalModalOpen);
+
   }
 
 
@@ -526,10 +509,7 @@ export class ActiveServices implements OnInit {
    */
   openServiceModal(service?: PaymentScheduleService): void {
     if (service) {
-      console.log('Opening service modal for:', service.quotepaymentId);
-      console.log('Customer Name from service:', service.Customer_name);
-      console.log('Customer Name fallback:', service.customerName);
-      console.log('Customer Email:', service.opp_email);
+
       this.selectedService = service;
     }
     this.isServiceModalOpen = true;

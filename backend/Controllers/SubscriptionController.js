@@ -14,29 +14,20 @@ dotenv.config();
  */
 async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transactionId) {
   try {
-    console.log('🔄 =============== UPDATING PAYMENT SCHEDULE ===============');
-    console.log('📋 Parameters:');
-    console.log('  - Subscription ID:', subscriptionId);
-    console.log('  - Payment Number:', paymentNumber);
-    console.log('  - Transaction ID:', transactionId);
     
     const subscription = await Vzat_Recurring_Data.findById(subscriptionId);
     if (!subscription) {
-      console.log('❌ Subscription not found during payment schedule update');
       throw new Error('Subscription not found');
     }
 
-    console.log('📊 Current payment schedule status:');
     if (subscription.payment_schedule && subscription.payment_schedule.length > 0) {
       subscription.payment_schedule.forEach((payment, index) => {
-        console.log(`  Payment ${payment.installment_number}: ${payment.status} (Due: ${payment.due_date}, Amount: ${payment.amount})`);
       });
     } else {
-      console.log('  ⚠️ No payment schedule found in subscription');
+      // No payment schedule found in subscription
     }
 
     // Update the specific payment in the payment_schedule array
-    console.log(`🔄 Updating payment #${paymentNumber} status to 'completed'...`);
     const updateResult = await Vzat_Recurring_Data.findOneAndUpdate(
       { 
         _id: subscriptionId,
@@ -53,21 +44,15 @@ async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transa
     );
 
     if (updateResult) {
-      console.log(`✅ Payment #${paymentNumber} successfully marked as completed`);
       
       // Find the updated payment in the schedule
       const updatedPayment = updateResult.payment_schedule.find(p => p.installment_number === paymentNumber);
       if (updatedPayment) {
-        console.log('📋 Updated payment details:');
-        console.log('  - Installment:', updatedPayment.installment_number);
-        console.log('  - Status:', updatedPayment.status);
-        console.log('  - Transaction ID:', updatedPayment.transaction_id);
-        console.log('  - Payment Date:', updatedPayment.payment_date);
+
       }
       
       // Update the next payment status to 'due' if it exists
       const nextPaymentNumber = paymentNumber + 1;
-      console.log(`🔄 Checking for next payment (#${nextPaymentNumber}) to mark as 'due'...`);
       
       const nextPaymentUpdate = await Vzat_Recurring_Data.findOneAndUpdate(
         { 
@@ -84,32 +69,22 @@ async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transa
       );
       
       if (nextPaymentUpdate) {
-        console.log(`✅ Next payment (#${nextPaymentNumber}) status updated to 'due'`);
         
         // Log updated schedule
-        console.log('📊 Updated payment schedule:');
         nextPaymentUpdate.payment_schedule.forEach((payment, index) => {
-          console.log(`  Payment ${payment.installment_number}: ${payment.status} (Due: ${payment.due_date}, Amount: ${payment.amount})`);
         });
       } else {
-        console.log(`ℹ️ No next payment (#${nextPaymentNumber}) found or already processed`);
       }
     } else {
-      console.log(`❌ Could not find payment #${paymentNumber} in payment schedule`);
-      console.log('🔍 Available payments in schedule:');
       const currentSub = await Vzat_Recurring_Data.findById(subscriptionId);
       if (currentSub && currentSub.payment_schedule) {
         currentSub.payment_schedule.forEach(payment => {
-          console.log(`  - Payment ${payment.installment_number}: ${payment.status}`);
         });
       }
     }
 
-    console.log('🔄 =============== PAYMENT SCHEDULE UPDATE COMPLETE ===============');
     return { success: true };
   } catch (error) {
-    console.error('❌ Error updating payment schedule:', error);
-    console.error('❌ Error stack:', error.stack);
     return { success: false, error: error.message };
   }
 }
@@ -121,9 +96,6 @@ export const handleAFSWebhook = async (req, res) => {
   // Using persistent connection - no need to connect/disconnect
   
   try {
-    console.log('🔔 =================== AFS WEBHOOK RECEIVED ===================');
-    console.log('📅 Timestamp:', new Date().toISOString());
-    console.log('📋 Full webhook payload:', JSON.stringify(req.body, null, 2));
     
     const { 
       id, 
@@ -136,25 +108,13 @@ export const handleAFSWebhook = async (req, res) => {
       timestamp 
     } = req.body;
 
-    console.log('🔍 Extracted webhook data:');
-    console.log('  - Transaction ID:', id);
-    console.log('  - Payment Type:', paymentType);
-    console.log('  - Result Code:', result?.code);
-    console.log('  - Result Description:', result?.description);
-    console.log('  - Amount:', amount, currency);
-    console.log('  - Merchant Transaction ID:', merchantTransactionId);
-    console.log('  - Registration ID:', registrationId);
-    console.log('  - AFS Timestamp:', timestamp);
-
+    
     // Find the subscription record
-    console.log('🔍 Looking for subscription with quotepaymentId:', merchantTransactionId);
     const subscriptionRecord = await Vzat_Recurring_Data.findOne({ 
       quotepaymentId: merchantTransactionId 
     });
 
     if (!subscriptionRecord) {
-      console.log('❌ Subscription record not found for merchantTransactionId:', merchantTransactionId);
-      console.log('🔍 Let me check if there are any subscriptions in the database...');
       
       const allSubscriptions = await Vzat_Recurring_Data.find({}).select('quotepaymentId Customer_name opp_email').limit(5);
       console.log('📋 Found these subscriptions:', allSubscriptions.map(sub => ({
@@ -166,23 +126,10 @@ export const handleAFSWebhook = async (req, res) => {
       return res.status(404).json({ message: 'Subscription not found' });
     }
 
-    console.log('✅ Found subscription record:');
-    console.log('  - ID:', subscriptionRecord._id);
-    console.log('  - Customer:', subscriptionRecord.Customer_name);
-    console.log('  - Email:', subscriptionRecord.opp_email);
-    console.log('  - Current Status:', subscriptionRecord.subscription_status);
-    console.log('  - Payments Completed:', subscriptionRecord.payments_completed);
-    console.log('  - Total Installments:', subscriptionRecord.InstallmentLeft);
-    console.log('  - Payment Schedule Length:', subscriptionRecord.payment_schedule?.length || 0);
+   
 
     // Handle different payment types
-    console.log('🔄 Processing payment based on type and result...');
-    console.log('📊 Payment Analysis:');
-    console.log('  - Is DB (Direct Debit):', paymentType === 'DB');
-    console.log('  - Result Code Starts with 000:', result.code.startsWith('000.'));
-    console.log('  - Current Subscription Status:', subscriptionRecord.subscription_status);
-    console.log('  - Is First Payment:', subscriptionRecord.subscription_status === 'pending' && (subscriptionRecord.payments_completed || 0) === 0);
-    console.log('  - Success Condition Met:', paymentType === 'DB' && result.code.startsWith('000.'));
+   
     
     if (paymentType === 'DB' && result.code.startsWith('000.')) {
       // Check if this is the first payment (subscription status is pending)
@@ -190,10 +137,7 @@ export const handleAFSWebhook = async (req, res) => {
       
       if (isFirstPayment) {
         // First payment successful - activate subscription
-        console.log('🎉 =============== FIRST PAYMENT SUCCESSFUL ===============');
-        console.log('💳 Processing first payment and activating subscription...');
         
-        console.log('🔄 Updating subscription status to active...');
         const updateResult = await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
           subscription_status: 'active',
           afs_registration_id: registrationId,
@@ -201,19 +145,12 @@ export const handleAFSWebhook = async (req, res) => {
           last_payment_date: new Date(timestamp)
         }, { new: true });
         
-        console.log('✅ Subscription updated successfully:');
-        console.log('  - New Status:', updateResult.subscription_status);
-        console.log('  - Payments Completed:', updateResult.payments_completed);
-        console.log('  - Registration ID:', updateResult.afs_registration_id);
         
         // Update payment schedule status for the first payment
-        console.log('🔄 Updating payment schedule for payment #1...');
         const scheduleUpdateResult = await updatePaymentScheduleStatus(subscriptionRecord._id, 1, id);
-        console.log('📋 Payment schedule update result:', scheduleUpdateResult);
         
         // Call Salesforce API for successful payment
         try {
-          console.log('🔄 Calling Salesforce API for first payment...');
           
           const salesforcePaymentData = {
             quotepaymentId: subscriptionRecord.quotepaymentId,
@@ -243,7 +180,6 @@ export const handleAFSWebhook = async (req, res) => {
         // Skip customer creation if this is an auto-triggered webhook (already done in payment result)
         if (!req.body.skipCustomerCreation) {
           try {
-            console.log('🔄 Creating customer account for first payment...');
             const customerCreationResult = await createCustomerAccount(subscriptionRecord);
             
             if (customerCreationResult.success) {
@@ -252,7 +188,6 @@ export const handleAFSWebhook = async (req, res) => {
               console.error('❌ Failed to create customer account:', customerCreationResult.error);
             }
           } catch (customerError) {
-            console.error('❌ Error creating customer account:', customerError);
           }
         } else {
           console.log('ℹ️ Skipping customer creation (auto-triggered webhook - already done in payment result)');
@@ -262,16 +197,13 @@ export const handleAFSWebhook = async (req, res) => {
         // Skip card saving if this is an auto-triggered webhook (already done in payment result)
         if (!req.body.skipCustomerCreation) {
           try {
-            console.log('💳 Saving customer card details...');
             const cardSaveResult = await saveCustomerCard({
               ...subscriptionRecord.toObject(),
               result: result // Pass AFS result for card details
             });
             
             if (cardSaveResult.success) {
-              console.log('✅ Customer card saved successfully');
             } else {
-              console.log('⚠️ Card saving failed:', cardSaveResult.message);
             }
           } catch (cardError) {
             console.error('❌ Error saving customer card:', cardError);
@@ -287,10 +219,7 @@ export const handleAFSWebhook = async (req, res) => {
         
       } else {
         // Recurring payment successful
-        console.log('🎉 =============== RECURRING PAYMENT SUCCESSFUL ===============');
-        console.log('💳 Processing recurring payment...');
       
-      console.log('🔄 Incrementing payments_completed counter...');
       const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
         subscriptionRecord._id,
         {
@@ -300,19 +229,13 @@ export const handleAFSWebhook = async (req, res) => {
         { new: true }
       );
 
-      console.log('✅ Subscription updated successfully:');
-      console.log('  - Payments Completed:', updatedRecord.payments_completed);
-      console.log('  - Total Installments:', updatedRecord.InstallmentLeft);
-      console.log('  - Last Payment Date:', updatedRecord.last_payment_date);
+     
 
       // Update payment schedule status for the current payment
-      console.log(`🔄 Updating payment schedule for payment #${updatedRecord.payments_completed}...`);
       const scheduleUpdateResult = await updatePaymentScheduleStatus(subscriptionRecord._id, updatedRecord.payments_completed, id);
-      console.log('📋 Payment schedule update result:', scheduleUpdateResult);
 
       // Call Salesforce API for successful recurring payment
       try {
-        console.log('🔄 Calling Salesforce API for recurring payment...');
         
         const salesforcePaymentData = {
           quotepaymentId: subscriptionRecord.quotepaymentId,
@@ -329,7 +252,6 @@ export const handleAFSWebhook = async (req, res) => {
         
         if (salesforceResult.success) {
           const statusText = salesforceResult.payment_was_successful ? 'successful' : 'failed';
-          console.log(`✅ Salesforce has been notified of ${statusText} recurring payment`);
         } else {
           console.warn('⚠️ Salesforce update failed for recurring payment:', salesforceResult.error);
         }
@@ -347,7 +269,6 @@ export const handleAFSWebhook = async (req, res) => {
           await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
             subscription_status: 'completed'
           });
-          console.log('🎉 Subscription completed!');
           
           // Send completion email to business team (only for newly completed subscriptions)
           try {
@@ -362,7 +283,6 @@ export const handleAFSWebhook = async (req, res) => {
             });
             
             if (emailResult.success) {
-              console.log('📧 Subscription completion email sent successfully');
             } else {
               console.error('📧 Failed to send completion email:', emailResult.error);
             }
@@ -380,11 +300,9 @@ export const handleAFSWebhook = async (req, res) => {
       
     } else {
       // Payment failed
-      console.log('❌ Payment failed:', result);
       
       // Call Salesforce API for failed payment
       try {
-        console.log('🔄 Calling Salesforce API for failed payment...');
         
         const salesforcePaymentData = {
           quotepaymentId: subscriptionRecord.quotepaymentId,
@@ -482,7 +400,6 @@ async function scheduleNextPayment(subscriptionId) {
       next_charge_date: nextChargeDate
     });
     
-    console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}: ${nextChargeDate.toISOString().slice(0, 10)}`);
     
   } catch (error) {
     console.error(' Error scheduling next payment:', error);
@@ -502,7 +419,6 @@ export const processRecurringPayments = async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1); // End of day
     
-    console.log(`🔄 Processing recurring payments for: ${today.toISOString().slice(0, 10)}`);
     
     // First, let's check what subscriptions exist for today (debugging)
     const allActiveSubscriptions = await Vzat_Recurring_Data.find({
@@ -513,7 +429,6 @@ export const processRecurringPayments = async (req, res) => {
       }
     });
     
-    console.log(`🔍 Debug: Found ${allActiveSubscriptions.length} active subscriptions for today`);
     allActiveSubscriptions.forEach(sub => {
       console.log(`📋 Subscription ${sub.quotepaymentId}: payments_completed=${sub.payments_completed}, InstallmentLeft=${sub.InstallmentLeft}, last_processed_date=${sub.last_processed_date}`);
     });
@@ -541,7 +456,6 @@ export const processRecurringPayments = async (req, res) => {
       ]
     });
     
-    console.log(`📋 Found ${dueSubscriptions.length} subscriptions due for payment (excluding already processed today)`);
     
     const results = [];
     
@@ -609,7 +523,6 @@ export const processRecurringPayments = async (req, res) => {
     }
     
   } catch (error) {
-    console.error('❌ Recurring payments processing error:', error);
     const errorResponse = { 
       message: 'Recurring payments processing failed', 
       error: error.message 
@@ -618,7 +531,6 @@ export const processRecurringPayments = async (req, res) => {
     if (res) {
       res.status(500).json(errorResponse);
     } else {
-      console.error('❌ Cron job failed:', errorResponse);
       return errorResponse;
     }
   }
@@ -628,7 +540,6 @@ export const processRecurringPayments = async (req, res) => {
  * Process a single subscription payment
  */
 async function processSubscriptionPayment(subscription) {
-  console.log(`💳 Processing payment for subscription: ${subscription.quotepaymentId}`);
   
   if (!subscription.afs_registration_id) {
     throw new Error('No registration ID found for subscription');
@@ -636,7 +547,6 @@ async function processSubscriptionPayment(subscription) {
   
   // Check if we're using mock data for testing
   if (subscription.afs_registration_id.includes('mock')) {
-    console.log(`🧪 Mock mode detected - simulating successful payment`);
     
     // Simulate successful AFS response for testing
     const mockResponse = {
@@ -651,7 +561,6 @@ async function processSubscriptionPayment(subscription) {
       merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`
     };
     
-    console.log(`Mock payment initiated successfully for ${subscription.quotepaymentId}`);
     return mockResponse;
   }
   
@@ -679,11 +588,9 @@ async function processSubscriptionPayment(subscription) {
   
   const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
   
-  console.log(`📋 AFS payment response:`, response.data);
   
   if (response.data && response.data.result && response.data.result.code.startsWith('000.')) {
     // Payment successful - webhook will handle the rest
-    console.log(`Payment initiated successfully for ${subscription.quotepaymentId}`);
     return response.data;
   } else {
     throw new Error(`Payment failed: ${response.data?.result?.description || 'Unknown error'}`);
@@ -706,10 +613,7 @@ export const getSubscriptionStatus = async (req, res) => {
     }
     
     // Debug logging
-    console.log(`🔍 Debug subscription data for ${quotepaymentId}:`);
-    console.log(`  InstallmentLeft: ${subscription.InstallmentLeft}`);
-    console.log(`  payments_completed: ${subscription.payments_completed}`);
-    console.log(`  Total_After_VAT_Currency: ${subscription.Total_After_VAT_Currency}`);
+ 
     
     const response = {
       quotepaymentId: subscription.quotepaymentId,
@@ -732,7 +636,6 @@ export const getSubscriptionStatus = async (req, res) => {
     res.json(response);
     
   } catch (error) {
-    console.error(' Error getting subscription status:', error);
     res.status(500).json({ message: 'Failed to get subscription status' });
   } finally {
     
@@ -758,7 +661,6 @@ export const cancelSubscription = async (req, res) => {
       return res.status(404).json({ message: 'Subscription not found' });
     }
     
-    console.log(`🚫 Subscription cancelled: ${quotepaymentId}`);
     
     Post_Common_DB_Log_Data('/subscription/cancel', { quotepaymentId }, { 
       message: 'Subscription cancelled successfully',
@@ -799,7 +701,6 @@ export const updateNextChargeDate = async (req, res) => {
       return res.status(404).json({ message: 'Subscription not found' });
     }
     
-    console.log(`📅 Updated next charge date for ${quotepaymentId}: ${next_charge_date}`);
     
     res.json({ 
       message: 'Next charge date updated successfully',
@@ -808,7 +709,6 @@ export const updateNextChargeDate = async (req, res) => {
     });
     
   } catch (error) {
-    console.error(' Error updating next charge date:', error);
     res.status(500).json({ message: 'Failed to update next charge date' });
   } finally {
     
@@ -825,11 +725,9 @@ export const fixInstallmentLeft = async (req, res) => {
     const { quotepaymentId } = req.params;
     const { installment_left } = req.body;
     
-    console.log(`🔧 Attempting to fix InstallmentLeft for ${quotepaymentId} with value: ${installment_left}`);
     
     // First, check what's currently in the database
     const currentSub = await Vzat_Recurring_Data.findOne({ quotepaymentId });
-    console.log(`🔍 Current InstallmentLeft value: ${currentSub?.InstallmentLeft}`);
     
     const subscription = await Vzat_Recurring_Data.findOneAndUpdate(
       { quotepaymentId },
@@ -841,8 +739,6 @@ export const fixInstallmentLeft = async (req, res) => {
       return res.status(404).json({ message: 'Subscription not found' });
     }
     
-    console.log(`🔧 Fixed InstallmentLeft for ${quotepaymentId}: ${installment_left}`);
-    console.log(`🔍 After update - InstallmentLeft: ${subscription.InstallmentLeft}, payments_completed: ${subscription.payments_completed}`);
     
     res.json({ 
       message: 'InstallmentLeft field updated successfully',

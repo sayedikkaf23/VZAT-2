@@ -14,7 +14,6 @@ export class SalesForceService {
 
   getSalesForceDetails(): Observable<any> {
     const url = `${this.url}/salesForce`;
-    console.log(url);
 
     let params = new HttpParams();
     params = params.append('token', '2');

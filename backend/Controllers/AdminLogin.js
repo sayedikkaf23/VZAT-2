@@ -14,12 +14,11 @@ const Login = async (req,res) => {
           message: "Nothing to Process to get the response"
       }
       const LogData = Post_Common_DB_Log_Data("/api/adminLogin",body,data);
-      console.log(LogData);
+      
       res.statusCode = 404;
       res.end("Error");
     }
       const { email, password } = req.body;
-      console.log(email,password);
       await connectDB();
       try {
         const loggingUser = await AdminUser.findOne({ email: email });
@@ -30,7 +29,7 @@ const Login = async (req,res) => {
               loggedIn: 0 
           }
           const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
-          console.log(LogData);
+          
           return res.json(data);
         }
         const isEqual = await bcrypt.compare(password, loggingUser.password);
@@ -40,7 +39,7 @@ const Login = async (req,res) => {
               loggedIn: 0 
           }
           const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
-          console.log(LogData);
+          
           return res.json(data);
         }
         const token = jwt.sign(
@@ -54,7 +53,6 @@ const Login = async (req,res) => {
         );
         ;
 
-        console.log(token)
 
         // res.cookie('jwtToken', token, {
         //   httpOnly: true,
@@ -70,14 +68,14 @@ const Login = async (req,res) => {
           token:token 
         }
         const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
-        console.log(LogData);
+        
         res.json(data);
       } catch (err) {
         const data = {
             message: err
         }
         const LogData = Post_Common_DB_Log_Data("/api/adminLogin",req.body,data);
-        console.log(LogData);
+        
         ;
         throw err;
       }
