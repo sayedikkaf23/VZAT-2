@@ -40,24 +40,10 @@ export class PaymentResultComponent implements OnInit {
     
     const backendUrl = `${environment.apiUrl}/payment/result`;
     
-    console.log('🔍 Payment Result Debug:');
-    console.log('   - Environment API URL:', environment.apiUrl);
-    console.log('   - Backend URL:', backendUrl);
-    console.log('   - Resource Path:', resourcePath);
-    console.log('   - Quote Payment ID (QP ID):', quotepaymentId);
-    console.log('   - Checkout ID:', id);
-    console.log('   - Request Params:', params);
     
     this.http.get(backendUrl, { params }).subscribe({
       next: (res: any) => {
         console.log('📋 Payment Result Response:', res);
-        
-        // Log specific requested data
-        console.log('🎯 Key Data Points:');
-        console.log('   - Customer Name:', res?.customer_name || res?.Customer_name || 'Not found');
-        console.log('   - Amount Paid:', res?.amount || res?.Amount || res?.paid_amount || 'Not found');
-        console.log('   - QP ID from response:', res?.quotepaymentId || res?.quote_payment_id || quotepaymentId || 'Not found');
-        console.log('   - Transaction ID:', res?.id || res?.transaction_id || 'Not found');
         
         // Update component state
         this.result = res;
@@ -84,7 +70,6 @@ export class PaymentResultComponent implements OnInit {
    * Extract dynamic data from payment result
    */
   private extractDynamicData(result: any): void {
-    console.log('🔍 Extracting dynamic data from result:', result);
     
     // Extract customer name - prioritize different possible field names
     this.customerName = result?.customer_name || 
@@ -121,13 +106,6 @@ export class PaymentResultComponent implements OnInit {
       this.remainingAmount = 0;
     }
     
-    console.log('📋 Final Extracted Data:');
-    console.log('   - Customer Name:', this.customerName);
-    console.log('   - Amount Paid (Transaction):', this.paymentAmount);
-    console.log('   - QP ID:', qpId);
-    console.log('   - Total Amount (Total_After_VAT_Currency):', this.totalAmount);
-    console.log('   - Remaining Amount:', this.remainingAmount);
-    console.log('   - Transaction ID:', result?.id || result?.transaction_id);
     
     // Store QP ID for template access if needed
     this.result.qpId = qpId;

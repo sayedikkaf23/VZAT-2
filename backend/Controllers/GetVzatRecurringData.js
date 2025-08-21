@@ -21,7 +21,6 @@ const Get_All_Vzat_Recurring_Data = async (req,res) => {
         const log = {data,currentPage: page,totalCount,totalPages}
 
         const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, log);
-        console.log(LogData);
 
         res.json({
             data,
@@ -34,7 +33,6 @@ const Get_All_Vzat_Recurring_Data = async (req,res) => {
             message: error
         }
         const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
-        console.log(LogData);
         res.status(500).json({ message: error.message });
     }
 }
@@ -51,7 +49,6 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
       ToDate
     } = req.query
 
-    console.log(OpportunityId,quotepaymentId,QuoteId,FromDate,ToDate);
 
     if (!OpportunityId && !quotepaymentId && !QuoteId && !FromDate && !ToDate) {
         const query = {
@@ -61,7 +58,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           message: "Nothing to Process to get the response"
         }
         const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link/search",query,data);
-        console.log(LogData);
+        
         res.statusCode = 404;
         res.json(query);
       }
@@ -81,7 +78,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
               }
@@ -91,7 +88,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
               }
 
               const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-              console.log(LogData);
+              
 
               res.json(resData);
             }
@@ -102,7 +99,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
         }
@@ -116,7 +113,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
         }
@@ -126,7 +123,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
         }
@@ -137,7 +134,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
         }
@@ -151,7 +148,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
           
@@ -162,7 +159,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
         }
@@ -173,7 +170,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
         }
@@ -192,7 +189,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
         }
@@ -208,7 +205,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
         }
@@ -219,7 +216,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
         }
@@ -230,7 +227,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
           }
 
           const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.query, resData);
-          console.log(LogData);
+          
 
           res.json(resData);
       }
@@ -239,7 +236,7 @@ const Get_Searched_Vzat_Recurring_Data = async (req,res) => {
             message: error
         }
         const LogData = Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link",req.body,data);
-        console.log(LogData);
+        
         res.status(500).json({ message: error.message });
     }
   }

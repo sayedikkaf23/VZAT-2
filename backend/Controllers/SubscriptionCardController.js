@@ -18,8 +18,6 @@ export const createCardChangePaymentForm = async (req, res) => {
     const { quotepaymentId } = req.params;
     const { customerEmail } = req.body;
 
-    console.log(`🔄 Creating card change form for subscription: ${quotepaymentId}`);
-
     // Find the subscription
     const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId });
     if (!subscription) {
@@ -78,14 +76,13 @@ export const createCardChangePaymentForm = async (req, res) => {
       "Content-Type": "application/x-www-form-urlencoded"
     };
 
-    console.log('🔄 Creating AFS checkout for card change...');
     const afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
 
     if (afsResponse.data && afsResponse.data.id) {
       const checkoutId = afsResponse.data.id;
       const paymentFormUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(checkoutId)}`;
 
-      console.log(`✅ Card change payment form created: ${checkoutId}`);
+  
 
       res.json({
         success: true,
@@ -101,7 +98,6 @@ export const createCardChangePaymentForm = async (req, res) => {
       });
 
     } else {
-      console.error('❌ AFS checkout creation failed:', afsResponse.data);
       res.status(500).json({
         success: false,
         message: 'Failed to create payment form for card change'
@@ -109,7 +105,6 @@ export const createCardChangePaymentForm = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Error creating card change form:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create card change form',
@@ -124,8 +119,6 @@ export const createCardChangePaymentForm = async (req, res) => {
  */
 export const handleCardChangeWebhook = async (req, res) => {
   try {
-    console.log('🔔 Card change webhook received:', JSON.stringify(req.body, null, 2));
-
     const { 
       id, 
       paymentType, 
@@ -140,23 +133,18 @@ export const handleCardChangeWebhook = async (req, res) => {
     // Extract quotepaymentId from merchantTransactionId
     const quotepaymentIdMatch = merchantTransactionId.match(/card_change_(.+)_\d+$/);
     if (!quotepaymentIdMatch) {
-      console.error('❌ Could not extract quotepaymentId from merchantTransactionId:', merchantTransactionId);
       return res.status(400).json({ message: 'Invalid merchant transaction ID' });
     }
 
     const quotepaymentId = quotepaymentIdMatch[1];
-    console.log(`📋 Processing card change for subscription: ${quotepaymentId}`);
 
     // Find the subscription
     const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId });
     if (!subscription) {
-      console.error('❌ Subscription not found:', quotepaymentId);
       return res.status(404).json({ message: 'Subscription not found' });
     }
 
     if (paymentType === 'PA' && result.code.startsWith('000.') && registrationId) {
-      console.log('✅ Card registration successful, updating subscription...');
-
       // Store the old registration ID for reference
       const oldRegistrationId = subscription.afs_registration_id;
 
@@ -167,12 +155,8 @@ export const handleCardChangeWebhook = async (req, res) => {
         old_registration_id: oldRegistrationId // Keep track of old ID
       });
 
-      console.log(`✅ Subscription updated with new registration ID: ${registrationId}`);
-
       // Save the new card details
       try {
-        console.log('💳 Saving new card details...');
-        
         // Create card data from the webhook information
         const cardData = {
           quotepaymentId: quotepaymentId,
@@ -186,7 +170,6 @@ export const handleCardChangeWebhook = async (req, res) => {
         const cardSaveResult = await saveCustomerCard(cardData);
         
         if (cardSaveResult.success) {
-          console.log('✅ New card saved successfully');
           
           // Mark old cards as inactive for this customer
           const customer = await Customer.findOne({ quotepaymentId: quotepaymentId });
@@ -203,15 +186,12 @@ export const handleCardChangeWebhook = async (req, res) => {
                 deactivation_reason: 'Card changed for subscription'
               }
             );
-            console.log('✅ Old cards marked as inactive');
           }
 
-        } else {
-          console.warn('⚠️ Card saving failed:', cardSaveResult.message);
         }
 
       } catch (cardError) {
-        console.error('❌ Error saving new card:', cardError);
+        // Card saving error handled silently
       }
 
       res.json({ 
@@ -221,7 +201,6 @@ export const handleCardChangeWebhook = async (req, res) => {
       });
 
     } else {
-      console.error('❌ Card registration failed:', result);
       res.status(400).json({ 
         message: 'Card registration failed',
         result: result
@@ -229,7 +208,6 @@ export const handleCardChangeWebhook = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Error processing card change webhook:', error);
     res.status(500).json({ 
       message: 'Failed to process card change',
       error: error.message 
@@ -283,7 +261,6 @@ export const getCardChangeHistory = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching card change history:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch card history',
@@ -331,7 +308,6 @@ export const getCustomerPaymentMethods = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching payment methods:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch payment methods',
@@ -348,8 +324,6 @@ export const updateSubscriptionCard = async (req, res) => {
   try {
     const { quotepaymentId } = req.params;
     const { cardId, customerEmail } = req.body;
-
-    console.log(`🔄 Updating subscription ${quotepaymentId} to use card ${cardId}`);
 
     // Verify customer access
     const customer = await Customer.findOne({ email: customerEmail });
@@ -398,8 +372,6 @@ export const updateSubscriptionCard = async (req, res) => {
       lastUsed: new Date()
     });
 
-    console.log(`✅ Subscription updated to use card: ${selectedCard.maskedCardNumber}`);
-
     res.json({
       success: true,
       message: 'Subscription payment method updated successfully',
@@ -413,7 +385,6 @@ export const updateSubscriptionCard = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error updating subscription card:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update subscription payment method',

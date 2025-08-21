@@ -11,9 +11,7 @@
       constructor(private cookieService: CookieService,private router: Router) {}
       isAuthenticated(): boolean {
         const cookieExists: boolean = this.cookieService.check('jwtToken');
-        console.log(cookieExists);
         const token =  this.cookieService.get('jwtToken');
-        console.log('Token from cookie:', token);
         return !!token;
       }
 

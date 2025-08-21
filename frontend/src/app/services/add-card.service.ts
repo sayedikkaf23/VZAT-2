@@ -99,12 +99,10 @@ export class AddCardService {
    */
   loadAfsScript(scriptUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      console.log('🔄 Loading AFS script:', scriptUrl);
       
       // Remove existing AFS scripts to avoid conflicts
       const existingScript = document.getElementById('afs-widget-script');
       if (existingScript) {
-        console.log('🗑️ Removing existing AFS script');
         existingScript.remove();
       }
 
@@ -115,14 +113,11 @@ export class AddCardService {
       
       // Add error handling for CSP issues
       script.onload = () => {
-        console.log('✅ AFS widget script loaded successfully');
-        console.log('🔍 Checking if wpwlOptions is available:', typeof window.wpwlOptions);
+
         resolve();
       };
       
       script.onerror = (error) => {
-        console.error('❌ Failed to load AFS widget script:', error);
-        console.error('📋 This might be due to Content Security Policy restrictions');
         console.error('💡 Script URL:', scriptUrl);
         reject(new Error('Failed to load AFS widget script - possible CSP issue'));
       };
@@ -170,7 +165,6 @@ export class AddCardService {
       const cvvField = formElement.querySelector('input[name="card.cvv"]');
       
       if (cardNumberField || expiryField || cvvField) {
-        console.log('✅ AFS payment form fields detected');
         console.log('🔍 Found fields:', {
           cardNumber: !!cardNumberField,
           expiry: !!expiryField,

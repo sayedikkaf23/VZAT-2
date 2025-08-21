@@ -52,12 +52,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     }
 
     // Check if quotepaymentId already exists in the database
-    console.log(`🔍 Checking for existing quotepaymentId: ${quotepaymentId}`);
     const existingRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
-    console.log(`🔍 Database search result:`, existingRecord ? 'FOUND' : 'NOT FOUND');
     
     if (existingRecord) {
-      console.log(`Duplicate quotepaymentId found! Record ID: ${existingRecord._id}`);
       
       // Generate payment page URL for existing record
       let existingPaymentPageUrl = null;
@@ -90,8 +87,6 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       return res.status(409).json(data); // 409 Conflict status code
     }
     
-    console.log(`No duplicate found, proceeding with new payment creation for quotepaymentId: ${quotepaymentId}`);
-
     // Validate CreatedDate format
     const regEx = /^\d{4}-\d{2}-\d{2}$/;
     if (typeof CreatedDate !== 'string' || !regEx.test(CreatedDate)) {
@@ -151,7 +146,6 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     }
 
     // Save to DB
-    console.log(`💾 Saving new record with quotepaymentId: ${quotepaymentId}`);
     const baseData = new Vzat_Recurring_Data({
       OpportunityId,
       quotepaymentId,
@@ -174,14 +168,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     });
 
     const result = await baseData.save();
-    console.log(`Record saved successfully with ID: ${result._id}`);
-
     // Generate payment schedule array for installments
     let paymentSchedule = [];
-    if (finalInstallmentType === "Installments" && InstallmentLeft > 0) {
-      console.log(`📅 Generating payment schedule for ${InstallmentLeft} installments`);
-      console.log(`📋 CreatedDate: ${CreatedDate}, firstPaymentDueDate: ${firstPaymentDueDate.toISOString().slice(0, 10)}`);
-      
+    if (finalInstallmentType === "Installments" && InstallmentLeft > 0) {      
       // Helper function to calculate payment day based on business rule
       const getPaymentDay = (date) => {
         const day = date.getDate();
@@ -194,7 +183,6 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         if (i === 0) {
           // FIRST payment: ALWAYS use the CreatedDate itself (not modified)
           dueDate = new Date(createdDateObj.getTime()); // Use exact CreatedDate
-          console.log(`💰 First payment due date set to CreatedDate: ${dueDate.toISOString().slice(0, 10)}`);
         } else {
           // Subsequent payments: 10th or 25th of each month based on original creation date
           const paymentDay = getPaymentDay(createdDateObj);
@@ -203,7 +191,6 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
           const adjustedMonth = targetMonth % 12;
           
           dueDate = new Date(targetYear, adjustedMonth, paymentDay);
-          console.log(`📅 Subsequent payment ${i + 1} due date: ${dueDate.toISOString().slice(0, 10)}`);
         }
         
         // Format date as YYYY-MM-DD
@@ -216,9 +203,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
           status: i === 0 ? 'due' : 'pending'
         });
       }
-      
-      console.log(`📋 Generated payment schedule:`, paymentSchedule);
-      
+            
       // Update the record with payment schedule
       await Vzat_Recurring_Data.findByIdAndUpdate(
         result._id,
@@ -263,12 +248,6 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       // Use backend URL for shopperResultUrl since that's where the payment-result endpoint is
       const shopperResultUrl = `${backendUrl}/payment-result`;
     
-      console.log(`🔐 AFS Configuration Debug:`);
-      console.log(`   - Backend URL: ${backendUrl}`);
-      console.log(`   - Frontend URL: ${frontendUrl}`);
-      console.log(`   - Shopper Result URL: ${shopperResultUrl}`);
-      console.log(`   - AFS Domain: ${process.env.AFS_DOMAIN}`);
-      console.log(`   - Entity ID: ${entityId}`);
       
       // Debug: Check if environment variables are loaded
       if (!process.env.AFS_DOMAIN || !process.env.AFS_ENTITY_ID || !process.env.AFS_ACCESS_TOKEN) {
@@ -285,10 +264,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       // Add webhook notification URL for automatic payment status updates
       const notificationUrl = `${backendUrl}/api/subscription/webhook/afs`;
       afsData.append('notificationUrl', notificationUrl);
-      console.log(`🔔 Webhook notification URL: ${notificationUrl}`);
       
       if (isSubscription) {
-        console.log(`🔄 Creating subscription for ${InstallmentLeft} installments`);
         
         // For subscriptions, we use 'DB' (Direct Debit) for immediate charge of first payment
         // This ensures the first payment is actually debited, not just pre-authorized
@@ -299,13 +276,11 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         
         // Calculate next charge date based on creation date logic
         const nextChargeDate = nextInstallmentDate.toISOString().slice(0, 10);
-        console.log(`📅 Next charge date calculated: ${nextChargeDate}`);
         
         // Add subscription metadata (for tracking)
         afsData.append('merchantMemo', `Subscription:${quotepaymentId}:${InstallmentLeft}:${nextChargeDate}`);
         
       } else {
-        console.log(`💳 Creating one-time payment`);
         // For one-time payments, use 'DB' (Direct Debit)
         afsData.append('paymentType', 'DB');
       }
@@ -315,9 +290,6 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         "Content-Type": "application/x-www-form-urlencoded"
       };
       
-      console.log(`🚀 Sending request to AFS: ${isSubscription ? 'SUBSCRIPTION' : 'ONE-TIME'}`);
-      console.log(`📋 AFS Request Data:`, Object.fromEntries(afsData.entries()));
-      console.log(`🔗 AFS URL:`, afsUrl);
       
       afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
       
@@ -340,15 +312,14 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
             { new: true }
           );
           
-          console.log(`${isSubscription ? 'Subscription' : 'Payment'} data stored successfully`);
+          
         } catch (updateErr) {
-          console.error(" Failed to store checkout/subscription data:", updateErr);
+          // Error storing checkout/subscription data handled silently
         }
       } else {
         afsError = afsResponse.data;
       }
     } catch (err) {
-      console.error(" AFS API Error:", err.response ? err.response.data : err.message);
       afsError = err.response ? err.response.data : err.message;
     }
 
@@ -437,10 +408,8 @@ export const getAFSPaymentResult = async (req, res) => {
       });
       
     } catch (getError) {
-      console.log(` Method 1 failed:`, getError.response?.status, getError.response?.data);
       
       try {
-        console.log(`🔄 Method 2: GET with entityId parameter`);
         response = await axios.get(`${afsUrl}?entityId=${entityId}`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -448,7 +417,6 @@ export const getAFSPaymentResult = async (req, res) => {
           }
         });
       } catch (getWithEntityError) {
-        console.log(` Method 2 failed:`, getWithEntityError.response?.status, getWithEntityError.response?.data);
         
         try {
           const formData = new URLSearchParams();
@@ -463,11 +431,9 @@ export const getAFSPaymentResult = async (req, res) => {
           });
        
         } catch (postError) {
-          console.log(` Method 3 failed:`, postError.response?.status, postError.response?.data);
           
           // Try the result endpoint without /payment suffix as last resort
           const alternativeUrl = afsUrl.replace('/payment', '');
-          console.log(`🔄 Method 4: Alternative URL without /payment: ${alternativeUrl}`);
           
           response = await axios.get(alternativeUrl, {
             headers: {
@@ -486,19 +452,13 @@ export const getAFSPaymentResult = async (req, res) => {
       resultData.quotepaymentId = quotepaymentId;
     }
 
-    console.log(`📋 AFS Response received:`, JSON.stringify(resultData, null, 2));
-
     // Check if this is actually a successful response with payment data
     // First determine if payment was successful based on AFS result codes
     const isPaymentSuccessful = resultData.result && 
                                (resultData.result.code.startsWith('000.') || 
                                 resultData.result.code === '200.300.404'); // Special case for parameter warnings
     
-    console.log(`🔍 Payment Status Check: Result Code=${resultData.result?.code}, Is Successful=${isPaymentSuccessful}`);
-    
     if (resultData.id && resultData.amount && resultData.currency) {
-      
-      console.log(`Valid payment data found: ID=${resultData.id}, Amount=${resultData.amount}, Currency=${resultData.currency}`);
       
       // Determine actual payment status based on AFS result codes
       let actualPaymentStatus = 'failed';
@@ -512,12 +472,9 @@ export const getAFSPaymentResult = async (req, res) => {
         paymentMessage = resultData.result?.description || 'Payment failed for unknown reason';
       }
       
-      console.log(`💳 Determined Payment Status: ${actualPaymentStatus} - ${paymentMessage}`);
-      
       // Call Salesforce API to update quote payment status (for both success and failure)
       if (quotepaymentId) {
         try {
-          console.log(`🔄 Calling Salesforce API to update payment status (${actualPaymentStatus})...`);
           
           const salesforcePaymentData = {
             quotepaymentId: quotepaymentId,
@@ -544,14 +501,12 @@ export const getAFSPaymentResult = async (req, res) => {
           
           if (salesforceResult.success) {
             const statusText = actualPaymentStatus === 'success' ? 'successful payment' : 'failed payment';
-            console.log(`✅ Salesforce has been notified of ${statusText}`);
             if (actualPaymentStatus === 'success') {
               resultData.overall_status = 'complete_success'; // Payment + Salesforce both successful
             } else {
               resultData.overall_status = 'payment_failed_salesforce_updated'; // Payment failed but Salesforce notified
             }
           } else {
-            console.warn('⚠️ Salesforce update failed:', salesforceResult.error);
             if (actualPaymentStatus === 'success') {
               resultData.overall_status = 'payment_success_salesforce_failed'; // Payment OK, Salesforce failed
             } else {
@@ -560,7 +515,6 @@ export const getAFSPaymentResult = async (req, res) => {
           }
           
         } catch (salesforceError) {
-          console.error('❌ Error calling Salesforce API:', salesforceError);
           resultData.salesforce_update = {
             status: 'failed',
             success: false,
@@ -595,10 +549,6 @@ export const getAFSPaymentResult = async (req, res) => {
       
       // 🆕 AUTOMATIC WEBHOOK TRIGGERING FOR SUCCESSFUL PAYMENTS
       if (actualPaymentStatus === 'success' && quotepaymentId) {
-        console.log('🔄 =============== AUTO-TRIGGERING WEBHOOK ===============');
-        console.log('💡 Reason: Payment successful but webhook may not have been received from AFS');
-        console.log(`📋 Payment Details: ID=${resultData.id}, Amount=${resultData.amount}, QuotePaymentId=${quotepaymentId}`);
-        
         try {
           // Import webhook handler
           const { handleAFSWebhook } = await import('./SubscriptionController.js');
@@ -618,8 +568,6 @@ export const getAFSPaymentResult = async (req, res) => {
             timestamp: resultData.timestamp || new Date().toISOString()
           };
           
-          console.log('📋 Generated webhook data:', JSON.stringify(webhookData, null, 2));
-          
           // Create mock request and response objects
           const mockReq = {
             body: {
@@ -638,20 +586,16 @@ export const getAFSPaymentResult = async (req, res) => {
             status: function(code) { this.statusCode = code; return this; },
             json: function(data) { 
               this.responseData = data; 
-              console.log(`📤 Auto-webhook response [${this.statusCode}]:`, JSON.stringify(data, null, 2));
               return this; 
             },
             statusCode: 200,
             responseData: null
           };
           
-          console.log('🚀 Triggering webhook handler automatically...');
-          
           // Call the webhook handler
           await handleAFSWebhook(mockReq, mockRes);
           
           if (mockRes.statusCode === 200) {
-            console.log('✅ Auto-webhook triggered successfully!');
             resultData.auto_webhook = {
               status: 'triggered',
               success: true,
@@ -659,7 +603,6 @@ export const getAFSPaymentResult = async (req, res) => {
               triggered_at: new Date().toISOString()
             };
           } else {
-            console.log('⚠️ Auto-webhook returned non-200 status:', mockRes.statusCode);
             resultData.auto_webhook = {
               status: 'failed',
               success: false,
@@ -670,7 +613,6 @@ export const getAFSPaymentResult = async (req, res) => {
           }
           
         } catch (webhookError) {
-          console.error('❌ Error auto-triggering webhook:', webhookError);
           resultData.auto_webhook = {
             status: 'error',
             success: false,
@@ -680,29 +622,16 @@ export const getAFSPaymentResult = async (req, res) => {
           };
         }
         
-        console.log('🔄 =============== AUTO-WEBHOOK COMPLETE ===============');
       }
       
       // 🆕 CREATE CUSTOMER ACCOUNT AND SAVE CARD FOR ALL SUCCESSFUL PAYMENTS
       if (actualPaymentStatus === 'success' && quotepaymentId) {
-        console.log('🔍 CUSTOMER REGISTRATION DEBUG - Starting customer account and card save process...');
-        console.log(`🔍 Payment Status: ${actualPaymentStatus}, QuotePaymentId: ${quotepaymentId}`);
-        
         try {
-          console.log('🔄 Finding payment record for card saving...');
           
           // Find the original payment record
           const paymentRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
-          console.log('🔍 DATABASE QUERY RESULT:', paymentRecord ? 'FOUND' : 'NOT FOUND');
           
           if (paymentRecord) {
-            console.log('📋 PAYMENT RECORD DETAILS:');
-            console.log(`   - QuotePaymentId: ${paymentRecord.quotepaymentId}`);
-            console.log(`   - InstallmentType: ${paymentRecord.InstallmentType}`);
-            console.log(`   - Is Subscription: ${paymentRecord.is_subscription}`);
-            console.log(`   - Customer Email: ${paymentRecord.opp_email}`);
-            console.log(`   - Customer Name: ${paymentRecord.Customer_name}`);
-            console.log(`   - Subscription Status: ${paymentRecord.subscription_status}`);
             
             // Add customer information to result data for frontend display
             resultData.customer_name = paymentRecord.Customer_name;
@@ -710,14 +639,8 @@ export const getAFSPaymentResult = async (req, res) => {
             resultData.customer_email = paymentRecord.opp_email;
             resultData.Total_After_VAT_Currency = paymentRecord.Total_After_VAT_Currency;
             
-            console.log('✅ Added customer information to result data:');
-            console.log(`   - Customer Name: ${resultData.customer_name}`);
-            console.log(`   - Customer Email: ${resultData.customer_email}`);
-            console.log(`   - Total Amount: ${resultData.Total_After_VAT_Currency}`);
-            
             // Handle customer account creation (subscription payments only)
             if (paymentRecord.is_subscription && paymentRecord.opp_email) {
-              console.log('✅ SUBSCRIPTION CRITERIA MET - Creating customer account...');
               
               const customerCreationResult = await createCustomerAccount({
                 quotepaymentId: paymentRecord.quotepaymentId,
@@ -727,27 +650,19 @@ export const getAFSPaymentResult = async (req, res) => {
                 QuoteId: paymentRecord.QuoteId
               });
               
-              console.log('🔍 CUSTOMER CREATION RESULT:', customerCreationResult);
-              
               if (customerCreationResult.success) {
-                console.log('✅ Customer account created successfully after subscription first payment');
-                console.log(`📧 EMAIL STATUS: ${customerCreationResult.success ? 'SHOULD BE SENT' : 'FAILED'}`);
                 resultData.customer_account = {
                   status: 'created',
                   message: 'Customer account created and welcome email sent for subscription',
                   isExisting: customerCreationResult.isExisting || false
                 };
               } else {
-                console.error('❌ Failed to create customer account:', customerCreationResult.error);
                 resultData.customer_account = {
                   status: 'failed',
                   error: customerCreationResult.error
                 };
               }
             } else if (paymentRecord && !paymentRecord.is_subscription) {
-              console.log('ℹ️ ONE-TIME PAYMENT - Creating customer account for card saving...');
-              console.log(`   - InstallmentType: ${paymentRecord.InstallmentType}`);
-              console.log(`   - Is Subscription Flag: ${paymentRecord.is_subscription}`);
               
               // Create customer account for one-time payments too (for card saving)
               if (paymentRecord.opp_email) {
@@ -760,30 +675,24 @@ export const getAFSPaymentResult = async (req, res) => {
                 });
                 
                 if (customerCreationResult.success) {
-                  console.log('✅ Customer account created successfully for one-time payment');
                   resultData.customer_account = {
                     status: 'created',
                     message: 'Customer account created for one-time payment card saving',
                     isExisting: customerCreationResult.isExisting || false
                   };
                 } else {
-                  console.error('❌ Failed to create customer account for one-time payment:', customerCreationResult.error);
                   resultData.customer_account = {
                     status: 'failed',
                     error: customerCreationResult.error
                   };
                 }
               } else {
-                console.warn('⚠️ No email address for one-time payment - skipping account creation');
                 resultData.customer_account = {
                   status: 'skipped',
                   message: 'One-time payment - no email address provided'
                 };
               }
             } else {
-              console.warn('⚠️ SKIPPING - Missing payment data or email address');
-              console.log(`   - Has Email: ${!!paymentRecord.opp_email}`);
-              console.log(`   - Is Subscription: ${paymentRecord.is_subscription}`);
               resultData.customer_account = {
                 status: 'skipped',
                 message: 'Customer account creation skipped - missing payment data or email address'
@@ -791,23 +700,19 @@ export const getAFSPaymentResult = async (req, res) => {
             }
             
             // 🆕 SAVE CUSTOMER CARD DETAILS FOR ALL SUCCESSFUL PAYMENTS
-            console.log('💳 ATTEMPTING TO SAVE CARD FOR ALL PAYMENT TYPES...');
             try {
               const cardSaveResult = await saveCustomerCard({
                 ...paymentRecord.toObject(),
                 result: resultData // Pass AFS result for card details
               });
               
-              console.log('💳 CARD SAVE RESULT:', cardSaveResult);
               
               if (cardSaveResult.success) {
-                console.log('✅ Customer card saved successfully for payment');
                 if (!resultData.customer_account) {
                   resultData.customer_account = {};
                 }
                 resultData.customer_account.card_saved = true;
               } else {
-                console.log('⚠️ Card saving failed:', cardSaveResult.message);
                 if (!resultData.customer_account) {
                   resultData.customer_account = {};
                 }
@@ -815,7 +720,6 @@ export const getAFSPaymentResult = async (req, res) => {
                 resultData.customer_account.card_error = cardSaveResult.message;
               }
             } catch (cardError) {
-              console.error('❌ Error saving customer card:', cardError);
               if (!resultData.customer_account) {
                 resultData.customer_account = {};
               }
@@ -824,13 +728,9 @@ export const getAFSPaymentResult = async (req, res) => {
             }
             
           } else {
-            console.error('❌ CRITICAL ERROR - Payment record not found in database');
-            console.log(`   - Searched for quotepaymentId: ${quotepaymentId}`);
-            
             // Try to get customer data from Salesforce API if payment record not found
             if (quotepaymentId) {
               try {
-                console.log('🔄 Attempting to fetch customer data from Salesforce API...');
                 const { GetVzatRecurringDataById } = await import('./GetVzatRecurringDataById.js');
                 
                 // Create mock request object for the API call
@@ -855,18 +755,15 @@ export const getAFSPaymentResult = async (req, res) => {
                 await GetVzatRecurringDataById(mockReq, mockRes);
                 
                 if (customerData && customerData.Customer_name) {
-                  console.log('✅ Retrieved customer data from Salesforce API');
                   resultData.customer_name = customerData.Customer_name;
                   resultData.Customer_name = customerData.Customer_name;
                   resultData.customer_email = customerData.opp_email;
                   resultData.Total_After_VAT_Currency = customerData.Total_After_VAT_Currency;
                   
-                  console.log(`✅ Added customer data from API: ${customerData.Customer_name}`);
-                } else {
-                  console.warn('⚠️ No customer data available from Salesforce API');
                 }
               } catch (apiError) {
-                console.error('❌ Error fetching customer data from API:', apiError);
+                // Error fetching customer data handled silently
+              }
               }
             }
             
@@ -876,20 +773,14 @@ export const getAFSPaymentResult = async (req, res) => {
             };
           }
         } catch (customerError) {
-          console.error('❌ EXCEPTION in customer account creation:', customerError);
-          console.error('❌ Stack trace:', customerError.stack);
           resultData.customer_account = {
             status: 'failed',
             error: customerError.message
           };
         }
-        
-        console.log('🔍 CUSTOMER REGISTRATION DEBUG - Process completed');
-        console.log('🔍 Final customer_account status:', resultData.customer_account);
+
       } else {
-        console.log('🔍 SKIPPING customer registration - Payment not successful or missing quotepaymentId');
-        console.log(`   - Payment Status: ${actualPaymentStatus}`);
-        console.log(`   - QuotePaymentId: ${quotepaymentId}`);
+        // Customer registration skipped
       }
       
       // For backwards compatibility, also check special shopperResultUrl cases
@@ -923,7 +814,6 @@ export const getAFSPaymentResult = async (req, res) => {
         // Call Salesforce API for this success case too
         if (quotepaymentId) {
           try {
-            console.log('🔄 Calling Salesforce API for successful payment (shopperResultUrl warning case)...');
             
             const salesforcePaymentData = {
               quotepaymentId: quotepaymentId,
@@ -939,13 +829,13 @@ export const getAFSPaymentResult = async (req, res) => {
             const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
             
             if (salesforceResult.success) {
-              console.log('✅ Salesforce has been called and updated successfully');
+              // Salesforce updated successfully
             } else {
-              console.warn('⚠️ Salesforce update failed:', salesforceResult.error);
+              // Salesforce update failed
             }
             
           } catch (salesforceError) {
-            console.error('❌ Error calling Salesforce API:', salesforceError);
+            // Error calling Salesforce API handled silently
           }
         }
        
@@ -996,7 +886,6 @@ export const getAFSPaymentResult = async (req, res) => {
   } catch (error) {
     // Log full error response for diagnostics
     if (error.response) {
-      console.error(" AFS Payment Result Error:", JSON.stringify(error.response.data, null, 2));
       
       // Handle specific AFS error: "No payment session found"
       if (error.response.data && 
@@ -1026,7 +915,7 @@ export const getAFSPaymentResult = async (req, res) => {
         config: error.config
       });
     } else {
-      console.error(" AFS Payment Result Error:", error.message);
+
       res.status(500).json({
         message: 'Failed to get payment result',
         error: error.message
