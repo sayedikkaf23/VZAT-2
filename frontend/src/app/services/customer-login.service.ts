@@ -16,7 +16,6 @@ export class CustomerLoginService {
 
   loggingIn(data:{email:String,password:String}): Observable<any> {
     const url = `${this.url}/customer/login`;
-    console.log(url);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' }); 
     return this.http.post(url, data, { headers ,  withCredentials: true });
   }

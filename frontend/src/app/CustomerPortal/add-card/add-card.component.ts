@@ -28,16 +28,12 @@ export class AddCardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('🚀 AddCardComponent initialized');
-    console.log('🌐 Current URL:', window.location.href);
-    console.log('📋 Query params:', this.route.snapshot.queryParams);
     
     // Get customer email from localStorage
     this.loadCustomerData();
     
     // Check if this is a callback from AFS
     this.route.queryParams.subscribe(params => {
-      console.log('📋 Route params changed:', params);
       
       // AFS sends different parameters depending on the type of integration
       const resourcePath = params['resourcePath'];
@@ -97,22 +93,14 @@ export class AddCardComponent implements OnInit, OnDestroy {
    */
   private initializeCardRegistration(): void {
     if (!this.customerEmail) {
-      console.error('❌ No customer email found');
       this.errorMessage = 'Customer email not found. Please log in again.';
       this.loading = false;
       return;
     }
 
-    console.log('🔄 Initializing card registration for:', this.customerEmail);
-    console.log('🌐 Current URL:', window.location.href);
-    console.log('🏠 Origin:', window.location.origin);
 
     this.addCardService.prepareCardRegistration(this.customerEmail).subscribe({
       next: (response: PrepareRegistrationResponse) => {
-        console.log('✅ Registration preparation successful:', response);
-        console.log('🔑 Checkout ID received:', response.checkoutId);
-        console.log('📋 AFS Config:', response.afsConfig);
-        
         this.checkoutId = response.checkoutId;
         this.loading = false; // Stop loading state so form can render
         
@@ -199,7 +187,6 @@ export class AddCardComponent implements OnInit, OnDestroy {
       noSuccessMessage: !this.successMessage
     };
     
-    console.log('📋 Form render conditions:', conditions);
     return Object.values(conditions).every(condition => condition);
   }
 
@@ -207,7 +194,6 @@ export class AddCardComponent implements OnInit, OnDestroy {
    * Initialize the registration form
    */
   private initializeForm(): void {
-    console.log('🔄 Initializing form...');
     
     // Check if all conditions are met for form rendering
     if (!this.canRenderForm()) {
@@ -223,15 +209,8 @@ export class AddCardComponent implements OnInit, OnDestroy {
     
     if (!formElement) {
       console.error('❌ Payment form element (.paymentWidgets) not found in DOM');
-      console.log('📋 Available elements with class "paymentWidgets":', document.querySelectorAll('.paymentWidgets'));
-      console.log('📋 All form elements:', document.querySelectorAll('form'));
       
       const containerElement = document.querySelector('.card-registration-container');
-      console.log('📋 Container element content:', containerElement?.innerHTML || 'No container');
-      console.log('📋 CheckoutId exists:', !!this.checkoutId);
-      console.log('📋 Error message:', this.errorMessage);
-      console.log('📋 Success message:', this.successMessage);
-      console.log('📋 Loading state:', this.loading);
       
       // Force template re-render and retry
       this.errorMessage = '';
@@ -246,10 +225,8 @@ export class AddCardComponent implements OnInit, OnDestroy {
       setTimeout(() => {
         const retryFormElement = document.querySelector('.paymentWidgets') as HTMLFormElement;
         if (retryFormElement) {
-          console.log('✅ Form element found on retry');
           this.finalizeFormSetup(retryFormElement);
         } else {
-          console.error('❌ Form element still not found after retry');
           this.errorMessage = 'Payment form failed to load. Please refresh the page.';
         }
       }, 1000);
@@ -261,7 +238,6 @@ export class AddCardComponent implements OnInit, OnDestroy {
 
   private finalizeFormSetup(formElement: HTMLFormElement): void {
 
-    console.log('✅ Payment form element found:', formElement);
     
     // Set the action URL for the form (callback URL)
     // For standalone registration, this should be the frontend URL where AFS will redirect
@@ -269,35 +245,22 @@ export class AddCardComponent implements OnInit, OnDestroy {
     const shopperResultUrl = window.location.origin + '/saved-card/add-card';
     formElement.action = shopperResultUrl;
     
-    console.log('✅ Form action set to:', shopperResultUrl);
-    console.log('📋 Current origin:', window.location.origin);
-    console.log('📋 Full form action URL:', formElement.action);
-    
     // AFS should automatically render the payment widgets now
     this.isFormReady = true;
     this.loading = false;
-    console.log('✅ Card registration form ready');
     
     // Check if widgets rendered after a delay
     setTimeout(() => {
       const widgetElements = document.querySelectorAll('.wpwl-form, .wpwl-container, input[data-brands]');
-      console.log('🔍 AFS widget elements found:', widgetElements.length);
       if (widgetElements.length ***REMOVED***= 0) {
         console.warn('⚠️ AFS widgets may not have rendered. Form content:', formElement.innerHTML);
         // Try manual rendering if available
         if (typeof (window as any).wpwl !***REMOVED*** 'undefined' && (window as any).wpwl.render) {
           (window as any).wpwl.render();
-          console.log('🔄 Manually triggered AFS widget rendering');
         }
       } else {
         console.log('✅ AFS widgets successfully rendered');
         
-        // Log form details for debugging
-        console.log('📋 Form details:');
-        console.log('  Action:', formElement.action);
-        console.log('  Method:', formElement.method);
-        console.log('  Data-brands:', formElement.getAttribute('data-brands'));
-        console.log('  Class:', formElement.className);
       }
     }, 2000);
     
@@ -309,14 +272,11 @@ export class AddCardComponent implements OnInit, OnDestroy {
    * Handle callback from AFS after card registration
    */
   private handleAfsCallback(resourcePath: string): void {
-    console.log('🔄 Handling AFS callback with resourcePath:', resourcePath);
-    console.log('🌐 Full URL:', window.location.href);
-    console.log('📋 Query params:', this.route.snapshot.queryParams);
+
     
     // Check for error in URL params first
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('error')) {
-      console.error('❌ Error in callback URL:', urlParams.get('error'));
       this.errorMessage = `Payment error: ${urlParams.get('error')}`;
       this.loading = false;
       return;
@@ -341,14 +301,11 @@ export class AddCardComponent implements OnInit, OnDestroy {
     }
 
     const callbackCheckoutId = checkoutIdMatch[1];
-    console.log('🔑 Extracted checkout ID from callback:', callbackCheckoutId);
     
     this.processingRegistration = true;
 
     this.addCardService.handleRegistrationCallback(callbackCheckoutId, this.customerEmail).subscribe({
       next: (response) => {
-        console.log('✅ Registration callback handled successfully:', response);
-        console.log('📋 Response details:', JSON.stringify(response, null, 2));
         
         if (response.success) {
           this.successMessage = response.message;

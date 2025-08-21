@@ -43,7 +43,7 @@ export class SavedCard implements OnInit, OnDestroy {
     this.loadCustomerData();
     this.styleLoader.loadThemes(this.themeUrls)
       .then(() => {
-        console.log('Styles loaded successfully');
+
         // Retry loading cards after styles are loaded if they failed initially
         if (this.customerId) {
           this.retryLoadCards();
@@ -80,7 +80,6 @@ export class SavedCard implements OnInit, OnDestroy {
         for (let entry of entries) {
           // If component becomes visible and we're still loading, retry
           if (entry.contentRect.width > 0 && this.loading && this.customerId) {
-            console.log('Component became visible, checking card load status');
             setTimeout(() => {
               if (this.loading) {
                 console.log('Still loading after visibility change, retrying');
@@ -102,7 +101,6 @@ export class SavedCard implements OnInit, OnDestroy {
     if (customerData) {
       try {
         const parsed = JSON.parse(customerData);
-        console.log('Customer data found:', parsed);
         
         // Try different possible field names for customer ID
         this.customerId = parsed.id || parsed._id || parsed.customerId;
@@ -141,15 +139,12 @@ export class SavedCard implements OnInit, OnDestroy {
       try {
         // Decode JWT token (basic decode, not verification)
         const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('JWT payload:', payload);
         
         this.customerId = payload.customerId || payload.id || payload.userId;
         
         if (this.customerId) {
-          console.log('Customer ID found in JWT:', this.customerId);
           this.loadSavedCards();
         } else {
-          console.error('No customer ID found in JWT:', payload);
           this.error = 'Customer ID not found. Please login again.';
           this.loading = false;
         }
@@ -167,9 +162,7 @@ export class SavedCard implements OnInit, OnDestroy {
 
   loadSavedCards() {
     if (!this.customerId) {
-      console.error('Cannot load cards - no customer ID');
       this.loading = false;
-      this.error = 'Customer ID not found. Please login again.';
       return;
     }
     
@@ -191,7 +184,6 @@ export class SavedCard implements OnInit, OnDestroy {
     
     this.savedCardsService.getCustomerCards(this.customerId).subscribe({
       next: (response: ApiResponse<SavedCardModel>) => {
-        console.log('API Response received:', response);
         this.loading = false;
         if (this.loadingTimeout) {
           clearTimeout(this.loadingTimeout);
@@ -203,7 +195,7 @@ export class SavedCard implements OnInit, OnDestroy {
         
         if (response.success) {
           this.cards = response.cards || [];
-          console.log('Cards loaded successfully:', this.cards.length, 'cards');
+
           
           // Force change detection for cards
           this.cdr.detectChanges();
@@ -212,13 +204,11 @@ export class SavedCard implements OnInit, OnDestroy {
             console.log('No cards found for this customer');
           }
         } else {
-          console.error('API returned error:', response.message);
           this.error = response.message || 'Failed to load saved cards';
           this.cdr.detectChanges();
         }
       },
       error: (error: any) => {
-        console.error('API Error occurred:', error);
         this.loading = false;
         if (this.loadingTimeout) {
           clearTimeout(this.loadingTimeout);
@@ -271,7 +261,6 @@ export class SavedCard implements OnInit, OnDestroy {
       return;
     }
     
-    console.log('Retrying card load for customer:', this.customerId);
     
     // Clear any existing timeout before retry
     if (this.loadingTimeout) {
@@ -284,7 +273,6 @@ export class SavedCard implements OnInit, OnDestroy {
   }
 
   refreshCards() {
-    console.log('Manual refresh triggered');
     
     // Reset all states first
     this.loading = true;

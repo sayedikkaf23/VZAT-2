@@ -133,9 +133,7 @@ export class PaymentScheduleService {
    */
   getPaymentScheduleByCheckoutId(checkoutId: string): Observable<VzatRecurringData> {
     const url = `${this.apiUrl}/payment_schedule/${checkoutId}`;
-    console.log('🌐 Calling payment schedule API:', url);
-    console.log('🌐 API base URL:', this.apiUrl);
-    console.log('🌐 Environment production:', environment.production);
+
     
     return this.http.get<VzatRecurringData>(url);
   }

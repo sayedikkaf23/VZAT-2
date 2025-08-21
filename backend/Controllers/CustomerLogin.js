@@ -14,7 +14,7 @@ const Login = async (req,res) => {
             message: "Nothing to Process to get the response"
         }
         const LogData = Post_Common_DB_Log_Data("/api/customer/login",body,data);
-        console.log(LogData);
+        
         res.statusCode = 404;
         res.end("Error");
         return;
@@ -34,7 +34,6 @@ const Login = async (req,res) => {
               loggedIn: 0 
           }
           const LogData = Post_Common_DB_Log_Data("/api/customer/login",req.body,data);
-          console.log(LogData);
           return res.json(data);
         }
         
@@ -45,7 +44,6 @@ const Login = async (req,res) => {
               loggedIn: 0 
           }
           const LogData = Post_Common_DB_Log_Data("/api/customer/login",req.body,data);
-          console.log(LogData);
           return res.json(data);
         }
         
@@ -61,7 +59,6 @@ const Login = async (req,res) => {
           }
         );
 
-        console.log(token)
 
         // Update last login time
         await updateCustomerLoginTime(email);
@@ -88,7 +85,7 @@ const Login = async (req,res) => {
           }
         }
         const LogData = Post_Common_DB_Log_Data("/api/customer/login",req.body,data);
-        console.log(LogData);
+        
         res.json(data);
         
       } catch (err) {
@@ -97,7 +94,7 @@ const Login = async (req,res) => {
             message: err.message || err
         }
         const LogData = Post_Common_DB_Log_Data("/api/customer/login",req.body,data);
-        console.log(LogData);
+        
         res.status(500).json(data);
       }
   }

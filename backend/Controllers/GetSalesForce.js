@@ -4,7 +4,6 @@ import _ from 'lodash';
 
 
 const GetSalesForce = async (req, res) => {
-    console.log("hi")
       const { token } = req.query;
       if (!token) {
         const query = {
@@ -14,23 +13,19 @@ const GetSalesForce = async (req, res) => {
           message: "Nothing to Process to get the response"
         }
         const LogData = Post_Common_DB_Log_Data("/api/salesForce",query,data);
-        console.log(LogData);
         res.statusCode = 404;
         res.json(query);
         return;
       }
 
-      console.log(req.query);
-      console.log(token);
       
       try {
         // Use persistent connection - mongoose will handle connection state automatically
         const salesAgent = await SalesForce.findOne({token: token});
-        console.log(salesAgent)
         
         if (salesAgent) {
           const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.query, salesAgent);
-          console.log(LogData);
+          
           return res.json(salesAgent);
         }
         
@@ -42,7 +37,7 @@ const GetSalesForce = async (req, res) => {
           token:0
         }
         const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.query, data);
-        console.log(LogData);
+        
         return res.json(data);
         
       } catch (err) {
@@ -51,7 +46,7 @@ const GetSalesForce = async (req, res) => {
             message: err.message || err
         }
         const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.body,data);
-        console.log(LogData);
+        
         return res.status(500).json(data);
       }
 }

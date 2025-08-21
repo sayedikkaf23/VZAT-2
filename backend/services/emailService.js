@@ -125,7 +125,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Subscription completion email sent successfully: ${result.messageId}`);
+
     return { success: true, messageId: result.messageId };
     
   } catch (error) {
@@ -238,7 +238,6 @@ export const sendPaymentFailureEmail = async (failureData) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Payment failure email sent successfully: ${result.messageId}`);
     return { success: true, messageId: result.messageId };
     
   } catch (error) {
@@ -424,11 +423,11 @@ export const sendPdfEmail = async (emailData) => {
  * Send welcome email to new customer with login credentials
  */
 export const sendCustomerWelcomeEmail = async (customerData) => {
-  console.log('📧 EMAIL SERVICE - sendCustomerWelcomeEmail called');
+
   console.log('📧 EMAIL SERVICE - Input data:', JSON.stringify(customerData, null, 2));
   
   try {
-    console.log('📧 EMAIL SERVICE - Creating transporter...');
+
     const transporter = createTransporter();
     
     const {
@@ -438,12 +437,6 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       quotepaymentId,
       loginUrl
     } = customerData;
-
-    console.log('📧 EMAIL SERVICE - Email configuration check:');
-    console.log(`   - Sender email: ${EMAIL_CONFIG.sender.email}`);
-    console.log(`   - Sender name: ${EMAIL_CONFIG.sender.name}`);
-    console.log(`   - Recipient: ${email}`);
-    console.log(`   - Login URL: ${loginUrl}`);
 
     const mailOptions = {
       from: {
@@ -519,23 +512,12 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       `
     };
 
-    console.log('📧 EMAIL SERVICE - Mail options prepared:');
-    console.log(`   - Subject: ${mailOptions.subject}`);
-    console.log(`   - From: ${mailOptions.from.name} <${mailOptions.from.address}>`);
-    console.log(`   - To: ${mailOptions.to}`);
-    console.log('📧 EMAIL SERVICE - Attempting to send email...');
-
     const result = await transporter.sendMail(mailOptions);
     
-    console.log(`✅ 📧 EMAIL SERVICE - Email sent successfully!`);
-    console.log(`📧 MESSAGE ID: ${result.messageId}`);
-    console.log(`📧 RESPONSE: ${JSON.stringify(result.response || result, null, 2)}`);
-    console.log(`✅ Welcome email sent successfully to ${email}: ${result.messageId}`);
     
     return { success: true, messageId: result.messageId, recipient: email };
     
   } catch (error) {
-    console.error('❌ 📧 EMAIL SERVICE - Critical email error:', error);
     console.error('❌ 📧 EMAIL SERVICE - Error details:', {
       name: error.name,
       message: error.message,
@@ -544,7 +526,6 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       response: error.response,
       responseCode: error.responseCode
     });
-    console.error('❌ Failed to send welcome email:', error);
     return { success: false, error: error.message, details: error };
   }
 };
@@ -637,7 +618,6 @@ export const sendExistingCustomerEmail = async (customerData) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Existing customer email sent successfully to ${email}: ${result.messageId}`);
     return { success: true, messageId: result.messageId, recipient: email };
     
   } catch (error) {
@@ -734,7 +714,6 @@ export const sendPasswordResetEmail = async (customerData) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Password reset email sent successfully to ${email}: ${result.messageId}`);
     return { success: true, messageId: result.messageId, recipient: email };
     
   } catch (error) {
@@ -769,11 +748,9 @@ export const testEmailConfiguration = async () => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Test email sent successfully: ${result.messageId}`);
     return { success: true, messageId: result.messageId };
     
   } catch (error) {
-    console.error('❌ Test email failed:', error);
     return { success: false, error: error.message };
   }
 };

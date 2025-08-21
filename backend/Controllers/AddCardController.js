@@ -33,7 +33,6 @@ export const prepareCardRegistration = async (req, res) => {
       });
     }
 
-    console.log('👤 Customer Email:', customerEmail);
 
     // Verify customer exists
     const customer = await CustomerLogin.findOne({ email: customerEmail });
@@ -45,7 +44,6 @@ export const prepareCardRegistration = async (req, res) => {
       });
     }
 
-    console.log('✅ Customer verified:', customer.email);
 
     // Configure AFS checkout for standalone registration
     const checkoutData = {
@@ -61,8 +59,6 @@ export const prepareCardRegistration = async (req, res) => {
 
     console.log('📝 Creating AFS checkout for registration...');
     console.log('🔗 AFS Endpoint:', `${AFS_CONFIG.baseUrl}/v1/checkouts`);
-    console.log('🎯 Purpose: Standalone card registration (no payment)');
-    console.log('💰 Amount: $0.00 (registration only)');
     console.log('🔑 Entity ID:', AFS_CONFIG.entityId);
     console.log('📧 Customer:', customerEmail);
 
