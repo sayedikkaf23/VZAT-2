@@ -77,7 +77,6 @@ app.use('/api/debug', WebhookDebugRoute);
 
 // Payment schedule API endpoint for Angular component
 app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
-  console.log('📅 Payment schedule API called for checkoutId:', req.params.checkoutId);
   
   try {
     // Find payment data by checkout ID (using persistent connection)
@@ -86,7 +85,6 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     });
     
     if (!paymentData) {
-      console.log('❌ Payment data not found for checkoutId:', req.params.checkoutId);
       const errorData = {
         error: 'Payment data not found',
         checkoutId: req.params.checkoutId
@@ -130,7 +128,7 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     res.json(paymentData);
     
   } catch (error) {
-    console.error('❌ Error fetching payment schedule:', error);
+  
     const errorData = {
       error: 'Failed to fetch payment schedule',
       message: error.message
@@ -145,9 +143,6 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
 
 // Payment result API endpoint
 app.get('/api/payment/result', (req, res) => {
-  console.log('🔥 Payment result API called!');
-  console.log('🔥 Query params:', req.query);
-  console.log('🔥 Headers:', req.headers);
   
   // Log the request to database
   Post_Common_DB_Log_Data('/api/payment/result', req.query, {
@@ -160,21 +155,15 @@ app.get('/api/payment/result', (req, res) => {
 
 // AFS Payment widget form submission endpoint
 app.post('/payment-result', (req, res) => {
-  console.log('💳 AFS Payment widget form submitted!');
-  console.log('💳 Body:', req.body);
-  console.log('💳 Query params:', req.query);
-  console.log('💳 Headers:', req.headers);
+
   
   // Extract parameters from AFS response
   const resourcePath = req.body.resourcePath || req.query.resourcePath;
   const quotepaymentId = req.body.quotepaymentId || req.query.quotepaymentId;
-  
-  console.log('💳 ResourcePath:', resourcePath);
-  console.log('💳 QuotepaymentId:', quotepaymentId);
+
   
   // Redirect to Angular payment result page with parameters
   const redirectUrl = `${process.env.FRONTEND_URL}/payment/result?resourcePath=${encodeURIComponent(resourcePath || '')}&quotepaymentId=${encodeURIComponent(quotepaymentId || '')}`;
-  console.log('💳 Redirecting to:', redirectUrl);
   
   // Log to database
   Post_Common_DB_Log_Data('/payment-result', {
@@ -192,8 +181,6 @@ app.post('/payment-result', (req, res) => {
 
 // Alternative payment result endpoint for direct access
 app.get('/payment-result', async (req, res) => {
-  console.log('💰 Payment result GET endpoint called!');
-  console.log('💰 Query params:', req.query);
   
   const resourcePath = req.query.resourcePath;
   const id = req.query.id;
@@ -209,12 +196,10 @@ app.get('/payment-result', async (req, res) => {
       });
       if (paymentRecord) {
         quotepaymentId = paymentRecord.quotepaymentId;
-        console.log('💰 Found payment record for checkout ID:', id, 'quotepaymentId:', quotepaymentId);
       } else {
         console.log('💰 No payment record found for checkout ID:', id);
       }
     } catch (err) {
-      console.log('Error finding quotepaymentId:', err);
       
       // Log error to database
       Post_Common_DB_Log_Data('/payment-result', req.query, {
@@ -224,11 +209,9 @@ app.get('/payment-result', async (req, res) => {
     }
   }
   
-  console.log('💰 Found quotepaymentId:', quotepaymentId);
   
   // Redirect to Angular payment result page with parameters
   const redirectUrl = `${process.env.FRONTEND_URL}/payment/result?resourcePath=${encodeURIComponent(resourcePath || '')}&quotepaymentId=${encodeURIComponent(quotepaymentId || '')}&id=${encodeURIComponent(id || '')}`;
-  console.log('💰 Redirecting to:', redirectUrl);
   
   // Log to database
   Post_Common_DB_Log_Data('/payment-result', req.query, {
@@ -242,19 +225,13 @@ app.get('/payment-result', async (req, res) => {
 
 // AFS Card Registration widget form submission endpoint
 app.post('/card-registration-result', (req, res) => {
-  console.log('💳 AFS Card Registration widget form submitted!');
-  console.log('💳 Body:', req.body);
-  console.log('💳 Query params:', req.query);
-  console.log('💳 Headers:', req.headers);
   
   // Extract parameters from AFS response
   const resourcePath = req.body.resourcePath || req.query.resourcePath;
   
-  console.log('💳 ResourcePath:', resourcePath);
   
   // Redirect to Angular add-card page with resourcePath parameter
   const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/saved-card/add-card?resourcePath=${encodeURIComponent(resourcePath || '')}`;
-  console.log('💳 Redirecting to:', redirectUrl);
   
   // Log to database
   Post_Common_DB_Log_Data('/card-registration-result', {
@@ -271,10 +248,6 @@ app.post('/card-registration-result', (req, res) => {
 
 // Debug endpoint to capture AFS payment data
 app.post('/debug/payment-data', (req, res) => {
-  console.log('🔍 DEBUG ENDPOINT CALLED');
-  console.log('Headers:', req.headers);
-  console.log('Body:', req.body);
-  console.log('Query:', req.query);
   
   // Look for potential card numbers in the data
   const allData = { ...req.body, ...req.query };
@@ -286,7 +259,6 @@ app.post('/debug/payment-data', (req, res) => {
       if (cleanValue.length >= 13 && cleanValue.length <= 19) {
         cardFields[key] = value;
         cardFields[`${key}_LAST4`] = cleanValue.slice(-4);
-        console.log(`🔍 POTENTIAL CARD NUMBER found at ${key}: ${value} (last 4: ${cleanValue.slice(-4)})`);
       }
     }
   }
@@ -301,7 +273,6 @@ app.post('/debug/payment-data', (req, res) => {
 
 // Test endpoint to generate new payment link
 app.post('/test-payment-link', (req, res) => {
-  console.log('🧪 Test payment link generation requested');
   
   const testData = {
     OpportunityId: "test-opp-123",
@@ -348,7 +319,6 @@ app.post('/test-payment-link', (req, res) => {
 
 // Test endpoint for subscription
 app.post('/test-subscription-link', (req, res) => {
-  console.log('🧪 Test subscription link generation requested');
   
   const testData = {
     OpportunityId: "test-sub-opp-123",
@@ -398,8 +368,6 @@ app.use(express.static(path.join(__dirname, '../frontend/dist/frontend/browser')
 
 // SPA catch-all (must be last)
 app.get('*', (req, res) => {
-  console.log('🌐 SPA catch-all route hit for:', req.url);
-  console.log('🌐 Query params:', req.query);
   res.sendFile(path.resolve(__dirname, '../frontend/dist/frontend/browser/index.html'), function (err) {
     if (err) {
       res.status(500).send(err);
@@ -412,12 +380,10 @@ const startServer = async () => {
   try {
     // Establish persistent database connection
     await connectDB();
-    console.log("Database connection established");
     
     // Start the server
     const port = process.env.PORT || 3000;
     app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
       
       // Initialize cron jobs for subscription management
       try {
