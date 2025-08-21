@@ -11,7 +11,6 @@ dotenv.config();
 
 async function connectToDatabase() {
   try {
-    console.log('🔄 Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/vzat_sandbox');
     console.log('✅ Connected to MongoDB successfully');
   } catch (error) {
@@ -26,10 +25,9 @@ async function fixPayment() {
   const registrationId = '820234D9A928E51B5A68DD0CC58B5781.uat01-vm-tx04'; // From logs
   
   console.log('🔧 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= MANUAL PAYMENT FIX ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
-  console.log(`📋 Quote Payment ID: ${quotepaymentId}`);
-  console.log(`📋 Transaction ID: ${realTransactionId}`);
-  console.log(`📋 Registration ID: ${registrationId}`);
-  console.log('');
+  console.log(`Quote Payment ID: ${quotepaymentId}`);
+  console.log(`Transaction ID: ${realTransactionId}`);
+  console.log(`Registration ID: ${registrationId}`);
   
   try {
     // Find the subscription
@@ -43,10 +41,9 @@ async function fixPayment() {
     console.log('✅ Found subscription:');
     console.log(`  - Current Status: ${subscription.subscription_status}`);
     console.log(`  - Payments Completed: ${subscription.payments_completed || 0}`);
-    console.log('');
     
     // Update subscription status to active and mark first payment as completed
-    console.log('🔄 Updating subscription status and payment schedule...');
+    console.log('Updating subscription status and payment schedule...');
     
     const updateResult = await Vzat_Recurring_Data.findByIdAndUpdate(
       subscription._id,
@@ -59,11 +56,9 @@ async function fixPayment() {
       { new: true }
     );
     
-    console.log('✅ Subscription updated:');
     console.log(`  - Status: ${updateResult.subscription_status}`);
     console.log(`  - Payments Completed: ${updateResult.payments_completed}`);
     console.log(`  - Registration ID: ${updateResult.afs_registration_id}`);
-    console.log('');
     
     // Update payment schedule: mark payment 1 as completed, payment 2 as due
     console.log('🔄 Updating payment schedule...');
@@ -106,8 +101,6 @@ async function fixPayment() {
       console.log('✅ Payment #2 marked as due');
     }
     
-    console.log('');
-    console.log('📊 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= UPDATED PAYMENT SCHEDULE ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
     
     // Fetch updated subscription to show final state
     const finalSubscription = await Vzat_Recurring_Data.findById(subscription._id);
@@ -125,7 +118,6 @@ async function fixPayment() {
         if (payment.payment_date) {
           console.log(`   Payment Date: ${payment.payment_date}`);
         }
-        console.log('');
       });
     }
     

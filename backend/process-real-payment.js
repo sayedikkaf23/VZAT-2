@@ -34,7 +34,6 @@ async function processRealPayment() {
   console.log(`📋 Registration ID: ${registrationId}`);
   console.log(`📋 Payment Amount: 210 AED`);
   console.log(`📋 Payment Time: ${paymentTimestamp.toISOString()}`);
-  console.log('');
   
   try {
     // Find the subscription
@@ -46,12 +45,10 @@ async function processRealPayment() {
       return;
     }
     
-    console.log('✅ Found subscription:');
     console.log(`  - ID: ${subscription._id}`);
     console.log(`  - Customer: ${subscription.Customer_name}`);
     console.log(`  - Current Status: ${subscription.subscription_status}`);
     console.log(`  - Payments Completed: ${subscription.payments_completed || 0}`);
-    console.log('');
     
     // Check if this is the first payment (subscription status = pending)
     const isFirstPayment = subscription.subscription_status ***REMOVED***= 'pending' && 
