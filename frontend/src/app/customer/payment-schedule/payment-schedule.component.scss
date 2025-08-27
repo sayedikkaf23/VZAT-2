@@ -3,7 +3,7 @@
 /* payment-schedule-page */
 
 body{
-    font-family: 'poppins', sans-serif;
+    font-family: "Inter", sans-serif;
 }
 html a {
     color: var(--primary);
@@ -18,13 +18,14 @@ html a {
   padding: 6px 12px;
   border-radius: 6px;
   text-decoration: none;
-  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
   outline: none;
 }
+
+
 
 .pay-now-link:hover {
   background: linear-gradient(135deg, #d72848 0%, #c21e3a 100%);
@@ -83,7 +84,7 @@ html a {
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .pay-now-link {
-    font-size: 11px;
+    font-weight: 500;
     padding: 5px 10px;
   }
 }
@@ -154,21 +155,24 @@ html a {
     font-weight: 400;
 }
 .payment-schedule .detils-sidebar p  b{
-    font-size: 15px;
+    font-size: 14px;
+    font-weight: 600;
 }
 .payment-schedule .detils-sidebar .price {
-    font-size: 27px;
+    font-size: 14px;
     margin-bottom: 6px;
     line-height: 170%;
     margin-top: 0;
-     font-weight: 600;
+     font-weight: 700;
 }
 .payment-schedule .detils-sidebar .small-text {
-    font-size: 12px;
+    font-size: 14px;
+    font-weight: 400;
     line-height: 150%;
 }
 .payment-schedule  .detils-sidebar h6 a {
     color: inherit;
+    font-size: 14px;
     font-weight: 600;
 }
 .payment-schedule .sidebar-row {
@@ -180,9 +184,19 @@ html a {
     display: inline-block;
     vertical-align: top;
 }
+.payment-schedule .detils-sidebar h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 5px;
+}
+
 .payment-schedule .detils-sidebar h3 {
-    font-weight: normal;
-    font-size: 20px;
+    font-size: 14px;
+    margin: 0 0 5px;
+}
+
+.payment-schedule .detils-sidebar h3.mb-0 {
+    font-size: 16px;
     margin: 0 0 5px;
 }
 .payment-schedule .detils-sidebar p {
@@ -194,8 +208,8 @@ html a {
     opacity: 1;
 }
 .payment-schedule .detils-sidebar h6 {
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 700;
     margin: 0 0 5px;
 }
 
@@ -206,7 +220,7 @@ html a {
 
 .payment-schedule .detils-sidebar .row.align-items-center h6 {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.4;
     margin: 0;
 }
@@ -214,6 +228,7 @@ html a {
 .payment-schedule .detils-sidebar .row.align-items-center h6 a {
     color: #333;
     text-decoration: none;
+    font-size: 14px;
     font-weight: 600;
     display: block;
 }
@@ -263,7 +278,8 @@ html a {
     padding: 0  85px 20px;
 }
 .payment-schedule .details-footer ul {
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 400;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -282,6 +298,8 @@ html a {
 }
 .payment-schedule .details-footer ul li a {
     color: var(--secondary);
+    font-size: 14px;
+    font-weight: 400;
 }
 .payment-schedule .details-footer ul li a:hover{
     color:var(--primary);
@@ -300,11 +318,8 @@ body.payment-schedule  .details-content {
     padding-bottom: 20px;
 } 
 .payment-schedule-head h3 {
-    font-size: 24px;
-    font-weight: 600;
 }
 .payment-schedule-head  h6 {
-    font-size: 16px;
 }
 .payment-schedule-list{
     border: 1px solid #F4E9E9;
@@ -324,17 +339,14 @@ body.payment-schedule  .details-content {
     padding: 15px 40px;
 } 
 .payment-schedule-list .item p {
-    font-size: 14px;
     color: #444444;
     margin: 0;
-    font-weight: 400;
 }
 .payment-schedule-list .item.active p,
 .payment-schedule-list .item.active .price{
     color: var(--primary);
 }
 .payment-schedule-list .total-item h5{
-    font-size: 18px;
     margin: 0;
 }
 .payment-schedule-list .item:last-child td{
@@ -342,7 +354,6 @@ body.payment-schedule  .details-content {
 }
 .payment-schedule-list .price a {
     color: var(--primary);
-    font-size: 12px;
     font-weight: 500;
     background: #FA2E521A;
     line-height: 26px;
@@ -399,7 +410,6 @@ body.payment-schedule  .details-content {
     opacity: 1;
 }
 .payment-schedule-list .price {
-    font-size: 16px;
     font-weight: 500;
 }
 .payment-schedule-list tfoot .item {
@@ -409,7 +419,6 @@ body.payment-schedule  .details-content {
     opacity: 0 !important ;
 }
 .payment-schedule-list tfoot .item .price {
-    font-size: 18px;
     font-weight: 500;
     color: #000;
 }
@@ -426,7 +435,6 @@ html .payment-schedule .schedule-list-box .form-check .form-check-input:checked{
 .payment-schedule .schedule-list-box .btn-wrp .btn {
     height: 50px;
     border-radius: 50px;
-    font-size: 18px;
     padding: 0 50px;
     margin-top: 30px;
     font-weight: 500;
@@ -441,7 +449,6 @@ html .payment-schedule .schedule-list-box .form-check .form-check-input:checked{
 html .schedule-list-box  .form-check .form-check-label {
     color: #444444;
     font-weight: 400;
-    font-size: 15px;
 } 
 
 @media(max-width:970px){
@@ -459,7 +466,6 @@ html .schedule-list-box  .form-check .form-check-label {
         font-size: 14px;
     }
     .payment-schedule-list .price a {
-        font-size: 11px;
         line-height: 22px;
         padding: 0 11px;
     } 
@@ -467,7 +473,6 @@ html .schedule-list-box  .form-check .form-check-label {
         padding: 12px 15px;
     }
     .payment-schedule-head h3 {
-        font-size: 18px;
     }
     body.payment-schedule  .details-content {
         display: flex;
@@ -486,10 +491,11 @@ html .schedule-list-box  .form-check .form-check-label {
 
 @media(max-width:767px){
     .payment-schedule .detils-sidebar .price {
-        font-size: 22px;
+        font-size: 14px;
     }
     .payment-schedule .detils-sidebar h2 {
-        font-size: 20px;
+        font-size: 14px;
+        font-weight: 700px;
     }
     .payment-schedule .detils-sidebar{
         position: static;
@@ -498,7 +504,6 @@ html .schedule-list-box  .form-check .form-check-label {
         height:50%
     }
     .payment-schedule .detils-sidebar p {
-        font-size: 13px;
     }
     .payment-schedule .sidebar-row {
         min-height: unset;
@@ -542,8 +547,8 @@ html .schedule-list-box  .form-check .form-check-label {
     }
     
     .payment-schedule .detils-sidebar .row.align-items-center.gx-1 .col h6.mb-0 {
-        font-size: 13px !important;
-        font-weight: 600 !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
         line-height: 1.3 !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -555,7 +560,7 @@ html .schedule-list-box  .form-check .form-check-label {
         font-weight: 600 !important;
         display: inline-block !important;
         white-space: nowrap !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
     }
     
     .payment-schedule .detils-sidebar .row.align-items-center.gx-1 .col h6.mb-0 a:hover {
@@ -607,8 +612,8 @@ html .schedule-list-box  .form-check .form-check-label {
     }
     
     .payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 {
-        font-size: 11px !important;
-        font-weight: 600 !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
         line-height: 1.2 !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -620,7 +625,7 @@ html .schedule-list-box  .form-check .form-check-label {
         font-weight: 600 !important;
         display: inline-block !important;
         white-space: nowrap !important;
-        font-size: 11px !important;
+        font-size: 14px !important;
     }
     
     .payment-schedule .details-footer .row.align-items-center.gx-1 .col-auto svg {
@@ -631,7 +636,7 @@ html .schedule-list-box  .form-check .form-check-label {
     
     /* Specific fix for email link to prevent wrapping */
     .payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 a[href^="mailto:"] {
-        font-size: 10px !important;
+        font-size: 14px !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
@@ -643,16 +648,12 @@ html .schedule-list-box  .form-check .form-check-label {
         margin-top: 33px;
     }
     .payment-schedule .sidebar-row .payment-schedule-head h6 b {
-        font-size: 13px;
     }
     .payment-schedule .sidebar-row .payment-schedule-head h3 {
-        font-size: 15px;
     }
     .payment-schedule .sidebar-row .payment-schedule-list .item h6 {
-        font-size: 14px;
     }
     .payment-schedule .sidebar-row .payment-schedule-list .price a {
-        font-size: 9px;
         padding: 0 8px;
         width: fit-content;
         line-height: 19px;
@@ -685,10 +686,8 @@ html .schedule-list-box  .form-check .form-check-label {
         overflow: hidden;
     }
     .payment-schedule-list .item p {
-        font-size: 13px;
     }
     .payment-schedule-head  h6 {
-        font-size: 12px;
     }
     .payment-schedule .details-content .details-footer {
         position: relative;
@@ -703,7 +702,6 @@ html .schedule-list-box  .form-check .form-check-label {
         width: 100%;
     }
     .payment-schedule .details-footer ul {
-        font-size: 11px;
         padding-top:20px;
     }
     .payment-schedule .details-footer ul li {
@@ -712,13 +710,10 @@ html .schedule-list-box  .form-check .form-check-label {
         margin-right: 10px;
     }
     html .payment-schedule .schedule-list-box  .form-check .form-check-label {
-        font-size: 12px;
     }
     .payment-schedule-list .price {
-        font-size: 12px;
     }
     .payment-schedule-list .total-item h5 {
-        font-size: 15px;
         margin: 0;
     }
     .payment-schedule-head {
@@ -733,7 +728,6 @@ html .schedule-list-box  .form-check .form-check-label {
     }
     .payment-schedule .details-footer h2 {
         text-align: center;
-        font-size: 15px;
         margin-bottom: 5px;
     }
     .payment-schedule .details-footer hr {
@@ -743,16 +737,12 @@ html .schedule-list-box  .form-check .form-check-label {
     }
     .payment-schedule .details-footer h3 {
         text-align: center;
-        font-weight: normal;
-        font-size: 12px;
         margin-bottom: 15px;
     }
     .payment-schedule .details-footer p {
         margin: 0;
     }
    .payment-schedule .details-footer h6 {
-        font-weight: 400;
-        font-size: 11px;
         margin: 0;
     }
     .payment-schedule .details-footer h6 a{
@@ -769,7 +759,6 @@ html .schedule-list-box  .form-check .form-check-label {
     }
      .payment-schedule .schedule-list-box .btn-wrp .btn {
         height: 40px;
-        font-size: 15px;
         padding: 0 24px;
         line-height: 40px;
         margin-top: 12px;
@@ -870,12 +859,10 @@ html .schedule-list-box  .form-check .form-check-label {
 .summary-label {
   font-weight: 500;
   color: #495057;
-  font-size: 0.95rem;
 }
 
 .summary-value {
   font-weight: 600;
-  font-size: 1rem;
   color: #212529;
 }
 
@@ -903,6 +890,5 @@ html .schedule-list-box  .form-check .form-check-label {
   
   .summary-label,
   .summary-value {
-    font-size: 0.9rem;
   }
 }
