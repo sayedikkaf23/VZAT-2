@@ -362,7 +362,8 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       
   
       
-      // Force change detection
+      // Set loading to false and force change detection
+      this.isLoading = false;
       this.cdr.detectChanges();
       setTimeout(() => {
         console.log('🔄 Timeout check - isLoading:', this.isLoading);
@@ -370,6 +371,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       
     } catch (error) {
       console.error('❌ Error populating component data:', error);
+      this.isLoading = false;
       this.loadDemoData();
     }
   }

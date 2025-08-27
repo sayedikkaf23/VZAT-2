@@ -191,11 +191,14 @@
       &.current {
         background-color: #fecaca;
         color: #dc2626;
+        margin-left: 15px;
+
       }
       
       &.pending {
         background-color: #f3f4f6;
         color: #6b7280;
+        margin-left: 15px;
       }
     }
     
