@@ -6,6 +6,8 @@ export const environment = {
   
   // For server deployment or testing against live server
   // apiUrl: 'https://vzatnew.yeepeey.com/api',
-  frontendUrl: 'http://localhost:4200'
+  // frontendUrl: 'https://vzatnew.yeepeey.com'
+    frontendUrl: 'http://localhost:4200'
+
 };
 
