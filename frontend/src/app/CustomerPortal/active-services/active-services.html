@@ -1116,9 +1116,9 @@
         <div class="modal-content">
           <div class="modal-header">
             <h3 class="modal-title fw-bold">Payment Schedule</h3>
-            <div class="ms-auto">
+            <!-- <div class="ms-auto">
               <span class="remaining-amount">{{ formatRemainingAmount(selectedService) }}</span>
-            </div>
+            </div> -->
             <button type="button" class="btn-close" (click)="closeServiceModal()" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -1130,7 +1130,10 @@
                   </div>
                   <div class="payment-info ms-3">
                     <div class="payment-title">Payment {{ i + 1 }}</div>
-                    <div class="payment-amount">AED {{ formatAmount(payment.amount) }}</div>
+                    <div class="payment-amount" >AED {{ formatAmount(payment.amount) }}</div>
+
+
+                    
                     <div class="payment-date">{{ formatDate(payment.due_date) }}</div>
                   </div>
                   <div class="ms-auto">

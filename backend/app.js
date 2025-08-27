@@ -84,11 +84,14 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       afs_checkout_id: req.params.checkoutId 
     });
     
+    console.log('🔍 Payment data found:', paymentData);
     if (!paymentData) {
+      
       const errorData = {
         error: 'Payment data not found',
         checkoutId: req.params.checkoutId
       };
+
       
       // Log to database
       Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, errorData);
