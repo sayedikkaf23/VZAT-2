@@ -17,6 +17,139 @@ const AFS_CONFIG = {
 };
 
 /**
+ * Step 1: Prepare AFS checkout for card registration with payment
+ * Based on AFS Server-to-Server integration: https://afs.docs.oppwa.com/integrations/server-to-server
+ */
+export const prepareCardRegistrationWithPayment = async (req, res) => {
+  await connectDB();
+
+  try {
+    console.log('🔧 AddCardController: prepareCardRegistrationWithPayment called');
+    console.log('📋 Request body:', req.body);
+    
+    if (!req.body || Object.keys(req.body).length ***REMOVED***= 0) {
+      const data = { message: "Body is empty" };
+      Post_Common_DB_Log_Data("/api/cards/prepare-registration-with-payment", {}, data);
+      return res.status(400).json(data);
+    }
+
+    const { customerEmail, amount = 1.00, currency = 'AED' } = req.body;
+
+    if (!customerEmail) {
+      console.log('❌ No customer email provided');
+      const data = { message: 'Customer email is required' };
+      Post_Common_DB_Log_Data("/api/cards/prepare-registration-with-payment", req.body, data);
+      return res.status(400).json(data);
+    }
+
+    // Verify customer exists
+    const customer = await CustomerLogin.findOne({ email: customerEmail });
+    if (!customer) {
+      console.log('❌ Customer not found:', customerEmail);
+      const data = { message: 'Customer not found' };
+      Post_Common_DB_Log_Data("/api/cards/prepare-registration-with-payment", req.body, data);
+      return res.status(404).json(data);
+    }
+
+    // Configure AFS checkout for registration with payment
+    const checkoutData = {
+      entityId: AFS_CONFIG.entityId,
+      amount: amount.toString(),
+      currency: currency,
+      paymentType: 'DB',
+      createRegistration: true,
+      shopperResultUrl: `${process.env.BACKEND_URL}/api/cards/payment-callback?customerEmail=${encodeURIComponent(customerEmail)}`,
+      testMode: AFS_CONFIG.testMode
+    };
+    
+    // Convert to x-www-form-urlencoded string
+    const urlEncodedCheckoutData = Object.entries(checkoutData)
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join('&');
+
+    console.log('📝 Creating AFS checkout for registration with payment...');
+    console.log('🔗 AFS Endpoint:', `${AFS_CONFIG.baseUrl}/v1/checkouts`);
+    console.log('🔑 Entity ID:', AFS_CONFIG.entityId);
+    console.log('📧 Customer:', customerEmail);
+    console.log('💰 Amount:', amount, currency);
+
+    const response = await axios.post(
+      `${AFS_CONFIG.baseUrl}/v1/checkouts`,
+      urlEncodedCheckoutData,
+      {
+        headers: {
+          'Authorization': AFS_CONFIG.authorization,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      }
+    );
+
+    const checkoutResult = response.data;
+    console.log('✅ AFS checkout created successfully');
+    console.log('🆔 Checkout ID:', checkoutResult.id);
+    console.log('📋 Full Response:', JSON.stringify(checkoutResult, null, 2));
+
+    // Generate payment widget URL and page URL similar to payment flow
+    let paymentWidgetUrl = null;
+    let paymentPageUrl = null;
+    let finalShopperResultUrl = null;
+    
+    if (checkoutResult && checkoutResult.id) {
+      paymentWidgetUrl = `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${checkoutResult.id}`;
+      paymentPageUrl = `${process.env.FRONTEND_URL}/add-card/${encodeURIComponent(checkoutResult.id)}`;
+      
+      // Generate shopper result URL with parameters
+      const id = encodeURIComponent(checkoutResult.id);
+      const resourcePath = encodeURIComponent(`/v1/checkouts/${checkoutResult.id}/payment`);
+      finalShopperResultUrl = `${process.env.BACKEND_URL}/api/cards/payment-callback?id=${id}&resourcePath=${resourcePath}&customerEmail=${encodeURIComponent(customerEmail)}`;
+    }
+
+    // Return response in format similar to payment flow
+    const data = {
+      status: true,
+      message: "Card registration with payment checkout created successfully",
+      customerEmail,
+      afs_checkout_id: checkoutResult.id,
+      payment_widget_url: paymentWidgetUrl,
+      payment_page_url: paymentPageUrl,
+      shopper_result_url: finalShopperResultUrl,
+      afs_config: {
+        baseUrl: AFS_CONFIG.baseUrl,
+        entityId: AFS_CONFIG.entityId,
+        testMode: AFS_CONFIG.testMode
+      },
+      registration_type: "card_registration_with_payment",
+      payment_required: true,
+      amount: amount,
+      currency: currency
+    };
+
+    Post_Common_DB_Log_Data("/api/cards/prepare-registration-with-payment", req.body, data);
+    return res.status(200).json(data);
+
+  } catch (error) {
+    console.error('❌ Error preparing checkout with payment:', error.response?.data || error.message);
+    console.error('📊 Error status:', error.response?.status);
+    console.error('📋 Error headers:', error.response?.headers);
+    
+    if (error.response?.data?.result) {
+      console.error('🔍 AFS Error details:', error.response.data.result);
+    }
+    
+    const data = {
+      status: false,
+      message: 'Failed to prepare card registration with payment checkout',
+      error: error.response?.data || error.message,
+      errorType: error.response ? 'AFS_API_ERROR' : 'NETWORK_ERROR',
+      statusCode: error.response?.status
+    };
+    
+    Post_Common_DB_Log_Data("/api/cards/prepare-registration-with-payment", req.body, data);
+    return res.status(500).json(data);
+  }
+};
+
+/**
  * Step 1: Prepare AFS checkout for card registration
  * Based on AFS Server-to-Server integration: https://afs.docs.oppwa.com/integrations/server-to-server
  */
@@ -139,6 +272,162 @@ export const prepareCardRegistration = async (req, res) => {
     };
     
     Post_Common_DB_Log_Data("/api/cards/prepare-registration", req.body, data);
+    return res.status(500).json(data);
+  }
+};
+
+/**
+ * Step 2: Handle successful card registration with payment callback
+ */
+export const handleCardPaymentCallback = async (req, res) => {
+  await connectDB();
+
+  try {
+    console.log('🔧 AddCardController: handleCardPaymentCallback called');
+    console.log('📋 Request body:', req.body);
+    console.log('🔗 Request query:', req.query);
+    
+    // Extract parameters from query string (AFS sends them as query params)
+    const checkoutId = req.query.id || req.body.id;
+    const resourcePath = req.query.resourcePath || req.body.resourcePath;
+    const customerEmail = req.query.customerEmail || req.body.customerEmail;
+    
+    console.log('🔍 Extracted parameters:', { checkoutId, resourcePath, customerEmail });
+
+    if (!checkoutId) {
+      console.error('❌ No checkout ID provided');
+      const data = { message: 'Checkout ID is required' };
+      Post_Common_DB_Log_Data("/api/cards/payment-callback", { body: req.body, query: req.query }, data);
+      return res.status(400).json(data);
+    }
+
+    if (!customerEmail) {
+      console.error('❌ No customer email provided');
+      const data = { message: 'Customer email is required' };
+      Post_Common_DB_Log_Data("/api/cards/payment-callback", { body: req.body, query: req.query }, data);
+      return res.status(400).json(data);
+    }
+
+    // Verify customer exists
+    const customer = await CustomerLogin.findOne({ email: customerEmail });
+    if (!customer) {
+      console.error('❌ Customer not found:', customerEmail);
+      const data = { message: 'Customer not found' };
+      Post_Common_DB_Log_Data("/api/cards/payment-callback", { body: req.body, query: req.query }, data);
+      return res.status(404).json(data);
+    }
+
+    // Check payment status with AFS
+    console.log('🔍 Checking payment status with AFS...');
+    const statusResponse = await axios.get(
+      `${AFS_CONFIG.baseUrl}${resourcePath}`,
+      {
+        headers: {
+          'Authorization': AFS_CONFIG.authorization
+        }
+      }
+    );
+
+    console.log('✅ AFS payment status response:', statusResponse.data);
+
+    // Check if payment was successful
+    if (statusResponse.data && statusResponse.data.result && statusResponse.data.result.code) {
+      const resultCode = statusResponse.data.result.code;
+      console.log('🔍 Payment result code:', resultCode);
+
+      if (resultCode.startsWith('000.') || resultCode.startsWith('800.')) {
+        // Payment successful - save card details
+        console.log('✅ Payment successful, saving card details...');
+
+        // Extract card details from the response
+        const cardDetails = {
+          customer_id: customer._id,
+          customer_email: customerEmail,
+          afs_registration_id: statusResponse.data.registrationId || statusResponse.data.id,
+          afs_checkout_id: checkoutId,
+          maskedCardNumber: statusResponse.data.card?.maskedPan || `****-****-****-${statusResponse.data.card?.last4 || '****'}`,
+          cardBrand: statusResponse.data.card?.brand || statusResponse.data.paymentBrand || 'UNKNOWN',
+          cardholderName: statusResponse.data.card?.holder || statusResponse.data.card?.cardHolder || 'Not provided',
+          expiryMonth: statusResponse.data.card?.expiryMonth || '**',
+          expiryYear: statusResponse.data.card?.expiryYear || '****',
+          isDefault: true, // Set as default since it's the first card
+          isActive: true,
+          registrationDate: new Date(),
+          lastUsed: new Date(),
+          afs_card_token: statusResponse.data.registrationId || statusResponse.data.id,
+          afs_result_code: statusResponse.data.result?.code,
+          afs_result_description: statusResponse.data.result?.description
+        };
+
+        console.log('💳 Card details to save:', JSON.stringify(cardDetails, null, 2));
+
+        // Save card to database
+        const savedCard = new SavedCard(cardDetails);
+        await savedCard.save();
+
+        console.log('✅ Card saved successfully with ID:', savedCard._id);
+
+        // Return success response
+        const data = {
+          status: true,
+          message: 'Card registered and payment processed successfully',
+          customerEmail,
+          afs_checkout_id: checkoutId,
+          afs_registration_id: statusResponse.data.registrationId || statusResponse.data.id,
+          card: {
+            id: savedCard._id,
+            last4: statusResponse.data.card?.last4 || '****',
+            brand: statusResponse.data.card?.brand || 'UNKNOWN',
+            holder: statusResponse.data.card?.holder || 'Not provided',
+            isDefault: true
+          },
+          payment_processed: true,
+          registration_type: 'card_registration_with_payment'
+        };
+
+        Post_Common_DB_Log_Data("/api/cards/payment-callback", { body: req.body, query: req.query }, data);
+        return res.status(200).json(data);
+
+      } else {
+        // Payment failed
+        console.error('❌ Payment failed with code:', resultCode);
+        const data = {
+          status: false,
+          message: `Payment failed: ${statusResponse.data.result?.description || 'Unknown error'}`,
+          error_code: resultCode,
+          registration_type: 'card_registration_with_payment'
+        };
+
+        Post_Common_DB_Log_Data("/api/cards/payment-callback", { body: req.body, query: req.query }, data);
+        return res.status(400).json(data);
+      }
+    } else {
+      // Invalid response
+      console.error('❌ Invalid payment status response');
+      const data = {
+        status: false,
+        message: 'Invalid payment status response from payment provider',
+        registration_type: 'card_registration_with_payment'
+      };
+
+      Post_Common_DB_Log_Data("/api/cards/payment-callback", { body: req.body, query: req.query }, data);
+      return res.status(400).json(data);
+    }
+
+  } catch (error) {
+    console.error('❌ Error handling payment callback:', error.response?.data || error.message);
+    console.error('📊 Error status:', error.response?.status);
+
+    const data = {
+      status: false,
+      message: 'Failed to process payment callback',
+      error: error.response?.data || error.message,
+      errorType: error.response ? 'AFS_API_ERROR' : 'NETWORK_ERROR',
+      statusCode: error.response?.status,
+      registration_type: 'card_registration_with_payment'
+    };
+
+    Post_Common_DB_Log_Data("/api/cards/payment-callback", { body: req.body, query: req.query }, data);
     return res.status(500).json(data);
   }
 };
