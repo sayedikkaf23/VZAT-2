@@ -3,7 +3,15 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { NgIf, CommonModule } from '@angular/common';
 import { AddCardService, PrepareRegistrationResponse } from '../../services/add-card.service';
 import { environment } from '../../../environments/environment';
-
+interface PaymentDetails {
+  paymentId: string;
+  amount: number;
+  dueDate: Date;
+  invoiceNumber: string;
+  quotepaymentId: string;
+  checkoutId?: string;
+  paymentLink?: string;
+}
 @Component({
   selector: 'app-add-card',
   standalone: true,
@@ -19,8 +27,12 @@ export class AddCardComponent implements OnInit, OnDestroy {
   customerEmail = '';
   checkoutId = '';
   isFormReady = false;
+  paymentDetails: PaymentDetails | null = null;
+  isAfsPayment: boolean = false;
+  isLoading: boolean = true;
   // checkoutId = '';
   shopperResultUrl = '';
+  afsPaymentLink: string = '';
   constructor(
     private addCardService: AddCardService,
     private router: Router,
@@ -97,7 +109,6 @@ export class AddCardComponent implements OnInit, OnDestroy {
   private initializeCardRegistration(): void {
     if (!this.customerEmail) {
       this.errorMessage = 'Customer email not found. Please log in again.';
-      this.loading = false;
       return;
     }
 
@@ -109,10 +120,29 @@ export class AddCardComponent implements OnInit, OnDestroy {
         this.checkoutId = response.afs_checkout_id;
         this.shopperResultUrl = response.shopper_result_url;
         this.loading = false;
+
+        this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
+        this.paymentDetails = {
+          paymentId: 'card-verification-' + Date.now(),
+          amount: 1,
+          dueDate: new Date(),
+          invoiceNumber: 'CARD-VERIFY-' + Date.now(),
+          quotepaymentId: 'card-verify-' + Date.now(),
+          checkoutId: response.afs_checkout_id,
+          paymentLink:    this.afsPaymentLink
+        };
+        
+        this.isAfsPayment = true;
+        this.isLoading = false;
     
-        // Load the widget script dynamically like in payment widget
-        console.log('🔗 Loading AFS widget from URL:', response.payment_widget_url);
-        this.loadAfsWidgetScript(response.payment_widget_url);
+        // Force change detection to ensure the form is rendered first
+        this.cdr.detectChanges();
+        
+        // Wait for DOM to be updated, then load the script
+        setTimeout(() => {
+          console.log('🔗 Loading AFS widget from URL:', response.payment_widget_url);
+          this.loadAfsWidgetScript(response.payment_widget_url);
+        }, 100);
       },
       error: (err) => {
         console.error('❌ Error preparing card registration with payment:', err);
@@ -147,10 +177,18 @@ export class AddCardComponent implements OnInit, OnDestroy {
       clearTimeout(loadingTimeout);
       console.log('✅ AFS widget script loaded successfully');
       
-      // Wait a moment for the script to be fully executed and DOM to be ready
-      setTimeout(() => {
-        this.setupAfsRegistrationWidget();
-      }, 3000); // Increased wait time to match payment widget
+      // Check if the form is ready before setting up the widget
+      const widgetContainer = document.querySelector('.paymentWidgets');
+      if (widgetContainer) {
+        console.log('✅ Form container found, setting up widget...');
+        // Wait a moment for the script to be fully executed and DOM to be ready
+        setTimeout(() => {
+          this.setupAfsRegistrationWidget();
+        }, 2000);
+      } else {
+        console.error('❌ Form container not found after script load');
+        this.handleAfsWidgetFailure();
+      }
     };
     
     scriptElement.onerror = (error: any) => {
@@ -168,36 +206,21 @@ export class AddCardComponent implements OnInit, OnDestroy {
   private setupAfsRegistrationWidget(): void {
     // Wait for the AFS script to be fully loaded and DOM to be available
     setTimeout(() => {
-      // First, ensure the checkout ID is set and trigger change detection
       if (!this.checkoutId) {
         console.error('❌ Checkout ID is missing, cannot setup widget');
         this.handleAfsWidgetFailure();
         return;
       }
 
-      // Force change detection to ensure the form element is rendered
-      this.cdr.detectChanges();
-      
-      // Wait a bit more for the DOM to be updated
-      setTimeout(() => {
-        const widgetContainer = document.querySelector('.paymentWidgets');
+      const widgetContainer = document.querySelector('.paymentWidgets');
 
-        if (widgetContainer) {
-          console.log('✅ AFS registration widget container found');
-          console.log('✅ AFS registration widget configured with checkout ID:', this.checkoutId);
-          console.log('🔍 Form container attributes:', {
-            'data-checkout-id': widgetContainer.getAttribute('data-checkout-id'),
-            'data-brands': widgetContainer.getAttribute('data-brands'),
-            'action': widgetContainer.getAttribute('action'),
-            'class': widgetContainer.getAttribute('class')
-          });
-          
-          // Check if the AFS library is available
-          if ((window as any).wpwlOptions || (window as any).wpwl) {
-            console.log('✅ AFS library detected, widget should auto-initialize');
-          } else {
-            console.log('🔄 AFS library loading...');
-          }
+      if (widgetContainer) {
+        console.log('✅ AFS registration widget container found');
+        console.log('✅ AFS registration widget configured with checkout ID:', this.checkoutId);
+        
+        // Check if the AFS library is available
+        if ((window as any).wpwlOptions || (window as any).wpwl) {
+          console.log('✅ AFS library detected, widget should auto-initialize');
           
           // Wait for form fields to appear - AFS should auto-initialize
           setTimeout(() => {
@@ -208,61 +231,42 @@ export class AddCardComponent implements OnInit, OnDestroy {
               this.loading = false;
               this.cdr.detectChanges();
             } else {
-              // Give it more time, sometimes AFS widgets load slowly
-              setTimeout(() => {
-                const laterFields = widgetContainer.querySelectorAll('input, select, iframe');
-                if (laterFields.length ***REMOVED***= 0) {
-                  console.error('❌ AFS registration widget failed to initialize after 5 seconds');
-                  console.log('🔍 Form container HTML:', widgetContainer.innerHTML);
-                  console.log('🔍 Available window properties:', Object.keys(window).filter(key => 
-                    key.toLowerCase().includes('wp') || 
-                    key.toLowerCase().includes('afs') || 
-                    key.toLowerCase().includes('oppwa')
-                  ));
+              // Try to manually trigger AFS widget creation if available
+              if ((window as any).wpwl && (window as any).wpwl.render) {
+                console.log('🔄 Attempting manual AFS widget render...');
+                try {
+                  (window as any).wpwl.render();
                   
-                  // Try to manually trigger AFS widget creation if available
-                  if ((window as any).wpwl && (window as any).wpwl.render) {
-                    console.log('🔄 Attempting manual AFS widget render...');
-                    try {
-                      (window as any).wpwl.render();
-                      
-                      // Check again after manual render
-                      setTimeout(() => {
-                        const manualFields = widgetContainer.querySelectorAll('input, select, iframe');
-                        if (manualFields.length > 0) {
-                          console.log('✅ AFS registration widget initialized successfully after manual render:', manualFields.length, 'form elements');
-                          this.isFormReady = true;
-                          this.loading = false;
-                          this.cdr.detectChanges();
-                        } else {
-                          this.handleAfsWidgetFailure();
-                        }
-                      }, 2000);
-                    } catch (error) {
-                      console.error('❌ Manual AFS widget render failed:', error);
+                  // Check again after manual render
+                  setTimeout(() => {
+                    const manualFields = widgetContainer.querySelectorAll('input, select, iframe');
+                    if (manualFields.length > 0) {
+                      console.log('✅ AFS registration widget initialized successfully after manual render:', manualFields.length, 'form elements');
+                      this.isFormReady = true;
+                      this.loading = false;
+                      this.cdr.detectChanges();
+                    } else {
                       this.handleAfsWidgetFailure();
                     }
-                  } else {
-                    this.handleAfsWidgetFailure();
-                  }
-                } else {
-                  console.log('✅ AFS registration widget initialized successfully (late detection):', laterFields.length, 'form elements');
-                  this.isFormReady = true;
-                  this.loading = false;
-                  this.cdr.detectChanges();
+                  }, 2000);
+                } catch (error) {
+                  console.error('❌ Manual AFS widget render failed:', error);
+                  this.handleAfsWidgetFailure();
                 }
-              }, 3000);
+              } else {
+                this.handleAfsWidgetFailure();
+              }
             }
           }, 2000);
         } else {
-          console.error('❌ Payment widget container (.paymentWidgets) not found in DOM');
-          console.log('🔍 Available forms:', document.querySelectorAll('form'));
-          console.log('🔍 Checkout ID:', this.checkoutId);
-          console.log('🔍 Loading state:', this.loading);
+          console.log('🔄 AFS library loading...');
           this.handleAfsWidgetFailure();
         }
-      }, 1000); // Wait 1 second for DOM to be updated
-    }, 500);
+      } else {
+        console.error('❌ Payment widget container (.paymentWidgets) not found in DOM');
+        this.handleAfsWidgetFailure();
+      }
+    }, 1000);
   }
 
   /**
