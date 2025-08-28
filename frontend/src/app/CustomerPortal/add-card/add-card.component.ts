@@ -160,7 +160,7 @@ export class AddCardComponent implements OnInit, OnDestroy {
         // Wait for DOM to be updated, then load the script
         setTimeout(() => {
           console.log('🔗 Loading AFS widget from URL:', response.payment_widget_url);
-          this.injectScript();
+          this.injectScript(response.payment_widget_url);
         }, 100);
       },
       error: (err) => {
