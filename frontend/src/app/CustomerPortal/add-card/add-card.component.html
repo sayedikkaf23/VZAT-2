@@ -1,175 +1,137 @@
 <!-- Add Card Page -->
-<div class="admin_body">
-  <div class="main-container">
-    
-    <!-- Header Section -->
-    <div class="header-section mb-4">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <h2 class="page-title">Add New Card</h2>
-          <p class="page-subtitle">Securely add a new payment method to your account</p>
-        </div>
-        <button type="button" 
-                class="btn btn-secondary" 
-                (click)="cancelAddCard()"
-                *ngIf="!loading && !processingRegistration">
-          <i class="fas fa-arrow-left me-2"></i>
-          Back to Saved Cards
-        </button>
-      </div>
+<div class="add-card-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
     </div>
+    <p class="mt-3 text-muted">Preparing secure payment form...</p>
+  </div>
 
-    <!-- Loading State -->
-    <div *ngIf="loading" class="text-center py-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <p class="mt-3 text-muted">Preparing secure payment form...</p>
+  <!-- Processing Registration State -->
+  <div *ngIf="processingRegistration" class="loading-container">
+    <div class="spinner-border text-success" role="status">
+      <span class="visually-hidden">Processing...</span>
     </div>
+    <p class="mt-3 text-muted">Processing your card registration...</p>
+  </div>
 
-    <!-- Processing Registration State -->
-    <div *ngIf="processingRegistration" class="text-center py-5">
-      <div class="spinner-border text-success" role="status">
-        <span class="visually-hidden">Processing...</span>
-      </div>
-      <p class="mt-3 text-muted">Processing your card registration...</p>
-    </div>
+  <!-- Main Content -->
+  <div *ngIf="!loading && !processingRegistration" class="add-card-details-container">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card shadow">
+            <!-- Virtuzone Logo -->
+            <div class="card-header bg-white text-center py-4">
+              <img src="assets/images/main-logo.svg" alt="Virtuzone" class="logo mb-3" style="max-height: 60px; max-width: 200px;">
+            </div>
+            <div class="card-header bg-primary text-white text-center">
+              <h4 class="mb-0">Add New Card</h4>
+            </div>
+            <div class="card-body p-4">
+              
+              <!-- Success Message -->
+              <div *ngIf="successMessage" class="alert alert-success d-flex align-items-center" role="alert">
+                <i class="fas fa-check-circle me-3"></i>
+                <div>
+                  <strong>Success!</strong> {{ successMessage }}
+                  <br>
+                  <small class="text-success">Redirecting to your saved cards...</small>
+                </div>
+              </div>
 
-    <!-- Success Message -->
-    <div *ngIf="successMessage" class="alert alert-success d-flex align-items-center" role="alert">
-      <i class="fas fa-check-circle me-3"></i>
-      <div>
-        <strong>Success!</strong> {{ successMessage }}
-        <br>
-        <small class="text-success">Redirecting to your saved cards...</small>
-      </div>
-    </div>
+              <!-- Error Message -->
+              <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center" role="alert">
+                <i class="fas fa-exclamation-triangle me-3"></i>
+                <div>
+                  <strong>Error!</strong> {{ errorMessage }}
+                  <br>
+                  <button type="button" 
+                          class="btn btn-sm btn-outline-danger mt-2" 
+                          (click)="retryRegistration()">
+                    <i class="fas fa-redo me-1"></i> Try Again
+                  </button>
+                </div>
+              </div>
 
-    <!-- Error Message -->
-    <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center" role="alert">
-      <i class="fas fa-exclamation-triangle me-3"></i>
-      <div>
-        <strong>Error!</strong> {{ errorMessage }}
-        <br>
-        <button type="button" 
-                class="btn btn-sm btn-outline-danger mt-2" 
-                (click)="retryRegistration()">
-          <i class="fas fa-redo me-1"></i> Try Again
-        </button>
-      </div>
-    </div>
+              <!-- Card Registration Form -->
+              <div *ngIf="checkoutId && !errorMessage && !successMessage">
+                
+                <!-- Payment Summary for 1 AED Test Payment -->
+                <div class="payment-summary mb-4">
+                  <h5>Card Verification Payment</h5>
+                  <div class="row">
+                    <div class="col-6">
+                      <strong>Test Amount:</strong>
+                    </div>
+                    <div class="col-6 text-end">
+                      <h5 class="text-primary mb-0">AED 1.00</h5>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-12">
+                      <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        A small test payment will be made and immediately refunded to verify your card.
+                      </small>
+                    </div>
+                  </div>
+                </div>
 
-    <!-- Card Registration Form -->
-    <div *ngIf="checkoutId && !errorMessage && !successMessage" class="card-registration-container">
-      
-      <!-- Security Notice -->
-      <div class="security-notice mb-4">
-        <div class="alert alert-info d-flex align-items-start" role="alert">
-          <i class="fas fa-shield-alt me-3 mt-1"></i>
-          <div>
-            <h6 class="alert-heading">Secure Payment Processing</h6>
-            <p class="mb-0">
-              Your card information is processed securely using industry-standard encryption. 
-              We do not store your full card details on our servers.
-            </p>
-          </div>
-        </div>
-      </div>
+                <hr>
 
-      <!-- Instructions -->
-      <div class="instructions-card mb-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">
-              <i class="fas fa-credit-card me-2"></i>
-              Add Your Payment Method
-            </h5>
-            <p class="card-text">
-              Please enter your card details below. Your new card will automatically become your default payment method.
-            </p>
-            
-            <!-- Accepted Cards -->
-            <div class="accepted-cards mt-3">
-              <small class="text-muted">We accept:</small>
-              <div class="card-brands mt-2">
-                <span class="badge bg-primary me-2">
-                  <i class="fab fa-cc-visa"></i> Visa
-                </span>
-                <span class="badge bg-primary me-2">
-                  <i class="fab fa-cc-mastercard"></i> Mastercard
-                </span>
-                <span class="badge bg-primary me-2">
-                  <i class="fab fa-cc-amex"></i> American Express
-                </span>
+                <!-- AFS Payment Widget Form -->
+                <div class="payment-widget-container">
+                  <form class="paymentWidgets" 
+                        action=""
+                        data-brands="VISA MASTER AMEX"
+                        [attr.data-checkout-id]="checkoutId">
+                    <!-- AFS widget will be injected here -->
+                  </form>
+                  
+                  <!-- Form Footer -->
+                  <div class="form-footer mt-4">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <small class="text-muted">
+                          <i class="fas fa-info-circle me-1"></i>
+                          Your card will be set as default after successful verification.
+                        </small>
+                      </div>
+                      <div class="col-md-6 text-md-end">
+                        <small class="text-muted">
+                          <i class="fas fa-shield-alt me-1"></i>
+                          256-bit SSL encryption
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Back Button -->
+                <div class="text-center mt-4">
+                  <button type="button" 
+                          class="btn btn-outline-secondary" 
+                          (click)="cancelAddCard()">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Back to Saved Cards
+                  </button>
+                </div>
+
+              </div>
+
+              <!-- Security Info -->
+              <div class="security-info mt-4 text-center">
+                <small class="text-muted">
+                  <i class="fas fa-shield-alt me-1"></i>
+                  Your payment is secured with 256-bit SSL encryption
+                </small>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- AFS Payment Widget Form Container -->
-      <div class="payment-form-container">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-lock me-2"></i>
-              Enter Card Details
-            </h5>
-          </div>
-          <div class="card-body">
-            
-            <!-- AFS Registration Form -->
-            <form action="" class="paymentWidgets" data-brands="VISA MASTER AMEX">
-              <!-- AFS widget will be injected here -->
-            </form>
-            
-            <!-- Form Footer -->
-            <div class="form-footer mt-4">
-              <div class="row">
-                <div class="col-md-6">
-                  <small class="text-muted">
-                    <i class="fas fa-info-circle me-1"></i>
-                    Your card will be set as default after successful registration.
-                  </small>
-                </div>
-                <div class="col-md-6 text-md-end">
-                  <small class="text-muted">
-                    <i class="fas fa-shield-alt me-1"></i>
-                    256-bit SSL encryption
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Test Cards Info (only show in development) -->
-      <div class="test-cards-info mt-4" *ngIf="isTestEnvironment()">
-        <div class="card border-warning">
-          <div class="card-header bg-warning text-dark">
-            <h6 class="mb-0">
-              <i class="fas fa-flask me-2"></i>
-              Test Environment - Use Test Cards
-            </h6>
-          </div>
-          <div class="card-body">
-            <p class="mb-2"><strong>Test Card Numbers:</strong></p>
-            <ul class="list-unstyled">
-              <li><code>4200000000000000</code> - Visa (Success)</li>
-              <li><code>5454545454545454</code> - Mastercard (Success)</li>
-              <li><code>378282246310005</code> - American Express (Success)</li>
-            </ul>
-            <p class="mb-0">
-              <small class="text-muted">
-                Use any future expiry date and any 3-4 digit CVV.
-              </small>
-            </p>
-          </div>
-        </div>
-      </div>
-
     </div>
-
   </div>
 </div>
