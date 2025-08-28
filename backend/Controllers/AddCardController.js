@@ -5,7 +5,7 @@ import CustomerLogin from '../model/CustomerLoginModel.js';
 import config from '../config.env.js';
 import { connectDB } from '../config/db.js';
 import Post_Common_DB_Log_Data from './PostCommonDBLogData.js';
-const qs = require('qs');   // CommonJS
+import qs from 'qs';   // CommonJS
 // AFS Configuration - Registration specific credentials
 const AFS_CONFIG = {
   baseUrl: process.env.AFS_BASE_URL || config.AFS_BASE_URL,
@@ -90,7 +90,7 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
       {
         headers: {
           'Authorization': `Bearer ${'OGFjN2E0Yzk3ZDhkNDViZTAxN2Q4ZTk2Mzk3NjAyMGV8R3hQS0gyNjY5dA=='}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
+         "Content-Type": "application/x-www-form-urlencoded",
         }
       }
     );
