@@ -23,6 +23,8 @@ export class AddCardComponent implements OnInit, OnDestroy {
   loading = true;
   processingRegistration = false;
   errorMessage = '';
+  scriptEl!: HTMLScriptElement;
+  integrity = ''; // if you don’t use integrity, leave empty string
   successMessage = '';
   customerEmail = '';
   checkoutId = '';
@@ -33,6 +35,8 @@ export class AddCardComponent implements OnInit, OnDestroy {
   // checkoutId = '';
   shopperResultUrl = '';
   afsPaymentLink: string = '';
+  rnd: any;
+  host: any;
   constructor(
     private addCardService: AddCardService,
     private router: Router,
@@ -136,7 +140,7 @@ export class AddCardComponent implements OnInit, OnDestroy {
         this.shopperResultUrl = response.shopper_result_url;
         this.loading = false;
 
-        this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
+        // this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
         this.paymentDetails = {
           paymentId: 'card-verification-' + Date.now(),
           amount: 1,
@@ -144,7 +148,7 @@ export class AddCardComponent implements OnInit, OnDestroy {
           invoiceNumber: 'CARD-VERIFY-' + Date.now(),
           quotepaymentId: 'card-verify-' + Date.now(),
           checkoutId: response.afs_checkout_id,
-          paymentLink:    this.afsPaymentLink
+          paymentLink:   response.payment_widget_url
         };
         
         this.isAfsPayment = true;
@@ -156,7 +160,7 @@ export class AddCardComponent implements OnInit, OnDestroy {
         // Wait for DOM to be updated, then load the script
         setTimeout(() => {
           console.log('🔗 Loading AFS widget from URL:', response.payment_widget_url);
-          this.loadAfsWidgetScript(response.payment_widget_url);
+          this.injectScript();
         }, 100);
       },
       error: (err) => {
@@ -214,6 +218,30 @@ export class AddCardComponent implements OnInit, OnDestroy {
     
     document.head.appendChild(scriptElement);
   }
+
+
+  
+  injectScript() {
+    /* 1. <script src="…paymentWidgets.js?checkoutId"> */
+    this.scriptEl = this.rnd.createElement('script');
+    this.scriptEl.src = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
+    this.scriptEl.setAttribute('integrity', this.integrity);
+    this.scriptEl.setAttribute('crossorigin', 'anonymous');
+
+    /* 2. <form action="…" class="paymentWidgets" data-brands="VISA MASTER"> */
+    const formEl = this.rnd.createElement('form');
+    formEl.action = `https://vzatnew.yeepeey.com/saved-card/add-card`;   // shopperResultUrl
+    formEl.className = 'paymentWidgets';
+    formEl.setAttribute('data-brands', 'VISA MASTER');           // only show card brands you need
+
+    /* 3. Append both to the DOM */
+    const hostDiv = this.host.nativeElement.querySelector('#widgetHost');
+    hostDiv.appendChild(this.scriptEl);
+    hostDiv.appendChild(formEl);
+
+    this.loading = false;
+  }
+
 
   /**
    * Setup AFS registration widget

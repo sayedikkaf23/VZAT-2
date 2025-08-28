@@ -43,12 +43,7 @@
                   </div> -->
                   
                   <!-- AFS Payment Form - Always present when isAfsPayment is true -->
-                  <form class="paymentWidgets" 
-                        action=""
-                        data-brands="VISA MASTER AMEX"
-                        [attr.data-checkout-id]="paymentDetails.checkoutId">
-                    <!-- AFS will automatically populate this form -->
-                  </form>
+                  <div id="widgetHost"></div> <!-- Your actual injected card form -->
                   
                   <div *ngIf="!isLoading" class="text-center mt-3">
                     <small class="text-muted">
