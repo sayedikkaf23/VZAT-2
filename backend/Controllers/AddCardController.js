@@ -981,6 +981,73 @@ export const migrateSubscriptionTokens = async (customerEmail, newRegistrationId
  * Check payment status and handle navigation back to add-card page
  * This endpoint is called after payment completion to verify status
  */
+// export const getPaymentStatus = async (req, res) => {
+//   try {
+//     const { resourcePath } = req.query;
+
+//     if (!resourcePath) {
+//       return res.status(400).json({
+//         status: "FAILED",
+//         error: "MISSING_RESOURCE_PATH",
+//         message: "resourcePath is required",
+//       });
+//     }
+
+//     // Ensure baseUrl ends with /
+//     const baseUrl = "https://eu-test.oppwa.com"
+
+//     const decodedResourcePath = decodeURIComponent(resourcePath);
+//     const url = `${baseUrl}/${decodedResourcePath.replace(/^\//, "")}`; // avoid double //
+
+//     console.log("🌍 Requesting payment status:", url);
+
+//     const { data } = await axios.get(url, {
+//       params: { entityId: "8ac7a4c797e1beca0197e482a8200127" },
+//       headers: {
+//         'Authorization': `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
+//       },
+//       timeout: 10000,
+//     });
+
+//     return res.status(200).json({
+//       status: "SUCCESS",
+//       payment: data,
+//     });
+
+//   } catch (err) {
+//     const code = err?.response?.data?.result?.code;
+
+//     console.error("❌ Payment status error →", code, err?.response?.data);
+
+//     if (code === "800.900.300") {
+//       return res.status(401).json({
+//         status: "FAILED",
+//         error: "AUTHENTICATION_FAILED",
+//         message: "Checkout expired or invalid",
+//         suggestion: "Create a new checkout session",
+//       });
+//     }
+
+//     if (code === "200.300.404") {
+//       return res.status(404).json({
+//         status: "FAILED",
+//         error: "CHECKOUT_NOT_FOUND",
+//         message: "Checkout not found or already expired",
+//         suggestion: "Create a new checkout session",
+//       });
+//     }
+
+//     return res.status(err?.response?.status || 500).json({
+//       status: "FAILED",
+//       error: "UNKNOWN_ERROR",
+//       message: "Failed to fetch payment status",
+//       details: err?.response?.data?.result?.description || err.message,
+//     });
+//   }
+// };
+
+
+
 export const getPaymentStatus = async (req, res) => {
   try {
     const { resourcePath } = req.query;
@@ -993,30 +1060,50 @@ export const getPaymentStatus = async (req, res) => {
       });
     }
 
-    // Ensure baseUrl ends with /
-    const baseUrl = "https://eu-test.oppwa.com"
-
     const decodedResourcePath = decodeURIComponent(resourcePath);
-    const url = `${baseUrl}/${decodedResourcePath.replace(/^\//, "")}`; // avoid double //
+    const url = `${BASE_URL}/${decodedResourcePath.replace(/^\//, "")}`;
 
     console.log("🌍 Requesting payment status:", url);
 
-    const { data } = await axios.get(url, {
-      params: { entityId: "8ac7a4c797e1beca0197e482a8200127" },
-      headers: {
-        'Authorization': `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
-      },
+    // 1️⃣ Get payment status
+    const { data: payment } = await axios.get(url, {
+      params: { entityId: '8ac7a4c797e1beca0197e482a8200127' },
+      headers: { Authorization: 'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA=' },
       timeout: 10000,
     });
 
+    // 2️⃣ If debit succeeded, issue refund
+    let refund = null;
+    if (payment?.result?.code === "000.100.110" && payment?.id) {
+      console.log("✅ Debit successful → Initiating refund...");
+
+      const refundUrl = `${BASE_URL}/v1/payments/${payment.id}`;
+      const refundPayload = new URLSearchParams({
+        entityId: '8ac7a4c797e1beca0197e482a8200127',
+        amount: payment.amount,
+        currency: payment.currency,
+        paymentType: "RF", // refund
+      });
+
+      const { data: refundData } = await axios.post(refundUrl, refundPayload, {
+        headers: {
+          Authorization: 'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA=',
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout: 10000,
+      });
+
+      refund = refundData;
+      console.log("💸 Refund response:", refund);
+    }
+
     return res.status(200).json({
       status: "SUCCESS",
-      payment: data,
+      payment,
+      refund, // included if processed
     });
-
   } catch (err) {
     const code = err?.response?.data?.result?.code;
-
     console.error("❌ Payment status error →", code, err?.response?.data);
 
     if (code === "800.900.300") {
