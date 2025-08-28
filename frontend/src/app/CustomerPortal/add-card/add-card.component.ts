@@ -41,39 +41,46 @@ export class AddCardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    
-    // Get customer email from localStorage
     this.loadCustomerData();
-    
-    // Check if this is a callback from AFS
+  
     this.route.queryParams.subscribe(params => {
-      
-      // AFS sends different parameters depending on the type of integration
       const resourcePath = params['resourcePath'];
-      const checkoutId = params['id']; // AFS sometimes uses 'id' parameter
-      const afsCheckoutId = params['checkoutId']; // Alternative parameter name
-      const resultCode = params['resultCode'];
-      const paymentStatus = params['status']; // New parameter for payment status
-      
-      // Check for payment status parameters first
-      if (resourcePath && checkoutId && paymentStatus) {
-        console.log('🔄 Detected payment status check with parameters:', {
-          resourcePath, checkoutId, paymentStatus
+      const checkoutId = params['id'];
+      const paymentStatus = params['status']; // optional
+  
+      if (resourcePath) {
+        console.log('🔄 Checking payment status for:', resourcePath);
+  
+        this.addCardService.checkPaymentStatus(resourcePath).subscribe({
+          next: (response) => {
+            console.log('✅ Payment status response:', response);
+  
+            if (response.result?.code?.startsWith("000.000")) {
+              // Success → navigate to success page
+              this.router.navigate(['/add-card'], {
+                queryParams: { id: checkoutId }
+              });
+            } else {
+              // Failure → navigate to failure page
+              this.router.navigate(['/payment-failed'], {
+                queryParams: { id: checkoutId, reason: response.result?.description }
+              });
+            }
+          },
+          error: (err) => {
+            console.error('❌ Error checking payment status:', err);
+            this.router.navigate(['/payment-failed'], {
+              queryParams: { id: checkoutId, reason: 'Server error' }
+            });
+          }
         });
-        this.checkPaymentStatus(resourcePath, checkoutId, paymentStatus);
-      }
-      // Check for any AFS callback parameters
-      else if (resourcePath || checkoutId || afsCheckoutId || resultCode) {
-        console.log('🔄 Detected AFS callback with parameters:', {
-          resourcePath, checkoutId, afsCheckoutId, resultCode
-        });
-        this.handleAfsCallback(resourcePath || checkoutId || afsCheckoutId);
       } else {
-        console.log('🔄 No AFS callback parameters found, initializing new card registration');
+        console.log('🔄 No AFS callback params, starting fresh checkout');
         this.initializeCardRegistration();
       }
     });
   }
+  
 
   ngOnDestroy(): void {
     // Clean up AFS script when component is destroyed
@@ -399,42 +406,5 @@ export class AddCardComponent implements OnInit, OnDestroy {
   /**
    * Check payment status of a checkout
    */
-  private checkPaymentStatus(resourcePath: string, checkoutId: string, status: string): void {
-    this.processingRegistration = true;
-    this.addCardService.checkPaymentStatus(checkoutId, this.customerEmail).subscribe({
-      next: (response: any) => {
-        console.log('✅ Payment status response:', response);
-        if (response.success) {
-          this.successMessage = response.message;
-          console.log('🎉 Payment status successful! Redirecting to saved cards page...');
-          setTimeout(() => {
-            console.log('🔄 Navigating to saved cards page');
-            this.router.navigate(['/saved-card']).then(
-              (navigated: boolean) => {
-                if (navigated) {
-                  console.log('✅ Successfully navigated to saved cards page');
-                } else {
-                  console.error('❌ Navigation to saved cards page failed');
-                }
-              }
-            ).catch(navError => {
-              console.error('❌ Navigation error:', navError);
-            });
-          }, 2000);
-        } else {
-          console.error('❌ Payment status failed:', response.message);
-          this.errorMessage = response.message || 'Failed to check payment status.';
-        }
-        this.processingRegistration = false;
-        this.loading = false;
-      },
-      error: (error: any) => {
-        console.error('❌ Error checking payment status:', error);
-        console.error('📋 Error details:', error.error);
-        this.errorMessage = 'Failed to check payment status. Please try again.';
-        this.processingRegistration = false;
-        this.loading = false;
-      }
-    });
-  }
+
 }
