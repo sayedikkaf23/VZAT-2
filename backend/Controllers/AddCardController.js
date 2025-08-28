@@ -988,12 +988,18 @@ export const getPaymentStatus = async (req, res) => {
     }
 
     console.log("🔍 Checking payment status for resourcePath:", resourcePath);
+    console.log("🔧 AFS Config:", {
+      baseUrl: AFS_CONFIG.baseUrl,
+      entityId: AFS_CONFIG.entityId,
+      authorization: AFS_CONFIG.authorization.substring(0, 50) + '...'
+    });
 
     // Decode the resourcePath
     const decodedResourcePath = decodeURIComponent(resourcePath);
     console.log("📋 Decoded resourcePath:", decodedResourcePath);
 
     const url = `${AFS_CONFIG.baseUrl}${decodedResourcePath}`;
+    console.log("🌍 Full URL:", url);
 
     const { data } = await axios.get(url, {
       params: { entityId: AFS_CONFIG.entityId },
