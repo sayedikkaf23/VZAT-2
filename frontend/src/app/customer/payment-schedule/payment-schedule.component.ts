@@ -299,8 +299,8 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         // Use salesPersonDetails from API response
         this.salesAgent = {
           name: data.salesPersonDetails.salesPersonName || "NA",
-          position: data.opp_title || "NA",
-          faxNumber: data.opp_number || "NA",
+          position:  "NA",
+          faxNumber:  "NA",
           phoneNumber: data.salesPersonDetails.salesPersonMobile || "NA",
           email: data.salesPersonDetails.salesPersonEmail || "NA"
         };
@@ -315,9 +315,9 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         // Fallback to opp_owner data if salesPersonDetails not available
         this.salesAgent = {
           name: data.opp_owner || "NA",
-          position: data.opp_title || "NA",
-          faxNumber: data.opp_number || "NA",
-          phoneNumber: data.opp_phone || "NA",
+          position:  "NA",
+          faxNumber:  "NA",
+          phoneNumber:  "NA",
           email: data.opp_email || "NA"
         };
 
