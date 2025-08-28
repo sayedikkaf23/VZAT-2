@@ -1,5 +1,5 @@
 import {
-  Component, OnInit, OnDestroy, ElementRef, Renderer2, AfterViewInit , ViewEncapsulation,
+  Component, OnInit, OnDestroy, ElementRef, Renderer2, AfterViewInit, ViewEncapsulation,
   ChangeDetectorRef,
   ViewChild
 } from '@angular/core';
@@ -23,7 +23,7 @@ interface PaymentDetails {
   templateUrl: './add-card.component.html',
   styleUrls: ['./add-card.component.scss']
 })
-export class AddCardComponent implements OnInit, OnDestroy {
+export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('widgetHost', { static: false }) widgetHost!: ElementRef;
 
   loading = true;
@@ -41,6 +41,7 @@ export class AddCardComponent implements OnInit, OnDestroy {
   // checkoutId = '';
   shopperResultUrl = '';
   afsPaymentLink: string = '';
+  shouldInitializeRegistration = false;
  
   constructor(
     private addCardService: AddCardService,
@@ -87,9 +88,17 @@ export class AddCardComponent implements OnInit, OnDestroy {
         });
       } else {
         console.log('🔄 No AFS callback params, starting fresh checkout');
-        this.initializeCardRegistration();
+        // Store the initialization flag to run after view init
+        this.shouldInitializeRegistration = true;
       }
     });
+  }
+
+  ngAfterViewInit(): void {
+    // Check if we need to initialize registration after view is ready
+    if (this.shouldInitializeRegistration) {
+      this.initializeCardRegistration();
+    }
   }
   
 
@@ -229,6 +238,15 @@ export class AddCardComponent implements OnInit, OnDestroy {
 
   
   injectScript(link:string) {
+    // Wait for the view to be ready
+    if (!this.widgetHost || !this.widgetHost.nativeElement) {
+      console.log('🔄 Waiting for widgetHost to be available...');
+      setTimeout(() => {
+        this.injectScript(link);
+      }, 100);
+      return;
+    }
+
     /* 1. <script src="…paymentWidgets.js?checkoutId"> */
     this.scriptEl = this.rnd.createElement('script');
     this.scriptEl.src = link;
@@ -242,14 +260,9 @@ export class AddCardComponent implements OnInit, OnDestroy {
     formEl.setAttribute('data-brands', 'VISA MASTER');           // only show card brands you need
 
     /* 3. Append both to the DOM */
-    const hostDiv = this.host.nativeElement.querySelector('#widgetHost');
-    if (hostDiv) {
-      hostDiv.appendChild(this.scriptEl);
-      hostDiv.appendChild(formEl);
-    } else {
-      console.error('❌ hostDiv (#widgetHost) not found in DOM');
-      this.handleAfsWidgetFailure();
-    }
+    console.log('✅ widgetHost found, appending script and form');
+    this.widgetHost.nativeElement.appendChild(this.scriptEl);
+    this.widgetHost.nativeElement.appendChild(formEl);
 
     this.loading = false;
   }
