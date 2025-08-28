@@ -36,7 +36,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       opp_number,
       opp_title,
       opp_phone,
-      opp_mobile
+      opp_mobile,
+      salesPersonDetails : salesPersonDetails
+      
     } = req.body;
 
     // Validate required fields
@@ -164,6 +166,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       opp_title,
       opp_phone,
       opp_mobile,
+      salesPersonDetails,
       payment_link_expiry: paymentLinkExpiryDate
     });
 
