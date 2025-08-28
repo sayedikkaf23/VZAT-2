@@ -1061,7 +1061,7 @@ export const getPaymentStatus = async (req, res) => {
     }
 
     const decodedResourcePath = decodeURIComponent(resourcePath);
-    const url = `${BASE_URL}/${decodedResourcePath.replace(/^\//, "")}`;
+    const url = `https://eu-test.oppwa.com/${decodedResourcePath.replace(/^\//, "")}`;
 
     console.log("🌍 Requesting payment status:", url);
 
@@ -1077,7 +1077,7 @@ export const getPaymentStatus = async (req, res) => {
     if (payment?.result?.code ***REMOVED***= "000.100.110" && payment?.id) {
       console.log("✅ Debit successful → Initiating refund...");
 
-      const refundUrl = `${BASE_URL}/v1/payments/${payment.id}`;
+      const refundUrl = `https://eu-test.oppwa.com/v1/payments/${payment.id}`;
       const refundPayload = new URLSearchParams({
         entityId: '8ac7a4c797e1beca0197e482a8200127',
         amount: payment.amount,
