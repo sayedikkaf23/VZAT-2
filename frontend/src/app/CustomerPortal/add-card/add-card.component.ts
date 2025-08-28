@@ -141,15 +141,15 @@ export class AddCardComponent implements OnInit, OnDestroy {
         this.loading = false;
 
         // this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
-        this.paymentDetails = {
-          paymentId: 'card-verification-' + Date.now(),
-          amount: 1,
-          dueDate: new Date(),
-          invoiceNumber: 'CARD-VERIFY-' + Date.now(),
-          quotepaymentId: 'card-verify-' + Date.now(),
-          checkoutId: response.afs_checkout_id,
-          paymentLink:   response.payment_widget_url
-        };
+        // this.paymentDetails = {
+        //   paymentId: 'card-verification-' + Date.now(),
+        //   amount: 1,
+        //   dueDate: new Date(),
+        //   invoiceNumber: 'CARD-VERIFY-' + Date.now(),
+        //   quotepaymentId: 'card-verify-' + Date.now(),
+        //   checkoutId: response.afs_checkout_id,
+        //   paymentLink:   response.payment_widget_url
+        // };
         
         this.isAfsPayment = true;
         this.isLoading = false;
@@ -221,10 +221,10 @@ export class AddCardComponent implements OnInit, OnDestroy {
 
 
   
-  injectScript() {
+  injectScript(link:string) {
     /* 1. <script src="…paymentWidgets.js?checkoutId"> */
     this.scriptEl = this.rnd.createElement('script');
-    this.scriptEl.src = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
+    this.scriptEl.src = link;
     this.scriptEl.setAttribute('integrity', this.integrity);
     this.scriptEl.setAttribute('crossorigin', 'anonymous');
 
