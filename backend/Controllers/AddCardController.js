@@ -58,7 +58,7 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
       currency: currency,
       paymentType: 'DB',
       createRegistration: true,
-      shopperResultUrl: `${process.env.BACKEND_URL}/api/cards/payment-callback?customerEmail=${encodeURIComponent(customerEmail)}`,
+      shopperResultUrl: `https://vzatnew.yeepeey.com/saved-card/add-card`,
       testMode: AFS_CONFIG.testMode
     };
     
