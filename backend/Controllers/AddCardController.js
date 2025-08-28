@@ -53,13 +53,24 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
 
     // Configure AFS checkout for registration with payment
     const checkoutData = {
-      entityId: AFS_CONFIG.entityId,
-      amount: amount.toString(),
-      currency: currency,
-      paymentType: 'DB',
-      createRegistration: true,
-      shopperResultUrl: `https://vzatnew.yeepeey.com/saved-card/add-card`,
-      testMode: AFS_CONFIG.testMode
+
+      merchantTransactionId:`${Date.now()}`, // ← usually the same as Pay-by-Link quote ID
+      entityId: '8ac7a4c97d8d45be017d8e96389e020a',        // ← usually DIFFERENT from Pay-by-Link entity
+      amount:   Number(amount).toFixed(2),
+      currency: currency || "AED",
+      paymentType: "DB",
+      integrity: "true"       
+
+
+
+
+      // entityId: AFS_CONFIG.entityId,
+      // amount: amount.toString(),
+      // currency: currency,
+      // paymentType: 'DB',
+      // createRegistration: true,
+      // shopperResultUrl: `https://vzatnew.yeepeey.com/saved-card/add-card`,
+      // testMode: AFS_CONFIG.testMode
     };
     
     // Convert to x-www-form-urlencoded string
@@ -74,11 +85,11 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
     console.log('💰 Amount:', amount, currency);
 
     const response = await axios.post(
-      `${AFS_CONFIG.baseUrl}/v1/checkouts`,
+      `https://eu-test.oppwa.com/v1/checkouts`,
       urlEncodedCheckoutData,
       {
         headers: {
-          'Authorization': AFS_CONFIG.authorization,
+          'Authorization': `Bearer ${'OGFjN2E0Yzk3ZDhkNDViZTAxN2Q4ZTk2Mzk3NjAyMGV8R3hQS0gyNjY5dA***REMOVED***'}`,
           'Content-Type': 'application/x-www-form-urlencoded'
         }
       }
@@ -101,7 +112,7 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
       // Generate shopper result URL with parameters
       const id = encodeURIComponent(checkoutResult.id);
       const resourcePath = encodeURIComponent(`/v1/checkouts/${checkoutResult.id}/payment`);
-      finalShopperResultUrl = `${process.env.BACKEND_URL}/api/cards/payment-callback?id=${id}&resourcePath=${resourcePath}&customerEmail=${encodeURIComponent(customerEmail)}`;
+      // finalShopperResultUrl = `${process.env.BACKEND_URL}/api/cards/payment-callback?id=${id}&resourcePath=${resourcePath}&customerEmail=${encodeURIComponent(customerEmail)}`;
     }
 
     // Return response in format similar to payment flow
