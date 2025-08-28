@@ -1,4 +1,972 @@
 // Import the main payment schedule styles
+
+/* payment-schedule-page */
+
+body{
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+html a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+/* Additional styles for payment schedule component */
+
+.pay-now-link {
+  background: linear-gradient(135deg, #FA2E52 0%, #d72848 100%);
+  color: white !important;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  outline: none;
+}
+
+
+
+.pay-now-link:hover {
+  background: linear-gradient(135deg, #d72848 0%, #c21e3a 100%);
+  color: white !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(250, 46, 82, 0.3);
+  text-decoration: none;
+}
+
+.item.active {
+  border-color: #FA2E52 !important;
+  background-color: rgba(250, 46, 82, 0.05);
+}
+
+.item.completed {
+  background-color: rgba(40, 167, 69, 0.05);
+  border-color: #28a745 !important;
+}
+
+.item.completed .price span {
+  color: #28a745 !important;
+}
+
+.text-success {
+  color: #28a745 !important;
+}
+
+.text-warning {
+  color: #ffc107 !important;
+}
+
+.text-muted {
+  color: #6c757d !important;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #FA2E52 0%, #d72848 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 30px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d72848 0%, #c21e3a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(250, 46, 82, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .pay-now-link {
+    font-weight: 500;
+    padding: 5px 10px;
+  }
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 9999;
+}
+
+.payment-schedule-content {
+  width: 100%;
+  transition: all 0.3s;
+}
+
+.payment-schedule {
+    --primary:#FA2E52;
+    --sidebar-width: 320px;
+    --light-primary:#F8E8E9;
+    display: flex;
+    background-image: url('/assets/images/empire.png');
+    background-repeat: no-repeat;
+    background-position: right bottom;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    background-attachment: fixed;
+    min-height: 100vh;
+    width: 100%;
+    
+    // Fix overflow issues
+    overflow-x: hidden;
+    overflow-y: auto;
+    
+    // Ensure proper flex behavior
+    position: relative;
+}
+
+.payment-schedule .detils-sidebar {
+    background-color: var(--light-primary);
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    flex-shrink: 0;
+    
+    // Remove fixed height that can cause positioning issues
+    height: auto;
+    
+    // Ensure proper positioning
+    position: relative;
+    overflow-y: auto;
+}
+.sidebar-row{
+    flex-direction: column;
+    min-height: 105vh;
+    padding: 50px;
+}
+.row>* {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 100%;
+    padding-right: calc(var(--bs-gutter-x) * .5);
+    padding-left: calc(var(--bs-gutter-x) * .5);
+    margin-top: var(--bs-gutter-y);
+}
+.col-auto {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+.payment-schedule .sidebar-row .logo {
+    padding-top: 0px;
+    padding-bottom: 40px;
+}
+.payment-schedule .sidebar-row {
+    padding: 20px;
+}
+.payment-schedule  .detils-sidebar hr {
+    border-top: 1px solid var(--primary);
+}
+.payment-schedule .detils-sidebar p {
+    font-size: 16px;
+    font-weight: 400;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    color: #000;
+}
+.payment-schedule .detils-sidebar p  b{
+    font-size: 16px;
+    font-weight: 700;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    color: #000;
+}
+.payment-schedule .detils-sidebar .price {
+    font-size: 30px;
+    margin-bottom: 6px;
+    line-height: 170%;
+    margin-top: 0;
+    font-weight: 700;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    color: #000;
+}
+h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1{
+    font-weight: 600;
+}
+
+.sidebar-row {
+    flex-direction: column;
+    min-height: 105vh;
+    padding: 50px;
+}
+.payment-schedule .detils-sidebar .small-text {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 150%;
+}
+.payment-schedule  .detils-sidebar h6 a {
+    color: inherit;
+    font-size: 14px;
+    font-weight: 600;
+}
+.payment-schedule .sidebar-row {
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 20px;
+}    
+.payment-schedule .logo a {
+    display: inline-block;
+    vertical-align: top;
+}
+.payment-schedule .detils-sidebar h2 {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    margin: 0 0 5px;
+    color: #000;
+}
+
+.payment-schedule .detils-sidebar h3 {
+    font-size: 16px;
+    margin: 0 0 5px;
+    font-weight: 400;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    color: #000;
+}
+
+.payment-schedule .detils-sidebar h3.mb-0 {
+    font-size: 18px;
+    margin: 0 0 5px;
+    font-weight: 400;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    line-height: 1.4;
+}
+.payment-schedule .detils-sidebar p {
+    line-height: 2.1;
+}
+.payment-schedule .detils-sidebar hr {
+    margin: 15px 0;
+    border-top: 1px solid var(--primary);
+    opacity: 1;
+}
+.payment-schedule .detils-sidebar h6 {
+    font-size: 14px;
+    font-weight: 600;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    margin: 0 0 5px;
+}
+
+/* Make contact information more visible and properly aligned */
+.payment-schedule .detils-sidebar .row.align-items-center {
+    margin-bottom: 8px;
+}
+
+.payment-schedule .detils-sidebar .row.align-items-center h6 {
+    font-size: 14px;
+    font-weight: 600;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    line-height: 1.4;
+    margin: 0;
+}
+
+.payment-schedule .detils-sidebar .row.align-items-center h6 a {
+    color: #000;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    display: block;
+}
+
+.payment-schedule .detils-sidebar .row.align-items-center h6 a:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.payment-schedule .detils-sidebar .row.align-items-center .col-auto {
+    width: auto;
+    min-width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-schedule .detils-sidebar .row.align-items-center .col {
+    flex: 1;
+    padding-left: 8px;
+}
+.payment-schedule .detils-sidebar h6 a{
+    color:inherit;
+}
+.payment-schedule .detils-sidebar h6 a:hover{
+    color:var(--primary);
+}
+
+.payment-schedule .details-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 10px 20px;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    
+    // Remove fixed height that can cause issues
+    height: auto;
+    text-align: center;
+}
+.payment-schedule .details-content .details-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0  85px 20px;
+}
+.payment-schedule .details-footer ul {
+    font-size: 14px;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.payment-schedule .details-footer ul li {
+    line-height: 18px;
+    position: relative;
+    padding-right: 15px;
+    border-right: 1px solid var(--secondary);
+    margin-right: 15px;
+}
+.payment-schedule .details-footer ul li:last-child{
+    padding-right:0;
+    margin-right: 0;
+    border-right: 0;
+}
+.payment-schedule .details-footer ul li a {
+    color: var(--secondary);
+    font-size: 14px;
+    font-weight: 400;
+}
+.payment-schedule .details-footer ul li a:hover{
+    color:var(--primary);
+}
+.payment-schedule .details-content .container {
+    padding: 20px;
+}
+body.payment-schedule  .details-content {
+    padding: 20px;
+}
+.payment-schedule .schedule-list-box {
+    max-width: 540px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.payment-schedule-head{
+    padding-bottom: 20px;
+    text-align: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+} 
+.payment-schedule-head h3 {
+    font-size: 20px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+}
+
+.payment-schedule-head  h6 {
+    line-height: 200%;
+    margin-bottom: 10px;
+}
+.payment-schedule-list{
+    border: 1px solid #F4E9E9;
+    background: white;
+    padding: 14px 0 0;
+    border-radius: 16px;
+    margin-bottom: 22px;
+    width: 100%;
+    max-width: 100%;
+}
+.payment-schedule-list .item,.payment-schedule-list .total-item{
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 40px;
+}
+.payment-schedule-list .total-item{
+    padding: 15px 40px;
+} 
+.payment-schedule-list .item p {
+    color: #444444;
+    margin: 0;
+    text-align: center;
+}
+.payment-schedule-list .item.active p,
+.payment-schedule-list .item.active .price{
+    color: var(--primary);
+}
+.payment-schedule-list .total-item h5{
+    margin: 0;
+    text-align: center;
+}
+.payment-schedule-list .item:last-child td{
+    border: 0;
+}
+.payment-schedule-list .price a {
+    color: var(--primary);
+    font-weight: 500;
+    background: #FA2E521A;
+    line-height: 26px;
+    padding: 6px 14px;
+    border-radius: 50px;
+    transition: all 0.5s;
+    text-decoration: none;
+    text-align: center;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.payment-schedule-list .price a:hover{
+    color: #fff;
+    background: var(--primary);
+}
+.payment-schedule-list .wrp .item:after,.payment-schedule-list .wrp .item:before {
+    position: absolute;
+    content: '';
+    width: 10px;
+    height: 10px;
+    left: 50%;
+    top: 50%;
+    border: 1.4px solid #767676;
+    background-color: #fff;
+    border-radius: 100%;
+    transform: translate(-50% , -50%);
+    z-index: 1;
+}
+.payment-schedule-list .wrp .item:before{
+    opacity: 0;
+    background-color: var(--primary);
+    border: 0;
+    z-index: 2;
+}
+.payment-schedule .wrp{
+    position: relative;
+}
+.payment-schedule .wrp:after {
+    position: absolute;
+    width: 1.2px;
+    background: #767676;
+    transform: translate(-50% , -50%);
+    left: 50%;
+    content: '';
+    top: 0;
+    z-index: 0;
+    height: 94%;
+    top: 50%;
+} 
+.payment-schedule-list .wrp .item.active:after {
+    width: 20px;
+    height: 20px;
+    border-color: var(--primary);
+}
+.payment-schedule-list .wrp .item.active:before{
+    opacity: 1;
+}
+.payment-schedule-list .price {
+    font-weight: 500;
+}
+.payment-schedule-list tfoot .item {
+    background: #FFF4F4;
+}
+.payment-schedule-list tfoot .item:before {
+    opacity: 0 !important ;
+}
+.payment-schedule-list tfoot .item .price {
+    font-weight: 500;
+    color: #000;
+}
+html .payment-schedule .schedule-list-box .form-check .form-check-input {
+    background-color: #FFF4F4;
+    border: 1px solid #F1E3E3 !important;
+}    
+html .payment-schedule .schedule-list-box .form-check .form-check-input:checked{
+    background-color: #FA2E52;
+}
+.payment-schedule-list {
+    padding: 6px 0 0;
+}
+.payment-schedule .schedule-list-box .btn-wrp .btn {
+    height: 50px;
+    border-radius: 50px;
+    padding: 0 50px;
+    margin-top: 30px;
+    font-weight: 500;
+    background: #FA2E52 !important;
+    text-transform: capitalize;
+    color: #fff;
+    line-height: 50px;
+}
+.payment-schedule .btn-wrp .btn:hover{
+    background: #000 !important;
+} 
+html .schedule-list-box  .form-check .form-check-label {
+    color: #444444;
+    font-weight: 400;
+} 
+
+@media(max-width:970px){
+    .payment-schedule .schedule-list-box {
+        padding: 0;
+    }
+    .payment-schedule-list .item, .payment-schedule-list .total-item {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 15px;
+    }
+    .payment-schedule-list .price {
+        font-size: 14px;
+    }
+    .payment-schedule-list .price a {
+        line-height: 22px;
+        padding: 0 11px;
+    } 
+    .payment-schedule-list .total-item {
+        padding: 12px 15px;
+    }
+    .payment-schedule-head h3 {
+    }
+    body.payment-schedule  .details-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        padding: 20px;
+        height: 100vh;
+        overflow: auto;
+        overflow-x: hidden;
+    } 
+    .payment-schedule {
+        --sidebar-width: 290px;
+    }
+}
+
+@media(max-width:767px){
+    .payment-schedule .detils-sidebar .price {
+        font-size: 14px;
+    }
+    .payment-schedule .detils-sidebar h2 {
+        font-size: 14px;
+        font-weight: 700px;
+    }
+    .payment-schedule .detils-sidebar{
+        position: static;
+        width: 100%;
+        text-align: center;
+        height:50%
+    }
+    .payment-schedule .detils-sidebar p {
+    }
+    .payment-schedule .sidebar-row {
+        min-height: unset;
+        padding: 20px 30px 20px;
+    }
+    
+    /* Fix mobile contact information layout - completely override Bootstrap grid */
+    .payment-schedule .detils-sidebar .row.align-items-center.gx-1 {
+        --bs-gutter-x: 0 !important;
+        margin-bottom: 6px !important;
+        text-align: left !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+        padding: 2px 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    
+    .payment-schedule .detils-sidebar .row.align-items-center.gx-1 .col-auto {
+        width: 16px !important;
+        min-width: 16px !important;
+        max-width: 16px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+        flex-grow: 0 !important;
+    }
+    
+    .payment-schedule .detils-sidebar .row.align-items-center.gx-1 .col {
+        flex: 1 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        text-align: left !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+    
+    .payment-schedule .detils-sidebar .row.align-items-center.gx-1 .col h6.mb-0 {
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .payment-schedule .detils-sidebar .row.align-items-center.gx-1 .col h6.mb-0 a {
+        color: #333 !important;
+        text-decoration: none !important;
+        font-weight: 600 !important;
+        display: inline-block !important;
+        white-space: nowrap !important;
+        font-size: 14px !important;
+    }
+    
+    .payment-schedule .detils-sidebar .row.align-items-center.gx-1 .col h6.mb-0 a:hover {
+        color: var(--primary) !important;
+        text-decoration: underline !important;
+    }
+    
+    /* Make sure SVG icons are properly sized in mobile */
+    .payment-schedule .detils-sidebar .row.align-items-center.gx-1 .col-auto svg {
+        width: 12px !important;
+        height: 12px !important;
+        flex-shrink: 0 !important;
+    }
+    
+    /* Fix mobile footer contact information layout */
+    .payment-schedule .details-footer .row.align-items-center.gx-1 {
+        --bs-gutter-x: 0 !important;
+        margin-bottom: 4px !important;
+        text-align: left !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        padding: 1px 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    
+    .payment-schedule .details-footer .row.align-items-center.gx-1 .col-auto {
+        width: 14px !important;
+        min-width: 14px !important;
+        max-width: 14px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+        flex-grow: 0 !important;
+    }
+    
+    .payment-schedule .details-footer .row.align-items-center.gx-1 .col {
+        flex: 1 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        text-align: left !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+    
+    .payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 {
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 a {
+        color: #333 !important;
+        text-decoration: none !important;
+        font-weight: 600 !important;
+        display: inline-block !important;
+        white-space: nowrap !important;
+        font-size: 14px !important;
+    }
+    
+    .payment-schedule .details-footer .row.align-items-center.gx-1 .col-auto svg {
+        width: 10px !important;
+        height: 10px !important;
+        flex-shrink: 0 !important;
+    }
+    
+    /* Specific fix for email link to prevent wrapping */
+    .payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 a[href^="mailto:"] {
+        font-size: 14px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 140px !important;
+        display: inline-block !important;
+    }
+    
+    .payment-schedule .sidebar-row .payment-schedule .contact-info-box {
+        margin-top: 33px;
+    }
+    .payment-schedule .sidebar-row .payment-schedule-head h6 b {
+    }
+    .payment-schedule .sidebar-row .payment-schedule-head h3 {
+    }
+    .payment-schedule .sidebar-row .payment-schedule-list .item h6 {
+    }
+    .payment-schedule .sidebar-row .payment-schedule-list .price a {
+        padding: 4px 8px;
+        width: fit-content;
+        line-height: 19px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 27px;
+    }
+    .payment-schedule .schedule-list-box {
+        padding: 15px 15px;
+    }
+    .payment-schedule-list .price {
+        text-wrap: nowrap;
+    }
+    .payment-schedule .schedule-list-box {
+        padding: 15px 0px 25px;
+    }
+    body.payment-schedule .details-content .container {
+        max-width: 100%;
+        padding: 0 8px;
+    }
+    .payment-schedule {
+       background-color: var(--light-primary);
+       display: flex;
+       flex-direction: column;
+    }
+    .payment-schedule  .details-content {
+        display: flex;
+        flex-direction: column;
+        padding: 0px 10px 0;
+        min-height: unset;
+        width: 100%;
+        background: var(--light-primary);
+        overflow: hidden;
+    }
+    .payment-schedule-list .item p {
+    }
+    .payment-schedule-head  h6 {
+    }
+    .payment-schedule .details-content .details-footer {
+        position: relative;
+        bottom: 0;
+        padding: 0px 15px 15px;
+        width: 100%;
+    }
+    .payment-schedule .details-footer{
+        position: absolute;
+        bottom: 0;
+        background: var(--light-primary);
+        width: 100%;
+    }
+    .payment-schedule .details-footer ul {
+        padding-top:20px;
+    }
+    .payment-schedule .details-footer ul li {
+        line-height: 12px;
+        padding-right: 10px;
+        margin-right: 10px;
+    }
+    html .payment-schedule .schedule-list-box  .form-check .form-check-label {
+    }
+    .payment-schedule-list .price {
+    }
+    .payment-schedule-list .total-item h5 {
+        margin: 0;
+    }
+    .payment-schedule-head {
+        padding-bottom: 10px;
+    }   
+    html .payment-schedule .schedule-list-box .form-check .form-check-input {
+        background-color: #ffffff;
+        border: 1px solid #b9b9b9 !important;
+    }
+    .payment-schedule .detils-sidebar hr {
+        border-top: 1px solid var(--primary);
+    }
+    .payment-schedule .details-footer h2 {
+        text-align: center;
+        margin-bottom: 5px;
+    }
+    .payment-schedule .details-footer hr {
+            border-top: 1px solid var(--primary);
+        margin: 10px 0 20px;
+        opacity: 1;
+    }
+    .payment-schedule .details-footer h3 {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    .payment-schedule .details-footer p {
+        margin: 0;
+    }
+   .payment-schedule .details-footer h6 {
+        margin: 0;
+    }
+    .payment-schedule .details-footer h6 a{
+        color:inherit;
+    }
+    .payment-schedule .details-footer h6 a:hover{
+        color:var(--dark)
+    }
+    .payment-schedule .details-footer .col {
+        text-align: right;
+    }
+     .payment-schedule .details-footer .col-auto {
+        width:50%;
+    }
+     .payment-schedule .schedule-list-box .btn-wrp .btn {
+        height: 40px;
+        padding: 0 24px;
+        line-height: 40px;
+        margin-top: 12px;
+    }
+} 
+/* Add your payment page styles here or import global styles if needed. */
+
+/* Card Management Section Styles */
+.card-management-section {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  
+  .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+
+  .card-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .payment-method-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    &.selected {
+      border-color: var(--bs-primary) !important;
+      background-color: rgba(var(--bs-primary-rgb), 0.05);
+    }
+
+    &.current-card {
+      border-color: var(--bs-success) !important;
+      background-color: rgba(var(--bs-success-rgb), 0.05);
+    }
+  }
+
+  .card-brand-icon {
+    font-size: 1.1rem;
+    margin-right: 0.5rem;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+  }
+
+  .table th {
+    font-weight: 600;
+    border-top: none;
+    color: var(--bs-gray-700);
+  }
+
+  .alert {
+    border: none;
+    border-radius: 0.5rem;
+  }
+
+  .btn {
+    border-radius: 0.375rem;
+    font-weight: 500;
+  }
+
+  .form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+  }
+}
+
+/* Payment Summary Section */
+.payment-summary-section {
+  background-color: #f8f9fa;
+  padding: 2rem 0;
+  margin-top: 2rem;
+  border-top: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e9ecef;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.summary-item:hover {
+  border-color: #FA2E52;
+  box-shadow: 0 2px 4px rgba(250, 46, 82, 0.1);
+}
+
+.summary-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.summary-value {
+  font-weight: 600;
+  color: #212529;
+}
+
+.summary-value.text-success {
+  color: #28a745 !important;
+}
+
+.summary-value.text-warning {
+  color: #ffc107 !important;
+}
+
+.summary-value.text-primary {
+  color: #FA2E52 !important;
+}
+
+@media (max-width: 768px) {
+  .payment-summary-section {
+    padding: 1.5rem 0;
+  }
+  
+  .summary-item {
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.4rem;
+  }
+  
+  .summary-label,
+  .summary-value {
+  }
+} 
+
 @import '../../assets/css/payment-schedual.css';
 
 .payment-result {
@@ -197,9 +1165,10 @@
   border-radius: 8px;
   margin: 30px auto;
   max-width: 500px;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.4;
   color: #666;
+  text-align: center;
   
   strong {
     color: #333;
@@ -407,3 +1376,565 @@
     padding: 20px 10px;
   }
 }
+
+/* Payment Success Section */
+.details-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 20px;
+  min-height: 100vh;
+  text-align: center;
+  background: #fff;
+  font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.pm-submit-info .icon img {
+  max-width: 120px;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info h3 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 10px;
+}
+
+.pm-submit-info h5 {
+  font-size: 16px;
+  font-weight: 400;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info hr {
+  margin: 20px auto;
+  width: 60%;
+  border-top: 2px solid #000000;
+}
+
+.pm-submit-info h6 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pm-submit-info h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 20px;
+}
+
+.pmnotes {
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #333;
+  line-height: 1.6;
+}
+
+.pmnotes strong {
+  font-weight: 600;
+}
+
+/* Footer */
+.details-footer {
+  margin-top: 40px;
+}
+
+.details-footer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.details-footer ul li {
+  margin: 0;
+}
+
+.details-footer ul li a {
+  color: #555;
+  text-decoration: none;
+  font-weight: 400;
+}
+
+.details-footer ul li a:hover {
+  color: #FA2E52;
+}
+.pm-submit-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 30px 15px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.pm-submit-info .icon img {
+  max-width: 120px;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.pm-submit-info .subtitle {
+  font-size: 16px;
+  font-weight: 400;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info hr {
+  width: 60%;
+  max-width: 400px;
+  border: none;
+  border-top: 2px solid #000000;
+  margin: 20px 0;
+}
+
+.pm-submit-info h6 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pm-submit-info h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.pmnotes {
+  margin: 20px 0;
+  padding: 12px 16px;
+  border: 1px solid #f1dcdc;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  background: #fff;
+}
+
+.details-footer {
+  margin-top: 30px;
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+}
+
+.details-footer ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+}
+
+.details-footer ul li {
+  margin: 0;
+}
+
+.details-footer ul li a {
+  color: #555;
+  text-decoration: none;
+}
+
+.details-footer ul li a:hover {
+  color: #FA2E52;
+}
+.pm-submit-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 30px 15px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.pm-submit-info .icon img {
+  max-width: 120px;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.pm-submit-info .subtitle {
+  font-size: 16px;
+  font-weight: 400;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info hr {
+  width: 60%;
+  max-width: 400px;
+  border: none;
+  border-top: 2px solid #000000;
+  margin: 20px 0;
+}
+
+.pm-submit-info h6 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pm-submit-info h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.pmnotes {
+  margin: 20px 0;
+  padding: 12px 16px;
+  border: 1px solid #f1dcdc;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  background: #fff;
+}
+
+.details-footer {
+  margin-top: 30px;
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+}
+
+.details-footer ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+}
+
+.details-footer ul li {
+  margin: 0;
+}
+
+.details-footer ul li a {
+  color: #555;
+  text-decoration: none;
+}
+
+.details-footer ul li a:hover {
+  color: #FA2E52;
+}
+.pm-submit-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 30px 15px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.pm-submit-info .icon img {
+  max-width: 120px;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.pm-submit-info .subtitle {
+  font-size: 16px;
+  font-weight: 400;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info hr {
+  width: 60%;
+  max-width: 400px;
+  border: none;
+  border-top: 2px solid #000000;
+  margin: 20px 0;
+}
+
+.pm-submit-info h6 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pm-submit-info h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.pmnotes {
+  margin: 20px 0;
+  padding: 12px 16px;
+  border: 1px solid #f1dcdc;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  background: #fff;
+}
+
+.details-footer {
+  margin-top: 30px;
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+}
+
+.details-footer ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+}
+
+.details-footer ul li {
+  margin: 0;
+}
+
+.details-footer ul li a {
+  color: #555;
+  text-decoration: none;
+}
+
+.details-footer ul li a:hover {
+  color: #FA2E52;
+}
+.payment-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  background: #fff;
+  font-family: 'Poppins', sans-serif;
+  color: #000;
+  padding: 20px;
+}
+
+.payment-success .icon img {
+  max-width: 120px;
+  margin-bottom: 20px;
+}
+
+.payment-success h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.payment-success .subtitle {
+  font-size: 16px;
+  font-weight: 400;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.payment-success hr {
+  width: 60%;
+  max-width: 400px;
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 20px 0;
+}
+
+.payment-success h6 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payment-success h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.payment-success .note {
+  margin: 20px 0;
+  padding: 10px 15px;
+  border: 1px solid #f1dcdc;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.payment-success .note strong {
+  font-weight: 600;
+}
+
+.payment-success .footer {
+  margin-top: 30px;
+  font-size: 13px;
+  color: #888;
+}
+
+.payment-success .footer ul {
+  list-style: none;
+  display: flex;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.payment-success .footer ul li {
+  margin: 0;
+}
+
+.payment-success .footer ul li a {
+  color: #555;
+  text-decoration: none;
+}
+
+.payment-success .footer ul li a:hover {
+  color: #FA2E52;
+}
+
+.pm-submit-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 30px 15px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.pm-submit-info .icon img {
+  max-width: 120px;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.pm-submit-info .subtitle {
+  font-size: 16px;
+  font-weight: 400;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info hr {
+  width: 60%;
+  max-width: 400px;
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 20px 0;
+}
+
+.pm-submit-info h6 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pm-submit-info h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.pmnotes {
+  margin: 20px 0;
+  padding: 12px 16px;
+  border: 1px solid #f1dcdc;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  background: #fff;
+}
+
+.details-footer {
+  margin-top: 30px;
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+}
+
+.details-footer ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+}
+
+.details-footer ul li {
+  margin: 0;
+}
+
+.details-footer ul li a {
+  color: #555;
+  text-decoration: none;
+}
+
+.details-footer ul li a:hover {
+  color: #FA2E52;
+}
+.pm-submit-info hr {
+  width: 60%;
+  max-width: 400px;
+  border: 0;
+  border-top: 1px solid #000 !important;
+  margin: 20px auto;  /* auto to center horizontally */
+  display: block;
+}
+
