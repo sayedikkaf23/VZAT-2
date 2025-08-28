@@ -1,11 +1,11 @@
 <div class="sales-agent-sidebar">
+  <hr />
   <div *ngIf="showTitle">
-    <hr />
-    <h3 class="mb-0"><b>{{ title }}</b></h3>
+    <h3 class="mb-3"><b>{{ title }}</b></h3>
   </div>
   
   <div *ngIf="showSubtitle">
-    <p>{{ subtitle }}</p>
+    <p class="mb-4">{{ subtitle }}</p>
   </div>
 
   <p><b>{{ salesAgent.name }}</b></p>
