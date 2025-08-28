@@ -992,9 +992,9 @@ export const getPaymentStatus = async (req, res) => {
     const url = `https://eu-test.oppwa.com${resourcePath}`;
 
     const { data } = await axios.get(url, {
-      params: { entityId: AFS_CONFIG.entityId },
+      params: { entityId: process.env.AFS_ENTITY_ID || config.AFS_ENTITY_ID },
       headers: {
-        Authorization: `Bearer ${AFS_CONFIG.authorization}`,
+        Authorization: `Bearer ${process.env.AFS_AUTHORIZATION || config.AFS_AUTHORIZATION}`,
       },
       timeout: 10000,
     });
