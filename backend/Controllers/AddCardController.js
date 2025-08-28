@@ -1068,7 +1068,7 @@ export const getPaymentStatus = async (req, res) => {
     // 1️⃣ Get payment status
     const { data: payment } = await axios.get(url, {
       params: { entityId: '8ac7a4c797e1beca0197e482a8200127' },
-      headers: { Authorization: 'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA=' },
+      headers: { Authorization: `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}` },
       timeout: 10000,
     });
 
@@ -1087,7 +1087,7 @@ export const getPaymentStatus = async (req, res) => {
 
       const { data: refundData } = await axios.post(refundUrl, refundPayload, {
         headers: {
-          Authorization: 'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA=',
+          Authorization: `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
           "Content-Type": "application/x-www-form-urlencoded",
         },
         timeout: 10000,
