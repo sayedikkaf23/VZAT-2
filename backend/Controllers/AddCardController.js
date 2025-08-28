@@ -107,7 +107,7 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
     
     if (checkoutResult && checkoutResult.id) {
       paymentWidgetUrl = `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${checkoutResult.id}`;
-      paymentPageUrl = `${process.env.FRONTEND_URL}/add-card/${encodeURIComponent(checkoutResult.id)}`;
+      // paymentPageUrl = `${process.env.FRONTEND_URL}/add-card/${encodeURIComponent(checkoutResult.id)}`;
       
       // Generate shopper result URL with parameters
       const id = encodeURIComponent(checkoutResult.id);
@@ -123,7 +123,7 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
       checkoutResult,
       afs_checkout_id: checkoutResult.id,
       payment_widget_url: paymentWidgetUrl,
-      payment_page_url: paymentPageUrl,
+      // payment_page_url: paymentPageUrl,
       shopper_result_url: finalShopperResultUrl,
       afs_config: {
         baseUrl: AFS_CONFIG.baseUrl,
@@ -1004,9 +1004,7 @@ export const getPaymentStatus = async (req, res) => {
     }
 
     // Ensure baseUrl ends with /
-    const baseUrl = AFS_CONFIG.baseUrl.endsWith("/")
-      ? AFS_CONFIG.baseUrl
-      : `${AFS_CONFIG.baseUrl}/`;
+    const baseUrl = "https://eu-test.oppwa.com"
 
     const decodedResourcePath = decodeURIComponent(resourcePath);
     const url = `${baseUrl}${decodedResourcePath.replace(/^\//, "")}`; // avoid double //
@@ -1014,11 +1012,9 @@ export const getPaymentStatus = async (req, res) => {
     console.log("🌍 Requesting payment status:", url);
 
     const { data } = await axios.get(url, {
-      params: { entityId: AFS_CONFIG.entityId },
+      params: { entityId: "8ac7a4c97d8d45be017d8e96389e020a" },
       headers: {
-        Authorization: AFS_CONFIG.authorization.startsWith("Bearer ")
-          ? AFS_CONFIG.authorization
-          : `Bearer ${AFS_CONFIG.authorization}`,
+        'Authorization': `Bearer ${'OGFjN2E0Yzk3ZDhkNDViZTAxN2Q4ZTk2Mzk3NjAyMGV8R3hQS0gyNjY5dA=='}`,
       },
       timeout: 10000,
     });
