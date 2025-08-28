@@ -1,4 +1,7 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import {
+  Component, OnInit, OnDestroy, ElementRef, Renderer2, AfterViewInit , ViewEncapsulation,
+  ChangeDetectorRef
+} from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgIf, CommonModule } from '@angular/common';
 import { AddCardService, PrepareRegistrationResponse } from '../../services/add-card.service';
@@ -35,13 +38,14 @@ export class AddCardComponent implements OnInit, OnDestroy {
   // checkoutId = '';
   shopperResultUrl = '';
   afsPaymentLink: string = '';
-  rnd: any;
-  host: any;
+ 
   constructor(
     private addCardService: AddCardService,
     private router: Router,
     private route: ActivatedRoute,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private rnd: Renderer2,
+    private host: ElementRef<HTMLElement> 
   ) {}
 
   ngOnInit(): void {
@@ -236,8 +240,13 @@ export class AddCardComponent implements OnInit, OnDestroy {
 
     /* 3. Append both to the DOM */
     const hostDiv = this.host.nativeElement.querySelector('#widgetHost');
-    hostDiv.appendChild(this.scriptEl);
-    hostDiv.appendChild(formEl);
+    if (hostDiv) {
+      hostDiv.appendChild(this.scriptEl);
+      hostDiv.appendChild(formEl);
+    } else {
+      console.error('❌ hostDiv (#widgetHost) not found in DOM');
+      this.handleAfsWidgetFailure();
+    }
 
     this.loading = false;
   }
