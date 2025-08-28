@@ -1138,7 +1138,9 @@ export const getPaymentStatus = async (req, res) => {
             
             // Try to extract last 4 digits from various sources
             let last4Digits = '';
-            if (cardInfo.last4) {
+            if (cardInfo.last4Digits) {
+              last4Digits = cardInfo.last4Digits;
+            } else if (cardInfo.last4) {
               last4Digits = cardInfo.last4;
             } else if (cardInfo.maskedPan) {
               // Extract last 4 from masked PAN like "411111******1111"
@@ -1169,6 +1171,14 @@ export const getPaymentStatus = async (req, res) => {
             // Extract expiry information
             let expiryMonth = cardInfo.expiryMonth || '';
             let expiryYear = cardInfo.expiryYear || '';
+            
+            // Handle different field names for expiry
+            if (!expiryMonth && cardInfo.expiryMonth) {
+              expiryMonth = cardInfo.expiryMonth;
+            }
+            if (!expiryYear && cardInfo.expiryYear) {
+              expiryYear = cardInfo.expiryYear;
+            }
             
             // Ensure proper format
             if (expiryMonth && expiryMonth.length ***REMOVED***= 1) {
