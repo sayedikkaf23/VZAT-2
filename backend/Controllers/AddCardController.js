@@ -120,6 +120,7 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
       status: true,
       message: "Card registration with payment checkout created successfully",
       customerEmail,
+      checkoutResult,
       afs_checkout_id: checkoutResult.id,
       payment_widget_url: paymentWidgetUrl,
       payment_page_url: paymentPageUrl,

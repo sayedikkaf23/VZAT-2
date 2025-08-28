@@ -1,6 +1,6 @@
 <div class="payment-widget-container">
   <!-- Payment Details -->
-  <div *ngIf="paymentDetails" class="payment-details-container">
+  <div *ngIf="isAfsPayment || paymentDetails" class="payment-details-container">
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
@@ -43,7 +43,7 @@
                   </div> -->
                   
                   <!-- AFS Payment Form - Always present when isAfsPayment is true -->
-                  <div id="widgetHost"></div> <!-- Your actual injected card form -->
+                  <div #widgetHost></div> <!-- Your actual injected card form -->
                   
                   <div *ngIf="!isLoading" class="text-center mt-3">
                     <small class="text-muted">
