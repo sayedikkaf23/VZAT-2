@@ -17,7 +17,9 @@ export class SavedCard implements OnInit, OnDestroy {
   loading = true; 
   cards: SavedCardModel[] = [];
   error: string | null = null;
+  success: string | null = null;
   customerId: string | null = null;
+  updatingDefaultCard: string | null = null;
   private loadingTimeout: any;
   
   private themeUrls = [
@@ -168,6 +170,7 @@ export class SavedCard implements OnInit, OnDestroy {
     
     this.loading = true;
     this.error = null;
+    this.success = null;
     
     // Clear any existing timeout
     if (this.loadingTimeout) {
@@ -277,6 +280,7 @@ export class SavedCard implements OnInit, OnDestroy {
     // Reset all states first
     this.loading = true;
     this.error = null;
+    this.success = null;
     this.cards = [];
     
     // Clear any existing timeout
@@ -299,6 +303,10 @@ export class SavedCard implements OnInit, OnDestroy {
   setDefaultCard(cardId: string) {
     if (!this.customerId) return;
     
+    // Clear any previous messages
+    this.error = null;
+    this.success = null;
+    
     this.savedCardsService.setDefaultCard(cardId, this.customerId).subscribe({
       next: (response: ApiResponse<void>) => {
         if (response.success) {
@@ -307,13 +315,24 @@ export class SavedCard implements OnInit, OnDestroy {
             card.isDefault = card._id ***REMOVED***= cardId;
           });
           console.log('Default card updated');
+          this.success = 'Default card updated successfully!';
+          // Force change detection to update the UI immediately
+          this.cdr.detectChanges();
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            this.success = null;
+            this.cdr.detectChanges();
+          }, 3000);
         } else {
           this.error = response.message || 'Failed to set default card';
+          this.cdr.detectChanges();
         }
       },
       error: (error: any) => {
         console.error('Error setting default card:', error);
         this.error = 'Failed to set default card. Please try again.';
+        this.cdr.detectChanges();
       }
     });
   }

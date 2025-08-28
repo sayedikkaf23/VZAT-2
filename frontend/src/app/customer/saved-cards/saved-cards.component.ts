@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SavedCardsService, ApiResponse, SavedCard } from './saved-cards.service';
 import { Router } from '@angular/router';
@@ -14,11 +14,13 @@ export class SavedCardsComponent implements OnInit {
   cards: SavedCard[] = [];
   loading = true;
   error: string | null = null;
+  success: string | null = null;
   customerId: string | null = null;
 
   constructor(
     private savedCardsService: SavedCardsService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -52,6 +54,7 @@ export class SavedCardsComponent implements OnInit {
     
     this.loading = true;
     this.error = null;
+    this.success = null;
     
     this.savedCardsService.getCustomerCards(this.customerId).subscribe({
       next: (response: ApiResponse<SavedCard>) => {
@@ -74,21 +77,39 @@ export class SavedCardsComponent implements OnInit {
   setDefaultCard(cardId: string) {
     if (!this.customerId) return;
     
+    // Clear any previous messages
+    this.error = null;
+    this.success = null;
+    
     this.savedCardsService.setDefaultCard(cardId, this.customerId).subscribe({
       next: (response: ApiResponse<void>) => {
         if (response.success) {
-          // Update local cards array
-          this.cards.forEach(card => {
-            card.isDefault = card._id ***REMOVED***= cardId;
-          });
-          console.log('Default card updated');
+          // Create a new array to ensure Angular detects the change
+          this.cards = this.cards.map(card => ({
+            ...card,
+            isDefault: card._id ***REMOVED***= cardId
+          }));
+          
+          console.log('Default card updated - Cards after update:', this.cards);
+          this.success = 'Default card updated successfully!';
+          
+          // Force change detection to update the UI immediately
+          this.cdr.detectChanges();
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            this.success = null;
+            this.cdr.detectChanges();
+          }, 3000);
         } else {
           this.error = response.message || 'Failed to set default card';
+          this.cdr.detectChanges();
         }
       },
       error: (error: any) => {
         console.error('Error setting default card:', error);
         this.error = 'Failed to set default card. Please try again.';
+        this.cdr.detectChanges();
       }
     });
   }

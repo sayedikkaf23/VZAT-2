@@ -81,13 +81,36 @@
   box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
 }
 
-/* Loading and Error States */
+/* Loading, Success and Error States */
 .loading-container {
   text-align: center;
   padding: 60px 20px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 15px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.success-container {
+  text-align: center;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: rgba(40, 167, 69, 0.1);
+  border: 2px solid #28a745;
+  border-radius: 15px;
+  box-shadow: 0 4px 16px rgba(40, 167, 69, 0.2);
+}
+
+.success-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #155724;
+  font-weight: 600;
+}
+
+.success-icon {
+  font-size: 1.2rem;
 }
 
 .spinner {
