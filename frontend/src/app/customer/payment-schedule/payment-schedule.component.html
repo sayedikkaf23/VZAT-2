@@ -26,8 +26,10 @@
             </a>
           </div>
           <h3>Hey,</h3>
-          <h2>{{ customerData.name }}!</h2>
-          <hr />
+          <h2 style="font-size:30px; font-family:Inter, sans-serif">
+            {{ customerData.name }}!
+          </h2>
+                    <hr />
           <p class="mb-2">Your payment against Proforma Invoice <br /><b class="fw-semibold">No - {{
               customerData.invoiceNumber }} is </b></p>
           <h2 class="price">AED {{ customerData.totalAmount | number:'1.2-2' }}</h2>
