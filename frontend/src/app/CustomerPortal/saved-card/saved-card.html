@@ -211,6 +211,13 @@
                     <p class="mt-3">Loading your saved cards...</p>
                 </div>
 
+                <!-- Success State -->
+                <div *ngIf="success && !loading" class="col-12">
+                    <div class="alert alert-success text-center">
+                        <strong>Success:</strong> {{ success }}
+                    </div>
+                </div>
+
                 <!-- Error State -->
                 <div *ngIf="error && !loading" class="col-12">
                     <div class="alert alert-danger text-center">
@@ -258,8 +265,11 @@
                         
                         <!-- Set Default Button -->
                         <div *ngIf="!card.isDefault" class="mt-2">
-                            <button class="btn btn-outline-warning btn-sm" (click)="setDefaultCard(card._id)">
-                                Set as Default
+                            <button class="btn btn-outline-warning btn-sm" 
+                                    (click)="setDefaultCard(card._id)"
+                                    [disabled]="updatingDefaultCard === card._id">
+                                <span *ngIf="updatingDefaultCard === card._id" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                {{ updatingDefaultCard === card._id ? 'Updating...' : 'Set as Default' }}
                             </button>
                         </div>
                     </div>
