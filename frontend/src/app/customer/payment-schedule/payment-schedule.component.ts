@@ -294,14 +294,31 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       };
 
       // Update sales agent data with dynamic fields from API
-      // Only update if we haven't already loaded SalesForce data or if the API provides better data
-      if (!this.salesForceDataLoaded || !this.originalSalesAgentData) {
+      // Priority: salesPersonDetails > SalesForce data > fallback data
+      if (data.salesPersonDetails) {
+        // Use salesPersonDetails from API response
         this.salesAgent = {
-          name: data.opp_owner || "Sales Representative",
-          position: data.opp_title || "Sales Specialist",
-          faxNumber: data.opp_number || "+971 4 457 8271",
-          phoneNumber: data.opp_phone || "+971 4 457 8271",
-          email: data.opp_email || "sales@virtuzone.com"
+          name: data.salesPersonDetails.salesPersonName || "NA",
+          position: data.opp_title || "NA",
+          faxNumber: data.opp_number || "NA",
+          phoneNumber: data.salesPersonDetails.salesPersonMobile || "NA",
+          email: data.salesPersonDetails.salesPersonEmail || "NA"
+        };
+
+        // Add mobile number if available from salesPersonDetails
+        if (data.salesPersonDetails.salesPersonMobile) {
+          this.salesAgent.mobNo1 = data.salesPersonDetails.salesPersonMobile;
+        } else if (data.opp_mobile) {
+          this.salesAgent.mobNo1 = data.opp_mobile;
+        }
+      } else if (!this.salesForceDataLoaded || !this.originalSalesAgentData) {
+        // Fallback to opp_owner data if salesPersonDetails not available
+        this.salesAgent = {
+          name: data.opp_owner || "NA",
+          position: data.opp_title || "NA",
+          faxNumber: data.opp_number || "NA",
+          phoneNumber: data.opp_phone || "NA",
+          email: data.opp_email || "NA"
         };
 
         // Add mobile number if available
@@ -311,13 +328,13 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       } else {
         // Use the original SalesForce data but supplement with API data if fields are missing
         this.salesAgent = {
-          name: this.originalSalesAgentData.name || data.opp_owner || "Sales Representative",
-          position: this.originalSalesAgentData.position || data.opp_title || "Sales Specialist",
-          faxNumber: this.originalSalesAgentData.faxNumber || data.opp_number || "+971 4 457 8271",
-          phoneNumber: this.originalSalesAgentData.phoneNumber || data.opp_phone || "+971 4 457 8271",
-          email: this.originalSalesAgentData.email || data.opp_email || "sales@virtuzone.com",
-          mobNo1: this.originalSalesAgentData.mobNo1 || data.opp_mobile,
-          mobNo2: this.originalSalesAgentData.mobNo2,
+          name: this.originalSalesAgentData.name || data.opp_owner || "NA",
+          position: this.originalSalesAgentData.position || data.opp_title || "NA",
+          faxNumber: this.originalSalesAgentData.faxNumber || data.opp_number || "NA",
+          phoneNumber: this.originalSalesAgentData.phoneNumber || data.opp_phone || "NA",
+          email: this.originalSalesAgentData.email || data.opp_email || "NA",
+          mobNo1: this.originalSalesAgentData.mobNo1 || data.opp_mobile || "NA",
+          mobNo2: this.originalSalesAgentData.mobNo2 || "NA",
           token: this.originalSalesAgentData.token
         };
       }
