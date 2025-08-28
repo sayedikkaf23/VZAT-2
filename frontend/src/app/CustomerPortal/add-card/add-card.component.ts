@@ -63,7 +63,7 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
       if (resourcePath) {
         console.log('🔄 Checking payment status for:', resourcePath);
   
-        this.addCardService.checkPaymentStatus(resourcePath).subscribe({
+        this.addCardService.checkPaymentStatus(resourcePath, this.customerEmail).subscribe({
           next: (response) => {
             console.log('✅ Payment status response:', response);
         
@@ -72,9 +72,23 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
         
             // Case 1: Debit succeeded + Refund succeeded
             if (paymentResult?.startsWith("000.100") && refundResult?.startsWith("000.100")) {
-              this.router.navigate(['/saved-card'], {
-                queryParams: { id: checkoutId }
-              });
+              // Check if card was saved successfully
+              const savedCard = response?.savedCard;
+              if (savedCard) {
+                console.log('✅ Card saved successfully:', savedCard);
+                this.router.navigate(['/saved-card'], {
+                  queryParams: { 
+                    id: checkoutId,
+                    cardAdded: 'success',
+                    cardId: savedCard.id,
+                    isDefault: savedCard.isDefault
+                  }
+                });
+              } else {
+                this.router.navigate(['/saved-card'], {
+                  queryParams: { id: checkoutId }
+                });
+              }
               return;
             }
         

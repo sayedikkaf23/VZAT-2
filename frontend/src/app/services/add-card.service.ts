@@ -188,9 +188,19 @@ export class AddCardService {
   /**
    * Check payment status of a checkout
    */
-  checkPaymentStatus(resourcePath: string): Observable<any> {
+  checkPaymentStatus(resourcePath: string, customerEmail?: string, customerId?: string): Observable<any> {
+    const params: any = { resourcePath };
+    
+    if (customerEmail) {
+      params.customerEmail = customerEmail;
+    }
+    
+    if (customerId) {
+      params.customerId = customerId;
+    }
+    
     return this.http.get(`${this.apiUrl}/payment-status`, {
-      params: { resourcePath }
+      params
     });
   }
 

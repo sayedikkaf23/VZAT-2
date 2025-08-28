@@ -44,6 +44,7 @@ export class SavedCard implements OnInit, OnDestroy {
   
   ngOnInit(): void {
     this.loadCustomerData();
+    this.checkCardAdditionSuccess();
     this.styleLoader.loadThemes(this.themeUrls)
       .then(() => {
 
@@ -94,6 +95,33 @@ export class SavedCard implements OnInit, OnDestroy {
       });
       
       resizeObserver.observe(this.el.nativeElement);
+    }
+  }
+
+  private checkCardAdditionSuccess() {
+    // Check for card addition success from query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const cardAdded = urlParams.get('cardAdded');
+    const cardId = urlParams.get('cardId');
+    const isDefault = urlParams.get('isDefault');
+
+    if (cardAdded === 'success') {
+      let message = '✅ Card added successfully!';
+      
+      if (isDefault === 'true') {
+        message += ' This card has been set as your default payment method.';
+      }
+      
+      this.success = message;
+      
+      // Clear the query parameters from URL after showing the message
+      setTimeout(() => {
+        this.router.navigate([], {
+          queryParams: {},
+          replaceUrl: true
+        });
+        this.success = null;
+      }, 5000);
     }
   }
 
