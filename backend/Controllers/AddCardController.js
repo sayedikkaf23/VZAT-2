@@ -981,69 +981,74 @@ export const migrateSubscriptionTokens = async (customerEmail, newRegistrationId
  */
 export const getPaymentStatus = async (req, res) => {
   try {
-    const { resourcePath } = req.query; // comes encoded in URL
+    const { resourcePath } = req.query;
 
     if (!resourcePath) {
-      return res.status(400).json({ message: "resourcePath is required" });
+      return res.status(400).json({
+        status: "FAILED",
+        error: "MISSING_RESOURCE_PATH",
+        message: "resourcePath is required",
+      });
     }
 
-    console.log("🔍 Checking payment status for resourcePath:", resourcePath);
-    console.log("🔧 AFS Config:", {
-      baseUrl: AFS_CONFIG.baseUrl,
-      entityId: AFS_CONFIG.entityId,
-      authorization: AFS_CONFIG.authorization.substring(0, 50) + '...'
-    });
+    // Ensure baseUrl ends with /
+    const baseUrl = AFS_CONFIG.baseUrl.endsWith("/")
+      ? AFS_CONFIG.baseUrl
+      : `${AFS_CONFIG.baseUrl}/`;
 
-    // Decode the resourcePath
     const decodedResourcePath = decodeURIComponent(resourcePath);
-    console.log("📋 Decoded resourcePath:", decodedResourcePath);
+    const url = `${baseUrl}${decodedResourcePath.replace(/^\//, "")}`; // avoid double //
 
-    const url = `${AFS_CONFIG.baseUrl}${decodedResourcePath}`;
-    console.log("🌍 Full URL:", url);
+    console.log("🌍 Requesting payment status:", url);
 
     const { data } = await axios.get(url, {
       params: { entityId: AFS_CONFIG.entityId },
       headers: {
-        'Authorization': AFS_CONFIG.authorization,
-        'Content-Type': 'application/x-www-form-urlencoded'
+        Authorization: AFS_CONFIG.authorization.startsWith("Bearer ")
+          ? AFS_CONFIG.authorization
+          : `Bearer ${AFS_CONFIG.authorization}`,
       },
       timeout: 10000,
     });
 
-    console.log("✅ AFS Response:", JSON.stringify(data, null, 2));
-    return res.status(200).json(data);
-  } catch (err) {
-    console.error("❌ Payment status error →", err?.response?.data || err.message);
-    console.error("🔍 Error details:", {
-      status: err?.response?.status,
-      statusText: err?.response?.statusText,
-      url: err?.config?.url,
-      headers: err?.config?.headers
+    return res.status(200).json({
+      status: "SUCCESS",
+      payment: data,
     });
-    
-    // Handle specific error cases
-    if (err?.response?.data?.result?.code === '800.900.300') {
-      return res.status(401).json({ 
-        message: "Authentication failed - checkout may be expired or invalid",
+
+  } catch (err) {
+    const code = err?.response?.data?.result?.code;
+
+    console.error("❌ Payment status error →", code, err?.response?.data);
+
+    if (code === "800.900.300") {
+      return res.status(401).json({
+        status: "FAILED",
         error: "AUTHENTICATION_FAILED",
-        suggestion: "Create a new payment checkout"
+        message: "Checkout expired or invalid",
+        suggestion: "Create a new checkout session",
       });
     }
-    
-    if (err?.response?.data?.result?.code === '200.300.404') {
-      return res.status(404).json({ 
-        message: "Checkout not found or expired",
+
+    if (code === "200.300.404") {
+      return res.status(404).json({
+        status: "FAILED",
         error: "CHECKOUT_NOT_FOUND",
-        suggestion: "Create a new payment checkout"
+        message: "Checkout not found or already expired",
+        suggestion: "Create a new checkout session",
       });
     }
-    
-    return res.status(500).json({ 
+
+    return res.status(err?.response?.status || 500).json({
+      status: "FAILED",
+      error: "UNKNOWN_ERROR",
       message: "Failed to fetch payment status",
-      error: err?.response?.data || err.message
+      details: err?.response?.data?.result?.description || err.message,
     });
   }
 };
+
+
 
 export default {
   prepareCardRegistration,
