@@ -56,8 +56,8 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
 
       merchantTransactionId:`${Date.now()}`, // ← usually the same as Pay-by-Link quote ID
       entityId: '8ac7a4c97d8d45be017d8e96389e020a',        // ← usually DIFFERENT from Pay-by-Link entity
-      amount:   Number(amount).toFixed(2),
-      currency: currency || "AED",
+      amount:  1.00,
+      currency: "AED",
       paymentType: "DB",
       integrity: "true" ,      
 paymentBrand:"VISA"
