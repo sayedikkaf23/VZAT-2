@@ -3,11 +3,12 @@ import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../environments/environment';
+import { SalesAgentSidebarComponent } from '../shared/components/sales-agent-sidebar/sales-agent-sidebar.component';
 
 @Component({
   selector: 'app-payment-result',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SalesAgentSidebarComponent],
   templateUrl: './payment-result.component.html',
   styleUrls: ['./payment-result.component.scss']
 })
@@ -22,6 +23,15 @@ export class PaymentResultComponent implements OnInit {
   totalAmount: number = 0;
   remainingAmount: number = 0;
   showDebugInfo: boolean = false; // Set to true to show debug information
+  
+  // Sales agent data
+  salesAgent: any = {
+    name: "NA",
+    position: "NA",
+    faxNumber: "NA",
+    phoneNumber: "NA",
+    email: "NA"
+  };
 
   constructor(private route: ActivatedRoute, private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
@@ -90,6 +100,27 @@ export class PaymentResultComponent implements OnInit {
                         parseFloat(result?.paid_amount) ||
                         parseFloat(result?.Paid_Amount) ||
                         0;
+    
+    // Extract sales agent information
+    if (result?.salesPersonDetails) {
+      this.salesAgent = {
+        name: result.salesPersonDetails.salesPersonName || "NA",
+        position: "NA",
+        faxNumber: "NA",
+        phoneNumber: result.salesPersonDetails.salesPersonMobile || "NA",
+        email: result.salesPersonDetails.salesPersonEmail || "NA",
+        mobNo1: result.salesPersonDetails.salesPersonMobile || null
+      };
+    } else {
+      // Fallback to default contact information
+      this.salesAgent = {
+        name: "Support Team",
+        position: "Customer Support",
+        faxNumber: "+971 4 457 8271",
+        phoneNumber: "+971 4 457 8271",
+        email: "support@virtuzone.com"
+      };
+    }
     
     // Extract QP ID from multiple possible sources
     const qpId = result?.quotepaymentId || 
