@@ -1,0 +1,41 @@
+.sales-agent-sidebar {
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  h6 {
+    font-size: 0.9rem;
+    color: #666;
+  }
+  
+  p {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 0.5rem;
+  }
+  
+  .row {
+    margin-bottom: 0.25rem;
+  }
+  
+  a {
+    color: #007bff;
+    text-decoration: none;
+    
+    &:hover {
+      color: #0056b3;
+      text-decoration: underline;
+    }
+  }
+  
+  svg {
+    margin-right: 0.5rem;
+  }
+  
+  hr {
+    margin: 1rem 0;
+    border-color: #e9ecef;
+  }
+}

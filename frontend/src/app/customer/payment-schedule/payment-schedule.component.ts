@@ -6,6 +6,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { SalesForceService } from '../../services/salesforce.service';
 import { PaymentScheduleService, VzatRecurringData } from '../../services/payment-schedule.service';
 import { SubscriptionCardService, PaymentMethod, CardChangeHistory } from '../../services/subscription-card.service';
+import { SalesAgentSidebarComponent } from '../../shared/components/sales-agent-sidebar/sales-agent-sidebar.component';
 
 interface PaymentScheduleItem {
   id: string;
@@ -54,7 +55,7 @@ interface ApiResponseData {
 @Component({
   selector: 'app-payment-schedule',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, SalesAgentSidebarComponent],
   templateUrl: './payment-schedule.component.html',
   styleUrls: [
     './payment-schedule.component.scss',
