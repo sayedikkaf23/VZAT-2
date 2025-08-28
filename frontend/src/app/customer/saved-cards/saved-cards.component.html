@@ -26,6 +26,14 @@
     <p>Loading your saved cards...</p>
   </div>
 
+  <!-- Success State -->
+  <div *ngIf="success && !loading" class="success-container">
+    <div class="success-message">
+      <span class="success-icon">✅</span>
+      <p>{{ success }}</p>
+    </div>
+  </div>
+
   <!-- Error State -->
   <div *ngIf="error && !loading" class="error-container">
     <div class="error-message">
