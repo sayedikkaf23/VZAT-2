@@ -1,6 +1,6 @@
 import { Component,Inject, PLATFORM_ID , Renderer2 , ElementRef, OnInit, OnDestroy, ChangeDetectorRef} from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { CustomerLoginService } from '../../services/customer-login.service';
 import { StyleLoader } from '../../services/style-loader';
@@ -9,6 +9,7 @@ import { CookieService } from 'ngx-cookie-service';
 
 @Component({
   selector: 'app-saved-card',
+  standalone: true,
   imports: [RouterLink, CommonModule],
   templateUrl: './saved-card.html',
   styleUrl: './saved-card.scss'
