@@ -1049,8 +1049,10 @@ export const migrateSubscriptionTokens = async (customerEmail, newRegistrationId
 
 
 export const getPaymentStatus = async (req, res) => {
+  await connectDB();
+  
   try {
-    const { resourcePath } = req.query;
+    const { resourcePath, customerId, customerEmail } = req.query;
 
     if (!resourcePath) {
       return res.status(400).json({
@@ -1072,8 +1074,10 @@ export const getPaymentStatus = async (req, res) => {
       timeout: 10000,
     });
 
-    // 2️⃣ If debit succeeded, issue refund
+    // 2️⃣ If debit succeeded, issue refund and save card details
     let refund = null;
+    let savedCard = null;
+    
     if (payment?.result?.code === "000.100.110" && payment?.id) {
       console.log("✅ Debit successful → Initiating refund...");
 
@@ -1095,12 +1099,132 @@ export const getPaymentStatus = async (req, res) => {
 
       refund = refundData;
       console.log("💸 Refund response:", refund);
+
+      // 3️⃣ Save card details to database if customer information is provided
+      if (customerId || customerEmail) {
+        try {
+          console.log("💳 Saving card details to database...");
+          
+          // Find customer by ID or email
+          let customer = null;
+          if (customerId) {
+            customer = await CustomerLogin.findById(customerId);
+          } else if (customerEmail) {
+            customer = await CustomerLogin.findOne({ email: customerEmail });
+          }
+
+          if (!customer) {
+            console.log("❌ Customer not found for card saving");
+          } else {
+            console.log("✅ Customer found:", customer.email);
+
+            // Check if this is the customer's first card
+            const existingCards = await SavedCard.find({ 
+              customerId: customer._id, 
+              isActive: true 
+            });
+            const isFirstCard = existingCards.length === 0;
+
+            // Extract card information from payment response
+            // Handle different possible response structures from AFS
+            const cardInfo = payment.card || {};
+            const paymentBrand = payment.paymentBrand || '';
+            const descriptor = payment.descriptor || '';
+            
+            // Try to extract last 4 digits from various sources
+            let last4Digits = '';
+            if (cardInfo.last4) {
+              last4Digits = cardInfo.last4;
+            } else if (cardInfo.maskedPan) {
+              // Extract last 4 from masked PAN like "411111******1111"
+              const match = cardInfo.maskedPan.match(/(\d{4})$/);
+              if (match) last4Digits = match[1];
+            } else if (descriptor) {
+              // Try to extract from descriptor like "9740.6017.5006 YEEPEEY"
+              const match = descriptor.match(/(\d{4})$/);
+              if (match) last4Digits = match[1];
+            }
+            
+            const maskedCardNumber = last4Digits ? `**** **** **** ${last4Digits}` : '**** **** **** ****';
+            
+            // Determine card brand
+            let cardBrand = 'UNKNOWN';
+            if (cardInfo.brand) {
+              cardBrand = cardInfo.brand.toUpperCase();
+            } else if (paymentBrand) {
+              cardBrand = paymentBrand.toUpperCase();
+            } else if (last4Digits) {
+              // Try to determine brand from first digit
+              const firstDigit = last4Digits.charAt(0);
+              if (firstDigit === '4') cardBrand = 'VISA';
+              else if (firstDigit === '5') cardBrand = 'MASTERCARD';
+              else if (firstDigit === '3') cardBrand = 'AMEX';
+            }
+            
+            // Extract expiry information
+            let expiryMonth = cardInfo.expiryMonth || '';
+            let expiryYear = cardInfo.expiryYear || '';
+            
+            // Ensure proper format
+            if (expiryMonth && expiryMonth.length === 1) {
+              expiryMonth = '0' + expiryMonth;
+            }
+            if (expiryYear && expiryYear.length === 4) {
+              expiryYear = expiryYear.slice(-2);
+            }
+
+            // Create card data for saving
+            const cardData = {
+              customerId: customer._id,
+              customerEmail: customer.email,
+              quotepaymentId: customer.quotepaymentId || '',
+              afs_registration_id: payment.registrationId || payment.id,
+              afs_checkout_id: payment.ndc || '',
+              cardholderName: cardInfo.holder || cardInfo.cardHolder || 'Card Holder',
+              maskedCardNumber: maskedCardNumber,
+              cardBrand: cardBrand.toUpperCase(),
+              expiryMonth: expiryMonth,
+              expiryYear: expiryYear,
+              isDefault: isFirstCard, // Set as default if it's the first card
+              isActive: true,
+              lastUsedDate: new Date()
+            };
+
+            console.log("💳 Card data to save:", JSON.stringify(cardData, null, 2));
+
+            // If this is not the first card and we want to set it as default, remove default from other cards
+            if (!isFirstCard) {
+              await SavedCard.updateMany(
+                { customerId: customer._id, isActive: true },
+                { isDefault: false }
+              );
+            }
+
+            // Save the card
+            const newCard = new SavedCard(cardData);
+            savedCard = await newCard.save();
+
+            console.log("✅ Card saved successfully with ID:", savedCard._id);
+            console.log("✅ Card set as default:", savedCard.isDefault);
+          }
+        } catch (cardError) {
+          console.error("❌ Error saving card details:", cardError);
+          // Don't fail the entire request if card saving fails
+        }
+      }
     }
 
     return res.status(200).json({
       status: "SUCCESS",
       payment,
       refund, // included if processed
+      savedCard: savedCard ? {
+        id: savedCard._id,
+        maskedCardNumber: savedCard.maskedCardNumber,
+        cardBrand: savedCard.cardBrand,
+        isDefault: savedCard.isDefault,
+        cardholderName: savedCard.cardholderName
+      } : null
     });
   } catch (err) {
     const code = err?.response?.data?.result?.code;
