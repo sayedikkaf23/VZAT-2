@@ -5,7 +5,8 @@ import {
   handleCardRegistrationCallback,
   handleCardPaymentCallback,
   getCustomerCards,
-  setDefaultCard
+  setDefaultCard,
+  getPaymentStatus
 } from '../Controllers/AddCardController.js';
 
 const router = express.Router();
@@ -25,6 +26,10 @@ router.post('/registration-callback', handleCardRegistrationCallback);
 // POST /api/cards/payment-callback
 // Handle successful card registration with payment callback
 router.post('/payment-callback', handleCardPaymentCallback);
+
+// GET /api/cards/payment-status
+// Check payment status and handle navigation back to add-card page
+router.get('/payment-status', getPaymentStatus);
 
 // GET /api/cards/:customerEmail
 // Get customer's saved cards
