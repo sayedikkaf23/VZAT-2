@@ -681,8 +681,9 @@ export const handleCardRegistrationCallback = async (req, res) => {
 
       // Extract card data from registration response
       const cardData = {
-        customer_id: customer._id,
-        customer_email: customerEmail,
+        customerId: customer._id,
+        customerEmail: customerEmail,
+        quotepaymentId: customer.quotepaymentId || '',
         afs_registration_id: registrationData.id,
         afs_checkout_id: checkoutId,
         
@@ -694,13 +695,11 @@ export const handleCardRegistrationCallback = async (req, res) => {
         expiryYear: registrationData.card?.expiryYear || '****',
         
         // Registration metadata
-        isDefault: existingCards.length ***REMOVED***= 0, // First card becomes default
+        isDefault: true, // Always set new card as default
         isActive: true,
-        registrationDate: new Date(),
-        lastUsed: new Date(),
+        lastUsedDate: new Date(),
         
         // AFS specific data
-        afs_card_token: registrationData.id, // Same as registration ID for standalone registration
         afs_result_code: registrationData.result?.code,
         afs_result_description: registrationData.result?.description
       };
@@ -708,6 +707,12 @@ export const handleCardRegistrationCallback = async (req, res) => {
       console.log('💳 Card data prepared for saving:', JSON.stringify(cardData, null, 2));
 
       try {
+        // Remove default from all other cards for this customer
+        await SavedCard.updateMany(
+          { customerId: customer._id, isActive: true },
+          { isDefault: false }
+        );
+        
         // Save card to database
         console.log('💾 Saving card to database...');
         const saveResult = await SavedCard.create(cardData);
@@ -802,9 +807,9 @@ export const getCustomerCards = async (req, res) => {
     }
 
     const cards = await SavedCard.find({ 
-      customer_email: customerEmail,
+      customerEmail: customerEmail,
       isActive: true 
-    }).sort({ registrationDate: -1 });
+    }).sort({ cardAddedDate: -1 });
 
     res.json({
       status: true,
@@ -816,8 +821,8 @@ export const getCustomerCards = async (req, res) => {
         expiryMonth: card.expiryMonth,
         expiryYear: card.expiryYear,
         isDefault: card.isDefault,
-        registrationDate: card.registrationDate,
-        lastUsed: card.lastUsed
+        cardAddedDate: card.cardAddedDate,
+        lastUsedDate: card.lastUsedDate
       }))
     });
   } catch (error) {
@@ -847,7 +852,7 @@ export const setDefaultCard = async (req, res) => {
 
     // Find the card to set as default
     const card = await SavedCard.findById(cardId);
-    if (!card || card.customer_email !***REMOVED*** customerEmail) {
+    if (!card || card.customerEmail !***REMOVED*** customerEmail) {
       return res.status(404).json({
         status: false,
         message: 'Card not found'
@@ -856,7 +861,7 @@ export const setDefaultCard = async (req, res) => {
 
     // Remove default from all other cards for this customer
     await SavedCard.updateMany(
-      { customer_email: customerEmail },
+      { customerEmail: customerEmail },
       { isDefault: false }
     );
 
@@ -1185,20 +1190,18 @@ export const getPaymentStatus = async (req, res) => {
               cardBrand: cardBrand.toUpperCase(),
               expiryMonth: expiryMonth,
               expiryYear: expiryYear,
-              isDefault: isFirstCard, // Set as default if it's the first card
+              isDefault: true, // Always set new card as default
               isActive: true,
               lastUsedDate: new Date()
             };
 
             console.log("💳 Card data to save:", JSON.stringify(cardData, null, 2));
 
-            // If this is not the first card and we want to set it as default, remove default from other cards
-            if (!isFirstCard) {
-              await SavedCard.updateMany(
-                { customerId: customer._id, isActive: true },
-                { isDefault: false }
-              );
-            }
+            // Remove default from all other cards for this customer
+            await SavedCard.updateMany(
+              { customerId: customer._id, isActive: true },
+              { isDefault: false }
+            );
 
             // Save the card
             const newCard = new SavedCard(cardData);
