@@ -14,6 +14,17 @@ export interface PrepareRegistrationResponse {
   status: boolean;
   message: string;
   customerEmail: string;
+  checkoutResult?: {
+    result: {
+      code: string;
+      description: string;
+    };
+    buildNumber: string;
+    timestamp: string;
+    ndc: string;
+    id: string;
+    integrity: string;
+  };
   afs_checkout_id: string;
   payment_widget_url: string;
   payment_page_url: string;
@@ -25,6 +36,8 @@ export interface PrepareRegistrationResponse {
   };
   registration_type: string;
   payment_required: boolean;
+  amount?: number;
+  currency?: string;
 }
 
 export interface RegistrationCallbackResponse {
