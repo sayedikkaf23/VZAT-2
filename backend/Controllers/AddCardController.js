@@ -3,6 +3,8 @@ import SavedCard from '../model/SavedCardModel.js';
 import VzatRecurringData from '../model/VzatRecurringDataModel.js';
 import CustomerLogin from '../model/CustomerLoginModel.js';
 import config from '../config.env.js';
+import { connectDB } from '../config/db.js';
+import { Post_Common_DB_Log_Data } from './PostCommonDBLogData.js';
 
 // AFS Configuration - Registration specific credentials
 const AFS_CONFIG = {
@@ -19,31 +21,35 @@ const AFS_CONFIG = {
  * Based on AFS Server-to-Server integration: https://afs.docs.oppwa.com/integrations/server-to-server
  */
 export const prepareCardRegistration = async (req, res) => {
+  await connectDB();
+
   try {
     console.log('🔄 prepareCardRegistration called');
     console.log('📋 Request body:', req.body);
     
+    if (!req.body || Object.keys(req.body).length ***REMOVED***= 0) {
+      const data = { message: "Body is empty" };
+      Post_Common_DB_Log_Data("/api/cards/prepare-registration", {}, data);
+      return res.status(400).json(data);
+    }
+
     const { customerEmail } = req.body;
 
     if (!customerEmail) {
       console.log('❌ No customer email provided');
-      return res.status(400).json({
-        success: false,
-        message: 'Customer email is required'
-      });
+      const data = { message: 'Customer email is required' };
+      Post_Common_DB_Log_Data("/api/cards/prepare-registration", req.body, data);
+      return res.status(400).json(data);
     }
-
 
     // Verify customer exists
     const customer = await CustomerLogin.findOne({ email: customerEmail });
     if (!customer) {
       console.log('❌ Customer not found:', customerEmail);
-      return res.status(404).json({
-        success: false,
-        message: 'Customer not found'
-      });
+      const data = { message: 'Customer not found' };
+      Post_Common_DB_Log_Data("/api/cards/prepare-registration", req.body, data);
+      return res.status(404).json(data);
     }
-
 
     // Configure AFS checkout for standalone registration
     const checkoutData = {
@@ -52,6 +58,7 @@ export const prepareCardRegistration = async (req, res) => {
       shopperResultUrl: `${process.env.FRONTEND_URL}/saved-card/add-card`,
       testMode: AFS_CONFIG.testMode
     };
+    
     // Convert to x-www-form-urlencoded string
     const urlEncodedCheckoutData = Object.entries(checkoutData)
       .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
@@ -78,16 +85,41 @@ export const prepareCardRegistration = async (req, res) => {
     console.log('🆔 Checkout ID:', checkoutResult.id);
     console.log('📋 Full Response:', JSON.stringify(checkoutResult, null, 2));
 
-    // Return checkout ID and AFS config for frontend
-    res.json({
-      success: true,
-      checkoutId: checkoutResult.id,
-      message: 'Checkout prepared successfully for card registration',
-      afsConfig: {
+    // Generate payment widget URL and page URL similar to payment flow
+    let paymentWidgetUrl = null;
+    let paymentPageUrl = null;
+    let finalShopperResultUrl = null;
+    
+    if (checkoutResult && checkoutResult.id) {
+      paymentWidgetUrl = `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${checkoutResult.id}`;
+      paymentPageUrl = `${process.env.FRONTEND_URL}/add-card/${encodeURIComponent(checkoutResult.id)}`;
+      
+      // Generate shopper result URL with parameters
+      const id = encodeURIComponent(checkoutResult.id);
+      const resourcePath = encodeURIComponent(`/v1/checkouts/${checkoutResult.id}/registration`);
+      finalShopperResultUrl = `${process.env.BACKEND_URL}/api/cards/registration-callback?id=${id}&resourcePath=${resourcePath}&customerEmail=${encodeURIComponent(customerEmail)}`;
+    }
+
+    // Return response in format similar to payment flow
+    const data = {
+      status: true,
+      message: "Card registration checkout created successfully",
+      customerEmail,
+      afs_checkout_id: checkoutResult.id,
+      payment_widget_url: paymentWidgetUrl,
+      payment_page_url: paymentPageUrl,
+      shopper_result_url: finalShopperResultUrl,
+      afs_config: {
         baseUrl: AFS_CONFIG.baseUrl,
-        scriptUrl: `${AFS_CONFIG.baseUrl}/v1/paymentWidgets.js?checkoutId=${checkoutResult.id}`
-      }
-    });
+        entityId: AFS_CONFIG.entityId,
+        testMode: AFS_CONFIG.testMode
+      },
+      registration_type: "card_registration_only",
+      payment_required: false
+    };
+
+    Post_Common_DB_Log_Data("/api/cards/prepare-registration", req.body, data);
+    return res.status(200).json(data);
 
   } catch (error) {
     console.error('❌ Error preparing checkout:', error.response?.data || error.message);
@@ -98,13 +130,16 @@ export const prepareCardRegistration = async (req, res) => {
       console.error('🔍 AFS Error details:', error.response.data.result);
     }
     
-    res.status(500).json({
-      success: false,
-      message: 'Failed to prepare checkout',
+    const data = {
+      status: false,
+      message: 'Failed to prepare card registration checkout',
       error: error.response?.data || error.message,
       errorType: error.response ? 'AFS_API_ERROR' : 'NETWORK_ERROR',
       statusCode: error.response?.status
-    });
+    };
+    
+    Post_Common_DB_Log_Data("/api/cards/prepare-registration", req.body, data);
+    return res.status(500).json(data);
   }
 };
 
@@ -112,6 +147,8 @@ export const prepareCardRegistration = async (req, res) => {
  * Step 2: Handle successful card registration callback
  */
 export const handleCardRegistrationCallback = async (req, res) => {
+  await connectDB();
+
   try {
     console.log('\n🔔 ***REMOVED******REMOVED***= AFS CARD REGISTRATION CALLBACK ***REMOVED******REMOVED***=');
     console.log('⏰ Timestamp:', new Date().toISOString());
@@ -120,14 +157,19 @@ export const handleCardRegistrationCallback = async (req, res) => {
     console.log('📋 Request body:', JSON.stringify(req.body, null, 2));
     console.log('📋 Query params:', JSON.stringify(req.query, null, 2));
     
+    if (!req.body || Object.keys(req.body).length ***REMOVED***= 0) {
+      const data = { message: "Body is empty" };
+      Post_Common_DB_Log_Data("/api/cards/registration-callback", {}, data);
+      return res.status(400).json(data);
+    }
+    
     const { checkoutId, customerEmail } = req.body;
 
     if (!checkoutId || !customerEmail) {
       console.log('❌ Missing required fields');
-      return res.status(400).json({
-        success: false,
-        message: 'Missing checkoutId or customerEmail'
-      });
+      const data = { message: 'Missing checkoutId or customerEmail' };
+      Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+      return res.status(400).json(data);
     }
 
     console.log('\n🔍 STEP 1: VALIDATION');
@@ -138,10 +180,9 @@ export const handleCardRegistrationCallback = async (req, res) => {
     const customer = await CustomerLogin.findOne({ email: customerEmail });
     if (!customer) {
       console.log('❌ Customer not found:', customerEmail);
-      return res.status(404).json({
-        success: false,
-        message: 'Customer not found'
-      });
+      const data = { message: 'Customer not found' };
+      Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+      return res.status(404).json(data);
     }
 
     console.log('✅ Customer verified:', customer.email);
@@ -252,8 +293,7 @@ export const handleCardRegistrationCallback = async (req, res) => {
           
           // If this is the last retry, return a more helpful error
           if (retryCount ***REMOVED***= maxRetries - 1) {
-            return res.status(400).json({
-              success: false,
+            const data = {
               message: 'Card registration is taking longer than expected to process. This can happen during peak times or with complex card verification. Please wait a moment and try adding your card again, or contact support if the issue persists.',
               error_code: 'REGISTRATION_PROCESSING_TIMEOUT',
               debug_info: {
@@ -262,7 +302,10 @@ export const handleCardRegistrationCallback = async (req, res) => {
                 last_afs_response: registrationData,
                 processing_status: 'AFS_STILL_PROCESSING'
               }
-            });
+            };
+            
+            Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+            return res.status(400).json(data);
           }
           
           // Otherwise, continue to next retry
@@ -273,14 +316,16 @@ export const handleCardRegistrationCallback = async (req, res) => {
         // Check for other error codes
         if (registrationData.result?.code && !registrationData.result.code.match(/^(000\.000\.|000\.100\.1|000\.200)/)) {
           console.log('❌ Registration failed with code:', registrationData.result);
-          return res.status(400).json({
-            success: false,
+          const data = {
             message: `Registration failed: ${registrationData.result.description}`,
             error_code: registrationData.result.code,
             debug_info: {
               afs_response: registrationData
             }
-          });
+          };
+          
+          Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+          return res.status(400).json(data);
         }
 
         // If we reach here, we got a successful response
@@ -298,8 +343,7 @@ export const handleCardRegistrationCallback = async (req, res) => {
           
           // If this is the last retry, return helpful error
           if (retryCount ***REMOVED***= maxRetries - 1) {
-            return res.status(400).json({
-              success: false,
+            const data = {
               message: 'Card registration is taking longer than expected to process. This can happen during peak times or with complex card verification. Please wait a moment and try adding your card again, or contact support if the issue persists.',
               error_code: 'REGISTRATION_PROCESSING_TIMEOUT',
               debug_info: {
@@ -308,7 +352,10 @@ export const handleCardRegistrationCallback = async (req, res) => {
                 last_error: error.response?.data,
                 processing_status: 'AFS_STILL_PROCESSING_EXCEPTION'
               }
-            });
+            };
+            
+            Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+            return res.status(400).json(data);
           }
           
           // Otherwise, continue to next retry
@@ -330,11 +377,13 @@ export const handleCardRegistrationCallback = async (req, res) => {
       // Validate that we have registration data
       if (!registrationData.id) {
         console.error('❌ Missing registration ID in successful response');
-        return res.status(400).json({
-          success: false,
+        const data = {
           message: 'Registration completed but no registration ID received',
           debug_info: { afs_response: registrationData }
-        });
+        };
+        
+        Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+        return res.status(400).json(data);
       }
 
       console.log('🔍 Extracting card details from AFS response...');
@@ -378,9 +427,12 @@ export const handleCardRegistrationCallback = async (req, res) => {
         const migrationResult = await migrateSubscriptionTokens(customerEmail, registrationData.id, checkoutId);
         console.log('✅ Subscription token migration completed');
 
-        res.json({
-          success: true,
+        const data = {
+          status: true,
           message: 'Card registered and saved successfully. All subscriptions updated to use new card.',
+          customerEmail,
+          afs_checkout_id: checkoutId,
+          afs_registration_id: registrationData.id,
           card: {
             id: saveResult._id,
             last4: cardData.maskedCardNumber.slice(-4),
@@ -388,46 +440,59 @@ export const handleCardRegistrationCallback = async (req, res) => {
             holder: cardData.cardholderName,
             isDefault: true
           },
-          registrationId: registrationData.id,
           subscriptionsUpdated: true,
           migrationResult: migrationResult,
+          registration_type: "card_registration_only",
+          payment_processed: false,
           debug_info: {
             afs_registration_id: registrationData.id,
             checkout_id: checkoutId,
             card_saved: true
           }
-        });
+        };
+
+        Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+        return res.status(200).json(data);
 
       } catch (saveError) {
         console.error('❌ Error saving card to database:', saveError);
         
-        return res.status(500).json({
-          success: false,
+        const data = {
+          status: false,
           message: 'Card registration successful but failed to save to database',
           error: saveError.message,
           debug_info: {
             afs_registration_id: registrationData.id,
             save_error: saveError.message
           }
-        });
+        };
+        
+        Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+        return res.status(500).json(data);
       }
 
     } else {
       console.error('❌ Card registration failed:', registrationData.result);
-      res.status(400).json({
-        success: false,
+      const data = {
+        status: false,
         message: 'Card registration failed',
         error: registrationData.result?.description || 'Unknown error'
-      });
+      };
+      
+      Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+      return res.status(400).json(data);
     }
 
   } catch (error) {
     console.error('❌ Error handling card registration:', error.response?.data || error.message);
-    res.status(500).json({
-      success: false,
+    const data = {
+      status: false,
       message: 'Failed to process card registration',
       error: error.response?.data || error.message
-    });
+    };
+    
+    Post_Common_DB_Log_Data("/api/cards/registration-callback", req.body, data);
+    return res.status(500).json(data);
   }
 };
 
@@ -440,7 +505,7 @@ export const getCustomerCards = async (req, res) => {
     
     if (!customerEmail) {
       return res.status(400).json({
-        success: false,
+        status: false,
         message: 'Customer email is required'
       });
     }
@@ -451,7 +516,7 @@ export const getCustomerCards = async (req, res) => {
     }).sort({ registrationDate: -1 });
 
     res.json({
-      success: true,
+      status: true,
       cards: cards.map(card => ({
         id: card._id,
         maskedCardNumber: card.maskedCardNumber,
@@ -467,7 +532,7 @@ export const getCustomerCards = async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching customer cards:', error);
     res.status(500).json({
-      success: false,
+      status: false,
       message: 'Failed to fetch customer cards',
       error: error.message
     });
@@ -484,7 +549,7 @@ export const setDefaultCard = async (req, res) => {
 
     if (!cardId || !customerEmail) {
       return res.status(400).json({
-        success: false,
+        status: false,
         message: 'Card ID and customer email are required'
       });
     }
@@ -493,7 +558,7 @@ export const setDefaultCard = async (req, res) => {
     const card = await SavedCard.findById(cardId);
     if (!card || card.customer_email !***REMOVED*** customerEmail) {
       return res.status(404).json({
-        success: false,
+        status: false,
         message: 'Card not found'
       });
     }
@@ -511,14 +576,14 @@ export const setDefaultCard = async (req, res) => {
     });
 
     res.json({
-      success: true,
+      status: true,
       message: 'Default card updated successfully'
     });
 
   } catch (error) {
     console.error('❌ Error setting default card:', error);
     res.status(500).json({
-      success: false,
+      status: false,
       message: 'Failed to set default card',
       error: error.message
     });
