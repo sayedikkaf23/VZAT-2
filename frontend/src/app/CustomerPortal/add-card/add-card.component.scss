@@ -1,50 +1,56 @@
 @use '../css/style.css' as *;
 @use '../css/responsive.css' as *;
 
-.admin_body {
-  padding: 20px;
-  background-color: #f8f9fa;
+/* Add Card Widget Styles - Matching Payment Widget */
+.add-card-container {
   min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 20px 0;
 }
 
-.main-container {
-  max-width: 800px;
-  margin: 0 auto;
+.loading-container {
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-.page-title {
-  color: #212529;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+.add-card-details-container {
+  padding: 20px 0;
 }
 
-.page-subtitle {
-  color: #6c757d;
-  margin-bottom: 0;
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-.header-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+.card-header {
+  border-radius: 15px 15px 0 0 !important;
+  background: linear-gradient(135deg, #FA2E52 0%, #d72848 100%) !important;
+  padding: 20px;
 
-.security-notice {
-  .alert {
-    border-left: 4px solid #0dcaf0;
+  &.bg-white {
+    background: white !important;
+    border-bottom: 1px solid #e9ecef;
+    
+    .logo {
+      transition: transform 0.3s ease;
+      
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
   }
-  
-  .fas.fa-shield-alt {
-    color: #0dcaf0;
-    font-size: 1.2rem;
-  }
 }
 
+/* Instructions Card */
 .instructions-card {
   .card {
     border: none;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
   }
   
   .card-title {
@@ -62,6 +68,7 @@
     .badge {
       font-size: 0.875rem;
       padding: 0.5rem 0.75rem;
+      border-radius: 6px;
       
       i {
         margin-right: 0.25rem;
@@ -70,16 +77,19 @@
   }
 }
 
+/* Payment Form Container */
 .payment-form-container {
   .card {
     border: none;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-radius: 8px;
   }
   
   .card-header {
     background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     color: white;
     border-bottom: none;
+    border-radius: 8px 8px 0 0;
     
     h5 {
       font-weight: 600;
@@ -93,6 +103,28 @@
   .card-body {
     padding: 2rem;
   }
+}
+
+/* Payment Widget Container */
+.payment-widget-container {
+  padding: 20px 0;
+}
+
+.payment-summary {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.payment-summary .row {
+  margin-bottom: 8px;
+}
+
+.payment-summary .row:last-child {
+  margin-bottom: 0;
+  padding-top: 10px;
+  border-top: 1px solid #dee2e6;
 }
 
 // AFS Widget Styling
@@ -164,56 +196,57 @@
   }
 }
 
-.test-cards-info {
-  .card {
-    border-color: #ffc107 !important;
-    
-    code {
-      background-color: #f8f9fa;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-family: 'Courier New', monospace;
-    }
+/* Security Info */
+.security-info {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+/* Button Styles */
+.btn-outline-secondary {
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
   }
 }
 
-// Loading and Processing States
+/* Loading and Processing States */
 .spinner-border {
   width: 3rem;
   height: 3rem;
 }
 
-// Responsive Design
+/* Responsive Design */
 @media (max-width: 768px) {
-  .admin_body {
+  .add-card-container {
     padding: 10px;
   }
   
-  .main-container {
-    max-width: 100%;
-  }
-  
-  .header-section {
-    padding: 1rem;
-    
-    .d-flex {
-      flex-direction: column;
-      align-items: flex-start !important;
-      
-      .btn {
-        margin-top: 1rem;
-        align-self: stretch;
-      }
-    }
+  .card-body {
+    padding: 20px !important;
   }
   
   .payment-form-container .card-body {
     padding: 1.5rem;
   }
+  
+  .instructions-card,
+  .payment-form-container {
+    .card-body {
+      padding: 15px;
+    }
+  }
 }
 
-// Animation for form appearance
-.card-registration-container {
+/* Animation for form appearance */
+.add-card-details-container {
   animation: fadeInUp 0.6s ease-out;
 }
 

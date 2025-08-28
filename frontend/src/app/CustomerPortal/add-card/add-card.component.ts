@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, AfterViewInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgIf, CommonModule } from '@angular/common';
 import { AddCardService, PrepareRegistrationResponse } from '../../services/add-card.service';

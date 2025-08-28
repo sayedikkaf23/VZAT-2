@@ -21,6 +21,7 @@ export class SavedCard implements OnInit, OnDestroy {
   customerId: string | null = null;
   updatingDefaultCard: string | null = null;
   private loadingTimeout: any;
+  private isLoadingCards = false;
   
   private themeUrls = [
     'assets/CustomerPortal/css/style.css',
