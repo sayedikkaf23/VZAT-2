@@ -1,6 +1,7 @@
 import {
   Component, OnInit, OnDestroy, ElementRef, Renderer2, AfterViewInit , ViewEncapsulation,
-  ChangeDetectorRef
+  ChangeDetectorRef,
+  ViewChild
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgIf, CommonModule } from '@angular/common';
@@ -23,6 +24,8 @@ interface PaymentDetails {
   styleUrls: ['./add-card.component.scss']
 })
 export class AddCardComponent implements OnInit, OnDestroy {
+  @ViewChild('widgetHost', { static: false }) widgetHost!: ElementRef;
+
   loading = true;
   processingRegistration = false;
   errorMessage = '';
