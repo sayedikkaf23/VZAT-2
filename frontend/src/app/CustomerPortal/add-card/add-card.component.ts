@@ -72,7 +72,7 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
         
             // Case 1: Debit succeeded + Refund succeeded
             if (paymentResult?.startsWith("000.100") && refundResult?.startsWith("000.100")) {
-              this.router.navigate(['/add-card'], {
+              this.router.navigate(['/saved-card'], {
                 queryParams: { id: checkoutId }
               });
               return;
