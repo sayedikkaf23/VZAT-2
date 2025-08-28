@@ -12,7 +12,7 @@ const AFS_CONFIG = {
   entityId: process.env.AFS_ENTITY_ID || config.AFS_ENTITY_ID,
   authorization: `Bearer ${(
     (process.env.AFS_AUTHORIZATION || config.AFS_AUTHORIZATION) || ''
-  ).replace(/^Bearer /, '')}`,
+  ).replace(/^Bearer\s+/i, '')}`,
   testMode: 'EXTERNAL'
 };
 
@@ -987,22 +987,54 @@ export const getPaymentStatus = async (req, res) => {
       return res.status(400).json({ message: "resourcePath is required" });
     }
 
-    console.log("object",resourcePath)
+    console.log("🔍 Checking payment status for resourcePath:", resourcePath);
 
-    const url = `https://eu-test.oppwa.com${resourcePath}`;
+    // Decode the resourcePath
+    const decodedResourcePath = decodeURIComponent(resourcePath);
+    console.log("📋 Decoded resourcePath:", decodedResourcePath);
+
+    const url = `${AFS_CONFIG.baseUrl}${decodedResourcePath}`;
 
     const { data } = await axios.get(url, {
-      params: { entityId:'8ac7a4c797e1beca0197e482a8200127' },
+      params: { entityId: AFS_CONFIG.entityId },
       headers: {
-        Authorization: `Bearer OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWHA=`,
+        Authorization: AFS_CONFIG.authorization,
       },
       timeout: 10000,
     });
 
+    console.log("✅ AFS Response:", JSON.stringify(data, null, 2));
     return res.status(200).json(data);
   } catch (err) {
-    console.error("Payment status error →", err?.response?.data || err.message);
-    return res.status(500).json({ message: "Failed to fetch payment status" });
+    console.error("❌ Payment status error →", err?.response?.data || err.message);
+    console.error("🔍 Error details:", {
+      status: err?.response?.status,
+      statusText: err?.response?.statusText,
+      url: err?.config?.url,
+      headers: err?.config?.headers
+    });
+    
+    // Handle specific error cases
+    if (err?.response?.data?.result?.code ***REMOVED***= '800.900.300') {
+      return res.status(401).json({ 
+        message: "Authentication failed - checkout may be expired or invalid",
+        error: "AUTHENTICATION_FAILED",
+        suggestion: "Create a new payment checkout"
+      });
+    }
+    
+    if (err?.response?.data?.result?.code ***REMOVED***= '200.300.404') {
+      return res.status(404).json({ 
+        message: "Checkout not found or expired",
+        error: "CHECKOUT_NOT_FOUND",
+        suggestion: "Create a new payment checkout"
+      });
+    }
+    
+    return res.status(500).json({ 
+      message: "Failed to fetch payment status",
+      error: err?.response?.data || err.message
+    });
   }
 };
 
