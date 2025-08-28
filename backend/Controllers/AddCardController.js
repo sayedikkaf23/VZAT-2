@@ -59,8 +59,8 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
       amount:   Number(amount).toFixed(2),
       currency: currency || "AED",
       paymentType: "DB",
-      integrity: "true"       
-
+      integrity: "true" ,      
+paymentBrand:"VISA"
 
 
 
