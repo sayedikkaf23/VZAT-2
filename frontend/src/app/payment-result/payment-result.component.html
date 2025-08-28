@@ -1,6 +1,6 @@
 <div class="payment-result">
   <!-- Loading State -->
-  <div *ngIf="loading" class="loading-container">
+  <!-- <div *ngIf="loading" class="loading-container">
     <div class="spinner"></div>
     <p>Processing your payment...</p>
     <p class="loading-steps">
@@ -8,16 +8,16 @@
       🔄 Updating payment records<br>
       ⏳ Please wait...
     </p>
-  </div>
+  </div> -->
 
   <!-- Error State -->
-  <div *ngIf="error && !loading" class="error">
+  <!-- <div *ngIf="error && !loading" class="error">
     <h2>Payment Error</h2>
     <p>{{ error }}</p>
-  </div>
+  </div> -->
 
   <!-- Success State with Clean Layout -->
-  <div *ngIf="result && !loading && !error" class="payment-schedule">
+  <div  class="payment-schedule">
     <!-- Sidebar -->
     <div class="detils-sidebar">
       <div class="sidebar-row">
@@ -41,45 +41,7 @@
         </app-sales-agent-sidebar>
       </div>
     </div>
-    <div class="details-content">
-      <div class="container">
-          <div class="pm-submit-info text-center">
-              <div class="icon">
-                  <img src="assets/images/payment-success.png" class="d-block mx-auto"/>
-              </div>
-              <h3>Payment Successful!</h3>
-              <h5>Hooray! You have completed your payment</h5>
-              <hr/>
-              <h6>AMOUNT PAID</h6>
-              <h2 *ngIf="paymentAmount">AED {{ paymentAmount | number:'1.2-2' }}</h2>
-
-              <div class="pmnotes">
-                  <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
-              </div>
-              <!-- <div class="text-center mt-5">
-                  <a  class="btn btn-success">Great, thanks!</a>
-              </div> -->
-
-          </div>
-      </div>
-      <div class="details-footer">
-          
-                     <div class="d-block d-md-none">
-               <app-sales-agent-sidebar 
-                 [salesAgent]="salesAgent"
-                 title="Need Assistance?"
-                 subtitle="Contact us">
-               </app-sales-agent-sidebar>
-           </div>
-
-          <ul>
-              <!-- <li><a href="#">Terms and Conditions</a></li>
-              <li><a href="#">FAQs</a></li> -->
-              <li><a target="__blank" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
-              <li > <a style="text-align: right;" href="https://www.yeepeey.com" target="_blank"><b> © 2024, Powered by Yeepeey Technologies</b></a></li>
-          </ul>
-      </div>
-  </div>
+    
     <!-- Main Content -->
     <!-- <div class="details-content">
       <div class="container">
@@ -99,6 +61,7 @@
         </div>
       </div>
       
+      
       <!-- Footer -->
       <!-- <div class="details-footer">
         <ul>
@@ -107,11 +70,49 @@
         </ul>
       </div>
     </div>  -->
+
+    <div class="details-content">
+      <div class="container">
+        <div class="pm-submit-info text-center">
+          <div class="icon">
+            <img src="assets/images/payment-success.png" class="d-block mx-auto"/>
+          </div>
+    
+          <h3>Payment Successful!</h3>
+          <h5 class="subtitle">Hooray! You have completed your payment</h5>
+          <hr/>
+    
+          <h6>AMOUNT PAID</h6>
+          <h2 *ngIf="paymentAmount">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+    
+          <div class="pmnotes">
+            <strong>Note:</strong> You will receive the payment confirmation receipt &amp; the invoice for your services via your registered <b>E-mail ID</b>.
+          </div>
+        </div>
+      </div>
+    
+      <div class="details-footer">
+        <div class="d-block d-md-none">
+          <app-sales-agent-sidebar 
+            [salesAgent]="salesAgent"
+            title="Need Assistance?"
+            subtitle="Contact us">
+          </app-sales-agent-sidebar>
+        </div>
+    
+        <!-- <ul>
+          <li><a target="__blank" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
+          <li>
+            <a style="text-align: right;" href="https://www.yeepeey.com" target="_blank">
+              <b>© 2024, Powered by Virtuzone & Developed by Yeepeey</b>
+            </a>
+          </li>
+        </ul> -->
+      </div>
+    </div>
+    
+    
   </div>
 
-  <!-- Failed Payment State -->
-  <div *ngIf="result && !loading && !error && result.paymentStatus ***REMOVED***= 'failed'" class="error">
-    <h2>Payment Failed</h2>
-    <p>{{ result.message || 'Your payment could not be processed. Please try again.' }}</p>
-  </div>
+ 
 </div>
