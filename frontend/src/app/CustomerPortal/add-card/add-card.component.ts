@@ -66,18 +66,30 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
         this.addCardService.checkPaymentStatus(resourcePath).subscribe({
           next: (response) => {
             console.log('✅ Payment status response:', response);
-  
-            if (response.result?.code?.startsWith("000.000")) {
-              // Success → navigate to success page
+        
+            const paymentResult = response?.payment?.result?.code;
+            const refundResult = response?.refund?.result?.code;
+        
+            // Case 1: Debit succeeded + Refund succeeded
+            if (paymentResult?.startsWith("000.100") && refundResult?.startsWith("000.100")) {
               this.router.navigate(['/add-card'], {
                 queryParams: { id: checkoutId }
               });
-            } else {
-              // Failure → navigate to failure page
-              this.router.navigate(['/payment-failed'], {
-                queryParams: { id: checkoutId, reason: response.result?.description }
-              });
+              return;
             }
+        
+            // Case 2: Debit succeeded but refund failed
+            if (paymentResult?.startsWith("000.100") && !refundResult?.startsWith("000.100")) {
+              this.router.navigate(['/payment-failed'], {
+                queryParams: { id: checkoutId, reason: response?.refund?.result?.description || 'Refund failed' }
+              });
+              return;
+            }
+        
+            // Case 3: Debit itself failed
+            this.router.navigate(['/payment-failed'], {
+              queryParams: { id: checkoutId, reason: response?.payment?.result?.description || 'Payment failed' }
+            });
           },
           error: (err) => {
             console.error('❌ Error checking payment status:', err);
@@ -86,6 +98,7 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
             });
           }
         });
+        
       } else {
         console.log('🔄 No AFS callback params, starting fresh checkout');
         // Store the initialization flag to run after view init
