@@ -19,94 +19,70 @@
   <!-- Success State with Clean Layout -->
   <div *ngIf="result && !loading && !error" class="payment-schedule">
     <!-- Sidebar -->
-    <div class="detils-sidebar">
-      <div class="sidebar-row">
-        <div class="logo">
-          <a href="#">
-            <img src="assets/images/main-logo.svg" alt="Virtuzone" class="d-block"/>
-          </a>
+    <div class="detils-sidebar" data-simplebar>
+      <div class="row justify-content-between sidebar-row gx-0">
+        <div class="col-auto">
+          <div class="logo">
+            <a>
+              <img
+                src="assets/images/main-logo.svg"
+                style="max-width: 63%"
+                alt="Logo"
+                class="d-block"
+              />
+            </a>
+          </div>
         </div>
-        <h3>Hey,</h3>
-        <h2>{{ customerName || 'Customer' }}!</h2>
-        <hr/>
-        <p class="mb-2">We have received your payment of</p>
-        <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
-        <p class="small-text">Thank you for your payment.</p>
-        
-        <!-- Need Assistance Section in Sidebar -->
-        <app-sales-agent-sidebar 
-          [salesAgent]="salesAgent"
-          title="Need Assistance?"
-          subtitle="Contact us">
-        </app-sales-agent-sidebar>
+        <div class="col-auto">
+          <h3>Hey,</h3>
+          <h2>{{ customerName || 'Customer' }}!</h2>
+          <hr/>
+          <p class="mb-2">We have received your payment of</p>
+          <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+          <p class="small-text">Thank you for your payment.</p>
+        </div>
+        <div class="col-auto d-none d-md-block">
+          <app-sales-agent-sidebar 
+            [salesAgent]="salesAgent"
+            title="Need Assistance?"
+            subtitle="Contact us">
+          </app-sales-agent-sidebar>
+        </div>
       </div>
     </div>
+    
     <div class="details-content">
-      <div class="container">
-          <div class="pm-submit-info text-center">
-              <div class="icon">
-                  <img src="assets/images/payment-success.png" class="d-block mx-auto"/>
-              </div>
-              <h3>Payment Successful!</h3>
-              <h5>Hooray! You have completed your payment</h5>
-              <hr/>
-              <h6>AMOUNT PAID</h6>
-              <h2 *ngIf="paymentAmount">AED {{ paymentAmount | number:'1.2-2' }}</h2>
-
-              <div class="pmnotes">
-                  <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
-              </div>
-              <!-- <div class="text-center mt-5">
-                  <a  class="btn btn-success">Great, thanks!</a>
-              </div> -->
-
-          </div>
-      </div>
-      <div class="details-footer">
-          
-                     <div class="d-block d-md-none">
-               <app-sales-agent-sidebar 
-                 [salesAgent]="salesAgent"
-                 title="Need Assistance?"
-                 subtitle="Contact us">
-               </app-sales-agent-sidebar>
-           </div>
-
-          <ul>
-              <!-- <li><a href="#">Terms and Conditions</a></li>
-              <li><a href="#">FAQs</a></li> -->
-              <li><a target="__blank" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
-              <li > <a style="text-align: right;" href="https://www.yeepeey.com" target="_blank"><b> © 2024, Powered by Yeepeey Technologies</b></a></li>
-          </ul>
-      </div>
-  </div>
-    <!-- Main Content -->
-    <!-- <div class="details-content">
       <div class="container">
         <div class="pm-submit-info text-center">
           <div class="icon">
-            <img src="assets/images/payment-success.png" class="d-block mx-auto" alt="Payment Success"/>
+            <img src="assets/images/payment-success.png" class="d-block mx-auto"/>
           </div>
           <h3>Payment Successful!</h3>
           <h5>Hooray! You have completed your payment</h5>
           <hr/>
           <h6>AMOUNT PAID</h6>
-          <h2>AED {{ paymentAmount | number:'1.2-2' }}</h2>
+          <h2 *ngIf="paymentAmount">AED {{ paymentAmount | number:'1.2-2' }}</h2>
 
           <div class="pmnotes">
             <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
           </div>
         </div>
       </div>
-      
-      <!-- Footer -->
-      <!-- <div class="details-footer">
+      <div class="details-footer">
+        <div class="d-block d-md-none">
+          <app-sales-agent-sidebar 
+            [salesAgent]="salesAgent"
+            title="Need Assistance?"
+            subtitle="Contact us">
+          </app-sales-agent-sidebar>
+        </div>
+
         <ul>
-          <li><a target="_blank" style="color: grey;" href="https://virtuzone.com/privacy-policy/">Terms & Conditions</a></li>
-          <li>© 2025, Powered by Virtuzone & Developed by <a style="color: red;" href="https://www.yeepeey.com" target="_blank"><b style="font-size: 14px;">yeepeey</b></a></li>
+          <li><a target="__blank" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
+          <li><a style="text-align: right;" href="https://www.yeepeey.com" target="_blank"><b> © 2024, Powered by Virtuzone & Developed by Yeepeey</b></a></li>
         </ul>
       </div>
-    </div>  -->
+    </div>
   </div>
 
   <!-- Failed Payment State -->
