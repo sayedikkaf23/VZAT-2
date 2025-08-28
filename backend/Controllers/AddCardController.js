@@ -1007,7 +1007,7 @@ export const getPaymentStatus = async (req, res) => {
     const baseUrl = "https://eu-test.oppwa.com"
 
     const decodedResourcePath = decodeURIComponent(resourcePath);
-    const url = `${baseUrl}${decodedResourcePath.replace(/^\//, "")}`; // avoid double //
+    const url = `${baseUrl}/${decodedResourcePath.replace(/^\//, "")}`; // avoid double //
 
     console.log("🌍 Requesting payment status:", url);
 
