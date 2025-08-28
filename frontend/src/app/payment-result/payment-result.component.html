@@ -34,11 +34,11 @@
         <p class="small-text">Thank you for your payment.</p>
         
         <!-- Need Assistance Section in Sidebar -->
-        <hr/>
-        <h3 class="mb-0"><b>Need Assistance?</b></h3>
-        <p>Contact us</p>
-        <p class="mb-1"><a href="mailto:support&#64;virtuzone.com">support&#64;virtuzone.com</a></p>
-        <p class="mb-0"><a href="tel:+97144578271">+971 4 457 8271</a></p>
+        <app-sales-agent-sidebar 
+          [salesAgent]="salesAgent"
+          title="Need Assistance?"
+          subtitle="Contact us">
+        </app-sales-agent-sidebar>
       </div>
     </div>
     
