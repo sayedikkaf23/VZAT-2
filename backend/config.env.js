@@ -11,7 +11,7 @@ const config = {
     // AFS Payment Gateway Configuration (Test Environment) - Registration specific
     AFS_BASE_URL: 'https://eu-test.oppwa.com',
     AFS_ENTITY_ID: '8ac7a4c797e1beca0197e482a8200127', // Registration-specific entity ID
-    AFS_AUTHORIZATION: 'Bearer OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWHA=', // Registration-specific authorization
+    AFS_AUTHORIZATION: 'Bearer OGFjN2E0Yzk3ZDhkNDViZTAxN2Q4ZTk2Mzk3NjAyMGV8R3hQS0gyNjY5dA==', // Using production token for testing
   },
   
   production: {
