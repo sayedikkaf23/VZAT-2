@@ -4,7 +4,7 @@ import VzatRecurringData from '../model/VzatRecurringDataModel.js';
 import CustomerLogin from '../model/CustomerLoginModel.js';
 import config from '../config.env.js';
 import { connectDB } from '../config/db.js';
-import { Post_Common_DB_Log_Data } from './PostCommonDBLogData.js';
+import Post_Common_DB_Log_Data from './PostCommonDBLogData.js';
 
 // AFS Configuration - Registration specific credentials
 const AFS_CONFIG = {
