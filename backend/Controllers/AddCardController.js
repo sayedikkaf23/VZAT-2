@@ -1004,7 +1004,8 @@ export const getPaymentStatus = async (req, res) => {
     const { data } = await axios.get(url, {
       params: { entityId: AFS_CONFIG.entityId },
       headers: {
-        Authorization: AFS_CONFIG.authorization,
+        'Authorization': AFS_CONFIG.authorization,
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
       timeout: 10000,
     });
