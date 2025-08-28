@@ -55,22 +55,12 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
     const checkoutData = {
 
       merchantTransactionId:`${Date.now()}`, // ← usually the same as Pay-by-Link quote ID
-      entityId: '8ac7a4c97d8d45be017d8e96389e020a',        // ← usually DIFFERENT from Pay-by-Link entity
+      entityId: '8ac7a4c797e1beca0197e482a8200127',        // ← usually DIFFERENT from Pay-by-Link entity
       amount:  1.00,
       currency: "AED",
       paymentType: "DB",
       integrity: "true" ,      
-// paymentBrand:"VISA"
 
-
-
-      // entityId: AFS_CONFIG.entityId,
-      // amount: amount.toString(),
-      // currency: currency,
-      // paymentType: 'DB',
-      // createRegistration: true,
-      // shopperResultUrl: `https://vzatnew.yeepeey.com/saved-card/add-card`,
-      // testMode: AFS_CONFIG.testMode
     };
     
     // Convert to x-www-form-urlencoded string
@@ -89,7 +79,7 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
       qs.stringify(checkoutData),
       {
         headers: {
-          'Authorization': `Bearer ${'OGFjN2E0Yzk3ZDhkNDViZTAxN2Q4ZTk2Mzk3NjAyMGV8R3hQS0gyNjY5dA=='}`,
+          'Authorization': `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
          "Content-Type": "application/x-www-form-urlencoded",
         }
       }
@@ -1012,9 +1002,9 @@ export const getPaymentStatus = async (req, res) => {
     console.log("🌍 Requesting payment status:", url);
 
     const { data } = await axios.get(url, {
-      params: { entityId: "8ac7a4c97d8d45be017d8e96389e020a" },
+      params: { entityId: "8ac7a4c797e1beca0197e482a8200127" },
       headers: {
-        'Authorization': `Bearer ${'OGFjN2E0Yzk3ZDhkNDViZTAxN2Q4ZTk2Mzk3NjAyMGV8R3hQS0gyNjY5dA=='}`,
+        'Authorization': `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
       },
       timeout: 10000,
     });

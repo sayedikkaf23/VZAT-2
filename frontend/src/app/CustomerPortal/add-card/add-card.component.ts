@@ -211,7 +211,8 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
     const formEl = this.rnd.createElement('form');
     formEl.action = `https://vzatnew.yeepeey.com/saved-card/add-card`;   // shopperResultUrl
     formEl.className = 'paymentWidgets';
-    formEl.setAttribute('data-brands', 'VISA MASTER AMEX');           // only show card brands you need
+    formEl.setAttribute('data-brands', 'VISA MASTER'); // only allowed brands
+         // only show card brands you need
 
     /* 3. Append both to the DOM */
     console.log('✅ widgetHost found, appending script and form');
