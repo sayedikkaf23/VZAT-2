@@ -53,9 +53,17 @@ export class AddCardComponent implements OnInit, OnDestroy {
       const checkoutId = params['id']; // AFS sometimes uses 'id' parameter
       const afsCheckoutId = params['checkoutId']; // Alternative parameter name
       const resultCode = params['resultCode'];
+      const paymentStatus = params['status']; // New parameter for payment status
       
+      // Check for payment status parameters first
+      if (resourcePath && checkoutId && paymentStatus) {
+        console.log('🔄 Detected payment status check with parameters:', {
+          resourcePath, checkoutId, paymentStatus
+        });
+        this.checkPaymentStatus(resourcePath, checkoutId, paymentStatus);
+      }
       // Check for any AFS callback parameters
-      if (resourcePath || checkoutId || afsCheckoutId || resultCode) {
+      else if (resourcePath || checkoutId || afsCheckoutId || resultCode) {
         console.log('🔄 Detected AFS callback with parameters:', {
           resourcePath, checkoutId, afsCheckoutId, resultCode
         });
@@ -386,5 +394,47 @@ export class AddCardComponent implements OnInit, OnDestroy {
    */
   isTestEnvironment(): boolean {
     return !environment.production || window.location.hostname.includes('localhost');
+  }
+
+  /**
+   * Check payment status of a checkout
+   */
+  private checkPaymentStatus(resourcePath: string, checkoutId: string, status: string): void {
+    this.processingRegistration = true;
+    this.addCardService.checkPaymentStatus(checkoutId, this.customerEmail).subscribe({
+      next: (response: any) => {
+        console.log('✅ Payment status response:', response);
+        if (response.success) {
+          this.successMessage = response.message;
+          console.log('🎉 Payment status successful! Redirecting to saved cards page...');
+          setTimeout(() => {
+            console.log('🔄 Navigating to saved cards page');
+            this.router.navigate(['/saved-card']).then(
+              (navigated: boolean) => {
+                if (navigated) {
+                  console.log('✅ Successfully navigated to saved cards page');
+                } else {
+                  console.error('❌ Navigation to saved cards page failed');
+                }
+              }
+            ).catch(navError => {
+              console.error('❌ Navigation error:', navError);
+            });
+          }, 2000);
+        } else {
+          console.error('❌ Payment status failed:', response.message);
+          this.errorMessage = response.message || 'Failed to check payment status.';
+        }
+        this.processingRegistration = false;
+        this.loading = false;
+      },
+      error: (error: any) => {
+        console.error('❌ Error checking payment status:', error);
+        console.error('📋 Error details:', error.error);
+        this.errorMessage = 'Failed to check payment status. Please try again.';
+        this.processingRegistration = false;
+        this.loading = false;
+      }
+    });
   }
 }

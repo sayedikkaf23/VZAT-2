@@ -975,6 +975,93 @@ export const migrateSubscriptionTokens = async (customerEmail, newRegistrationId
   }
 };
 
+/**
+ * Check payment status and handle navigation back to add-card page
+ * This endpoint is called after payment completion to verify status
+ */
+export const getPaymentStatus = async (req, res) => {
+  try {
+    const { resourcePath, id } = req.query; // comes encoded in URL
+
+    if (!resourcePath) {
+      return res.status(400).json({ message: "resourcePath is required" });
+    }
+
+    console.log("🔍 Checking payment status for resourcePath:", resourcePath);
+    console.log("🆔 Checkout ID:", id);
+
+    // Decode the resourcePath
+    const decodedResourcePath = decodeURIComponent(resourcePath);
+    console.log("📋 Decoded resourcePath:", decodedResourcePath);
+
+    // Construct the AFS API URL
+    const url = `${AFS_CONFIG.baseUrl}${decodedResourcePath}`;
+    console.log("🔗 AFS API URL:", url);
+
+    // Make request to AFS to get payment status
+    const { data } = await axios.get(url, {
+      params: { entityId: AFS_CONFIG.entityId },
+      headers: {
+        Authorization: AFS_CONFIG.authorization,
+      },
+      timeout: 10000,
+    });
+
+    console.log("✅ AFS Response:", JSON.stringify(data, null, 2));
+
+    // Check if payment was successful
+    const isPaymentSuccessful = data.result && 
+                               (data.result.code.startsWith('000.') || 
+                                data.result.code ***REMOVED***= '200.300.404'); // Special case for parameter warnings
+
+    if (isPaymentSuccessful) {
+      console.log("🎉 Payment successful! Redirecting to add-card page...");
+      
+      // Construct the redirect URL back to add-card page with success parameters
+      const redirectUrl = `https://vzatnew.yeepeey.com/saved-card/add-card?id=${id}&resourcePath=${encodeURIComponent(resourcePath)}&status=success`;
+      
+      // Return success response with redirect information
+      return res.status(200).json({
+        success: true,
+        message: "Payment completed successfully",
+        paymentStatus: "success",
+        redirectUrl: redirectUrl,
+        afsData: data,
+        checkoutId: id
+      });
+    } else {
+      console.log("❌ Payment failed or pending");
+      
+      // Construct the redirect URL back to add-card page with failure parameters
+      const redirectUrl = `https://vzatnew.yeepeey.com/saved-card/add-card?id=${id}&resourcePath=${encodeURIComponent(resourcePath)}&status=failed`;
+      
+      return res.status(200).json({
+        success: false,
+        message: "Payment failed or is pending",
+        paymentStatus: "failed",
+        redirectUrl: redirectUrl,
+        afsData: data,
+        checkoutId: id,
+        error: data.result?.description || "Payment failed for unknown reason"
+      });
+    }
+
+  } catch (err) {
+    console.error("❌ Payment status error →", err?.response?.data || err.message);
+    
+    // Even on error, redirect back to add-card page with error status
+    const { id, resourcePath } = req.query;
+    const redirectUrl = `https://vzatnew.yeepeey.com/saved-card/add-card?id=${id}&resourcePath=${encodeURIComponent(resourcePath || '')}&status=error`;
+    
+    return res.status(500).json({ 
+      message: "Failed to fetch payment status",
+      error: err?.response?.data || err.message,
+      redirectUrl: redirectUrl,
+      checkoutId: id
+    });
+  }
+};
+
 export default {
   prepareCardRegistration,
   handleCardRegistrationCallback,
