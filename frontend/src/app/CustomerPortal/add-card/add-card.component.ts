@@ -154,6 +154,8 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
     
         this.checkoutId = response.afs_checkout_id;
         this.shopperResultUrl = response.shopper_result_url;
+        this.integrity = response.checkoutResult?.integrity || '';
+        console.log(this.integrity,'integrity',response.checkoutResult?.integrity)
         this.loading = false;
 
         // this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
@@ -185,54 +187,6 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
         this.loading = false;
       }
     });
-  }
-
-  /**
-   * Load AFS widget script similar to payment widget
-   */
-  private loadAfsWidgetScript(scriptUrl: string): void {
-    // Remove existing AFS scripts to avoid conflicts
-    const existingScript = document.getElementById('afs-widget-script');
-    if (existingScript) {
-      existingScript.remove();
-    }
-
-    const scriptElement = document.createElement('script');
-    scriptElement.id = 'afs-widget-script';
-    scriptElement.src = scriptUrl;
-    scriptElement.async = true;
-    
-    // Set a timeout for script loading
-    const loadingTimeout = setTimeout(() => {
-      console.error('AFS script loading timeout after 10 seconds');
-      this.handleAfsWidgetFailure();
-    }, 10000);
-    
-    scriptElement.onload = () => {
-      clearTimeout(loadingTimeout);
-      console.log('✅ AFS widget script loaded successfully');
-      
-      // Check if the form is ready before setting up the widget
-      const widgetContainer = document.querySelector('.paymentWidgets');
-      if (widgetContainer) {
-        console.log('✅ Form container found, setting up widget...');
-        // Wait a moment for the script to be fully executed and DOM to be ready
-        setTimeout(() => {
-          this.setupAfsRegistrationWidget();
-        }, 2000);
-      } else {
-        console.error('❌ Form container not found after script load');
-        this.handleAfsWidgetFailure();
-      }
-    };
-    
-    scriptElement.onerror = (error: any) => {
-      clearTimeout(loadingTimeout);
-      console.error('❌ Failed to load AFS widget script:', error);
-      this.handleAfsWidgetFailure();
-    };
-    
-    document.head.appendChild(scriptElement);
   }
 
 
