@@ -173,6 +173,18 @@ export class AddCardService {
   }
 
   /**
+   * Check payment status of a checkout
+   */
+  checkPaymentStatus(checkoutId: string, customerEmail: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/payment-status`, {
+      params: {
+        id: checkoutId,
+        customerEmail: customerEmail
+      }
+    });
+  }
+
+  /**
    * Load AFS payment widget script dynamically
    */
   loadAfsScript(scriptUrl: string): Promise<void> {
