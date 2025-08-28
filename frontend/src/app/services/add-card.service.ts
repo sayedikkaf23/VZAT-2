@@ -11,13 +11,20 @@ declare global {
 }
 
 export interface PrepareRegistrationResponse {
-  success: boolean;
-  checkoutId: string;
+  status: boolean;
   message: string;
-  afsConfig: {
+  customerEmail: string;
+  afs_checkout_id: string;
+  payment_widget_url: string;
+  payment_page_url: string;
+  shopper_result_url: string;
+  afs_config: {
     baseUrl: string;
-    scriptUrl: string;
+    entityId: string;
+    testMode: string;
   };
+  registration_type: string;
+  payment_required: boolean;
 }
 
 export interface RegistrationCallbackResponse {
@@ -84,10 +91,31 @@ export class AddCardService {
   }
 
   /**
+   * Step 1: Prepare AFS checkout for card registration with payment
+   */
+  prepareCardRegistrationWithPayment(customerEmail: string, amount: number = 1.00): Observable<PrepareRegistrationResponse> {
+    return this.http.post<PrepareRegistrationResponse>(`${this.apiUrl}/prepare-registration-with-payment`, {
+      customerEmail,
+      amount,
+      currency: 'AED'
+    });
+  }
+
+  /**
    * Step 2: Handle card registration callback
    */
   handleRegistrationCallback(checkoutId: string, customerEmail: string): Observable<RegistrationCallbackResponse> {
     return this.http.post<RegistrationCallbackResponse>(`${this.apiUrl}/registration-callback`, {
+      checkoutId,
+      customerEmail
+    });
+  }
+
+  /**
+   * Step 2: Handle payment callback from AFS
+   */
+  handlePaymentCallback(checkoutId: string, customerEmail: string): Observable<RegistrationCallbackResponse> {
+    return this.http.post<RegistrationCallbackResponse>(`${this.apiUrl}/payment-callback`, {
       checkoutId,
       customerEmail
     });
