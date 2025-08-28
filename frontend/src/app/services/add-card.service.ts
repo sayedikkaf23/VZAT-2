@@ -50,6 +50,22 @@ export interface CustomerCardsResponse {
   cards: SavedCard[];
 }
 
+export interface PaymentResponse {
+  success: boolean;
+  message: string;
+  paymentId?: string;
+  amount?: number;
+  currency?: string;
+}
+
+export interface RefundResponse {
+  success: boolean;
+  message: string;
+  refundId?: string;
+  amount?: number;
+  currency?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -90,6 +106,40 @@ export class AddCardService {
   setDefaultCard(cardId: string, customerEmail: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/set-default`, {
       cardId,
+      customerEmail
+    });
+  }
+
+  /**
+   * Process 1 AED test payment for card verification
+   */
+  processTestPayment(checkoutId: string, customerEmail: string): Observable<PaymentResponse> {
+    return this.http.post<PaymentResponse>(`${this.apiUrl}/test-payment`, {
+      checkoutId,
+      customerEmail,
+      amount: 1.00,
+      currency: 'AED'
+    });
+  }
+
+  /**
+   * Process refund for the test payment
+   */
+  processRefund(paymentId: string, customerEmail: string): Observable<RefundResponse> {
+    return this.http.post<RefundResponse>(`${this.apiUrl}/refund`, {
+      paymentId,
+      customerEmail,
+      amount: 1.00,
+      currency: 'AED'
+    });
+  }
+
+  /**
+   * Complete card verification after successful payment and refund
+   */
+  completeCardVerification(checkoutId: string, customerEmail: string): Observable<RegistrationCallbackResponse> {
+    return this.http.post<RegistrationCallbackResponse>(`${this.apiUrl}/complete-verification`, {
+      checkoutId,
       customerEmail
     });
   }
