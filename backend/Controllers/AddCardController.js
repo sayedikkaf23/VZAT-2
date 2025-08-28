@@ -987,36 +987,22 @@ export const getPaymentStatus = async (req, res) => {
       return res.status(400).json({ message: "resourcePath is required" });
     }
 
-    console.log("🔍 Checking payment status for resourcePath:", resourcePath);
+    console.log("object",resourcePath)
 
-    // Decode the resourcePath
-    const decodedResourcePath = decodeURIComponent(resourcePath);
-    console.log("📋 Decoded resourcePath:", decodedResourcePath);
+    const url = `https://eu-test.oppwa.com${resourcePath}`;
 
-    const url = `https://eu-test.oppwa.com${decodedResourcePath}`;
+    const { data } = await axios.get(url, {
+      params: { entityId:'8ac7a4c797e1beca0197e482a8200127' },
+      headers: {
+        Authorization: `Bearer OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWHA=`,
+      },
+      timeout: 10000,
+    });
 
-          const { data } = await axios.get(url, {
-        params: { entityId: process.env.AFS_ENTITY_ID || config.AFS_ENTITY_ID },
-        headers: {
-          Authorization: `Bearer ${process.env.AFS_AUTHORIZATION || config.AFS_AUTHORIZATION}`,
-        },
-        timeout: 10000,
-      });
-
-    console.log("✅ AFS Response:", JSON.stringify(data, null, 2));
     return res.status(200).json(data);
   } catch (err) {
-    console.error("❌ Payment status error →", err?.response?.data || err.message);
-    console.error("🔍 Error details:", {
-      status: err?.response?.status,
-      statusText: err?.response?.statusText,
-      url: err?.config?.url,
-      headers: err?.config?.headers
-    });
-    return res.status(500).json({ 
-      message: "Failed to fetch payment status",
-      error: err?.response?.data || err.message
-    });
+    console.error("Payment status error →", err?.response?.data || err.message);
+    return res.status(500).json({ message: "Failed to fetch payment status" });
   }
 };
 
