@@ -68,7 +68,7 @@
       </div>
     </div>  -->
 
-    <div class="details-content">
+    <div *ngIf="result && !loading && !error" class="details-content">
       <div class="container">
         <div class="pm-submit-info text-center">
           <div class="icon">
@@ -109,5 +109,9 @@
 
   </div>
 
-
+  <div *ngIf="result && !loading && !error && result.paymentStatus === 'failed'" class="error">
+    <h2>Payment Failed</h2>
+    <p>{{ result.message || 'Your payment could not be processed. Please try again.' }}</p>
+  </div>
+  
 </div>
