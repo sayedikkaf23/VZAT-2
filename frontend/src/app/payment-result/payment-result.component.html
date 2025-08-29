@@ -23,9 +23,9 @@
         <h3>Hey,</h3>
         <h2>{{ customerName || 'Customer' }}!</h2>
         <hr />
-        <p class="mb-2">We have received your payment of</p>
-        <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
-        <p class="small-text">Thank you for your payment.</p>
+        <p class="mb-2">Your payment against Proforma Invoice <b class="fw-semibold">No - {{ quotepaymentId || 'Not available' }} is </b></p>
+      <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+        <!-- <p class="small-text">Thank you for your payment.</p> -->
 
         <!-- Need Assistance Section in Sidebar -->
         <app-sales-agent-sidebar [salesAgent]="salesAgent" title="Need Assistance?" subtitle="Contact us">
@@ -105,9 +105,9 @@
         <h3>Hey,</h3>
         <h2>{{ customerName || 'Customer' }}!</h2>
         <hr />
-        <p class="mb-2">We have received your payment of</p>
-        <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
-        <p class="small-text">Thank you for your payment.</p>
+        <p class="mb-2">Your payment against Proforma Invoice <b class="fw-semibold">No - {{ quotepaymentId  }} is </b></p>
+      <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+        <!-- <p class="small-text">Thank you for your payment.</p> -->
 
         <!-- Need Assistance Section in Sidebar -->
         <app-sales-agent-sidebar [salesAgent]="salesAgent" title="Need Assistance?" subtitle="Contact us">
