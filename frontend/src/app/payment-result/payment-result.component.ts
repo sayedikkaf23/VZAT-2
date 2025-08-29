@@ -27,6 +27,7 @@ export class PaymentResultComponent implements OnInit {
   paymentAmount: number = 0;
   totalAmount: number = 0;
   remainingAmount: number = 0;
+  quotepaymentId: string = '';
   showDebugInfo: boolean = false; // Set to true to show debug information
   
   // Sales agent data
@@ -44,6 +45,9 @@ export class PaymentResultComponent implements OnInit {
     const resourcePath = this.route.snapshot.queryParamMap.get('resourcePath');
     const quotepaymentId = this.route.snapshot.queryParamMap.get('quotepaymentId');
     const id = this.route.snapshot.queryParamMap.get('id');
+    
+    // Store quotepaymentId for later use
+    this.quotepaymentId = quotepaymentId || '';
     
     // Get reason from query params
     this.reason = this.route.snapshot.queryParamMap.get('reason') || '';
@@ -79,6 +83,12 @@ export class PaymentResultComponent implements OnInit {
         
         this.error = err?.error?.message || 'Failed to get payment result.';
         this.loading = false;
+        
+        // If payment fails, fetch VzatRecurringData using quotepaymentId
+        if (quotepaymentId) {
+          this.fetchVzatRecurringData(quotepaymentId);
+        }
+        
         this.cdr.detectChanges();
       }
     });
@@ -88,6 +98,72 @@ export class PaymentResultComponent implements OnInit {
   tryAgain(): void {
     // Reload the current page to retry
     window.location.reload();
+  }
+
+  /**
+   * Fetch VzatRecurringData when payment fails
+   */
+  private fetchVzatRecurringData(quotepaymentId: string): void {
+    const vzatDataUrl = `${environment.apiUrl}/vzat_recurring_create_payment_link/${quotepaymentId}`;
+    
+    console.log('🔍 Fetching VzatRecurringData for quotepaymentId:', quotepaymentId);
+    
+    this.http.get(vzatDataUrl).subscribe({
+      next: (data: any) => {
+        console.log('📋 VzatRecurringData Response:', data);
+        
+        // Extract data for sidebar display
+        this.extractVzatDataForSidebar(data);
+        
+        // Force change detection
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('❌ VzatRecurringData fetch error:', err);
+        // Keep default sales agent data if fetch fails
+      }
+    });
+  }
+
+  /**
+   * Extract VzatRecurringData for sidebar display
+   */
+  private extractVzatDataForSidebar(data: any): void {
+    // Extract customer name
+    this.customerName = data?.Customer_name || 
+                       data?.customer_name || 
+                       data?.name ||
+                       'Customer';
+    
+    // Extract payment amount
+    this.paymentAmount = parseFloat(data?.Total_After_VAT_Currency) || 
+                        parseFloat(data?.total_after_vat_currency) ||
+                        parseFloat(data?.amount) ||
+                        0;
+    
+    // Store quotepaymentId for display
+    this.quotepaymentId = data?.quotepaymentId || this.quotepaymentId;
+    
+    // Extract sales agent information from VzatRecurringData
+    if (data?.salesPersonDetails) {
+      this.salesAgent = {
+        name: data.salesPersonDetails.salesPersonName || "NA",
+        position: data.salesPersonDetails.salesPersonPosition || "Sales Representative",
+        faxNumber: data.salesPersonDetails.salesPersonFax || "NA",
+        phoneNumber: data.salesPersonDetails.salesPersonMobile || data.salesPersonDetails.salesPersonPhone || "NA",
+        email: data.salesPersonDetails.salesPersonEmail || "NA",
+        mobNo1: data.salesPersonDetails.salesPersonMobile || null
+      };
+    } else {
+      // Fallback to default contact information
+      this.salesAgent = {
+        name: "Support Team",
+        position: "Customer Support",
+        faxNumber: "+971 4 457 8271",
+        phoneNumber: "+971 4 457 8271",
+        email: "support@virtuzone.com"
+      };
+    }
   }
 
   /**
@@ -136,12 +212,13 @@ export class PaymentResultComponent implements OnInit {
       };
     }
     
-    // Extract QP ID from multiple possible sources
-    const qpId = result?.quotepaymentId || 
-                result?.quote_payment_id || 
-                result?.QuotePaymentId ||
-                this.route.snapshot.queryParamMap.get('quotepaymentId') ||
-                'Not available';
+    // Extract QP ID from multiple possible sources and store in quotepaymentId property
+    this.quotepaymentId = result?.quotepaymentId || 
+                         result?.quote_payment_id || 
+                         result?.QuotePaymentId ||
+                         this.route.snapshot.queryParamMap.get('quotepaymentId') ||
+                         this.quotepaymentId ||
+                         'Not available';
     
     // Calculate remaining amount
     this.remainingAmount = this.totalAmount - this.paymentAmount;
@@ -153,7 +230,7 @@ export class PaymentResultComponent implements OnInit {
     
     
     // Store QP ID for template access if needed
-    this.result.qpId = qpId;
+    this.result.qpId = this.quotepaymentId;
     
     // Enable debug info in development environment
     this.showDebugInfo = !environment.production;
