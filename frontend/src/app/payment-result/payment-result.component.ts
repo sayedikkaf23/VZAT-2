@@ -20,6 +20,7 @@ export class PaymentResultComponent implements OnInit {
   result: any;
   error: string = '';
   loading = true;
+  reason: string = ''; // Add missing reason property
   
   // Dynamic data properties
   customerName: string = '';
@@ -43,6 +44,9 @@ export class PaymentResultComponent implements OnInit {
     const resourcePath = this.route.snapshot.queryParamMap.get('resourcePath');
     const quotepaymentId = this.route.snapshot.queryParamMap.get('quotepaymentId');
     const id = this.route.snapshot.queryParamMap.get('id');
+    
+    // Get reason from query params
+    this.reason = this.route.snapshot.queryParamMap.get('reason') || '';
     
     if (!resourcePath) {
       this.error = 'Missing resourcePath parameter.';
@@ -78,6 +82,12 @@ export class PaymentResultComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  // Add missing tryAgain method
+  tryAgain(): void {
+    // Reload the current page to retry
+    window.location.reload();
   }
 
   /**
