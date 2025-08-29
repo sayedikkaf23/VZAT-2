@@ -17,7 +17,7 @@
   </div>
 
   <!-- Success State with Clean Layout -->
-  <div class="payment-schedule">
+  <div *ngIf="result && !loading && !error" class="payment-schedule">
     <!-- Sidebar -->
     <div class="detils-sidebar">
       <div class="sidebar-row">
