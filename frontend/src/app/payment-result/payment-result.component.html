@@ -44,13 +44,13 @@
       <div class="container">
         <div class="pm-submit-info text-center">
           <div class="icon">
-            <img src="assets/images/payment-success.png" class="d-block mx-auto" alt="Payment Success"/>
+            <img src="assets/images/payment-success.png" class="d-block mx-auto"/>
           </div>
           <h3>Payment Successful!</h3>
           <h5>Hooray! You have completed your payment</h5>
           <hr/>
           <h6>AMOUNT PAID</h6>
-          <h2>AED {{ paymentAmount | number:'1.2-2' }}</h2>
+          <h2 *ngIf="paymentAmount">AED {{ paymentAmount | number:'1.2-2' }}</h2>
 
           <div class="pmnotes">
             <strong>Note:</strong> You will receive the payment confirmation receipt & the invoice for your services via your registered <b>E-mail ID</b>.
@@ -59,11 +59,11 @@
       </div>
       
       
-      <!-- Footer -->
+     Footer -->
     <!-- <div class="details-footer">
         <ul>
-          <li><a target="_blank" style="color: grey;" href="https://virtuzone.com/privacy-policy/">Terms & Conditions</a></li>
-          <li>© 2025, Powered by Virtuzone & Developed by <a style="color: red;" href="https://www.yeepeey.com" target="_blank"><b style="font-size: 14px;">yeepeey</b></a></li>
+          <li><a target="__blank" href="https://virtuzone.com/privacy-policy/">Privacy Policy</a></li>
+          <li><a style="text-align: right;" href="https://www.yeepeey.com" target="_blank"><b> © 2024, Powered by Virtuzone & Developed by Yeepeey</b></a></li>
         </ul>
       </div>
     </div>  -->
