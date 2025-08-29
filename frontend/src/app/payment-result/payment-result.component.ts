@@ -10,7 +10,11 @@ import { SalesAgentSidebarComponent } from '../shared/components/sales-agent-sid
   standalone: true,
   imports: [CommonModule, SalesAgentSidebarComponent],
   templateUrl: './payment-result.component.html',
-  styleUrls: ['./payment-result.component.scss']
+  styleUrls: [
+    './payment-result.component.scss',
+    '../../assets/css/bootstrap.min.css',
+    '../../assets/css/payment-schedual.css'
+  ]
 })
 export class PaymentResultComponent implements OnInit {
   result: any;
