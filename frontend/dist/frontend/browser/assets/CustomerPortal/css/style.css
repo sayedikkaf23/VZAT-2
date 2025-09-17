@@ -329,7 +329,7 @@ html .form-check .form-check-input {
     transform: translateX(0);
 }
 .side_bar_wrap {
-    background-image: url(../images/side-bar-bg-imag.png);
+    /* background-image: url(../images/side-bar-bg-imag.png); */
     background-repeat: no-repeat;
     background-size: contain;
     background-position: bottom;
