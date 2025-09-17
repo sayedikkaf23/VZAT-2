@@ -28,4 +28,180 @@
 .cards-list {
   min-height: 200px;
   position: relative;
+  /* tighter gutters between cards */
+  row-gap: 12px;
 } 
+
+
+:root{
+  --card-pad: 10px;
+  --card-radius: 10px;
+  --card-min-h: 100px; /* was 150 */
+}
+
+.cards-list > [class*="col-"]{ display:flex; }
+
+/* compact row gutters (override Bootstrap g-4 within this list) */
+.cards-list.row { --bs-gutter-x: 0.75rem; --bs-gutter-y: 0.75rem; }
+
+.s-card,
+.add_card-box{
+  width:100%;
+  min-height:var(--card-min-h);
+  height:100%;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  padding:var(--card-pad);
+  border-radius:var(--card-radius);
+  background:#fff;
+  box-shadow:0 1px 6px rgba(0,0,0,.05);
+}
+
+/* tighter typography */
+.s-card .card-name{ margin-bottom:2px; font-size:14px; line-height:1.15; }
+.s-card .card-no{   margin-bottom:4px; font-size:12px; line-height:1.2; }
+.s-card .date_cvv span{ font-size:10px; }
+.s-card .date_cvv p{    font-size:12px; margin:0; }
+
+.s-card .date_cvv{ margin-top:auto; }
+.s-card .set-default{ margin-top:6px; display:flex; justify-content:flex-end; }
+.s-card .position-absolute{ z-index:2; }
+.card-remove{ position:absolute; right:8px; top:8px; z-index:3; }
+
+/* Add Card tile – compact pill */
+.add_card-box{ align-items:center; justify-content:center; border:1px solid rgba(0,0,0,.08); }
+.add-card-btn{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 12px; border-radius:999px; background:#121212; color:#fff !important;
+  font-weight:700; font-size:11px; line-height:1; border:0;
+}
+.add-card-btn .icon{ width:12px; height:12px; color:#fff; }
+
+/* Ensure Add Card button inside tile is red by default (not only on hover) */
+.add_card-box .btn{ color:#e53935 !important; background:transparent; border:0; font-weight:700; }
+.add_card-box .btn:hover{ color:#e53935 !important; }
+.add_card-box .btn svg path{ stroke:#e53935 !important; }
+
+/* Empty state styling */
+.empty-state{ border:1px dashed rgba(0,0,0,.15); border-radius:12px; background:#fafafa; }
+.empty-state h4{ margin-top:8px; margin-bottom:6px; font-weight:700; }
+.empty-state p{ margin:0; color:#6c757d; }
+
+.cards-list {
+  min-height: 200px;
+  position: relative;
+  // row-gap: 2px; /* reduced gap */
+}
+
+.cards-list.row { 
+  --bs-gutter-x: 0.5rem; 
+  --bs-gutter-y: 0.5rem; 
+}
+
+/* Card Styling */
+.s-card,
+.add_card-box {
+  width: 100%;
+  min-height: var(--card-min-h);
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: var(--card-pad);
+  border-radius: var(--card-radius);
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0,0,0,.05);
+}
+
+/* Add Card button (black pill with white text) */
+.add_card-box {
+  align-items: center; 
+  justify-content: center; 
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+.add_card-box .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 999px; /* pill style */
+  background: #000; 
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 13px;
+  border: 0;
+  transition: 0.2s ease-in-out;
+}
+
+.add_card-box .btn:hover {
+  background: #222;
+}
+
+.add_card-box .btn svg path { stroke: #fff !important; }
+
+/* Empty State Styling */
+.empty-state {
+  border: 1px dashed rgba(0,0,0,.15);
+  border-radius: 12px;
+  background: #fafafa;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-state h4 { 
+  margin-top: 10px; 
+  margin-bottom: 6px; 
+  font-weight: 700; 
+}
+
+.empty-state p { 
+  margin: 0; 
+  color: #6c757d; 
+  font-size: 14px;
+}
+.cards-list {
+  min-height: 200px;
+  position: relative;
+  row-gap: 6px; /* reduced gap further */
+}
+
+.cards-list.row { 
+  --bs-gutter-x: 0.5rem; /* reduce horizontal gap */
+  --bs-gutter-y: 0.5rem; /* reduce vertical gap */
+}
+
+/* Add Card box aligned with card height */
+.add_card-box {
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+/* Add Card button - smaller, compact pill */
+.add_card-box .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;   /* reduced padding */
+  border-radius: 999px; 
+  background: #000; 
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 12px;     /* smaller text */
+  line-height: 1.2;
+  border: 0;
+  transition: 0.2s ease-in-out;
+}
+
+.add_card-box .btn:hover {
+  background: #222;
+}
+
+.add_card-box .btn svg {
+  width: 12px; 
+  height: 12px; /* smaller icon */
+}
+
+.add_card-box .btn svg path { stroke: #fff !important; }
