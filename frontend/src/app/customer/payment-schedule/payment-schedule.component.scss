@@ -919,6 +919,30 @@ html .schedule-list-box  .form-check .form-check-label {
   .payment-schedule .details-footer h2 {
     font-size: 14px !important;
   }
+
+  /* Contact rows (fax, phone, email) — match image on mobile */
+  .payment-schedule .details-footer .row.align-items-center a,
+  .payment-schedule .details-footer .row.align-items-center h6 {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 10px !important;
+    color: #121212 !important;
+    font-weight: 400 !important;
+    line-height: 12px !important;
+    text-decoration: none !important;
+  }
+
+  .payment-schedule .details-footer .row.align-items-center .col h6 {
+    margin: 0 !important;
+  }
+
+  .payment-schedule .details-footer .row.align-items-center svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .payment-schedule .details-footer .row.align-items-center .col-auto svg {
+    margin-right: 4px !important;
+  }
     /* Reduce spacing below total amount */
     .payment-schedule-list .total-item {
       padding-bottom: 8px !important;
