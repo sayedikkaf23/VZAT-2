@@ -500,7 +500,10 @@ html .schedule-list-box  .form-check .form-check-label {
         position: static;
         width: 100%;
         text-align: center;
-        height:50%
+        /* Remove large sidebar height on mobile causing big gap */
+        min-height: unset !important;
+        height: auto !important;
+        padding-bottom: 10px;
     }
     .payment-schedule .detils-sidebar p {
     }
