@@ -923,18 +923,24 @@ html .schedule-list-box  .form-check .form-check-label {
     text-align: right;
   }
   .payment-schedule-list .price .d-flex {
-    flex-direction: column; /* stack amount and badge */
-    align-items: flex-end;
-    gap: 2px !important;
+    flex-direction: row; /* keep in the same line */
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px !important; /* small gap between badge and amount */
   }
   .payment-schedule-list .price .badge {
-    margin-left: 0 !important;
+    margin-left: 4px !important;
     padding: 2px 6px !important;
     font-size: 10px !important;
     line-height: 1.2;
     border-radius: 4px;
     position: relative;
     z-index: 2; /* ensure over timeline dot if overlapping */
+  }
+  /* tighten date line spacing */
+  .payment-schedule-list .title p {
+    margin: 0 !important;
+    line-height: 1.25 !important;
   }
   }
   .payment-schedule .detils-sidebar h2 {
