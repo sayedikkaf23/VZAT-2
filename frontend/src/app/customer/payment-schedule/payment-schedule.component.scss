@@ -891,3 +891,27 @@ html .schedule-list-box  .form-check .form-check-label {
   .summary-value {
   }
 }
+@media (max-width: 767px) {
+    /* Reduce spacing below total amount */
+    .payment-schedule-list .total-item {
+      padding-bottom: 8px !important;
+      margin-bottom: 8px !important;
+    }
+  
+    /* Reduce spacing above Payment Schedule heading */
+    .payment-schedule-head {
+      padding-top: 8px !important;
+      margin-top: 0 !important;
+    }
+  
+    .payment-schedule-head h3 {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+  
+    /* Ensure the overall container doesn’t add extra space */
+    .schedule-list-box {
+      margin-bottom: 10px !important;
+    }
+  }
+  
