@@ -614,7 +614,7 @@ html .schedule-list-box  .form-check .form-check-label {
     }
     
     .payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 {
-        font-size: 14px !important;
+        font-size: 10px !important;
         font-weight: 700 !important;
         line-height: 1.2 !important;
         margin: 0 !important;
@@ -627,7 +627,7 @@ html .schedule-list-box  .form-check .form-check-label {
         font-weight: 600 !important;
         display: inline-block !important;
         white-space: nowrap !important;
-        font-size: 14px !important;
+        font-size: 10px !important;
     }
     
     .payment-schedule .details-footer .row.align-items-center.gx-1 .col-auto svg {
@@ -638,7 +638,7 @@ html .schedule-list-box  .form-check .form-check-label {
     
     /* Specific fix for email link to prevent wrapping */
     .payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 a[href^="mailto:"] {
-        font-size: 14px !important;
+        font-size: 10px !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
@@ -917,7 +917,7 @@ html .schedule-list-box  .form-check .form-check-label {
   }
 
   .payment-schedule .details-footer h2 {
-    font-size: 14px !important;
+    font-size: 10px !important;
   }
 
   /* Contact rows (fax, phone, email) — match image on mobile */
