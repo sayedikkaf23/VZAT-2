@@ -895,13 +895,6 @@ html .schedule-list-box  .form-check .form-check-label {
   }
 }
 @media (max-width: 767px) {
-  /* Slightly widen the white schedule container on mobile */
-  .payment-schedule .payment-schedule-list {
-    max-width: none !important;
-    width: 96% !important; /* increase a little */
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
   /* Footer typography to match provided image */
   .payment-schedule .details-footer h2,
   .payment-schedule .details-footer h3,
