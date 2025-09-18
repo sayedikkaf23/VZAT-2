@@ -329,7 +329,7 @@ export const sendPdfEmail = async (emailData) => {
       to: quote_email,
       subject: `Virtuzone | Proforma Invoice & Payment Link – PI QP- No-${quote_payment_number}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; overflow-wrap: anywhere; word-break: break-word;">
           <div style="padding: 20px;">
             <p>Hello ${Customer_name || 'Sir/Madam'},</p>
             
@@ -343,28 +343,28 @@ export const sendPdfEmail = async (emailData) => {
               <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #000;">
                 <h3 style="margin: 0; text-align: center;">Proforma Invoice Summary</h3>
               </div>
-              <table style="border-collapse: collapse; width: 100%;">
+              <table style="border-collapse: collapse; width: 100%; table-layout: fixed; word-break: break-word;">
                 <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 40%;">Details</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Information</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 40%; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Details</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Information</td>
                 </tr>
                 <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px;">Proforma Invoice #</td>
-                  <td style="border: 1px solid #ddd; padding: 12px;">${quotepaymentId || quote_payment_number}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Proforma Invoice #</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">${quotepaymentId || quote_payment_number}</td>
                 </tr>
                 <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px;">Invoice Value with VAT</td>
-                  <td style="border: 1px solid #ddd; padding: 12px;">AED ${Total_After_VAT_Currency}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Invoice Value with VAT</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${Total_After_VAT_Currency}</td>
                 </tr>
                 <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px;">Payment Link</td>
-                  <td style="border: 1px solid #ddd; padding: 12px;">
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Payment Link</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">
                     <a href="${fullPaymentLink}" style="color: #007bff; text-decoration: none; word-break: break-all;">${fullPaymentLink}</a>
                   </td>
                 </tr>
                 <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px;">Amount Requested</td>
-                  <td style="border: 1px solid #ddd; padding: 12px;">AED ${Total_After_VAT_Currency}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Amount Requested</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${Total_After_VAT_Currency}</td>
                 </tr>
               </table>
             </div>
@@ -373,12 +373,12 @@ export const sendPdfEmail = async (emailData) => {
               <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #000;">
                 <h3 style="margin: 0; text-align: center;">Payment Schedule</h3>
               </div>
-              <table style="border-collapse: collapse; width: 100%;">
+              <table style="border-collapse: collapse; width: 100%; table-layout: fixed; word-break: break-word;">
                 <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Installment No.</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Amount (AED)</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Type</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Installment No.</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Payment Date</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Amount (AED)</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Payment Type</td>
                 </tr>
                 ${paymentScheduleRows}
               </table>
