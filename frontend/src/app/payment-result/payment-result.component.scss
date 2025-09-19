@@ -89,6 +89,20 @@ html a {
   }
 }
 
+/* Desktop: reduce sidebar height and hide scrollbar */
+@media (min-width: 768px) {
+  .payment-schedule .detils-sidebar {
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .payment-schedule .detils-sidebar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
 /* Loading overlay */
 .loading-overlay {
   position: fixed;
@@ -110,7 +124,7 @@ html a {
     --sidebar-width: 320px;
     --light-primary:#F8E8E9;
     display: flex;
-    background-image: url('/assets/images/empire.png');
+    // background-image: url('/assets/images/empire.png');
     background-repeat: no-repeat;
     background-position: right bottom;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
