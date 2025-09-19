@@ -465,3 +465,17 @@ html .schedule-list-box  .form-check .form-check-label {
         margin-top: 12px;
     }
 }
+
+/* Desktop: reduce sidebar height and hide scrollbar */
+@media (min-width: 768px) {
+    .payment-schedule .detils-sidebar {
+        max-height: calc(100vh - 20px);
+        overflow-y: auto;
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+    .payment-schedule .detils-sidebar::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+    }
+}
