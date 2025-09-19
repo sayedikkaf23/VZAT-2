@@ -999,6 +999,20 @@ html .schedule-list-box  .form-check .form-check-label {
     font-family: "Inter", sans-serif;
   }
   
+  /* Desktop: reduce sidebar height and hide scrollbar */
+  @media (min-width: 768px) {
+    .payment-schedule .detils-sidebar {
+      max-height: calc(100vh - 20px);
+      overflow-y: auto;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+    }
+    .payment-schedule .detils-sidebar::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+  }
+  
   @media (max-width: 767px) {
     .payment-schedule .detils-sidebar h2 {
       font-size: 18px !important; /* smaller for mobile */
