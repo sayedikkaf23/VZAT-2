@@ -7,15 +7,15 @@ import { processRecurringPayments } from '../Controllers/SubscriptionController.
 export function initializeCronJobs() {
   console.log('⏰ Initializing cron jobs...');
   
-  // Run daily at 9:00 AM to process recurring payments
+  // Run every 2 minutes for testing purposes
   // This checks for payments due today based on the 10th/25th logic
-  cron.schedule('0 9 * * *', async () => {
-    console.log('🔄 Starting daily recurring payments processing...');
+  cron.schedule('*/2 * * * *', async () => {
+    console.log('🔄 Starting recurring payments processing (TEST MODE - Every 2 minutes)...');
     try {
       await processRecurringPayments();
-      console.log('✅ Daily recurring payments processing completed');
+      console.log('✅ Recurring payments processing completed');
     } catch (error) {
-      console.error('❌ Daily recurring payments processing failed:', error);
+      console.error('❌ Recurring payments processing failed:', error);
     }
   }, {
     scheduled: true,
@@ -26,7 +26,7 @@ export function initializeCronJobs() {
   // The single daily run at 9 AM is sufficient for processing payments
   
   console.log('✅ Cron jobs initialized successfully');
-  console.log('📅 Daily processing: Every day at 9:00 AM (Asia/Dubai)');
+  console.log('📅 TEST MODE: Processing every 2 minutes (Asia/Dubai)');
 }
 
 /**
