@@ -18,8 +18,34 @@ const EMAIL_CONFIG = {
   }
 };
 
+// Validate email configuration
+const validateEmailConfig = () => {
+  const issues = [];
+  
+  if (!EMAIL_CONFIG.sender.email) {
+    issues.push('EMAIL_SENDER not set');
+  }
+  
+  if (!EMAIL_CONFIG.sender.password) {
+    issues.push('EMAIL_PASSWORD not set');
+  }
+  
+  if (issues.length > 0) {
+    console.error('❌ EMAIL CONFIG ISSUES:', issues);
+    return false;
+  }
+  
+  console.log('✅ EMAIL CONFIG VALIDATION PASSED');
+  return true;
+};
+
 // Create transporter
 const createTransporter = () => {
+  // Validate configuration first
+  if (!validateEmailConfig()) {
+    throw new Error('Email configuration validation failed');
+  }
+  
   console.log('📧 EMAIL SERVICE - Creating transporter with config:', {
     email: EMAIL_CONFIG.sender.email,
     password: EMAIL_CONFIG.sender.password ? '***' : 'MISSING',
