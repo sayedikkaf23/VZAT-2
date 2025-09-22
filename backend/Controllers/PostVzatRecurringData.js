@@ -650,6 +650,14 @@ export const getAFSPaymentResult = async (req, res) => {
             resultData.customer_email = paymentRecord.opp_email;
             resultData.Total_After_VAT_Currency = paymentRecord.Total_After_VAT_Currency;
             
+            // Add sales person details to result data for frontend sidebar
+            if (paymentRecord.salesPersonDetails) {
+              resultData.salesPersonDetails = paymentRecord.salesPersonDetails;
+              console.log('👤 Sales person details added to response:', paymentRecord.salesPersonDetails);
+            } else {
+              console.log('⚠️ No sales person details found in payment record');
+            }
+            
             // Handle customer account creation (subscription payments only)
             if (paymentRecord.is_subscription && paymentRecord.opp_email) {
               console.log('🔄 Creating customer account for subscription payment...');
