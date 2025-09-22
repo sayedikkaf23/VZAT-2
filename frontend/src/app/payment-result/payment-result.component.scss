@@ -1614,3 +1614,103 @@ hr {
   border-top: 2px solid #CF3339;
   opacity: 1;
 }
+
+/* Ensure Flexbox Layout Stacks Properly on Mobile */
+@media (max-width: 768px) {
+  .payment-schedule {
+    flex-direction: column !important; /* Stack content vertically */
+    align-items: center; /* Center items in the layout */
+  }
+
+  /* Adjust sidebar for mobile - Stack it below the content */
+  .payment-schedule .detils-sidebar {
+    width: 100%;
+    max-width: none;
+    order: 1; /* Push sidebar below content */
+    text-align: center; /* Align text in the sidebar */
+  }
+
+  .payment-schedule .detils-sidebar .sidebar-row {
+    padding: 15px;
+  }
+
+  /* Make sure the content area takes full width and centers its content */
+  .payment-schedule .details-content {
+    width: 100%;
+    padding: 0 15px;
+    text-align: center;
+  }
+
+  /* Ensure elements inside .pm-submit-info are aligned properly */
+  .payment-schedule .pm-submit-info {
+    padding: 20px 15px;
+    text-align: center;
+  }
+
+  /* Adjust font size for mobile */
+  .payment-schedule .pm-submit-info h2 {
+    font-size: 24px; /* Make headings slightly smaller */
+  }
+
+  .payment-schedule .pm-submit-info h5, .payment-schedule .pm-submit-info h6 {
+    font-size: 14px;
+  }
+
+  .payment-schedule .price {
+    font-size: 24px; /* Adjust price text size for mobile */
+  }
+
+  .payment-schedule .icon img {
+    max-width: 80%; /* Ensure icons are scaled properly */
+    height: auto;
+  }
+
+  /* Align footer content and adjust paddings */
+  .payment-schedule .details-footer {
+    width: 100%;
+    padding: 10px 20px;
+    text-align: center;
+  }
+
+  .payment-schedule .details-footer ul {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0;
+  }
+
+  /* Adjust the Contact Us section for mobile */
+  .payment-schedule .detils-sidebar .contact-info-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  /* Make buttons responsive */
+  .payment-schedule .btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    text-align: center;
+  }
+}
+
+/* For very small screens (< 480px), ensure elements are stacked properly */
+@media (max-width: 480px) {
+  .payment-schedule .price {
+    font-size: 18px; /* Make price text even smaller */
+  }
+
+  .payment-schedule .pm-submit-info h3 {
+    font-size: 22px;
+  }
+
+  .payment-schedule .sidebar-row {
+    padding: 10px;
+  }
+
+  /* Reduce paddings for tight mobile screens */
+  .payment-schedule .details-footer {
+    padding: 8px;
+  }
+}
