@@ -12,7 +12,9 @@ const EMAIL_CONFIG = {
   },
   recipients: {
     business_team: process.env.BUSINESS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
-    operations_team: process.env.OPERATIONS_TEAM_EMAIL || 'saeedikkaf@gmail.com'
+    operations_team: process.env.OPERATIONS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
+    devtech_team: process.env.DEVTECH_TEAM_EMAIL || 'devtech@virtuzone.com',
+    ar_team: process.env.AR_TEAM_EMAIL || 'ar@virtuzone.com'
   }
 };
 
@@ -130,6 +132,256 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
     
   } catch (error) {
     console.error('❌ Failed to send subscription completion email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Send final renewal email to customer, devtech, and opp owner
+ */
+export const sendFinalRenewalEmail = async (data) => {
+  try {
+    const transporter = createTransporter();
+    const {
+      quotepaymentId,
+      Customer_name,
+      opp_email,
+      payments_completed,
+      InstallmentLeft,
+      last_payment_date,
+      salesPersonDetails
+    } = data;
+
+    // Safety check: only send if completed
+    if (!InstallmentLeft || payments_completed < InstallmentLeft) {
+      return { success: false, error: 'Subscription not completed yet' };
+    }
+
+    const subject = `Virtuzone | Your Corporate Service Term Is Ending – Let's Renew for Continued Success`;
+    const recipientList = [
+      opp_email,
+      EMAIL_CONFIG.recipients.devtech_team,
+      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined
+    ].filter(Boolean);
+
+    const finalDate = last_payment_date ? new Date(last_payment_date) : new Date();
+    const finalDateStr = finalDate.toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    const bodyHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+        <p>Dear ${Customer_name || 'Customer'},</p>
+
+        <p>We hope this message finds you well.</p>
+
+        <p>This is a gentle reminder that your current corporate service package with Virtuzone, under Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong>, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
+
+        <p>We thank you sincerely for placing your trust in Virtuzone over the past year.</p>
+
+        <p>We would be delighted to assist you with renewing your services and tailoring a new plan that fits your current needs.</p>
+
+        <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: {
+        name: EMAIL_CONFIG.sender.name,
+        address: EMAIL_CONFIG.sender.email
+      },
+      to: recipientList,
+      subject,
+      html: bodyHtml
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: result.messageId, recipients: recipientList };
+  } catch (error) {
+    console.error('❌ Failed to send final renewal email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Send payment failure notification to customer, devtech, opp owner, and AR team
+ */
+export const sendPaymentFailureNotificationEmail = async (data) => {
+  try {
+    const transporter = createTransporter();
+    const {
+      quotepaymentId,
+      Customer_name,
+      opp_email,
+      payment_amount,
+      due_date,
+      failure_reason,
+      payment_link,
+      salesPersonDetails
+    } = data;
+
+    const subject = `Action Required: Virtuzone | Payment Attempt Unsuccessful for Your Scheduled Installment`;
+    
+    // Recipients: customer, devtech, opp owner, AR team
+    const recipientList = [
+      opp_email,
+      EMAIL_CONFIG.recipients.devtech_team,
+      EMAIL_CONFIG.recipients.ar_team,
+      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined
+    ].filter(Boolean);
+
+    const dueDateStr = due_date ? new Date(due_date).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    }) : 'N/A';
+
+    const reasonText = failure_reason || 'Payment processing failed';
+    const paymentLinkHtml = payment_link ? 
+      `<a href="${payment_link}" style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Click here to complete the payment</a>` :
+      'Please contact us for payment assistance.';
+
+    const bodyHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+        <p>Dear ${Customer_name || 'Customer'},</p>
+
+        <p>We hope you're doing well.</p>
+
+        <p>This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed successfully.</p>
+
+        <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
+          <p style="margin: 0;"><strong>Amount:</strong> AED ${payment_amount || 'N/A'}</p>
+          <p style="margin: 5px 0 0 0;"><strong>Reason:</strong> ${reasonText}</p>
+        </div>
+
+        <p>We kindly request you to take the following action at your earliest convenience:</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          ${paymentLinkHtml}
+        </div>
+
+        <p>You may also reply to this email should you need any assistance.</p>
+
+        <p>Please note that timely payments help us ensure smooth continuation of your services without disruption.</p>
+
+        <p>Thank you for your attention to this matter.</p>
+
+        <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: {
+        name: EMAIL_CONFIG.sender.name,
+        address: EMAIL_CONFIG.sender.email
+      },
+      to: recipientList,
+      subject,
+      html: bodyHtml
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: result.messageId, recipients: recipientList };
+  } catch (error) {
+    console.error('❌ Failed to send payment failure notification email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Send successful payment notification to customer, devtech, opp owner, and AR team
+ */
+export const sendPaymentSuccessNotificationEmail = async (data) => {
+  try {
+    const transporter = createTransporter();
+    const {
+      quotepaymentId,
+      Customer_name,
+      opp_email,
+      payment_amount,
+      payment_date,
+      installment_number,
+      total_installments,
+      payment_method,
+      salesPersonDetails
+    } = data;
+
+    const subject = `Virtuzone | Payment Received`;
+    
+    // Recipients: customer, devtech, opp owner, AR team
+    const recipientList = [
+      opp_email,
+      EMAIL_CONFIG.recipients.devtech_team,
+      EMAIL_CONFIG.recipients.ar_team,
+      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined
+    ].filter(Boolean);
+
+    const paymentDateStr = payment_date ? new Date(payment_date).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    }) : new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    const installmentText = installment_number && total_installments ? 
+      `${installment_number} of ${total_installments}` : 
+      'N/A';
+
+    const bodyHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+        <p>Dear ${Customer_name || 'Customer'},</p>
+
+        <p>We are pleased to confirm that your scheduled payment of <strong>AED ${payment_amount || 'N/A'}</strong> for your Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
+
+        <div style="border: 2px solid #28a745; margin: 20px 0;">
+          <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #28a745;">
+            <h3 style="margin: 0; text-align: center; color: #28a745;">Payment Details</h3>
+          </div>
+          <table style="border-collapse: collapse; width: 100%;">
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 40%;">Invoice Number</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">PI QP-No-${quotepaymentId}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Installment</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">${installmentText}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Amount Paid</td>
+              <td style="border: 1px solid #ddd; padding: 12px;"><strong>AED ${payment_amount || 'N/A'}</strong></td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">${paymentDateStr}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Method</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">${payment_method || 'Card'}</td>
+            </tr>
+          </table>
+        </div>
+
+        <p>Your continued support is greatly appreciated, and we remain committed to delivering a smooth and hassle-free service delivery.</p>
+
+        <p>Should you have any questions or require further assistance, please feel free to reach out to us directly.</p>
+
+        <p>Thank you once again for choosing Virtuzone.</p>
+
+        <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: {
+        name: EMAIL_CONFIG.sender.name,
+        address: EMAIL_CONFIG.sender.email
+      },
+      to: recipientList,
+      subject,
+      html: bodyHtml
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: result.messageId, recipients: recipientList };
+  } catch (error) {
+    console.error('❌ Failed to send payment success notification email:', error);
     return { success: false, error: error.message };
   }
 };
@@ -264,6 +516,7 @@ export const sendPdfEmail = async (emailData) => {
       quotePdf,
       Customer_name,
       opp_owner,
+      salesPersonDetails,
       installmentSchedule // New parameter for dynamic payment schedule
     } = emailData;
 
@@ -401,7 +654,7 @@ export const sendPdfEmail = async (emailData) => {
             
             <p style="margin-top: 40px;">
               Regards,<br>
-              ${opp_owner || 'Rodney Raymond Lewis'}
+              ${(salesPersonDetails && salesPersonDetails.salesPersonName) || opp_owner || 'Rodney Raymond Lewis'}
             </p>
           </div>
         </div>
@@ -762,5 +1015,8 @@ export default {
   sendCustomerWelcomeEmail,
   sendExistingCustomerEmail,
   sendPasswordResetEmail,
+  sendFinalRenewalEmail,
+  sendPaymentFailureNotificationEmail,
+  sendPaymentSuccessNotificationEmail,
   testEmailConfiguration
 };
