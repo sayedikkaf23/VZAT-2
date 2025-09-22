@@ -138,11 +138,24 @@ export const handleAFSWebhook = async (req, res) => {
       if (isFirstPayment) {
         // First payment successful - activate subscription
         
+        // Calculate next charge date for the next installment
+        let nextChargeDate = null;
+        if (subscriptionRecord.payment_schedule && subscriptionRecord.payment_schedule.length > 1) {
+          // Find the next installment date
+          const nextPayment = subscriptionRecord.payment_schedule.find(
+            payment => payment.installment_number ***REMOVED***= 2
+          );
+          if (nextPayment && nextPayment.due_date) {
+            nextChargeDate = new Date(nextPayment.due_date);
+          }
+        }
+        
         const updateResult = await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
           subscription_status: 'active',
           afs_registration_id: registrationId,
           payments_completed: 1,
-          last_payment_date: new Date(timestamp)
+          last_payment_date: new Date(timestamp),
+          next_charge_date: nextChargeDate // Set to next installment date
         }, { new: true });
         
         
