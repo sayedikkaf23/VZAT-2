@@ -137,6 +137,10 @@ const vzatRecurringDataSchema = new Schema({
         type: String,
         required: false // Stored after successful initial payment
     },
+    afs_payment_brand: {
+        type: String,
+        required: false // Payment brand (VISA, MASTER, etc.) stored after successful initial payment
+    },
     payments_completed: {
         type: Number,
         default: 0

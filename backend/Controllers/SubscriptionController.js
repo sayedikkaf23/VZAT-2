@@ -105,9 +105,17 @@ export const handleAFSWebhook = async (req, res) => {
       currency,
       merchantTransactionId,
       registrationId,
+      paymentBrand,
       timestamp 
     } = req.body;
 
+    console.log('🔔 AFS WEBHOOK RECEIVED:');
+    console.log('   - ID:', id);
+    console.log('   - Payment Type:', paymentType);
+    console.log('   - Result:', result);
+    console.log('   - Registration ID:', registrationId);
+    console.log('   - Payment Brand:', paymentBrand);
+    console.log('   - Merchant Transaction ID:', merchantTransactionId);
     
     // Find the subscription record
     const subscriptionRecord = await Vzat_Recurring_Data.findOne({ 
@@ -153,6 +161,7 @@ export const handleAFSWebhook = async (req, res) => {
         const updateResult = await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
           subscription_status: 'active',
           afs_registration_id: registrationId,
+          afs_payment_brand: paymentBrand, // Save the payment brand for recurring payments
           payments_completed: 1,
           last_payment_date: new Date(timestamp),
           next_charge_date: nextChargeDate // Set to next installment date
@@ -819,8 +828,9 @@ async function processSubscriptionPayment(subscription) {
   // Try without recurringType first - some AFS configurations don't support it
   // afsData.append('recurringType', 'REPEATED'); // Commented out to test
   
-  // Add payment brand - this might be required for recurring payments
-  afsData.append('paymentBrand', 'VISA'); // Default to VISA, can be updated based on stored card info
+  // Add payment brand - use stored brand from initial payment
+  const paymentBrand = subscription.afs_payment_brand || 'VISA'; // Use stored brand or default to VISA
+  afsData.append('paymentBrand', paymentBrand);
   
   const afsHeaders = {
     Authorization: `Bearer ${accessToken}`,
@@ -835,7 +845,7 @@ async function processSubscriptionPayment(subscription) {
   console.log('- Merchant Transaction ID:', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   console.log('- Payment Type:', 'DB (Debit)');
   console.log('- Recurring Type:', 'NONE (testing without recurringType parameter)');
-  console.log('- Payment Brand:', 'VISA (default)');
+  console.log('- Payment Brand:', paymentBrand, subscription.afs_payment_brand ? '(from stored data)' : '(default fallback)');
   
   try {
     const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
