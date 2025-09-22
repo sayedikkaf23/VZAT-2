@@ -1615,6 +1615,19 @@ hr {
   opacity: 1;
 }
 
+/* Responsive success text visibility */
+.desktop-success-title,
+.desktop-success-subtitle {
+  display: block; /* Show by default */
+}
+
+@media (max-width: 768px) {
+  .desktop-success-title,
+  .desktop-success-subtitle {
+    display: none !important; /* Hide on mobile */
+  }
+}
+
 /* Hide duplicate "Need Assistance" on mobile */
 @media (max-width: 768px) {
   .payment-schedule .details-footer .row.align-items-center.gx-1 {
