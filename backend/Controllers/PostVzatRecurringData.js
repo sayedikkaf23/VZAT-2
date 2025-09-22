@@ -630,11 +630,19 @@ export const getAFSPaymentResult = async (req, res) => {
       // 🆕 CREATE CUSTOMER ACCOUNT AND SAVE CARD FOR ALL SUCCESSFUL PAYMENTS
       if (actualPaymentStatus === 'success' && quotepaymentId) {
         try {
-          {
+          console.log('🔄 Starting customer account creation process...');
+          console.log(`📋 Payment Status: ${actualPaymentStatus}, Quote Payment ID: ${quotepaymentId}`);
+          
           // Find the original payment record
           const paymentRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
           
           if (paymentRecord) {
+            console.log('✅ Payment record found:', {
+              quotepaymentId: paymentRecord.quotepaymentId,
+              Customer_name: paymentRecord.Customer_name,
+              opp_email: paymentRecord.opp_email,
+              is_subscription: paymentRecord.is_subscription
+            });
             
             // Add customer information to result data for frontend display
             resultData.customer_name = paymentRecord.Customer_name;
@@ -644,6 +652,7 @@ export const getAFSPaymentResult = async (req, res) => {
             
             // Handle customer account creation (subscription payments only)
             if (paymentRecord.is_subscription && paymentRecord.opp_email) {
+              console.log('🔄 Creating customer account for subscription payment...');
               
               const customerCreationResult = await createCustomerAccount({
                 quotepaymentId: paymentRecord.quotepaymentId,
@@ -653,19 +662,24 @@ export const getAFSPaymentResult = async (req, res) => {
                 QuoteId: paymentRecord.QuoteId
               });
               
+              console.log('📧 Customer creation result:', customerCreationResult);
+              
               if (customerCreationResult.success) {
                 resultData.customer_account = {
                   status: 'created',
                   message: 'Customer account created and welcome email sent for subscription',
                   isExisting: customerCreationResult.isExisting || false
                 };
+                console.log('✅ Customer account created successfully for subscription');
               } else {
                 resultData.customer_account = {
                   status: 'failed',
                   error: customerCreationResult.error
                 };
+                console.error('❌ Customer account creation failed for subscription:', customerCreationResult.error);
               }
             } else if (paymentRecord && !paymentRecord.is_subscription) {
+              console.log('🔄 Creating customer account for one-time payment...');
               
               // Create customer account for one-time payments too (for card saving)
               if (paymentRecord.opp_email) {
@@ -677,29 +691,39 @@ export const getAFSPaymentResult = async (req, res) => {
                   QuoteId: paymentRecord.QuoteId
                 });
                 
+                console.log('📧 Customer creation result for one-time payment:', customerCreationResult);
+                
                 if (customerCreationResult.success) {
                   resultData.customer_account = {
                     status: 'created',
                     message: 'Customer account created for one-time payment card saving',
                     isExisting: customerCreationResult.isExisting || false
                   };
+                  console.log('✅ Customer account created successfully for one-time payment');
                 } else {
                   resultData.customer_account = {
                     status: 'failed',
                     error: customerCreationResult.error
                   };
+                  console.error('❌ Customer account creation failed for one-time payment:', customerCreationResult.error);
                 }
               } else {
                 resultData.customer_account = {
                   status: 'skipped',
                   message: 'One-time payment - no email address provided'
                 };
+                console.log('⚠️ One-time payment skipped - no email address');
               }
             } else {
               resultData.customer_account = {
                 status: 'skipped',
                 message: 'Customer account creation skipped - missing payment data or email address'
               };
+              console.log('⚠️ Customer account creation skipped - missing data:', {
+                hasPaymentRecord: !!paymentRecord,
+                hasEmail: paymentRecord?.opp_email,
+                isSubscription: paymentRecord?.is_subscription
+              });
             }
             
             // 🆕 SAVE CUSTOMER CARD DETAILS FOR ALL SUCCESSFUL PAYMENTS
@@ -766,7 +790,6 @@ export const getAFSPaymentResult = async (req, res) => {
                 }
               } catch (apiError) {
                 // Error fetching customer data handled silently
-              }
               }
             }
             

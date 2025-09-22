@@ -118,13 +118,17 @@ export const createCustomerAccount = async (subscriptionData) => {
             console.log(`📧 Temporary password: ${temporaryPassword}`);
             console.log(`📧 Login URL: ${process.env.FRONTEND_URL || 'http://localhost:4200'}/login`);
             
-            const emailResult = await sendCustomerWelcomeEmail({
+            const emailData = {
                 customerName: Customer_name || 'Valued Customer',
                 email: opp_email,
                 temporaryPassword: temporaryPassword,
                 quotepaymentId: quotepaymentId,
                 loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:4200'}/login`
-            });
+            };
+            
+            console.log('📧 EMAIL DATA TO SEND:', JSON.stringify(emailData, null, 2));
+            
+            const emailResult = await sendCustomerWelcomeEmail(emailData);
             
             console.log('📧 EMAIL RESULT:', emailResult);
             
@@ -134,6 +138,7 @@ export const createCustomerAccount = async (subscriptionData) => {
                 console.log(`📧 Recipient confirmed: ${emailResult.recipient}`);
             } else {
                 console.error('❌ 📧 Failed to send welcome email:', emailResult.error);
+                console.error('❌ 📧 Email error details:', emailResult);
             }
         } catch (emailError) {
             console.error('❌ 📧 Exception in welcome email process:', emailError);

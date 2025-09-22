@@ -680,8 +680,9 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
   console.log('📧 EMAIL SERVICE - Input data:', JSON.stringify(customerData, null, 2));
   
   try {
-
+    console.log('📧 EMAIL SERVICE - Creating transporter...');
     const transporter = createTransporter();
+    console.log('📧 EMAIL SERVICE - Transporter created successfully');
     
     const {
       customerName,
@@ -690,6 +691,14 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       quotepaymentId,
       loginUrl
     } = customerData;
+    
+    console.log('📧 EMAIL SERVICE - Extracted data:', {
+      customerName,
+      email,
+      temporaryPassword: temporaryPassword ? '***' : 'MISSING',
+      quotepaymentId,
+      loginUrl
+    });
 
     const mailOptions = {
       from: {
@@ -765,8 +774,23 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       `
     };
 
+    console.log('📧 EMAIL SERVICE - Sending email...');
+    console.log('📧 EMAIL SERVICE - Mail options:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      htmlLength: mailOptions.html?.length || 0
+    });
+    
     const result = await transporter.sendMail(mailOptions);
     
+    console.log('📧 EMAIL SERVICE - Email sent successfully!');
+    console.log('📧 EMAIL SERVICE - Result:', {
+      messageId: result.messageId,
+      accepted: result.accepted,
+      rejected: result.rejected,
+      response: result.response
+    });
     
     return { success: true, messageId: result.messageId, recipient: email };
     
