@@ -505,17 +505,35 @@ export const processRecurringPayments = async (req, res) => {
         $gte: today,
         $lt: tomorrow
       },
-      InstallmentLeft: { $exists: true, $ne: null },
-      $expr: { 
-        $lt: ['$payments_completed', '$InstallmentLeft'] 
-      },
-      // Prevent duplicate processing: Skip if already processed today
+      // Handle both InstallmentLeft field and payment_schedule array
       $or: [
-        { last_processed_date: { $exists: false } }, // Never processed
-        { 
-          last_processed_date: {
-            $lt: today // Last processed before today
+        // Case 1: InstallmentLeft field exists and is valid
+        {
+          InstallmentLeft: { $exists: true, $ne: null },
+          $expr: { 
+            $lt: ['$payments_completed', '$InstallmentLeft'] 
           }
+        },
+        // Case 2: InstallmentLeft missing but payment_schedule exists
+        {
+          InstallmentLeft: { $exists: false },
+          payment_schedule: { $exists: true, $ne: null },
+          $expr: { 
+            $lt: ['$payments_completed', { $size: '$payment_schedule' }] 
+          }
+        }
+      ],
+      // Prevent duplicate processing: Skip if already processed today
+      $and: [
+        {
+          $or: [
+            { last_processed_date: { $exists: false } }, // Never processed
+            { 
+              last_processed_date: {
+                $lt: today // Last processed before today
+              }
+            }
+          ]
         }
       ]
     });
@@ -541,15 +559,21 @@ export const processRecurringPayments = async (req, res) => {
         
         // Send failure email to operations team
         try {
+          // Calculate installment amount (handle missing InstallmentLeft)
+          let installmentLeft = subscription.InstallmentLeft;
+          if (!installmentLeft && subscription.payment_schedule) {
+            installmentLeft = subscription.payment_schedule.length;
+          }
+          
           const emailResult = await sendPaymentFailureEmail({
             quotepaymentId: subscription.quotepaymentId,
             OpportunityId: subscription.OpportunityId,
             QuoteId: subscription.QuoteId,
             error_message: error.message,
-            payment_amount: parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)),
+            payment_amount: installmentLeft ? parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)) : 0,
             attempt_date: new Date(),
             payments_completed: subscription.payments_completed || 0,
-            total_installments: subscription.InstallmentLeft,
+            total_installments: installmentLeft,
             afs_response: null
           });
           
@@ -609,6 +633,17 @@ async function processSubscriptionPayment(subscription) {
     throw new Error('No registration ID found for subscription');
   }
   
+  // Calculate InstallmentLeft if missing (fallback for older records)
+  let installmentLeft = subscription.InstallmentLeft;
+  if (!installmentLeft && subscription.payment_schedule) {
+    installmentLeft = subscription.payment_schedule.length;
+    console.log(`🔧 InstallmentLeft missing, calculated from payment_schedule: ${installmentLeft}`);
+  }
+  
+  if (!installmentLeft) {
+    throw new Error('Cannot determine total installments for subscription');
+  }
+  
   // Check if we're using mock data for testing
   if (subscription.afs_registration_id.includes('mock')) {
     
@@ -619,7 +654,7 @@ async function processSubscriptionPayment(subscription) {
         code: "000.100.110",
         description: "Request successfully processed in 'Merchant in Integrator Test Mode'"
       },
-      amount: parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)),
+      amount: parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)),
       currency: "AED",
       paymentType: "DB",
       merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`
@@ -634,7 +669,7 @@ async function processSubscriptionPayment(subscription) {
   const accessToken = process.env.AFS_ACCESS_TOKEN;
   
   // Calculate installment amount
-  const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2));
+  const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2));
   
   const afsData = new URLSearchParams();
   afsData.append('entityId', entityId);

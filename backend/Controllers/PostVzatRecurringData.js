@@ -167,7 +167,12 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       opp_phone,
       opp_mobile,
       salesPersonDetails,
-      payment_link_expiry: paymentLinkExpiryDate
+      payment_link_expiry: paymentLinkExpiryDate,
+      InstallmentLeft: InstallmentLeft, // Add InstallmentLeft field
+      is_subscription: isSubscription, // Add subscription flag
+      subscription_status: isSubscription ? 'pending' : null, // Add subscription status
+      payments_completed: 0, // Initialize payments completed
+      next_charge_date: nextInstallmentDate // Add next charge date
     });
 
     const result = await baseData.save();
