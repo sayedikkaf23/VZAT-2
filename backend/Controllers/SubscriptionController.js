@@ -497,6 +497,8 @@ export const processRecurringPayments = async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1); // End of day
     
     
+    console.log('🔍 CRON JOB DEBUG - Checking subscriptions for:', today.toISOString().slice(0, 10));
+    
     // First, let's check what subscriptions exist for today (debugging)
     const allActiveSubscriptions = await Vzat_Recurring_Data.find({
       subscription_status: 'active',
@@ -506,8 +508,9 @@ export const processRecurringPayments = async (req, res) => {
       }
     });
     
+    console.log(`📊 Found ${allActiveSubscriptions.length} active subscriptions due today:`);
     allActiveSubscriptions.forEach(sub => {
-      console.log(`📋 Subscription ${sub.quotepaymentId}: payments_completed=${sub.payments_completed}, InstallmentLeft=${sub.InstallmentLeft}, last_processed_date=${sub.last_processed_date}`);
+      console.log(`📋 Subscription ${sub.quotepaymentId}: payments_completed=${sub.payments_completed}, InstallmentLeft=${sub.InstallmentLeft}, payment_retry_count=${sub.payment_retry_count}, last_processed_date=${sub.last_processed_date}`);
     });
     
     // Find all active subscriptions due for payment today
@@ -568,12 +571,28 @@ export const processRecurringPayments = async (req, res) => {
       ]
     });
     
+    console.log(`🎯 CRON JOB QUERY RESULT - Found ${dueSubscriptions.length} subscriptions to process:`);
+    dueSubscriptions.forEach(sub => {
+      console.log(`✅ Will process: ${sub.quotepaymentId} (payments_completed: ${sub.payments_completed}/${sub.InstallmentLeft})`);
+    });
+    
+    if (dueSubscriptions.length === 0) {
+      console.log('❌ No subscriptions found to process. Reasons could be:');
+      console.log('   - No subscriptions due today');
+      console.log('   - All subscriptions already processed today');
+      console.log('   - All subscriptions exceeded max retry count');
+      console.log('   - Missing retry fields (payment_retry_count, last_processed_date)');
+    }
     
     const results = [];
     
     for (const subscription of dueSubscriptions) {
       try {
-        console.log(`🔄 Processing payment for subscription: ${subscription.quotepaymentId}`);
+        console.log(`\n🔄 PROCESSING PAYMENT #${subscription.payments_completed + 1} for subscription: ${subscription.quotepaymentId}`);
+        console.log(`   - Customer: ${subscription.Customer_name}`);
+        console.log(`   - Email: ${subscription.opp_email}`);
+        console.log(`   - Amount: ${parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2))} AED`);
+        console.log(`   - Retry count: ${subscription.payment_retry_count || 0}`);
         
         const paymentResult = await processSubscriptionPayment(subscription);
         
@@ -588,10 +607,11 @@ export const processRecurringPayments = async (req, res) => {
           result: paymentResult
         });
         
-        console.log(`✅ Payment processed successfully for ${subscription.quotepaymentId}`);
+        console.log(`✅ PAYMENT SUCCESS for ${subscription.quotepaymentId} - Payment #${subscription.payments_completed + 1} completed!`);
         
       } catch (error) {
-        console.error(`❌ Failed to process payment for ${subscription.quotepaymentId}:`, error);
+        console.error(`\n❌ PAYMENT FAILED for ${subscription.quotepaymentId}:`, error.message);
+        console.error(`   - Error details:`, error);
         
         // Don't mark as processed on failure - allow retry
         // Only mark as processed if we've exceeded retry limit
@@ -599,7 +619,7 @@ export const processRecurringPayments = async (req, res) => {
         const maxRetries = 3; // Allow 3 retries
         
         if (retryCount >= maxRetries) {
-          console.log(`🚫 Max retries exceeded for ${subscription.quotepaymentId}, marking as processed`);
+          console.log(`🚫 MAX RETRIES EXCEEDED for ${subscription.quotepaymentId} (${retryCount}/${maxRetries}), marking as processed`);
           await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
             last_processed_date: new Date(),
             payment_retry_count: 0 // Reset for next day
@@ -610,7 +630,7 @@ export const processRecurringPayments = async (req, res) => {
             $unset: { last_processed_date: 1 },
             $set: { payment_retry_count: retryCount + 1 }
           });
-          console.log(`🔄 Retry ${retryCount + 1}/${maxRetries} for ${subscription.quotepaymentId}`);
+          console.log(`🔄 RETRY SCHEDULED for ${subscription.quotepaymentId} - Retry ${retryCount + 1}/${maxRetries}`);
         }
         
         // Send failure email to operations team
@@ -699,10 +719,31 @@ export const processRecurringPayments = async (req, res) => {
     
     Post_Common_DB_Log_Data('/cron/recurring-payments', { date: today }, response);
     
+    console.log('\n📊 CRON JOB SUMMARY:');
+    console.log(`   - Date: ${today.toISOString().slice(0, 10)}`);
+    console.log(`   - Total subscriptions processed: ${results.length}`);
+    
+    const successCount = results.filter(r => r.status === 'processed').length;
+    const failedCount = results.filter(r => r.status === 'failed').length;
+    
+    console.log(`   - Successful payments: ${successCount}`);
+    console.log(`   - Failed payments: ${failedCount}`);
+    
+    if (results.length > 0) {
+      console.log('\n📋 DETAILED RESULTS:');
+      results.forEach(result => {
+        if (result.status === 'processed') {
+          console.log(`   ✅ ${result.quotepaymentId}: SUCCESS`);
+        } else {
+          console.log(`   ❌ ${result.quotepaymentId}: FAILED - ${result.error}`);
+        }
+      });
+    }
+    
     if (res) {
       res.json(response);
     } else {
-      console.log('✅ Cron job completed:', response);
+      console.log('\n✅ Recurring payments processing completed');
       return response;
     }
     

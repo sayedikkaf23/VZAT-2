@@ -11,10 +11,10 @@ const EMAIL_CONFIG = {
     name: 'VZAT Payment System'
   },
   recipients: {
-    business_team: process.env.BUSINESS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
-    operations_team: process.env.OPERATIONS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
-    devtech_team: process.env.DEVTECH_TEAM_EMAIL || 'devtech@virtuzone.com',
-    ar_team: process.env.AR_TEAM_EMAIL || 'ar@virtuzone.com'
+    business_team: process.env.BUSINESS_TEAM_EMAIL || 'saeedikkaf3@gmail.com',
+    operations_team: process.env.OPERATIONS_TEAM_EMAIL || 'saeedikkaf3@gmail.com',
+    devtech_team: process.env.DEVTECH_TEAM_EMAIL || 'devtec3h@virtuzone.com',
+    ar_team: process.env.AR_TEAM_EMAIL || 'ar3@virtuzone.com'
   }
 };
 
