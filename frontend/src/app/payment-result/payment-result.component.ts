@@ -147,10 +147,10 @@ export class PaymentResultComponent implements OnInit {
     // Extract sales agent information from VzatRecurringData with better fallback
     if (data?.salesPersonDetails) {
       this.salesAgent = {
-        name: data.salesPersonDetails.salesPersonName || "Sales Representative",
-        position: data.salesPersonDetails.salesPersonPosition || "Sales Representative",
-        faxNumber: data.salesPersonDetails.salesPersonFax || "+971 4 457 8271",
-        phoneNumber: data.salesPersonDetails.salesPersonMobile || data.salesPersonDetails.salesPersonPhone || "+971 4 457 8271",
+        name: data.salesPersonDetails.salesPersonName ,
+        // position: data.salesPersonDetails.salesPersonPosition || "Sales Representative",
+        faxNumber: data.salesPersonDetails.salesPersonFax || "NA",
+        phoneNumber: data.salesPersonDetails.salesPersonMobile || data.salesPersonDetails.salesPersonPhone || "NA",
         email: data.salesPersonDetails.salesPersonEmail || "support@virtuzone.com",
         mobNo1: data.salesPersonDetails.salesPersonMobile || null
       };
