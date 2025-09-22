@@ -147,6 +147,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       installmentAmount = parseFloat((Total_After_VAT_Currency / InstallmentLeft).toFixed(2));
     }
 
+    // Determine if this is a subscription before saving to DB
+    const isSubscription = finalInstallmentType === "Installments" && InstallmentLeft > 1;
+    
     // Save to DB
     const baseData = new Vzat_Recurring_Data({
       OpportunityId,
@@ -244,7 +247,6 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     let paymentLink = null;
     let afsError = null;
     let afsResponse = null;
-    let isSubscription = finalInstallmentType === "Installments" && InstallmentLeft > 1;
     
     try {
       const afsUrl = `${process.env.AFS_DOMAIN}/v1/checkouts`;

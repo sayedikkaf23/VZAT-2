@@ -1,6 +1,6 @@
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
-import { sendSubscriptionCompletedEmail, sendPaymentFailureEmail, sendFinalRenewalEmail, sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from "../services/emailService.js";
+import { sendSubscriptionCompletedEmail, sendFinalRenewalEmail, sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from "../services/emailService.js";
 import { createCustomerAccount, saveCustomerCard } from "./CustomerRegistration.js";
 import { updateQuotePaymentStatus } from "../services/salesforceService.js";
 import axios from "axios";
@@ -365,27 +365,27 @@ export const handleAFSWebhook = async (req, res) => {
       }
       
       // Send failure email to operations team
-      try {
-        const emailResult = await sendPaymentFailureEmail({
-          quotepaymentId: subscriptionRecord.quotepaymentId,
-          OpportunityId: subscriptionRecord.OpportunityId,
-          QuoteId: subscriptionRecord.QuoteId,
-          error_message: result.description || 'Payment processing failed',
-          payment_amount: amount,
-          attempt_date: new Date(timestamp),
-          payments_completed: subscriptionRecord.payments_completed || 0,
-          total_installments: subscriptionRecord.InstallmentLeft,
-          afs_response: result
-        });
+      // try {
+      //   const emailResult = await sendPaymentFailureEmail({
+      //     quotepaymentId: subscriptionRecord.quotepaymentId,
+      //     OpportunityId: subscriptionRecord.OpportunityId,
+      //     QuoteId: subscriptionRecord.QuoteId,
+      //     error_message: result.description || 'Payment processing failed',
+      //     payment_amount: amount,
+      //     attempt_date: new Date(timestamp),
+      //     payments_completed: subscriptionRecord.payments_completed || 0,
+      //     total_installments: subscriptionRecord.InstallmentLeft,
+      //     afs_response: result
+      //   });
         
-        if (emailResult.success) {
-          console.log('📧 Payment failure email sent successfully');
-        } else {
-          console.error('📧 Failed to send failure email:', emailResult.error);
-        }
-      } catch (emailError) {
-        console.error('📧 Error sending failure email:', emailError);
-      }
+      //   if (emailResult.success) {
+      //     console.log('📧 Payment failure email sent successfully');
+      //   } else {
+      //     console.error('📧 Failed to send failure email:', emailResult.error);
+      //   }
+      // } catch (emailError) {
+      //   console.error('📧 Error sending failure email:', emailError);
+      // }
 
       // Send customer notification email for payment failure
       try {
@@ -601,35 +601,35 @@ export const processRecurringPayments = async (req, res) => {
         }
         
         // Send failure email to operations team
-        try {
-          // Calculate installment amount (handle missing InstallmentLeft)
-          let installmentLeft = subscription.InstallmentLeft;
-          if (!installmentLeft && subscription.payment_schedule) {
-            installmentLeft = subscription.payment_schedule.length;
-          }
+        // try {
+        //   // Calculate installment amount (handle missing InstallmentLeft)
+        //   let installmentLeft = subscription.InstallmentLeft;
+        //   if (!installmentLeft && subscription.payment_schedule) {
+        //     installmentLeft = subscription.payment_schedule.length;
+        //   }
           
-          const emailResult = await sendPaymentFailureEmail({
-            quotepaymentId: subscription.quotepaymentId,
-            OpportunityId: subscription.OpportunityId,
-            QuoteId: subscription.QuoteId,
-            error_message: error.message,
-            payment_amount: installmentLeft ? parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)) : 0,
-            attempt_date: new Date(),
-            payments_completed: subscription.payments_completed || 0,
-            total_installments: installmentLeft,
-            afs_response: null,
-            retry_count: retryCount + 1,
-            max_retries: maxRetries
-          });
+        //   const emailResult = await sendPaymentFailureEmail({
+        //     quotepaymentId: subscription.quotepaymentId,
+        //     OpportunityId: subscription.OpportunityId,
+        //     QuoteId: subscription.QuoteId,
+        //     error_message: error.message,
+        //     payment_amount: installmentLeft ? parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)) : 0,
+        //     attempt_date: new Date(),
+        //     payments_completed: subscription.payments_completed || 0,
+        //     total_installments: installmentLeft,
+        //     afs_response: null,
+        //     retry_count: retryCount + 1,
+        //     max_retries: maxRetries
+        //   });
           
-          if (emailResult.success) {
-            console.log('📧 Payment failure email sent successfully to operations team');
-          } else {
-            console.error('📧 Failed to send failure email to operations team:', emailResult.error);
-          }
-        } catch (emailError) {
-          console.error('📧 Error sending failure email to operations team:', emailError);
-        }
+        //   if (emailResult.success) {
+        //     console.log('📧 Payment failure email sent successfully to operations team');
+        //   } else {
+        //     console.error('📧 Failed to send failure email to operations team:', emailResult.error);
+        //   }
+        // } catch (emailError) {
+        //   console.error('📧 Error sending failure email to operations team:', emailError);
+        // }
         
         // Send customer notification email for payment failure
         try {
@@ -1055,7 +1055,7 @@ export const testPaymentFailureEmail = async (req, res) => {
       }
     };
     
-    const emailResult = await sendPaymentFailureEmail(mockFailureData);
+    // const emailResult = await sendPaymentFailureEmail(mockFailureData);
     
     if (emailResult.success) {
       res.json({

@@ -423,114 +423,114 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 /**
  * Send email notification for payment failure
  */
-export const sendPaymentFailureEmail = async (failureData) => {
-  try {
-    const transporter = createTransporter();
+// export const sendPaymentFailureEmail = async (failureData) => {
+//   try {
+//     const transporter = createTransporter();
     
-    const {
-      quotepaymentId,
-      OpportunityId,
-      QuoteId,
-      error_message,
-      payment_amount,
-      attempt_date,
-      payments_completed,
-      total_installments,
-      afs_response
-    } = failureData;
+//     const {
+//       quotepaymentId,
+//       OpportunityId,
+//       QuoteId,
+//       error_message,
+//       payment_amount,
+//       attempt_date,
+//       payments_completed,
+//       total_installments,
+//       afs_response
+//     } = failureData;
 
-    const mailOptions = {
-      from: {
-        name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email
-      },
-      to: EMAIL_CONFIG.recipients.operations_team,
-      subject: `🚨 URGENT: Payment Failure - ${quotepaymentId}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #dc3545; color: white; padding: 20px; text-align: center;">
-            <h1>🚨 Payment Failure Alert</h1>
-          </div>
+//     const mailOptions = {
+//       from: {
+//         name: EMAIL_CONFIG.sender.name,
+//         address: EMAIL_CONFIG.sender.email
+//       },
+//       to: EMAIL_CONFIG.recipients.operations_team,
+//       subject: `🚨 URGENT: Payment Failure - ${quotepaymentId}`,
+//       html: `
+//         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//           <div style="background-color: #dc3545; color: white; padding: 20px; text-align: center;">
+//             <h1>🚨 Payment Failure Alert</h1>
+//           </div>
           
-          <div style="padding: 20px; background-color: #f8f9fa;">
-            <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
-              <h3 style="color: #721c24; margin-top: 0;">⚠️ Immediate Action Required</h3>
-              <p style="color: #721c24; margin-bottom: 0;">
-                A recurring payment has failed and requires immediate attention from the operations team.
-              </p>
-            </div>
+//           <div style="padding: 20px; background-color: #f8f9fa;">
+//             <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+//               <h3 style="color: #721c24; margin-top: 0;">⚠️ Immediate Action Required</h3>
+//               <p style="color: #721c24; margin-bottom: 0;">
+//                 A recurring payment has failed and requires immediate attention from the operations team.
+//               </p>
+//             </div>
             
-            <h2>Payment Failure Details</h2>
+//             <h2>Payment Failure Details</h2>
             
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-              <tr style="background-color: #e9ecef;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote Payment ID</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${quotepaymentId}</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Opportunity ID</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${OpportunityId}</td>
-              </tr>
-              <tr style="background-color: #e9ecef;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote ID</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${QuoteId}</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Failed Amount</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;"><strong style="color: #dc3545;">${payment_amount} AED</strong></td>
-              </tr>
-              <tr style="background-color: #e9ecef;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Failure Date</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${attempt_date ? new Date(attempt_date).toLocaleString() : new Date().toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Payment Progress</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${payments_completed}/${total_installments} completed</td>
-              </tr>
-              <tr style="background-color: #e9ecef;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Error Message</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6; color: #dc3545;"><strong>${error_message}</strong></td>
-              </tr>
-            </table>
+//             <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+//               <tr style="background-color: #e9ecef;">
+//                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote Payment ID</td>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6;">${quotepaymentId}</td>
+//               </tr>
+//               <tr>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Opportunity ID</td>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6;">${OpportunityId}</td>
+//               </tr>
+//               <tr style="background-color: #e9ecef;">
+//                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote ID</td>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6;">${QuoteId}</td>
+//               </tr>
+//               <tr>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Failed Amount</td>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6;"><strong style="color: #dc3545;">${payment_amount} AED</strong></td>
+//               </tr>
+//               <tr style="background-color: #e9ecef;">
+//                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Failure Date</td>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6;">${attempt_date ? new Date(attempt_date).toLocaleString() : new Date().toLocaleString()}</td>
+//               </tr>
+//               <tr>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Payment Progress</td>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6;">${payments_completed}/${total_installments} completed</td>
+//               </tr>
+//               <tr style="background-color: #e9ecef;">
+//                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Error Message</td>
+//                 <td style="padding: 12px; border: 1px solid #dee2e6; color: #dc3545;"><strong>${error_message}</strong></td>
+//               </tr>
+//             </table>
             
-            ${afs_response ? `
-            <h3>AFS Response Details</h3>
-            <div style="background-color: #f1f1f1; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; overflow-x: auto;">
-              <pre>${JSON.stringify(afs_response, null, 2)}</pre>
-            </div>
-            ` : ''}
+//             ${afs_response ? `
+//             <h3>AFS Response Details</h3>
+//             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; overflow-x: auto;">
+//               <pre>${JSON.stringify(afs_response, null, 2)}</pre>
+//             </div>
+//             ` : ''}
             
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
-              <h3 style="color: #856404; margin-top: 0;">📋 Recommended Actions</h3>
-              <ul style="color: #856404;">
-                <li>Verify customer's payment method status</li>
-                <li>Check if card has expired or insufficient funds</li>
-                <li>Contact customer to update payment information</li>
-                <li>Review AFS transaction logs for detailed error analysis</li>
-                <li>Consider rescheduling payment or offering alternative payment methods</li>
-              </ul>
-            </div>
+//             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+//               <h3 style="color: #856404; margin-top: 0;">📋 Recommended Actions</h3>
+//               <ul style="color: #856404;">
+//                 <li>Verify customer's payment method status</li>
+//                 <li>Check if card has expired or insufficient funds</li>
+//                 <li>Contact customer to update payment information</li>
+//                 <li>Review AFS transaction logs for detailed error analysis</li>
+//                 <li>Consider rescheduling payment or offering alternative payment methods</li>
+//               </ul>
+//             </div>
             
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
-              <p style="color: #6c757d; font-size: 12px;">
-                This is an automated alert from VZAT Payment System<br>
-                Generated on: ${new Date().toLocaleString()}<br>
-                Please address this issue promptly to maintain customer satisfaction.
-              </p>
-            </div>
-          </div>
-        </div>
-      `
-    };
+//             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+//               <p style="color: #6c757d; font-size: 12px;">
+//                 This is an automated alert from VZAT Payment System<br>
+//                 Generated on: ${new Date().toLocaleString()}<br>
+//                 Please address this issue promptly to maintain customer satisfaction.
+//               </p>
+//             </div>
+//           </div>
+//         </div>
+//       `
+//     };
 
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
+//     const result = await transporter.sendMail(mailOptions);
+//     return { success: true, messageId: result.messageId };
     
-  } catch (error) {
-    console.error('❌ Failed to send payment failure email:', error);
-    return { success: false, error: error.message };
-  }
-};
+//   } catch (error) {
+//     console.error('❌ Failed to send payment failure email:', error);
+//     return { success: false, error: error.message };
+//   }
+// };
 
 /**
  * Send PDF via email from Salesforce webhook
@@ -1068,7 +1068,7 @@ export const testEmailConfiguration = async () => {
 
 export default {
   sendSubscriptionCompletedEmail,
-  sendPaymentFailureEmail,
+  // sendPaymentFailureEmail,
   sendPdfEmail,
   sendCustomerWelcomeEmail,
   sendExistingCustomerEmail,
