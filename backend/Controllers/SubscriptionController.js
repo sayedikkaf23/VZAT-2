@@ -140,8 +140,14 @@ export const handleAFSWebhook = async (req, res) => {
    
     
     if (paymentType ***REMOVED***= 'DB' && result.code.startsWith('000.')) {
-      // Check if this is the first payment (subscription status is pending)
-      const isFirstPayment = subscriptionRecord.subscription_status ***REMOVED***= 'pending' && (subscriptionRecord.payments_completed || 0) ***REMOVED***= 0;
+      // Check if this is the first payment (payments_completed is 0 or 1, and we have a registrationId)
+      const isFirstPayment = (subscriptionRecord.payments_completed || 0) <= 1 && registrationId;
+      
+      console.log('🔍 WEBHOOK PAYMENT ANALYSIS:');
+      console.log('   - Subscription Status:', subscriptionRecord.subscription_status);
+      console.log('   - Payments Completed:', subscriptionRecord.payments_completed || 0);
+      console.log('   - Registration ID:', registrationId);
+      console.log('   - Is First Payment:', isFirstPayment);
       
       if (isFirstPayment) {
         // First payment successful - activate subscription
@@ -158,6 +164,12 @@ export const handleAFSWebhook = async (req, res) => {
           }
         }
         
+        console.log('💾 WEBHOOK SAVING FIRST PAYMENT DATA:');
+        console.log('   - afs_registration_id:', registrationId);
+        console.log('   - afs_payment_brand:', paymentBrand);
+        console.log('   - next_charge_date:', nextChargeDate);
+        console.log('   - last_payment_date:', new Date(timestamp));
+        
         const updateResult = await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
           subscription_status: 'active',
           afs_registration_id: registrationId,
@@ -166,6 +178,12 @@ export const handleAFSWebhook = async (req, res) => {
           last_payment_date: new Date(timestamp),
           next_charge_date: nextChargeDate // Set to next installment date
         }, { new: true });
+        
+        console.log('✅ WEBHOOK UPDATE SUCCESS:');
+        console.log('   - Updated afs_registration_id:', updateResult.afs_registration_id);
+        console.log('   - Updated afs_payment_brand:', updateResult.afs_payment_brand);
+        console.log('   - Updated next_charge_date:', updateResult.next_charge_date);
+        console.log('   - Updated last_payment_date:', updateResult.last_payment_date);
         
         
         // Update payment schedule status for the first payment
@@ -241,6 +259,11 @@ export const handleAFSWebhook = async (req, res) => {
         
       } else {
         // Recurring payment successful
+        console.log('🔄 WEBHOOK PROCESSING RECURRING PAYMENT:');
+        console.log('   - This is NOT the first payment');
+        console.log('   - Payments completed:', subscriptionRecord.payments_completed);
+        console.log('   - Registration ID:', registrationId);
+        console.log('   - Payment Brand:', paymentBrand);
       
       const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
         subscriptionRecord._id,
@@ -519,7 +542,7 @@ export const processRecurringPayments = async (req, res) => {
     
     console.log(`📊 Found ${allActiveSubscriptions.length} active subscriptions due today:`);
     allActiveSubscriptions.forEach(sub => {
-      console.log(`📋 Subscription ${sub.quotepaymentId}: payments_completed=${sub.payments_completed}, InstallmentLeft=${sub.InstallmentLeft}, payment_retry_count=${sub.payment_retry_count}, last_processed_date=${sub.last_processed_date}`);
+      console.log(`📋 Subscription ${sub.quotepaymentId}: payments_completed=${sub.payments_completed}, InstallmentLeft=${sub.InstallmentLeft}, payment_retry_count=${sub.payment_retry_count || 0}, last_processed_date=${sub.last_processed_date}, next_charge_date=${sub.next_charge_date}`);
     });
     
     // Find all active subscriptions due for payment today
@@ -548,31 +571,19 @@ export const processRecurringPayments = async (req, res) => {
           }
         }
       ],
-      // Prevent duplicate processing: Skip if already processed today OR max retries exceeded
+      // Prevent duplicate processing: Skip if already processed today AND no retries needed
       $and: [
         {
           $or: [
-            { last_processed_date: { $exists: false } }, // Never processed
+            // Never processed
+            { last_processed_date: { $exists: false } },
+            // Last processed before today
+            { last_processed_date: { $lt: today } },
+            // Processed today but has retry count (failed payment - allow retry)
             { 
-              last_processed_date: {
-                $lt: today // Last processed before today
-              }
-            },
-            // Allow retry if retry count is less than max (even if processed today)
-            {
               $and: [
-                { payment_retry_count: { $exists: true, $lt: 3 } }, // Less than 3 retries
-                { 
-                  $or: [
-                    { last_processed_date: { $exists: false } }, // Not marked as processed
-                    { 
-                      $and: [
-                        { last_processed_date: { $gte: today } }, // Processed today
-                        { payment_retry_count: { $exists: true, $gt: 0 } } // But has retry count (failed)
-                      ]
-                    }
-                  ]
-                }
+                { last_processed_date: { $gte: today } },
+                { payment_retry_count: { $exists: true, $gt: 0, $lt: 3 } }
               ]
             }
           ]
@@ -591,6 +602,24 @@ export const processRecurringPayments = async (req, res) => {
       console.log('   - All subscriptions already processed today');
       console.log('   - All subscriptions exceeded max retry count');
       console.log('   - Missing retry fields (payment_retry_count, last_processed_date)');
+      
+      // Show which subscriptions were excluded and why
+      if (allActiveSubscriptions.length > 0) {
+        console.log('\n🔍 EXCLUDED SUBSCRIPTIONS ANALYSIS:');
+        allActiveSubscriptions.forEach(sub => {
+          const hasRetryCount = sub.payment_retry_count !***REMOVED*** undefined && sub.payment_retry_count > 0;
+          const processedToday = sub.last_processed_date && new Date(sub.last_processed_date).toDateString() ***REMOVED***= today.toDateString();
+          const maxRetriesExceeded = sub.payment_retry_count >= 3;
+          
+          console.log(`   📋 ${sub.quotepaymentId}:`);
+          console.log(`      - Processed today: ${processedToday}`);
+          console.log(`      - Has retry count: ${hasRetryCount} (${sub.payment_retry_count || 0})`);
+          console.log(`      - Max retries exceeded: ${maxRetriesExceeded}`);
+          console.log(`      - Reason excluded: ${processedToday && !hasRetryCount ? 'Already processed today' : 
+                                              maxRetriesExceeded ? 'Max retries exceeded' : 
+                                              'Other criteria not met'}`);
+        });
+      }
     }
     
     const results = [];
@@ -1154,3 +1183,4 @@ export default {
   testSubscriptionCompletionEmail,
   testPaymentFailureEmail
 };
+
