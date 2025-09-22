@@ -73,6 +73,12 @@
           <img src="assets/images/payment-success.png" class="d-block mx-auto" style="width: 60px; height: 60px;" />
         </div>
         
+        <!-- Payment Successful text for mobile view -->
+        <div class="success-text-mobile d-block d-md-none mb-3">
+          <h4 class="text-center mb-2">Payment Successful!</h4>
+          <p class="text-center small">Hooray! You have completed your payment</p>
+        </div>
+        
       <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
         <!-- <p class="small-text">Thank you for your payment.</p> -->
 
@@ -90,8 +96,8 @@
             <img src="assets/images/payment-success.png" class="d-block mx-auto" />
           </div>
           
-          <h3>Payment Successful!</h3>
-          <h5 class="subtitle">Hooray! You have completed your payment</h5>
+          <h3 class="desktop-success-title">Payment Successful!</h3>
+          <h5 class="subtitle desktop-success-subtitle">Hooray! You have completed your payment</h5>
           <hr />
 
           <h6>AMOUNT PAID</h6>
