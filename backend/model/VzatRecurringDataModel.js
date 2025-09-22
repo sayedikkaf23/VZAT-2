@@ -149,6 +149,11 @@ const vzatRecurringDataSchema = new Schema({
         type: Date,
         required: false // Tracks when this subscription was last processed by cron job (prevents duplicate processing)
     },
+    payment_retry_count: {
+        type: Number,
+        default: 0,
+        required: false // Tracks number of retry attempts for failed payments
+    },
     // Card change tracking fields
     card_updated_date: {
         type: Date,
