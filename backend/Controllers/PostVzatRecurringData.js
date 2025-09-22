@@ -279,6 +279,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         // This ensures the first payment is actually debited, not just pre-authorized
         afsData.append('paymentType', 'DB');
         
+        // CRITICAL: Add createRegistration=true for subscriptions to enable recurring payments
+        afsData.append('createRegistration', 'true');
+        
         // Add subscription-specific parameters
         afsData.append('recurringType', 'INITIAL');
         

@@ -759,12 +759,13 @@ async function processSubscriptionPayment(subscription) {
   afsData.append('amount', installmentAmount.toString());
   afsData.append('currency', 'AED');
   afsData.append('paymentType', 'DB');
-  afsData.append('recurringType', 'REPEATED'); // Mark as recurring payment
   afsData.append('registrationId', subscription.afs_registration_id); // Use registration ID for recurring payments
   afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   
-  // Add payment brand - this is required for recurring payments
-  // We'll try with common card brands first
+  // Try without recurringType first - some AFS configurations don't support it
+  // afsData.append('recurringType', 'REPEATED'); // Commented out to test
+  
+  // Add payment brand - this might be required for recurring payments
   afsData.append('paymentBrand', 'VISA'); // Default to VISA, can be updated based on stored card info
   
   const afsHeaders = {
@@ -779,7 +780,7 @@ async function processSubscriptionPayment(subscription) {
   console.log('- Registration ID:', subscription.afs_registration_id);
   console.log('- Merchant Transaction ID:', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   console.log('- Payment Type:', 'DB (Debit)');
-  console.log('- Recurring Type:', 'REPEATED');
+  console.log('- Recurring Type:', 'NONE (testing without recurringType parameter)');
   console.log('- Payment Brand:', 'VISA (default)');
   
   try {
