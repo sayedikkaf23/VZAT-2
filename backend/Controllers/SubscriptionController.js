@@ -523,7 +523,7 @@ export const processRecurringPayments = async (req, res) => {
           }
         }
       ],
-      // Prevent duplicate processing: Skip if already processed today
+      // Prevent duplicate processing: Skip if already processed today OR max retries exceeded
       $and: [
         {
           $or: [
@@ -532,6 +532,13 @@ export const processRecurringPayments = async (req, res) => {
               last_processed_date: {
                 $lt: today // Last processed before today
               }
+            },
+            // Allow retry if retry count is less than max
+            {
+              $and: [
+                { payment_retry_count: { $exists: true, $lt: 3 } }, // Less than 3 retries
+                { last_processed_date: { $exists: false } } // Not marked as processed
+              ]
             }
           ]
         }
@@ -543,19 +550,44 @@ export const processRecurringPayments = async (req, res) => {
     
     for (const subscription of dueSubscriptions) {
       try {
-        // Mark as processed today to prevent duplicate processing
+        console.log(`🔄 Processing payment for subscription: ${subscription.quotepaymentId}`);
+        
+        const paymentResult = await processSubscriptionPayment(subscription);
+        
+        // Only mark as processed if payment was successful
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
           last_processed_date: new Date()
         });
         
-        const paymentResult = await processSubscriptionPayment(subscription);
         results.push({
           quotepaymentId: subscription.quotepaymentId,
           status: 'processed',
           result: paymentResult
         });
+        
+        console.log(`✅ Payment processed successfully for ${subscription.quotepaymentId}`);
+        
       } catch (error) {
         console.error(`❌ Failed to process payment for ${subscription.quotepaymentId}:`, error);
+        
+        // Don't mark as processed on failure - allow retry
+        // Only mark as processed if we've exceeded retry limit
+        const retryCount = subscription.payment_retry_count || 0;
+        const maxRetries = 3; // Allow 3 retries
+        
+        if (retryCount >= maxRetries) {
+          console.log(`🚫 Max retries exceeded for ${subscription.quotepaymentId}, marking as processed`);
+          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+            last_processed_date: new Date(),
+            payment_retry_count: 0 // Reset for next day
+          });
+        } else {
+          // Increment retry count
+          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+            payment_retry_count: retryCount + 1
+          });
+          console.log(`🔄 Retry ${retryCount + 1}/${maxRetries} for ${subscription.quotepaymentId}`);
+        }
         
         // Send failure email to operations team
         try {
@@ -574,22 +606,62 @@ export const processRecurringPayments = async (req, res) => {
             attempt_date: new Date(),
             payments_completed: subscription.payments_completed || 0,
             total_installments: installmentLeft,
-            afs_response: null
+            afs_response: null,
+            retry_count: retryCount + 1,
+            max_retries: maxRetries
           });
           
           if (emailResult.success) {
-            console.log('📧 Payment failure email sent successfully');
+            console.log('📧 Payment failure email sent successfully to operations team');
           } else {
-            console.error('📧 Failed to send failure email:', emailResult.error);
+            console.error('📧 Failed to send failure email to operations team:', emailResult.error);
           }
         } catch (emailError) {
-          console.error('📧 Error sending failure email:', emailError);
+          console.error('📧 Error sending failure email to operations team:', emailError);
+        }
+        
+        // Send customer notification email for payment failure
+        try {
+          // Calculate installment amount (handle missing InstallmentLeft)
+          let installmentLeft = subscription.InstallmentLeft;
+          if (!installmentLeft && subscription.payment_schedule) {
+            installmentLeft = subscription.payment_schedule.length;
+          }
+          
+          // Get the current payment schedule to find due date
+          const currentPayment = subscription.payment_schedule?.find(
+            payment => payment.installment_number === (subscription.payments_completed || 0) + 1
+          );
+          
+          const installmentAmount = installmentLeft ? parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)) : 0;
+          
+          const customerNotificationResult = await sendPaymentFailureNotificationEmail({
+            quotepaymentId: subscription.quotepaymentId,
+            Customer_name: subscription.Customer_name,
+            opp_email: subscription.opp_email,
+            payment_amount: installmentAmount,
+            due_date: currentPayment?.due_date || subscription.next_charge_date,
+            failure_reason: error.message,
+            payment_link: `${process.env.BASE_URL || 'https://vzatnew.yeepeey.com'}/payment-schedule?quotepaymentId=${subscription.quotepaymentId}`,
+            salesPersonDetails: subscription.salesPersonDetails
+          });
+          
+          if (customerNotificationResult.success) {
+            console.log('📧 Customer payment failure notification sent successfully');
+            console.log('📧 Recipients:', customerNotificationResult.recipients);
+          } else {
+            console.error('📧 Failed to send customer notification:', customerNotificationResult.error);
+          }
+        } catch (customerNotificationError) {
+          console.error('📧 Error sending customer notification:', customerNotificationError);
         }
         
         results.push({
           quotepaymentId: subscription.quotepaymentId,
           status: 'failed',
-          error: error.message
+          error: error.message,
+          retry_count: retryCount + 1,
+          max_retries: maxRetries
         });
       }
     }
@@ -685,14 +757,45 @@ async function processSubscriptionPayment(subscription) {
     "Content-Type": "application/x-www-form-urlencoded"
   };
   
-  const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
+  console.log('🔗 AFS API Request Details:');
+  console.log('- URL:', afsUrl);
+  console.log('- Entity ID:', entityId);
+  console.log('- Amount:', installmentAmount);
+  console.log('- Registration ID:', subscription.afs_registration_id);
+  console.log('- Merchant Transaction ID:', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   
-  
-  if (response.data && response.data.result && response.data.result.code.startsWith('000.')) {
-    // Payment successful - webhook will handle the rest
-    return response.data;
-  } else {
-    throw new Error(`Payment failed: ${response.data?.result?.description || 'Unknown error'}`);
+  try {
+    const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
+    
+    console.log('📡 AFS API Response:');
+    console.log('- Status:', response.status);
+    console.log('- Data:', JSON.stringify(response.data, null, 2));
+    
+    if (response.data && response.data.result && response.data.result.code.startsWith('000.')) {
+      // Payment successful - webhook will handle the rest
+      console.log('✅ AFS Payment successful');
+      return response.data;
+    } else {
+      const errorMsg = `Payment failed: ${response.data?.result?.description || 'Unknown error'}`;
+      console.error('❌ AFS Payment failed:', errorMsg);
+      throw new Error(errorMsg);
+    }
+  } catch (axiosError) {
+    console.error('🚨 AFS API Error:');
+    console.error('- Status:', axiosError.response?.status);
+    console.error('- Status Text:', axiosError.response?.statusText);
+    console.error('- Response Data:', JSON.stringify(axiosError.response?.data, null, 2));
+    console.error('- Error Message:', axiosError.message);
+    
+    if (axiosError.response?.status === 400) {
+      throw new Error(`AFS API Bad Request (400): ${JSON.stringify(axiosError.response.data)}`);
+    } else if (axiosError.response?.status === 401) {
+      throw new Error(`AFS API Unauthorized (401): Check access token`);
+    } else if (axiosError.response?.status === 403) {
+      throw new Error(`AFS API Forbidden (403): Check entity ID and permissions`);
+    } else {
+      throw new Error(`AFS API Error (${axiosError.response?.status || 'Network'}): ${axiosError.message}`);
+    }
   }
 }
 
