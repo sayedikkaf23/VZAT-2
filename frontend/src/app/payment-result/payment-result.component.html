@@ -49,12 +49,7 @@
           </div>
         </div>
       </div>
-      <div class="details-footer">
-        <div class="d-block d-md-none">
-          <app-sales-agent-sidebar [salesAgent]="salesAgent" title="Need Assistance?" subtitle="Contact us">
-          </app-sales-agent-sidebar>
-        </div>
-      </div>
+      <!-- Removed duplicate Need Assistance section for mobile to avoid duplication -->
     </div>
   </div>
 
@@ -95,19 +90,17 @@
           <h6>AMOUNT PAID</h6>
           <h2 *ngIf="paymentAmount">AED {{ paymentAmount | number:'1.2-2' }}</h2>
 
-          <div class="pmnotes">
-            <strong>Note:</strong> You will receive the payment confirmation receipt &amp; the invoice for your services
-            via your registered <b>E-mail ID</b>.
+          <!-- Success content below the amount -->
+          <div class="success-content mt-4">
+            <div class="pmnotes">
+              <strong>Note:</strong> You will receive the payment confirmation receipt &amp; the invoice for your services
+              via your registered <b>E-mail ID</b>.
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="details-footer">
-        <div class="d-block d-md-none">
-          <app-sales-agent-sidebar [salesAgent]="salesAgent" title="Need Assistance?" subtitle="Contact us">
-          </app-sales-agent-sidebar>
-        </div>
-      </div>
+      <!-- Removed duplicate Need Assistance section for mobile to avoid duplication -->
     </div>
   </div>
 
