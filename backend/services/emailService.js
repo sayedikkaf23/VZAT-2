@@ -20,8 +20,15 @@ const EMAIL_CONFIG = {
 
 // Create transporter
 const createTransporter = () => {
+  console.log('📧 EMAIL SERVICE - Creating transporter with config:', {
+    email: EMAIL_CONFIG.sender.email,
+    password: EMAIL_CONFIG.sender.password ? '***' : 'MISSING',
+    name: EMAIL_CONFIG.sender.name
+  });
+  
   // For Gmail (requires app password)
   if (EMAIL_CONFIG.sender.email.includes('gmail.com')) {
+    console.log('📧 EMAIL SERVICE - Using Gmail service');
     return nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -32,6 +39,7 @@ const createTransporter = () => {
   }
   
   // For other email providers (generic SMTP)
+  console.log('📧 EMAIL SERVICE - Using generic SMTP');
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: process.env.SMTP_PORT || 587,

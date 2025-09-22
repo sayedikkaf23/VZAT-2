@@ -196,11 +196,11 @@ export class PaymentResultComponent implements OnInit {
     // Extract sales agent information with better fallback handling
     if (result?.salesPersonDetails) {
       this.salesAgent = {
-        name: result.salesPersonDetails.salesPersonName || "Sales Representative",
-        position: result.salesPersonDetails.salesPersonPosition || "Sales Representative",
-        faxNumber: result.salesPersonDetails.salesPersonFax || "+971 4 457 8271",
-        phoneNumber: result.salesPersonDetails.salesPersonMobile || result.salesPersonDetails.salesPersonPhone || "+971 4 457 8271",
-        email: result.salesPersonDetails.salesPersonEmail || "support@virtuzone.com",
+        name: result.salesPersonDetails.salesPersonName ,
+        position: result.salesPersonDetails.salesPersonPosition ,
+        faxNumber: result.salesPersonDetails.salesPersonFax || "NA",
+        phoneNumber: result.salesPersonDetails.salesPersonMobile || result.salesPersonDetails.salesPersonPhone || "NA",
+        email: result.salesPersonDetails.salesPersonEmail || "NA",
         mobNo1: result.salesPersonDetails.salesPersonMobile || null
       };
     } else {
