@@ -533,11 +533,21 @@ export const processRecurringPayments = async (req, res) => {
                 $lt: today // Last processed before today
               }
             },
-            // Allow retry if retry count is less than max
+            // Allow retry if retry count is less than max (even if processed today)
             {
               $and: [
                 { payment_retry_count: { $exists: true, $lt: 3 } }, // Less than 3 retries
-                { last_processed_date: { $exists: false } } // Not marked as processed
+                { 
+                  $or: [
+                    { last_processed_date: { $exists: false } }, // Not marked as processed
+                    { 
+                      $and: [
+                        { last_processed_date: { $gte: today } }, // Processed today
+                        { payment_retry_count: { $exists: true, $gt: 0 } } // But has retry count (failed)
+                      ]
+                    }
+                  ]
+                }
               ]
             }
           ]
@@ -582,9 +592,10 @@ export const processRecurringPayments = async (req, res) => {
             payment_retry_count: 0 // Reset for next day
           });
         } else {
-          // Increment retry count
+          // Increment retry count and remove last_processed_date to allow retry
           await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-            payment_retry_count: retryCount + 1
+            $unset: { last_processed_date: 1 },
+            $set: { payment_retry_count: retryCount + 1 }
           });
           console.log(`🔄 Retry ${retryCount + 1}/${maxRetries} for ${subscription.quotepaymentId}`);
         }
