@@ -1,6 +1,6 @@
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
-import { sendSubscriptionCompletedEmail, sendPaymentFailureEmail } from "../services/emailService.js";
+import { sendSubscriptionCompletedEmail, sendPaymentFailureEmail, sendFinalRenewalEmail, sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from "../services/emailService.js";
 import { createCustomerAccount, saveCustomerCard } from "./CustomerRegistration.js";
 import { updateQuotePaymentStatus } from "../services/salesforceService.js";
 import axios from "axios";
@@ -260,6 +260,29 @@ export const handleAFSWebhook = async (req, res) => {
         console.error('❌ Error calling Salesforce API for recurring payment:', salesforceError);
       }
 
+      // Send customer notification email for successful payment
+      try {
+        const successResult = await sendPaymentSuccessNotificationEmail({
+          quotepaymentId: updatedRecord.quotepaymentId,
+          Customer_name: updatedRecord.Customer_name,
+          opp_email: updatedRecord.opp_email,
+          payment_amount: amount,
+          payment_date: new Date(timestamp),
+          installment_number: updatedRecord.payments_completed,
+          total_installments: updatedRecord.InstallmentLeft,
+          payment_method: 'Card',
+          salesPersonDetails: updatedRecord.salesPersonDetails
+        });
+        
+        if (successResult.success) {
+          console.log('📧 Customer payment success notification sent successfully');
+        } else {
+          console.error('📧 Failed to send customer success notification:', successResult.error);
+        }
+      } catch (successNotificationError) {
+        console.error('📧 Error sending customer success notification:', successNotificationError);
+      }
+
       // Check if subscription is complete
       if (updatedRecord.payments_completed >= updatedRecord.InstallmentLeft) {
         // Only update status if not already completed (prevents duplicate emails)
@@ -285,6 +308,20 @@ export const handleAFSWebhook = async (req, res) => {
             if (emailResult.success) {
             } else {
               console.error('📧 Failed to send completion email:', emailResult.error);
+            }
+            // Also send final renewal email to customer, devtech, and opp owner
+            try {
+              await sendFinalRenewalEmail({
+                quotepaymentId: updatedRecord.quotepaymentId,
+                Customer_name: updatedRecord.Customer_name,
+                opp_email: updatedRecord.opp_email,
+                payments_completed: updatedRecord.payments_completed,
+                InstallmentLeft: updatedRecord.InstallmentLeft,
+                last_payment_date: updatedRecord.last_payment_date,
+                salesPersonDetails: updatedRecord.salesPersonDetails
+              });
+            } catch (finalEmailError) {
+              console.error('📧 Error sending final renewal email:', finalEmailError);
             }
           } catch (emailError) {
             console.error('📧 Error sending completion email:', emailError);
@@ -348,6 +385,33 @@ export const handleAFSWebhook = async (req, res) => {
         }
       } catch (emailError) {
         console.error('📧 Error sending failure email:', emailError);
+      }
+
+      // Send customer notification email for payment failure
+      try {
+        // Get the current payment schedule to find due date
+        const currentPayment = subscriptionRecord.payment_schedule?.find(
+          payment => payment.installment_number === (subscriptionRecord.payments_completed || 0) + 1
+        );
+        
+        const notificationResult = await sendPaymentFailureNotificationEmail({
+          quotepaymentId: subscriptionRecord.quotepaymentId,
+          Customer_name: subscriptionRecord.Customer_name,
+          opp_email: subscriptionRecord.opp_email,
+          payment_amount: amount,
+          due_date: currentPayment?.due_date || subscriptionRecord.next_charge_date,
+          failure_reason: result.description || 'Payment processing failed',
+          payment_link: `${process.env.BASE_URL || 'https://vzatnew.yeepeey.com'}/payment-schedule?quotepaymentId=${subscriptionRecord.quotepaymentId}`,
+          salesPersonDetails: subscriptionRecord.salesPersonDetails
+        });
+        
+        if (notificationResult.success) {
+          console.log('📧 Customer payment failure notification sent successfully');
+        } else {
+          console.error('📧 Failed to send customer notification:', notificationResult.error);
+        }
+      } catch (notificationError) {
+        console.error('📧 Error sending customer notification:', notificationError);
       }
       
       // Log the failure but don't cancel subscription immediately
