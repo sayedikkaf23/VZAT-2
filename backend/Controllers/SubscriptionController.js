@@ -851,11 +851,14 @@ async function processSubscriptionPayment(subscription) {
   afsData.append('amount', installmentAmount.toString());
   afsData.append('currency', 'AED');
   afsData.append('paymentType', 'DB');
-  afsData.append('registrationId', subscription.afs_registration_id); // Use registration ID for recurring payments
+  // For recurring payments, try using recurringType without registrationId first
+  afsData.append('recurringType', 'REPEATED');
   afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   
-  // Try without recurringType first - some AFS configurations don't support it
-  // afsData.append('recurringType', 'REPEATED'); // Commented out to test
+  // Try using checkoutId instead of registrationId for recurring payments
+  if (subscription.afs_checkout_id) {
+    afsData.append('checkoutId', subscription.afs_checkout_id);
+  }
   
   // Add payment brand - use stored brand from initial payment
   const paymentBrand = subscription.afs_payment_brand || 'VISA'; // Use stored brand or default to VISA
@@ -870,10 +873,11 @@ async function processSubscriptionPayment(subscription) {
   console.log('- URL:', afsUrl);
   console.log('- Entity ID:', entityId);
   console.log('- Amount:', installmentAmount);
-  console.log('- Registration ID:', subscription.afs_registration_id);
+  console.log('- Checkout ID:', subscription.afs_checkout_id);
+  console.log('- Registration ID:', subscription.afs_registration_id, '(not used in this request)');
   console.log('- Merchant Transaction ID:', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   console.log('- Payment Type:', 'DB (Debit)');
-  console.log('- Recurring Type:', 'NONE (testing without recurringType parameter)');
+  console.log('- Recurring Type:', 'REPEATED (for recurring payments)');
   console.log('- Payment Brand:', paymentBrand, subscription.afs_payment_brand ? '(from stored data)' : '(default fallback)');
   
   try {
