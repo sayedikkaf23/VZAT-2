@@ -760,11 +760,12 @@ async function processSubscriptionPayment(subscription) {
   afsData.append('currency', 'AED');
   afsData.append('paymentType', 'DB');
   afsData.append('recurringType', 'REPEATED'); // Mark as recurring payment
-  // Note: registrationId is not allowed for recurring payments, use different approach
+  afsData.append('registrationId', subscription.afs_registration_id); // Use registration ID for recurring payments
   afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   
-  // For recurring payments, we might need to use a different approach
-  // Let's try without registrationId first and see what AFS expects
+  // Add payment brand - this is required for recurring payments
+  // We'll try with common card brands first
+  afsData.append('paymentBrand', 'VISA'); // Default to VISA, can be updated based on stored card info
   
   const afsHeaders = {
     Authorization: `Bearer ${accessToken}`,
@@ -775,10 +776,11 @@ async function processSubscriptionPayment(subscription) {
   console.log('- URL:', afsUrl);
   console.log('- Entity ID:', entityId);
   console.log('- Amount:', installmentAmount);
-  console.log('- Registration ID:', subscription.afs_registration_id, '(NOT SENT - not allowed for recurring payments)');
+  console.log('- Registration ID:', subscription.afs_registration_id);
   console.log('- Merchant Transaction ID:', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   console.log('- Payment Type:', 'DB (Debit)');
   console.log('- Recurring Type:', 'REPEATED');
+  console.log('- Payment Brand:', 'VISA (default)');
   
   try {
     const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
