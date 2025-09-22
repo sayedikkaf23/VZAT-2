@@ -144,14 +144,14 @@ export class PaymentResultComponent implements OnInit {
     // Store quotepaymentId for display
     this.quotepaymentId = data?.quotepaymentId || this.quotepaymentId;
     
-    // Extract sales agent information from VzatRecurringData
+    // Extract sales agent information from VzatRecurringData with better fallback
     if (data?.salesPersonDetails) {
       this.salesAgent = {
-        name: data.salesPersonDetails.salesPersonName || "NA",
+        name: data.salesPersonDetails.salesPersonName || "Sales Representative",
         position: data.salesPersonDetails.salesPersonPosition || "Sales Representative",
-        faxNumber: data.salesPersonDetails.salesPersonFax || "NA",
-        phoneNumber: data.salesPersonDetails.salesPersonMobile || data.salesPersonDetails.salesPersonPhone || "NA",
-        email: data.salesPersonDetails.salesPersonEmail || "NA",
+        faxNumber: data.salesPersonDetails.salesPersonFax || "+971 4 457 8271",
+        phoneNumber: data.salesPersonDetails.salesPersonMobile || data.salesPersonDetails.salesPersonPhone || "+971 4 457 8271",
+        email: data.salesPersonDetails.salesPersonEmail || "support@virtuzone.com",
         mobNo1: data.salesPersonDetails.salesPersonMobile || null
       };
     } else {
@@ -164,6 +164,8 @@ export class PaymentResultComponent implements OnInit {
         email: "support@virtuzone.com"
       };
     }
+    
+    console.log('🔧 VzatData Sales Agent Updated:', this.salesAgent);
   }
 
   /**
@@ -191,14 +193,14 @@ export class PaymentResultComponent implements OnInit {
                         parseFloat(result?.Paid_Amount) ||
                         0;
     
-    // Extract sales agent information
+    // Extract sales agent information with better fallback handling
     if (result?.salesPersonDetails) {
       this.salesAgent = {
-        name: result.salesPersonDetails.salesPersonName || "NA",
-        position: "NA",
-        faxNumber: "NA",
-        phoneNumber: result.salesPersonDetails.salesPersonMobile || "NA",
-        email: result.salesPersonDetails.salesPersonEmail || "NA",
+        name: result.salesPersonDetails.salesPersonName || "Sales Representative",
+        position: result.salesPersonDetails.salesPersonPosition || "Sales Representative",
+        faxNumber: result.salesPersonDetails.salesPersonFax || "+971 4 457 8271",
+        phoneNumber: result.salesPersonDetails.salesPersonMobile || result.salesPersonDetails.salesPersonPhone || "+971 4 457 8271",
+        email: result.salesPersonDetails.salesPersonEmail || "support@virtuzone.com",
         mobNo1: result.salesPersonDetails.salesPersonMobile || null
       };
     } else {
@@ -211,6 +213,8 @@ export class PaymentResultComponent implements OnInit {
         email: "support@virtuzone.com"
       };
     }
+    
+    console.log('🔧 Sales Agent Data Updated:', this.salesAgent);
     
     // Extract QP ID from multiple possible sources and store in quotepaymentId property
     this.quotepaymentId = result?.quotepaymentId || 
