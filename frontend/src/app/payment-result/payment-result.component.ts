@@ -75,6 +75,11 @@ export class PaymentResultComponent implements OnInit {
         // Extract dynamic data
         this.extractDynamicData(res);
         
+        // If quotepaymentId is available, fetch additional data from VzatRecurringData
+        if (this.quotepaymentId) {
+          this.fetchVzatRecurringData(this.quotepaymentId);
+        }
+        
         // Force change detection
         this.cdr.detectChanges();
       },
