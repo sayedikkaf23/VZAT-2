@@ -123,22 +123,9 @@ async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transa
 export const handleAFSWebhook = async (req, res) => {
   // Using persistent connection - no need to connect/disconnect
   
-  console.log('🔔 =============== AFS WEBHOOK RECEIVED ===============');
-  console.log('📅 Timestamp:', new Date().toISOString());
-  console.log('🌐 Request IP:', req.ip);
-  console.log('🌐 User Agent:', req.get('User-Agent'));
-  console.log('📋 Request Body:', JSON.stringify(req.body, null, 2));
-  
   // 🆕 TEMPORARY DISABLE WEBHOOK FOR RECURRING PAYMENTS
   // This prevents duplicate processing when cron job handles recurring payments
-  const { paymentType, merchantTransactionId, id, result } = req.body;
-  
-  console.log('🔍 WEBHOOK ANALYSIS:');
-  console.log(`   - Payment Type: ${paymentType}`);
-  console.log(`   - Merchant Transaction ID: ${merchantTransactionId}`);
-  console.log(`   - Transaction ID: ${id}`);
-  console.log(`   - Result Code: ${result?.code || 'N/A'}`);
-  console.log(`   - Result Description: ${result?.description || 'N/A'}`);
+  const { paymentType, merchantTransactionId } = req.body;
   
   if (paymentType === 'PA' && merchantTransactionId && merchantTransactionId.includes('_')) {
     console.log('🚫 WEBHOOK DISABLED FOR RECURRING PAYMENTS:');
@@ -158,35 +145,6 @@ export const handleAFSWebhook = async (req, res) => {
       message: 'Webhook disabled for recurring payment - handled by cron job',
       paymentType: paymentType,
       merchantTransactionId: merchantTransactionId,
-      status: 'disabled'
-    });
-  }
-  
-  // 🚫 COMPLETE DISABLE FOR ALL PA PAYMENTS
-  // All PA (Pre-Authorization) payments are handled by cron job
-  if (paymentType === 'PA') {
-    console.log('🚫 WEBHOOK COMPLETELY DISABLED FOR PA PAYMENTS:');
-    console.log(`   - Payment Type: ${paymentType}`);
-    console.log(`   - Merchant Transaction ID: ${merchantTransactionId || 'N/A'}`);
-    console.log(`   - Transaction ID: ${id || 'N/A'}`);
-    console.log(`   - Result Code: ${result?.code || 'N/A'}`);
-    console.log('ℹ️ ALL PA payments are handled by cron job - webhook completely disabled');
-    
-    // Log the disabled webhook
-    Post_Common_DB_Log_Data('/webhook/afs-disabled-pa', req.body, { 
-      message: 'Webhook completely disabled for PA payment - handled by cron job',
-      paymentType: paymentType,
-      merchantTransactionId: merchantTransactionId,
-      transactionId: id,
-      result: result,
-      reason: 'All PA payments handled by cron job'
-    });
-    
-    return res.status(200).json({ 
-      message: 'Webhook completely disabled for PA payment - handled by cron job',
-      paymentType: paymentType,
-      merchantTransactionId: merchantTransactionId,
-      transactionId: id,
       status: 'disabled'
     });
   }
