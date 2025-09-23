@@ -869,13 +869,15 @@ async function getCustomerDefaultCard(subscription) {
       return null;
     }
     
-    // Validate that the card has full card number
-    if (!savedCard.cardNumber || savedCard.cardNumber.length < 13) {
-      console.log(`❌ Card missing full card number for customer: ${customer.email}`);
+    // Validate that the card has AFS registration ID for recurring payments
+    if (!savedCard.afs_registration_id) {
+      console.log(`❌ Card missing AFS registration ID for customer: ${customer.email}`);
+      console.log(`❌ Cannot process recurring payments without registration ID`);
       return null;
     }
     
     console.log(`✅ Found card for customer: ${savedCard.maskedCardNumber} (${savedCard.cardBrand})`);
+    console.log(`✅ AFS Registration ID: ${savedCard.afs_registration_id}`);
     return savedCard;
     
   } catch (error) {
@@ -885,7 +887,7 @@ async function getCustomerDefaultCard(subscription) {
 }
 
 /**
- * Process server-to-server payment using full card details
+ * Process recurring payment using AFS Registration API
  */
 async function processServerToServerPayment(subscription, savedCard) {
   
@@ -913,7 +915,7 @@ async function processServerToServerPayment(subscription, savedCard) {
       },
       amount: parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)),
       currency: "AED",
-      paymentType: "DB",
+      paymentType: "PA",
       merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`,
       card: {
         maskedPan: savedCard.maskedCardNumber,
@@ -927,8 +929,13 @@ async function processServerToServerPayment(subscription, savedCard) {
     return mockResponse;
   }
   
-  // Real server-to-server payment using full card details
-  const afsUrl = `${process.env.AFS_DOMAIN}/v1/payments`;
+  // Validate that we have the registration ID
+  if (!savedCard.afs_registration_id) {
+    throw new Error(`No AFS registration ID found for card ${savedCard._id}. Cannot process recurring payment.`);
+  }
+  
+  // Use AFS Registration API for recurring payments
+  const afsUrl = `${process.env.AFS_DOMAIN}/v1/registrations/${savedCard.afs_registration_id}/payments`;
   const entityId = process.env.AFS_ENTITY_ID;
   const accessToken = process.env.AFS_ACCESS_TOKEN;
   
@@ -939,47 +946,48 @@ async function processServerToServerPayment(subscription, savedCard) {
   afsData.append('entityId', entityId);
   afsData.append('amount', installmentAmount.toString());
   afsData.append('currency', 'AED');
-  afsData.append('paymentType', 'DB');
+  afsData.append('paymentType', 'PA'); // Pre-Authorization for recurring payments
   afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   
-  // Add full card details for server-to-server payment
-  afsData.append('paymentBrand', savedCard.cardBrand);
-  afsData.append('card.number', savedCard.cardNumber);
-  afsData.append('card.expiryMonth', savedCard.expiryMonth);
-  afsData.append('card.expiryYear', savedCard.expiryYear);
-  afsData.append('card.holder', savedCard.cardholderName);
-  
-  // Add test mode if in development
-  if (process.env.NODE_ENV === 'development') {
-    afsData.append('testMode', 'EXTERNAL');
-  }
+  // Add standing instruction parameters for recurring payments
+  afsData.append('standingInstruction.mode', 'REPEATED');
+  afsData.append('standingInstruction.type', 'UNSCHEDULED');
+  afsData.append('standingInstruction.source', 'CIT'); // Merchant Initiated Transaction
   
   const afsHeaders = {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/x-www-form-urlencoded"
   };
   
-  console.log('🔗 Server-to-Server Payment Request Details:');
+  console.log('🔗 AFS Registration Payment Request Details:');
   console.log('- URL:', afsUrl);
+  console.log('- Registration ID:', savedCard.afs_registration_id);
   console.log('- Entity ID:', entityId);
   console.log('- Amount:', installmentAmount);
-  console.log('- Card Brand:', savedCard.cardBrand);
-  console.log('- Card Number:', savedCard.cardNumber ? 'Present' : 'Missing');
-  console.log('- Card Holder:', savedCard.cardholderName);
-  console.log('- Expiry:', `${savedCard.expiryMonth}/${savedCard.expiryYear}`);
+  console.log('- Currency:', 'AED');
+  console.log('- Payment Type:', 'PA (Pre-Authorization)');
+  console.log('- Standing Instruction Mode:', 'REPEATED');
+  console.log('- Standing Instruction Type:', 'UNSCHEDULED');
+  console.log('- Standing Instruction Source:', 'MIT');
   console.log('- Merchant Transaction ID:', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
-  console.log('- Payment Type:', 'DB (Direct Debit)');
+  console.log('- Card Details:', {
+    maskedCardNumber: savedCard.maskedCardNumber,
+    cardBrand: savedCard.cardBrand,
+    cardholderName: savedCard.cardholderName,
+    expiryMonth: savedCard.expiryMonth,
+    expiryYear: savedCard.expiryYear
+  });
   
   try {
     const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
     
-    console.log('📡 Server-to-Server Payment Response:');
+    console.log('📡 AFS Registration Payment Response:');
     console.log('- Status:', response.status);
     console.log('- Data:', JSON.stringify(response.data, null, 2));
     
     if (response.data && response.data.result && response.data.result.code.startsWith('000.')) {
       // Payment successful
-      console.log('✅ Server-to-Server Payment successful');
+      console.log('✅ AFS Registration Payment successful');
       
       // Update card's last used date
       await SavedCard.findByIdAndUpdate(savedCard._id, {
@@ -989,11 +997,11 @@ async function processServerToServerPayment(subscription, savedCard) {
       return response.data;
     } else {
       const errorMsg = `Payment failed: ${response.data?.result?.description || 'Unknown error'}`;
-      console.error('❌ Server-to-Server Payment failed:', errorMsg);
+      console.error('❌ AFS Registration Payment failed:', errorMsg);
       throw new Error(errorMsg);
     }
   } catch (axiosError) {
-    console.error('🚨 Server-to-Server Payment API Error:');
+    console.error('🚨 AFS Registration Payment API Error:');
     console.error('- Status:', axiosError.response?.status);
     console.error('- Status Text:', axiosError.response?.statusText);
     console.error('- Response Data:', JSON.stringify(axiosError.response?.data, null, 2));
@@ -1005,6 +1013,8 @@ async function processServerToServerPayment(subscription, savedCard) {
       throw new Error(`AFS API Unauthorized (401): Check access token`);
     } else if (axiosError.response?.status === 403) {
       throw new Error(`AFS API Forbidden (403): Check entity ID and permissions`);
+    } else if (axiosError.response?.status === 404) {
+      throw new Error(`AFS API Not Found (404): Registration ID ${savedCard.afs_registration_id} not found or expired`);
     } else {
       throw new Error(`AFS API Error (${axiosError.response?.status || 'Network'}): ${axiosError.message}`);
     }
@@ -1012,8 +1022,8 @@ async function processServerToServerPayment(subscription, savedCard) {
 }
 
 /**
- * Test server-to-server payment with a specific subscription
- * This endpoint can be used to test the new payment logic
+ * Test AFS Registration payment with a specific subscription
+ * This endpoint can be used to test the new recurring payment logic
  */
 export const testServerToServerPayment = async (req, res) => {
   try {
@@ -1044,7 +1054,7 @@ export const testServerToServerPayment = async (req, res) => {
     if (!savedCard) {
       return res.status(400).json({
         success: false,
-        message: 'No valid saved card found for customer',
+        message: 'No valid saved card with AFS registration ID found for customer',
         subscription: {
           quotepaymentId: subscription.quotepaymentId,
           customerEmail: subscription.opp_email,
@@ -1056,7 +1066,7 @@ export const testServerToServerPayment = async (req, res) => {
     // Return test information (don't actually process payment)
     res.json({
       success: true,
-      message: 'Server-to-server payment test successful',
+      message: 'AFS Registration payment test successful',
       subscription: {
         quotepaymentId: subscription.quotepaymentId,
         customerEmail: subscription.opp_email,
@@ -1072,15 +1082,21 @@ export const testServerToServerPayment = async (req, res) => {
         cardholderName: savedCard.cardholderName,
         expiryMonth: savedCard.expiryMonth,
         expiryYear: savedCard.expiryYear,
-        hasFullCardNumber: !!savedCard.cardNumber,
+        afsRegistrationId: savedCard.afs_registration_id,
         isDefault: savedCard.isDefault,
         isActive: savedCard.isActive
       },
       paymentDetails: {
         installmentAmount: parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)),
         currency: 'AED',
-        paymentType: 'DB',
-        merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`
+        paymentType: 'PA',
+        standingInstruction: {
+          mode: 'REPEATED',
+          type: 'UNSCHEDULED',
+          source: 'MIT'
+        },
+        merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`,
+        afsUrl: `${process.env.AFS_DOMAIN}/v1/registrations/${savedCard.afs_registration_id}/payments`
       }
     });
     
