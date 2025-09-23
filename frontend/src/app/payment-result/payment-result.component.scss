@@ -1114,11 +1114,17 @@ html .schedule-list-box  .form-check .form-check-label {
 }
 
 .pmnotes {
-  margin-top: 20px;
-  font-size: 14px;
-  font-weight: 400;
-  color: #333;
-  line-height: 1.6;
+  // margin-top: 20px;
+  // font-size: 14px;
+  // font-weight: 400;
+  // color: #333;
+  // line-height: 1.6;
+
+      border: 1px solid #F8E8E9;
+    border-radius: 10px;
+    font-size: 13px;
+    padding: 5px;
+    margin-top: 50px;
 }
 
 .pmnotes strong {
@@ -1206,14 +1212,19 @@ html .schedule-list-box  .form-check .form-check-label {
 }
 
 .pmnotes {
-  margin: 20px 0;
-  padding: 12px 16px;
-  border: 1px solid #f1dcdc;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
-  line-height: 1.5;
-  background: #fff;
+  // margin: 20px 0;
+  // padding: 12px 16px;
+  // border: 1px solid #f1dcdc;
+  // border-radius: 8px;
+  // font-size: 14px;
+  // color: #333;
+  // line-height: 1.5;
+  // background: #fff;
+      border: 1px solid #F8E8E9;
+    border-radius: 10px;
+    font-size: 13px;
+    padding: 5px;
+    margin-top: 50px;
 }
 
 .details-footer {
@@ -1296,14 +1307,19 @@ html .schedule-list-box  .form-check .form-check-label {
 }
 
 .pmnotes {
-  margin: 20px 0;
-  padding: 12px 16px;
-  border: 1px solid #f1dcdc;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
-  line-height: 1.5;
-  background: #fff;
+  // margin: 20px 0;
+  // padding: 12px 16px;
+  // border: 1px solid #f1dcdc;
+  // border-radius: 8px;
+  // font-size: 14px;
+  // color: #333;
+  // line-height: 1.5;
+  // background: #fff;
+      border: 1px solid #F8E8E9;
+    border-radius: 10px;
+    font-size: 13px;
+    padding: 5px;
+    margin-top: 50px;
 }
 
 .details-footer {
@@ -1386,14 +1402,19 @@ html .schedule-list-box  .form-check .form-check-label {
 }
 
 .pmnotes {
-  margin: 20px 0;
-  padding: 12px 16px;
-  border: 1px solid #f1dcdc;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
-  line-height: 1.5;
-  background: #fff;
+  // margin: 20px 0;
+  // padding: 12px 16px;
+  // border: 1px solid #f1dcdc;
+  // border-radius: 8px;
+  // font-size: 14px;
+  // color: #333;
+  // line-height: 1.5;
+  // background: #fff;
+      border: 1px solid #F8E8E9;
+    border-radius: 10px;
+    font-size: 13px;
+    padding: 5px;
+    margin-top: 50px;
 }
 
 .details-footer {
@@ -1572,14 +1593,20 @@ html .schedule-list-box  .form-check .form-check-label {
 }
 
 .pmnotes {
-  margin: 20px 0;
-  padding: 12px 16px;
-  border: 1px solid #f1dcdc;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
-  line-height: 1.5;
-  background: #fff;
+  // margin: 20px 0;
+  // padding: 12px 16px;
+  // border: 1px solid #f1dcdc;
+  // border-radius: 8px;
+  // font-size: 14px;
+  // color: #333;
+  // line-height: 1.5;
+  // background: #fff;
+
+      border: 1px solid #F8E8E9;
+    border-radius: 10px;
+    font-size: 13px;
+    padding: 5px;
+    margin-top: 50px;
 }
 
 .details-footer {
@@ -1673,3 +1700,54 @@ hr {
     margin-bottom: 15px; /* Add space between amount and message */
   }
 }
+
+
+.payment-result {
+  font-family: 'Arial', sans-serif;
+  text-align: center;
+  padding: 50px;
+}
+
+.payment-success .icon img {
+  max-width: 120px;
+  margin-bottom: 20px;
+}
+
+.payment-success h3 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #000;
+}
+
+.payment-success p {
+  font-size: 16px;
+  font-weight: 400;
+  color: #555;
+}
+
+.payment-success h2.price {
+  font-size: 30px;
+  font-weight: 700;
+  color: #000;
+  margin: 20px 0;
+}
+
+.payment-success .note {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.6;
+  margin-top: 20px;
+}
+
+.payment-success .note strong {
+  font-weight: 600;
+}
+
+.payment-success hr {
+  margin: 20px auto;
+  width: 60%;
+  border-top: 2px solid #000;
+}
+
+
