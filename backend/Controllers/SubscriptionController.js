@@ -120,11 +120,20 @@ export const handleAFSWebhook = async (req, res) => {
     console.log('   - Merchant Transaction ID:', merchantTransactionId);
     
     // Find the subscription record
+    // For recurring payments, merchantTransactionId might be like "quotepaymentId_2" (with payment number)
+    // So we need to extract the base quotepaymentId
+    let baseQuotepaymentId = merchantTransactionId;
+    if (merchantTransactionId.includes('_')) {
+      baseQuotepaymentId = merchantTransactionId.split('_')[0];
+      console.log(`🔍 Extracted base quotepaymentId: ${baseQuotepaymentId} from ${merchantTransactionId}`);
+    }
+    
     const subscriptionRecord = await Vzat_Recurring_Data.findOne({ 
-      quotepaymentId: merchantTransactionId 
+      quotepaymentId: baseQuotepaymentId 
     });
 
     if (!subscriptionRecord) {
+      console.log(`❌ Subscription not found for quotepaymentId: ${baseQuotepaymentId}`);
       
       const allSubscriptions = await Vzat_Recurring_Data.find({}).select('quotepaymentId Customer_name opp_email').limit(5);
       console.log('📋 Found these subscriptions:', allSubscriptions.map(sub => ({
@@ -285,7 +294,7 @@ export const handleAFSWebhook = async (req, res) => {
       try {
         
         const salesforcePaymentData = {
-          quotepaymentId: subscriptionRecord.quotepaymentId,
+          quotepaymentId: baseQuotepaymentId, // Use the base quotepaymentId
           amount: amount,
           transactionId: id,
           paymentType: 'Online_payment',
@@ -310,7 +319,7 @@ export const handleAFSWebhook = async (req, res) => {
       // Send customer notification email for successful payment
       try {
         const successResult = await sendPaymentSuccessNotificationEmail({
-          quotepaymentId: updatedRecord.quotepaymentId,
+          quotepaymentId: baseQuotepaymentId, // Use the base quotepaymentId
           Customer_name: updatedRecord.Customer_name,
           opp_email: updatedRecord.opp_email,
           payment_amount: amount,
@@ -635,6 +644,58 @@ export const processRecurringPayments = async (req, res) => {
         console.log(`   - Retry count: ${subscription.payment_retry_count || 0}`);
         
         const paymentResult = await processSubscriptionPayment(subscription);
+        
+        // 🆕 TRIGGER WEBHOOK PROCESSING FOR SUCCESSFUL PAYMENTS
+        if (paymentResult && paymentResult.result && paymentResult.result.code.startsWith('000.')) {
+          console.log(`🔔 Triggering webhook processing for successful payment: ${subscription.quotepaymentId}`);
+          
+          try {
+            // Import webhook handler
+            const { handleAFSWebhook } = await import('./SubscriptionController.js');
+            
+            // Create webhook data based on the payment result
+            const webhookData = {
+              id: paymentResult.id,
+              paymentType: paymentResult.paymentType || 'PA',
+              result: {
+                code: paymentResult.result.code,
+                description: paymentResult.result.description
+              },
+              amount: parseFloat(paymentResult.amount) || installmentAmount,
+              currency: paymentResult.currency || 'AED',
+              merchantTransactionId: subscription.quotepaymentId,
+              registrationId: paymentResult.registrationId || paymentResult.id,
+              timestamp: paymentResult.timestamp || new Date().toISOString()
+            };
+            
+            // Create mock request and response objects for webhook
+            const mockReq = {
+              body: {
+                ...webhookData,
+                isAutoTriggered: true, // Flag to indicate this is auto-triggered
+                skipCustomerCreation: true // Skip customer creation since it was already done
+              },
+              ip: '127.0.0.1',
+              get: () => 'Cron-triggered webhook',
+              headers: { 'user-agent': 'VZAT-Cron-Webhook/1.0' },
+              query: {},
+              originalUrl: '/cron-webhook-trigger'
+            };
+            
+            const mockRes = {
+              status: (code) => ({ json: (data) => console.log(`📡 Webhook response (${code}):`, data) }),
+              json: (data) => console.log('📡 Webhook response:', data)
+            };
+            
+            // Process the webhook
+            await handleAFSWebhook(mockReq, mockRes);
+            console.log(`✅ Webhook processing completed for ${subscription.quotepaymentId}`);
+            
+          } catch (webhookError) {
+            console.error(`❌ Error processing webhook for ${subscription.quotepaymentId}:`, webhookError);
+            // Don't fail the payment if webhook processing fails
+          }
+        }
         
         // Only mark as processed if payment was successful
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
