@@ -109,9 +109,9 @@
           
           <h3 class="desktop-success-title">Payment Successful!</h3>
           <h5 class="subtitle desktop-success-subtitle">Hooray! You have completed your payment</h5>
-          <hr />
+          <hr class="d-none d-md-block" />
 
-          <h6>AMOUNT PAID</h6>
+          <h6 class="d-none d-md-block">AMOUNT PAID</h6>
           <h2 *ngIf="paymentAmount" class="d-none d-md-block">AED {{ paymentAmount | number:'1.2-2' }}</h2>
 
           <!-- Success content below the amount (desktop only) -->
