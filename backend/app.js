@@ -170,44 +170,102 @@ app.post('/payment-result', async (req, res) => {
     console.log('   - Quote Payment ID:', quotepaymentId);
     console.log('   - Request Body:', JSON.stringify(req.body, null, 2));
     
-    // 🆕 CAPTURE CARD DETAILS FROM PAYMENT WIDGET SUBMISSION
+    // 🆕 ENHANCED CARD DETAILS CAPTURE FROM PAYMENT WIDGET SUBMISSION
     // Check if this is a subscription payment and capture card details
-    if (quotepaymentId && req.body.cardDetails) {
+    if (quotepaymentId) {
       try {
-        console.log('💳 Card details found in payment widget submission');
-        console.log('💳 Card details:', JSON.stringify(req.body.cardDetails, null, 2));
+        console.log('💳 Processing payment for quotepaymentId:', quotepaymentId);
         
-        // Import the card saving function
+        // Import required modules
         const { saveCustomerCard } = await import('./Controllers/CustomerRegistration.js');
+        const Vzat_Recurring_Data = (await import('./model/VzatRecurringDataModel.js')).default;
         
         // Find the subscription record
-        const Vzat_Recurring_Data = (await import('./model/VzatRecurringDataModel.js')).default;
         const subscriptionRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
         
         if (subscriptionRecord) {
-          console.log('✅ Subscription record found, saving card details...');
+          console.log('✅ Subscription record found, attempting to save card details...');
           
-          // Prepare payment data with full card details
-          const paymentData = {
-            ...subscriptionRecord.toObject(),
-            cardDetails: req.body.cardDetails, // Full card details from frontend
-            afs_registration_id: req.body.registrationId || quotepaymentId,
-            afs_checkout_id: req.body.checkoutId || quotepaymentId
-          };
+          // Check for card details in multiple possible locations
+          let cardDetails = req.body.cardDetails || req.body.card || req.body.paymentMethod;
           
-          // Save the card with full details
-          const cardSaveResult = await saveCustomerCard(paymentData);
+          // If no card details in body, try to extract from AFS response
+          if (!cardDetails && resourcePath) {
+            try {
+              console.log('🔍 Attempting to fetch card details from AFS...');
+              const axios = (await import('axios')).default;
+              const AFS_CONFIG = {
+                baseUrl: process.env.AFS_DOMAIN,
+                entityId: process.env.AFS_ENTITY_ID,
+                authorization: `Bearer ${process.env.AFS_ACCESS_TOKEN}`
+              };
+              
+              const statusResponse = await axios.get(
+                `${AFS_CONFIG.baseUrl}${resourcePath}`,
+                {
+                  headers: {
+                    'Authorization': AFS_CONFIG.authorization
+                  },
+                  params: {
+                    entityId: AFS_CONFIG.entityId
+                  }
+                }
+              );
+              
+              console.log('🔍 AFS status response:', JSON.stringify(statusResponse.data, null, 2));
+              
+              // Extract card details from AFS response
+              if (statusResponse.data && statusResponse.data.card) {
+                cardDetails = {
+                  cardNumber: statusResponse.data.card.number || statusResponse.data.card.maskedPan,
+                  maskedCardNumber: statusResponse.data.card.maskedPan || `****-****-****-${statusResponse.data.card.last4 || '****'}`,
+                  cardBrand: statusResponse.data.card.brand || statusResponse.data.card.paymentBrand,
+                  expiryMonth: statusResponse.data.card.expiryMonth,
+                  expiryYear: statusResponse.data.card.expiryYear,
+                  cardholderName: statusResponse.data.card.holder || statusResponse.data.card.cardHolder,
+                  registrationId: statusResponse.data.registrationId || statusResponse.data.id
+                };
+                console.log('✅ Card details extracted from AFS response');
+              }
+            } catch (afsError) {
+              console.error('❌ Error fetching card details from AFS:', afsError.message);
+            }
+          }
           
-          if (cardSaveResult.success) {
-            console.log('✅ Card saved successfully with full details:', cardSaveResult.cardId);
+          if (cardDetails) {
+            console.log('💳 Card details found:', JSON.stringify(cardDetails, null, 2));
+            
+            // Prepare payment data with card details
+            const paymentData = {
+              ...subscriptionRecord.toObject(),
+              cardDetails: cardDetails,
+              afs_registration_id: cardDetails.registrationId || req.body.registrationId || quotepaymentId,
+              afs_checkout_id: req.body.checkoutId || quotepaymentId,
+              result: {
+                card: cardDetails,
+                registrationId: cardDetails.registrationId || req.body.registrationId,
+                id: req.body.id || quotepaymentId
+              }
+            };
+            
+            // Save the card with details
+            const cardSaveResult = await saveCustomerCard(paymentData);
+            
+            if (cardSaveResult.success) {
+              console.log('✅ Card saved successfully with details:', cardSaveResult.cardId);
+            } else {
+              console.log('⚠️ Card saving failed:', cardSaveResult.message);
+            }
           } else {
-            console.log('⚠️ Card saving failed:', cardSaveResult.message);
+            console.log('⚠️ No card details found in payment submission or AFS response');
+            console.log('⚠️ This may indicate the payment widget is not sending card details properly');
           }
         } else {
           console.log('⚠️ Subscription record not found for quotepaymentId:', quotepaymentId);
         }
       } catch (cardSaveError) {
-        console.error('❌ Error saving card details from payment widget:', cardSaveError);
+        console.error('❌ Error processing card details from payment widget:', cardSaveError);
+        console.error('❌ Error stack:', cardSaveError.stack);
         // Don't fail the payment if card saving fails
       }
     }
