@@ -250,6 +250,7 @@ export const saveCustomerCard = async (paymentData) => {
         let expiryMonth = '**';
         let expiryYear = '**';
         let last4Digits = null;
+        let cardholderName = null;
         
         // IMPORTANT: AFS never returns full card numbers for security reasons
         // We can only get masked details from the response
@@ -498,8 +499,14 @@ export const saveCustomerCard = async (paymentData) => {
                         console.log(`💳 DEBUG - Padded month to 2 digits: ${expiryMonth}`);
                     }
                     
+                    // Extract cardholder name from AFS response
+                    const cardholderName = cardSource.holder || cardSource.cardHolder || cardSource.cardholderName || cardSource.name || cardSource.cardholder || null;
+                    if (cardholderName) {
+                        console.log(`💳 DEBUG - Extracted cardholder name from AFS: ${cardholderName}`);
+                    }
+                    
                     if (last4Digits) {
-                        console.log(`💳 ✅ Extracted card details from AFS result: Brand=${cardBrand}, Last4=${last4Digits}, Expiry=${expiryMonth}/${expiryYear}`);
+                        console.log(`💳 ✅ Extracted card details from AFS result: Brand=${cardBrand}, Last4=${last4Digits}, Expiry=${expiryMonth}/${expiryYear}, Holder=${cardholderName || 'Not provided'}`);
                         break;
                     }
                 }
@@ -675,7 +682,7 @@ export const saveCustomerCard = async (paymentData) => {
             quotepaymentId: quotepaymentId,
             afs_registration_id: registrationId, // Use fallback registration ID
             afs_checkout_id: afs_checkout_id || quotepaymentId,
-            cardholderName: Customer_name || customer.customerName || 'Card Holder',
+            cardholderName: cardholderName || Customer_name || customer.customerName || 'Card Holder',
             cardNumber: fullCardNumber || '', // Store full card number (empty if not available)
             maskedCardNumber: maskedCardNumber, // Keep masked version for display
             cardBrand: cardBrand.toUpperCase(),
