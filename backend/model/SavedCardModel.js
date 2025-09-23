@@ -36,7 +36,8 @@ const savedCardSchema = new Schema({
     },
     cardNumber: {
         type: String,
-        required: true // Full card number
+        required: false, // Full card number - optional since AFS doesn't provide it
+        default: '' // Default to empty string if not provided
     },
     maskedCardNumber: {
         type: String,
