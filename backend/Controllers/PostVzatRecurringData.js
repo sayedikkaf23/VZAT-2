@@ -12,6 +12,8 @@ dotenv.config();
 const Post_Vzat_Recurring_Data = async (req, res) => {
   await connectDB();
 
+  console.log("Post_Vzat_Recurring_Data called")
+
   try {
     if (!req.body || Object.keys(req.body).length ***REMOVED***= 0) {
       const data = { message: "Body is empty" };
@@ -303,7 +305,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         "Content-Type": "application/x-www-form-urlencoded"
       };
       
-      
+      console.log("afsResponse called");
       afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
       console.log("afsResponse 1", afsResponse);
       if (afsResponse.data && afsResponse.data.id) {

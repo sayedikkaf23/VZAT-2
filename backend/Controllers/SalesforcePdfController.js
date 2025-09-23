@@ -29,7 +29,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             salesPersonDetails
         } = req.body;
 
-        console.log('🧑‍💼 Customer name from webhook:', Customer_name);
+        // console.log('🧑‍💼 Customer name from webhook:', Customer_name);
 
         // Validate required fields
         const requiredFields = {
@@ -121,8 +121,8 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             });
         }
 
-        console.log(`📧 Preparing to send PDF email to: ${quote_email}`);
-        console.log(`📄 Number of PDFs to attach: ${quotePdf.length}`);
+        // console.log(`📧 Preparing to send PDF email to: ${quote_email}`);
+        // console.log(`📄 Number of PDFs to attach: ${quotePdf.length}`);
 
         // Fetch payment schedule from database if quotepaymentId exists
         let paymentScheduleFromDB = null;
@@ -137,12 +137,12 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
                 if (recurringData) {
                     // Get customer name from database
                     customerNameFromDB = recurringData.Customer_name;
-                    console.log('🧑‍💼 Customer name from DB:', customerNameFromDB);
+                    // console.log('🧑‍💼 Customer name from DB:', customerNameFromDB);
                     
                     // Get sales person details from database if available
                     if (recurringData.salesPersonDetails) {
                         salesPersonDetailsFromDB = recurringData.salesPersonDetails;
-                        console.log('👤 Sales person details found in DB');
+                        // console.log('👤 Sales person details found in DB');
                     }
 
                     // Get payment schedule from database
@@ -173,7 +173,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             ? Customer_name 
             : customerNameFromDB || Customer_name || 'Sir/Madam';
         
-        console.log('🎯 Final customer name to use:', finalCustomerName);
+        // console.log('🎯 Final customer name to use:', finalCustomerName);
 
         // Prepare email data
         const emailData = {
@@ -197,8 +197,8 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
         const emailResult = await sendPdfEmail(emailData);
 
         if (emailResult.success) {
-            console.log(`✅ PDF email sent successfully to ${quote_email}`);
-            console.log(`📧 Message ID: ${emailResult.messageId}`);
+            // console.log(`✅ PDF email sent successfully to ${quote_email}`);
+            // console.log(`📧 Message ID: ${emailResult.messageId}`);
 
             const responseData = {
                 success: true,
