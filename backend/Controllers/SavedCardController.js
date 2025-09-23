@@ -97,7 +97,7 @@ export const addSavedCard = async (cardData) => {
             afs_registration_id,
             afs_checkout_id,
             cardholderName,
-            cardNumber,       // Store full card number
+            cardNumber: cardNumber || '', // Store full card number or empty string if not available
             maskedCardNumber, // Dynamic last 4 digits for display
             cardBrand,        // Dynamic brand detection
             expiryMonth,      // Dynamic expiry from AFS
