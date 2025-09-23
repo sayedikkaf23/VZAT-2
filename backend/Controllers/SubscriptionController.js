@@ -737,12 +737,16 @@ export const processRecurringPayments = async (req, res) => {
             if (updatedRecord.payments_completed >= updatedRecord.InstallmentLeft) {
               console.log(`🎉 SUBSCRIPTION COMPLETED for ${subscription.quotepaymentId}!`);
               
-              // Update status to completed
-              await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-                subscription_status: 'completed'
-              });
+              // Check if already completed to prevent duplicate emails
+              const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
               
-              // Send completion email
+              if (currentStatus.subscription_status !***REMOVED*** 'completed') {
+                // Update status to completed
+                await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+                  subscription_status: 'completed'
+                });
+              
+              // Send completion email to business team
               try {
                 const emailResult = await sendSubscriptionCompletedEmail({
                   quotepaymentId: subscription.quotepaymentId,
@@ -761,6 +765,33 @@ export const processRecurringPayments = async (req, res) => {
                 }
               } catch (completionEmailError) {
                 console.error('📧 Error sending completion email:', completionEmailError);
+              }
+              
+              // Send final renewal email to customer, devtech, and opp owner
+              try {
+                const renewalEmailResult = await sendFinalRenewalEmail({
+                  quotepaymentId: subscription.quotepaymentId,
+                  Customer_name: subscription.Customer_name,
+                  opp_email: subscription.opp_email,
+                  OpportunityId: subscription.OpportunityId,
+                  QuoteId: subscription.QuoteId,
+                  Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+                  InstallmentLeft: subscription.InstallmentLeft,
+                  payments_completed: updatedRecord.payments_completed,
+                  last_payment_date: updatedRecord.last_payment_date,
+                  salesPersonDetails: subscription.salesPersonDetails
+                });
+                
+                if (renewalEmailResult.success) {
+                  console.log('📧 Final renewal email sent successfully to customer');
+                } else {
+                  console.error('📧 Failed to send final renewal email:', renewalEmailResult.error);
+                }
+              } catch (renewalEmailError) {
+                console.error('📧 Error sending final renewal email:', renewalEmailError);
+              }
+              } else {
+                console.log(`ℹ️ Subscription ${subscription.quotepaymentId} already marked as completed - skipping completion emails`);
               }
             } else {
               // Schedule next payment
