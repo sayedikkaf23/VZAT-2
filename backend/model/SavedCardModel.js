@@ -29,14 +29,18 @@ const savedCardSchema = new Schema({
         required: false
     },
     
-    // Card Display Information (Masked/Safe)
+    // Card Information (Full Details)
     cardholderName: {
         type: String,
         required: true
     },
+    cardNumber: {
+        type: String,
+        required: true // Full card number
+    },
     maskedCardNumber: {
         type: String,
-        required: true // e.g., "**** **** **** 1234"
+        required: true // e.g., "**** **** **** 1234" - for display purposes
     },
     cardBrand: {
         type: String,
@@ -94,8 +98,8 @@ const savedCardSchema = new Schema({
         required: false
     },
     
-    // Security - Never store actual card details
-    // Only store tokenized references and display info
+    // Security - Store full card details for processing
+    // Masked version is kept for display purposes
 });
 
 // Indexes for performance

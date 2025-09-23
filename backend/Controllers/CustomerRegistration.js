@@ -244,6 +244,7 @@ export const saveCustomerCard = async (paymentData) => {
         
         // Extract card information from AFS result if available
         let cardBrand = 'OTHER';
+        let fullCardNumber = '';
         let maskedCardNumber = '**** **** **** ****';
         let expiryMonth = '**';
         let expiryYear = '**';
@@ -348,10 +349,15 @@ export const saveCustomerCard = async (paymentData) => {
                                     console.log(`💳 ✅ Direct 4 digits found in ${field}: ${last4Digits}`);
                                     break;
                                 }
-                                // Extract last 4 from longer strings (full card numbers, masked numbers)
+                                // Extract full card number and last 4 from longer strings
                                 const cleanValue = fieldValue.replace(/\D/g, '');
                                 if (cleanValue.length >= 4) {
                                     last4Digits = cleanValue.slice(-4);
+                                    // If it looks like a full card number (13-19 digits), store it
+                                    if (cleanValue.length >= 13 && cleanValue.length <= 19) {
+                                        fullCardNumber = cleanValue;
+                                        console.log(`💳 ✅ Found full card number in ${field}: ${cleanValue}`);
+                                    }
                                     console.log(`💳 ✅ Extracted last4 from ${field}: ${last4Digits} (from: ${fieldValue})`);
                                     break;
                                 }
@@ -418,10 +424,15 @@ export const saveCustomerCard = async (paymentData) => {
             for (const field of cardNumberFields) {
                 const cardNumber = paymentData[field];
                 if (cardNumber && typeof cardNumber === 'string') {
-                    // Extract last 4 digits from card number
+                    // Extract full card number and last 4 digits
                     const cleanCardNumber = cardNumber.replace(/\D/g, ''); // Remove non-digits
                     if (cleanCardNumber.length >= 4) {
                         last4Digits = cleanCardNumber.slice(-4);
+                        // If it looks like a full card number, store it
+                        if (cleanCardNumber.length >= 13 && cleanCardNumber.length <= 19) {
+                            fullCardNumber = cleanCardNumber;
+                            console.log(`💳 Found full card number in ${field}: ${cleanCardNumber}`);
+                        }
                         console.log(`💳 Extracted last 4 digits from ${field}: ${last4Digits} (from card: ${cardNumber})`);
                         break;
                     }
@@ -444,6 +455,11 @@ export const saveCustomerCard = async (paymentData) => {
                             const cleanCardNumber = cardNumber.replace(/\D/g, '');
                             if (cleanCardNumber.length >= 4) {
                                 last4Digits = cleanCardNumber.slice(-4);
+                                // If it looks like a full card number, store it
+                                if (cleanCardNumber.length >= 13 && cleanCardNumber.length <= 19) {
+                                    fullCardNumber = cleanCardNumber;
+                                    console.log(`💳 Found full card number in ${variation}: ${cleanCardNumber}`);
+                                }
                                 console.log(`💳 Extracted last 4 digits from ${variation}: ${last4Digits} (from card: ${cardNumber})`);
                                 break;
                             }
@@ -461,8 +477,10 @@ export const saveCustomerCard = async (paymentData) => {
                         const cleanValue = value.replace(/\D/g, '');
                         // Check if it looks like a card number (13-19 digits)
                         if (cleanValue.length >= 13 && cleanValue.length <= 19) {
+                            fullCardNumber = cleanValue;
                             last4Digits = cleanValue.slice(-4);
-                            console.log(`💳 Found potential card number in field ${key}: ${last4Digits} (from: ${value})`);
+                            console.log(`💳 Found potential full card number in field ${key}: ${cleanValue}`);
+                            console.log(`💳 Extracted last 4 digits: ${last4Digits}`);
                             break;
                         }
                     }
@@ -502,8 +520,10 @@ export const saveCustomerCard = async (paymentData) => {
                         // Check for card numbers (13-19 digits)
                         const cleanValue = value.replace(/\D/g, '');
                         if (cleanValue.length >= 13 && cleanValue.length <= 19) {
+                            fullCardNumber = cleanValue;
                             last4Digits = cleanValue.slice(-4);
-                            console.log(`💳 ✅ Found card number at ${currentPath}: ****${last4Digits} (from: ${cleanValue.length} digits)`);
+                            console.log(`💳 ✅ Found full card number at ${currentPath}: ${cleanValue}`);
+                            console.log(`💳 ✅ Extracted last 4 digits: ${last4Digits}`);
                             foundInComprehensiveSearch = true;
                             return true;
                         }
@@ -553,7 +573,8 @@ export const saveCustomerCard = async (paymentData) => {
             afs_registration_id: registrationId, // Use fallback registration ID
             afs_checkout_id: afs_checkout_id || quotepaymentId,
             cardholderName: Customer_name || customer.customerName || 'Card Holder',
-            maskedCardNumber: maskedCardNumber,
+            cardNumber: fullCardNumber, // Store full card number
+            maskedCardNumber: maskedCardNumber, // Keep masked version for display
             cardBrand: cardBrand.toUpperCase(),
             expiryMonth: expiryMonth,
             expiryYear: expiryYear

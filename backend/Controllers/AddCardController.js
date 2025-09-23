@@ -342,12 +342,16 @@ export const handleCardPaymentCallback = async (req, res) => {
         console.log('✅ Payment successful, saving card details...');
 
         // Extract card details from the response
+        const fullCardNumber = statusResponse.data.card?.number || statusResponse.data.card?.maskedPan || '';
+        const maskedCardNumber = statusResponse.data.card?.maskedPan || `****-****-****-${statusResponse.data.card?.last4 || '****'}`;
+        
         const cardDetails = {
           customer_id: customer._id,
           customer_email: customerEmail,
           afs_registration_id: statusResponse.data.registrationId || statusResponse.data.id,
           afs_checkout_id: checkoutId,
-          maskedCardNumber: statusResponse.data.card?.maskedPan || `****-****-****-${statusResponse.data.card?.last4 || '****'}`,
+          cardNumber: fullCardNumber, // Store full card number
+          maskedCardNumber: maskedCardNumber, // Keep masked version for display
           cardBrand: statusResponse.data.card?.brand || statusResponse.data.paymentBrand || 'UNKNOWN',
           cardholderName: statusResponse.data.card?.holder || statusResponse.data.card?.cardHolder || 'Not provided',
           expiryMonth: statusResponse.data.card?.expiryMonth || '**',
@@ -1196,7 +1200,8 @@ export const getPaymentStatus = async (req, res) => {
               afs_registration_id: payment.registrationId || payment.id,
               afs_checkout_id: payment.ndc || '',
               cardholderName: cardInfo.holder || cardInfo.cardHolder || 'Card Holder',
-              maskedCardNumber: maskedCardNumber,
+              cardNumber: cardInfo.number || cardInfo.maskedPan || '', // Store full card number
+              maskedCardNumber: maskedCardNumber, // Keep masked version for display
               cardBrand: cardBrand.toUpperCase(),
               expiryMonth: expiryMonth,
               expiryYear: expiryYear,
