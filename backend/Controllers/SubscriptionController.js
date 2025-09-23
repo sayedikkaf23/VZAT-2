@@ -123,6 +123,32 @@ async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transa
 export const handleAFSWebhook = async (req, res) => {
   // Using persistent connection - no need to connect/disconnect
   
+  // 🆕 TEMPORARY DISABLE WEBHOOK FOR RECURRING PAYMENTS
+  // This prevents duplicate processing when cron job handles recurring payments
+  const { paymentType, merchantTransactionId } = req.body;
+  
+  if (paymentType ***REMOVED***= 'PA' && merchantTransactionId && merchantTransactionId.includes('_')) {
+    console.log('🚫 WEBHOOK DISABLED FOR RECURRING PAYMENTS:');
+    console.log(`   - Payment Type: ${paymentType}`);
+    console.log(`   - Merchant Transaction ID: ${merchantTransactionId}`);
+    console.log('ℹ️ Recurring payments are handled by cron job - skipping webhook processing');
+    
+    // Log the disabled webhook
+    Post_Common_DB_Log_Data('/webhook/afs-disabled', req.body, { 
+      message: 'Webhook disabled for recurring payment - handled by cron job',
+      paymentType: paymentType,
+      merchantTransactionId: merchantTransactionId,
+      reason: 'Recurring payment handled by cron job'
+    });
+    
+    return res.status(200).json({ 
+      message: 'Webhook disabled for recurring payment - handled by cron job',
+      paymentType: paymentType,
+      merchantTransactionId: merchantTransactionId,
+      status: 'disabled'
+    });
+  }
+  
   try {
     
     const { 
@@ -180,6 +206,17 @@ export const handleAFSWebhook = async (req, res) => {
     
     // 🆕 DUPLICATE PAYMENT DETECTION
     // Check if this payment has already been processed by checking the payment schedule
+    console.log('🔍 DUPLICATE PAYMENT DETECTION:');
+    console.log(`   - Looking for transaction ID: ${id}`);
+    console.log(`   - Payment schedule has ${subscriptionRecord.payment_schedule?.length || 0} payments`);
+    
+    if (subscriptionRecord.payment_schedule && subscriptionRecord.payment_schedule.length > 0) {
+      console.log('📋 Current payment schedule:');
+      subscriptionRecord.payment_schedule.forEach((payment, index) => {
+        console.log(`   - Payment ${payment.installment_number}: ${payment.status} (Transaction ID: ${payment.transaction_id || 'N/A'})`);
+      });
+    }
+    
     const existingPayment = subscriptionRecord.payment_schedule?.find(
       payment => payment.transaction_id ***REMOVED***= id
     );
@@ -203,6 +240,44 @@ export const handleAFSWebhook = async (req, res) => {
         transactionId: id,
         status: 'skipped'
       });
+    } else {
+      console.log('ℹ️ No duplicate payment found by transaction ID - checking by payment number and date');
+      
+      // 🆕 ADDITIONAL DUPLICATE DETECTION BY PAYMENT NUMBER AND DATE
+      // Check if a payment with the same installment number was completed recently (within last 5 minutes)
+      const currentPaymentNumber = (subscriptionRecord.payments_completed || 0) + 1;
+      const recentPayment = subscriptionRecord.payment_schedule?.find(
+        payment => payment.installment_number ***REMOVED***= currentPaymentNumber && 
+                   payment.status ***REMOVED***= 'completed' &&
+                   payment.payment_date &&
+                   (new Date() - new Date(payment.payment_date)) < 5 * 60 * 1000 // 5 minutes
+      );
+      
+      if (recentPayment) {
+        console.log('⚠️ DUPLICATE PAYMENT DETECTED BY PAYMENT NUMBER:');
+        console.log(`   - Payment #${currentPaymentNumber} was completed recently`);
+        console.log(`   - Completed at: ${recentPayment.payment_date}`);
+        console.log(`   - Transaction ID: ${recentPayment.transaction_id}`);
+        console.log('ℹ️ Skipping webhook processing to prevent duplicate emails');
+        
+        // Log the duplicate detection
+        Post_Common_DB_Log_Data('/webhook/afs-duplicate-by-number', req.body, { 
+          message: 'Duplicate payment detected by payment number - skipping processing',
+          subscriptionId: subscriptionRecord._id,
+          transactionId: id,
+          currentPaymentNumber: currentPaymentNumber,
+          recentPayment: recentPayment
+        });
+        
+        return res.status(200).json({ 
+          message: 'Duplicate payment detected by payment number - already processed',
+          transactionId: id,
+          paymentNumber: currentPaymentNumber,
+          status: 'skipped'
+        });
+      } else {
+        console.log('ℹ️ No duplicate payment found by payment number - proceeding with webhook processing');
+      }
     }
       
       if (isFirstPayment) {
@@ -1010,6 +1085,13 @@ export const processRecurringPayments = async (req, res) => {
  * Process a single subscription payment using server-to-server logic with saved card details
  */
 async function processSubscriptionPayment(subscription) {
+  console.log('🔄 STARTING SUBSCRIPTION PAYMENT PROCESSING:');
+  console.log(`   - Subscription ID: ${subscription.quotepaymentId}`);
+  console.log(`   - Customer: ${subscription.Customer_name}`);
+  console.log(`   - Email: ${subscription.opp_email}`);
+  console.log(`   - Payments Completed: ${subscription.payments_completed || 0}`);
+  console.log(`   - Total Installments: ${subscription.InstallmentLeft}`);
+  console.log(`   - Next Payment: #${(subscription.payments_completed || 0) + 1}`);
   
   // First, try to get the customer's default saved card
   const savedCard = await getCustomerDefaultCard(subscription);
@@ -1020,10 +1102,24 @@ async function processSubscriptionPayment(subscription) {
     throw new Error(errorMsg);
   }
   
-  console.log(`💳 Using saved card for payment: ${savedCard.maskedCardNumber} (${savedCard.cardBrand})`);
+  console.log(`💳 USING SAVED CARD FOR PAYMENT:`);
+  console.log(`   - Card: ${savedCard.maskedCardNumber} (${savedCard.cardBrand})`);
+  console.log(`   - Cardholder: ${savedCard.cardholderName}`);
+  console.log(`   - Expiry: ${savedCard.expiryMonth}/${savedCard.expiryYear}`);
+  console.log(`   - AFS Registration ID: ${savedCard.afs_registration_id}`);
+  console.log(`   - Card ID: ${savedCard._id}`);
+  console.log(`   - Last Used: ${savedCard.lastUsedDate || 'Never'}`);
   
   // Use server-to-server payment with full card details
-  return await processServerToServerPayment(subscription, savedCard);
+  console.log('🚀 INITIATING AFS DEBIT FUND OPERATION...');
+  const result = await processServerToServerPayment(subscription, savedCard);
+  
+  console.log('✅ SUBSCRIPTION PAYMENT PROCESSING COMPLETED:');
+  console.log(`   - Result: ${result.result?.description || 'Success'}`);
+  console.log(`   - Transaction ID: ${result.id}`);
+  console.log(`   - Amount: ${result.amount} ${result.currency}`);
+  
+  return result;
 }
 
 /**
@@ -1184,44 +1280,124 @@ async function processServerToServerPayment(subscription, savedCard) {
   });
   
   try {
+    console.log('🚀 INITIATING AFS DEBIT FUND OPERATION:');
+    console.log(`   - Registration ID: ${savedCard.afs_registration_id}`);
+    console.log(`   - Amount: ${installmentAmount} AED`);
+    console.log(`   - Payment Type: PA (Pre-Authorization)`);
+    console.log(`   - Merchant Transaction ID: ${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
+    console.log(`   - Timestamp: ${new Date().toISOString()}`);
+    
     const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
     
-    console.log('📡 AFS Registration Payment Response:');
-    console.log('- Status:', response.status);
-    console.log('- Data:', JSON.stringify(response.data, null, 2));
+    console.log('📡 AFS DEBIT FUND RESPONSE RECEIVED:');
+    console.log('- Status Code:', response.status);
+    console.log('- Response Headers:', JSON.stringify(response.headers, null, 2));
+    console.log('- Response Data:', JSON.stringify(response.data, null, 2));
+    
+    // Log specific AFS response details
+    if (response.data) {
+      console.log('🔍 AFS RESPONSE ANALYSIS:');
+      console.log(`   - Transaction ID: ${response.data.id || 'N/A'}`);
+      console.log(`   - Payment Type: ${response.data.paymentType || 'N/A'}`);
+      console.log(`   - Amount: ${response.data.amount || 'N/A'} ${response.data.currency || 'N/A'}`);
+      console.log(`   - Result Code: ${response.data.result?.code || 'N/A'}`);
+      console.log(`   - Result Description: ${response.data.result?.description || 'N/A'}`);
+      console.log(`   - Merchant Transaction ID: ${response.data.merchantTransactionId || 'N/A'}`);
+      console.log(`   - Registration ID: ${response.data.registrationId || 'N/A'}`);
+      console.log(`   - Timestamp: ${response.data.timestamp || 'N/A'}`);
+      
+      if (response.data.resultDetails) {
+        console.log('📋 AFS RESULT DETAILS:');
+        console.log(`   - Auth Code: ${response.data.resultDetails.AuthCode || 'N/A'}`);
+        console.log(`   - Acquirer Response: ${response.data.resultDetails.AcquirerResponse || 'N/A'}`);
+        console.log(`   - Reconciliation ID: ${response.data.resultDetails.reconciliationId || 'N/A'}`);
+        console.log(`   - Extended Description: ${response.data.resultDetails.ExtendedDescription || 'N/A'}`);
+      }
+      
+      if (response.data.standingInstruction) {
+        console.log('🔄 AFS STANDING INSTRUCTION:');
+        console.log(`   - Mode: ${response.data.standingInstruction.mode || 'N/A'}`);
+        console.log(`   - Type: ${response.data.standingInstruction.type || 'N/A'}`);
+        console.log(`   - Source: ${response.data.standingInstruction.source || 'N/A'}`);
+        console.log(`   - Initial Transaction ID: ${response.data.standingInstruction.initialTransactionId || 'N/A'}`);
+      }
+    }
     
     if (response.data && response.data.result && response.data.result.code.startsWith('000.')) {
       // Payment successful
-      console.log('✅ AFS Registration Payment successful');
+      console.log('✅ AFS DEBIT FUND OPERATION SUCCESSFUL:');
+      console.log(`   - Funds debited successfully from registration ID: ${savedCard.afs_registration_id}`);
+      console.log(`   - Amount debited: ${response.data.amount} ${response.data.currency}`);
+      console.log(`   - Transaction ID: ${response.data.id}`);
+      console.log(`   - Result: ${response.data.result.description}`);
       
       // Update card's last used date
       await SavedCard.findByIdAndUpdate(savedCard._id, {
         lastUsedDate: new Date()
       });
       
+      console.log('💳 Card last used date updated successfully');
+      
       return response.data;
     } else {
-      const errorMsg = `Payment failed: ${response.data?.result?.description || 'Unknown error'}`;
-      console.error('❌ AFS Registration Payment failed:', errorMsg);
+      const errorMsg = `AFS Debit Fund failed: ${response.data?.result?.description || 'Unknown error'}`;
+      console.error('❌ AFS DEBIT FUND OPERATION FAILED:');
+      console.error(`   - Registration ID: ${savedCard.afs_registration_id}`);
+      console.error(`   - Amount attempted: ${installmentAmount} AED`);
+      console.error(`   - Error: ${errorMsg}`);
+      console.error(`   - Result Code: ${response.data?.result?.code || 'N/A'}`);
       throw new Error(errorMsg);
     }
   } catch (axiosError) {
-    console.error('🚨 AFS Registration Payment API Error:');
-    console.error('- Status:', axiosError.response?.status);
-    console.error('- Status Text:', axiosError.response?.statusText);
-    console.error('- Response Data:', JSON.stringify(axiosError.response?.data, null, 2));
-    console.error('- Error Message:', axiosError.message);
+    console.error('🚨 AFS DEBIT FUND API ERROR:');
+    console.error(`   - Registration ID: ${savedCard.afs_registration_id}`);
+    console.error(`   - Amount attempted: ${installmentAmount} AED`);
+    console.error(`   - URL: ${afsUrl}`);
+    console.error(`   - Status Code: ${axiosError.response?.status || 'Network Error'}`);
+    console.error(`   - Status Text: ${axiosError.response?.statusText || 'N/A'}`);
+    console.error(`   - Error Message: ${axiosError.message}`);
+    console.error(`   - Request Headers: ${JSON.stringify(afsHeaders, null, 2)}`);
+    console.error(`   - Request Data: ${afsData.toString()}`);
     
+    if (axiosError.response?.data) {
+      console.error('📋 AFS ERROR RESPONSE DETAILS:');
+      console.error(`   - Response Data: ${JSON.stringify(axiosError.response.data, null, 2)}`);
+      
+      if (axiosError.response.data.result) {
+        console.error(`   - Result Code: ${axiosError.response.data.result.code || 'N/A'}`);
+        console.error(`   - Result Description: ${axiosError.response.data.result.description || 'N/A'}`);
+      }
+    }
+    
+    // Enhanced error handling with specific AFS error codes
     if (axiosError.response?.status ***REMOVED***= 400) {
-      throw new Error(`AFS API Bad Request (400): ${JSON.stringify(axiosError.response.data)}`);
+      const errorMsg = `AFS Debit Fund Bad Request (400): ${JSON.stringify(axiosError.response.data)}`;
+      console.error(`❌ ${errorMsg}`);
+      throw new Error(errorMsg);
     } else if (axiosError.response?.status ***REMOVED***= 401) {
-      throw new Error(`AFS API Unauthorized (401): Check access token`);
+      const errorMsg = `AFS Debit Fund Unauthorized (401): Check access token for registration ID ${savedCard.afs_registration_id}`;
+      console.error(`❌ ${errorMsg}`);
+      throw new Error(errorMsg);
     } else if (axiosError.response?.status ***REMOVED***= 403) {
-      throw new Error(`AFS API Forbidden (403): Check entity ID and permissions`);
+      const errorMsg = `AFS Debit Fund Forbidden (403): Check entity ID and permissions for registration ID ${savedCard.afs_registration_id}`;
+      console.error(`❌ ${errorMsg}`);
+      throw new Error(errorMsg);
     } else if (axiosError.response?.status ***REMOVED***= 404) {
-      throw new Error(`AFS API Not Found (404): Registration ID ${savedCard.afs_registration_id} not found or expired`);
+      const errorMsg = `AFS Debit Fund Not Found (404): Registration ID ${savedCard.afs_registration_id} not found or expired`;
+      console.error(`❌ ${errorMsg}`);
+      throw new Error(errorMsg);
+    } else if (axiosError.response?.status ***REMOVED***= 422) {
+      const errorMsg = `AFS Debit Fund Unprocessable Entity (422): Invalid payment data for registration ID ${savedCard.afs_registration_id}`;
+      console.error(`❌ ${errorMsg}`);
+      throw new Error(errorMsg);
+    } else if (axiosError.response?.status >= 500) {
+      const errorMsg = `AFS Debit Fund Server Error (${axiosError.response.status}): AFS server issue`;
+      console.error(`❌ ${errorMsg}`);
+      throw new Error(errorMsg);
     } else {
-      throw new Error(`AFS API Error (${axiosError.response?.status || 'Network'}): ${axiosError.message}`);
+      const errorMsg = `AFS Debit Fund Error (${axiosError.response?.status || 'Network'}): ${axiosError.message}`;
+      console.error(`❌ ${errorMsg}`);
+      throw new Error(errorMsg);
     }
   }
 }
