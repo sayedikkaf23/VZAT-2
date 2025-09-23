@@ -205,10 +205,6 @@ async function scheduleNextPayment(subscriptionId) {
 
 /**
  * Process recurring payments (called by cron job)
- * 
- * IMPORTANT: This cron job ONLY uses processServerToServerPayment function for AFS debit operations.
- * It does NOT send failure emails - only processes payments via AFS registration ID.
- * Failure emails should be handled by other systems, not this cron job.
  */
 export const processRecurringPayments = async (req, res) => {
   // Using persistent connection - no need to connect/disconnect
@@ -493,8 +489,6 @@ export const processRecurringPayments = async (req, res) => {
       } catch (error) {
         console.error(`\n❌ PAYMENT FAILED for ${subscription.quotepaymentId}:`, error.message);
         console.error(`   - Error details:`, error);
-        console.error(`   - This error occurred in processServerToServerPayment function`);
-        console.error(`   - Cron job only uses processServerToServerPayment for AFS debit operations`);
         
         // Don't mark as processed on failure - allow retry
         // Only mark as processed if we've exceeded retry limit
@@ -547,12 +541,41 @@ export const processRecurringPayments = async (req, res) => {
         //   console.error('📧 Error sending failure email to operations team:', emailError);
         // }
         
-        // 🚫 NO FAILURE EMAILS FROM CRON JOB
-        // The cron job only uses processServerToServerPayment for AFS debit operations
-        // Failure emails should be handled by other systems, not the cron job
-        console.log(`ℹ️ Skipping failure email - cron job only processes payments via processServerToServerPayment`);
-        console.log(`ℹ️ Error from processServerToServerPayment: ${error.message}`);
-        console.log(`ℹ️ Cron job handles AFS debit operations only - no customer notifications sent`);
+        // Send customer notification email for payment failure
+        try {
+          // Calculate installment amount (handle missing InstallmentLeft)
+          let installmentLeft = subscription.InstallmentLeft;
+          if (!installmentLeft && subscription.payment_schedule) {
+            installmentLeft = subscription.payment_schedule.length;
+          }
+          
+          // Get the current payment schedule to find due date
+          const currentPayment = subscription.payment_schedule?.find(
+            payment => payment.installment_number ***REMOVED***= (subscription.payments_completed || 0) + 1
+          );
+          
+          const installmentAmount = installmentLeft ? parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)) : 0;
+          
+          const customerNotificationResult = await sendPaymentFailureNotificationEmail({
+            quotepaymentId: subscription.quotepaymentId,
+            Customer_name: subscription.Customer_name,
+            opp_email: subscription.opp_email,
+            payment_amount: installmentAmount,
+            due_date: currentPayment?.due_date || subscription.next_charge_date,
+            failure_reason: error.message,
+            payment_link: `${process.env.BASE_URL || 'https://vzatnew.yeepeey.com'}/payment-schedule?quotepaymentId=${subscription.quotepaymentId}`,
+            salesPersonDetails: subscription.salesPersonDetails
+          });
+          
+          if (customerNotificationResult.success) {
+            console.log('📧 Customer payment failure notification sent successfully');
+            console.log('📧 Recipients:', customerNotificationResult.recipients);
+          } else {
+            console.error('📧 Failed to send customer notification:', customerNotificationResult.error);
+          }
+        } catch (customerNotificationError) {
+          console.error('📧 Error sending customer notification:', customerNotificationError);
+        }
         
         results.push({
           quotepaymentId: subscription.quotepaymentId,
