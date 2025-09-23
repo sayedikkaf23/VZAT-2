@@ -305,7 +305,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       
       
       afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
-      
+      console.log("afsResponse 1", afsResponse);
       if (afsResponse.data && afsResponse.data.id) {
         // Generate payment link with checkout ID
         paymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${afsResponse.data.id}`;
