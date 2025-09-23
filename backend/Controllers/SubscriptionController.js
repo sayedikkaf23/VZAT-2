@@ -16,18 +16,33 @@ dotenv.config();
  */
 async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transactionId) {
   try {
+    console.log(`📅 Updating payment schedule for payment #${paymentNumber} with transaction ID: ${transactionId}`);
     
     const subscription = await Vzat_Recurring_Data.findById(subscriptionId);
     if (!subscription) {
-      throw new Error('Subscription not found');
+      console.log('❌ Subscription not found');
+      return { success: false, error: 'Subscription not found' };
     }
+
+    console.log(`📅 Subscription has ${subscription.payment_schedule?.length || 0} payments in schedule`);
 
     if (subscription.payment_schedule && subscription.payment_schedule.length > 0) {
       subscription.payment_schedule.forEach((payment, index) => {
+        console.log(`📅 Payment ${payment.installment_number}: ${payment.status} (${payment.amount} AED)`);
       });
     } else {
-      // No payment schedule found in subscription
+      console.log('⚠️ No payment schedule found in subscription - skipping schedule update');
+      return { success: true, message: 'No payment schedule to update' };
     }
+
+    // Check if the payment number exists in the schedule
+    const targetPayment = subscription.payment_schedule.find(p => p.installment_number === paymentNumber);
+    if (!targetPayment) {
+      console.log(`⚠️ Payment #${paymentNumber} not found in schedule - skipping schedule update`);
+      return { success: true, message: `Payment #${paymentNumber} not found in schedule` };
+    }
+
+    console.log(`📅 Found payment #${paymentNumber} in schedule: ${targetPayment.status}`);
 
     // Update the specific payment in the payment_schedule array
     const updateResult = await Vzat_Recurring_Data.findOneAndUpdate(
@@ -46,47 +61,58 @@ async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transa
     );
 
     if (updateResult) {
+      console.log(`✅ Payment #${paymentNumber} marked as completed in schedule`);
       
       // Find the updated payment in the schedule
       const updatedPayment = updateResult.payment_schedule.find(p => p.installment_number === paymentNumber);
       if (updatedPayment) {
-
+        console.log(`📅 Updated payment details:`, {
+          installment_number: updatedPayment.installment_number,
+          status: updatedPayment.status,
+          transaction_id: updatedPayment.transaction_id,
+          payment_date: updatedPayment.payment_date
+        });
       }
       
       // Update the next payment status to 'due' if it exists
       const nextPaymentNumber = paymentNumber + 1;
+      const nextPayment = subscription.payment_schedule.find(p => p.installment_number === nextPaymentNumber);
       
-      const nextPaymentUpdate = await Vzat_Recurring_Data.findOneAndUpdate(
-        { 
-          _id: subscriptionId,
-          'payment_schedule.installment_number': nextPaymentNumber,
-          'payment_schedule.status': 'pending'
-        },
-        {
-          $set: {
-            'payment_schedule.$.status': 'due'
-          }
-        },
-        { new: true }
-      );
-      
-      if (nextPaymentUpdate) {
+      if (nextPayment && nextPayment.status === 'pending') {
+        console.log(`📅 Updating next payment #${nextPaymentNumber} to 'due' status`);
         
-        // Log updated schedule
-        nextPaymentUpdate.payment_schedule.forEach((payment, index) => {
-        });
-      } else {
-      }
-    } else {
-      const currentSub = await Vzat_Recurring_Data.findById(subscriptionId);
-      if (currentSub && currentSub.payment_schedule) {
-        currentSub.payment_schedule.forEach(payment => {
-        });
-      }
-    }
+        const nextPaymentUpdate = await Vzat_Recurring_Data.findOneAndUpdate(
+          { 
+            _id: subscriptionId,
+            'payment_schedule.installment_number': nextPaymentNumber,
+            'payment_schedule.status': 'pending'
+          },
+          {
+            $set: {
+              'payment_schedule.$.status': 'due'
+            }
+          },
+          { new: true }
+        );
 
-    return { success: true };
+        if (nextPaymentUpdate) {
+          console.log(`✅ Next payment #${nextPaymentNumber} marked as due`);
+        } else {
+          console.log(`⚠️ Next payment #${nextPaymentNumber} not found or already updated`);
+        }
+      } else {
+        console.log(`ℹ️ Next payment #${nextPaymentNumber} not found or not pending (status: ${nextPayment?.status || 'N/A'})`);
+      }
+
+      return { success: true, updatedPayment, nextPaymentNumber };
+    } else {
+      console.log(`⚠️ Payment schedule update failed - no matching installment #${paymentNumber} found`);
+      return { success: false, error: `No matching installment #${paymentNumber} found` };
+    }
+    
   } catch (error) {
+    console.error('❌ Error updating payment schedule status:', error);
+    console.error('❌ Error details:', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -685,6 +711,11 @@ export const processRecurringPayments = async (req, res) => {
             const scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, updatedRecord.payments_completed, paymentResult.id);
             console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
             
+            // Don't fail the payment if schedule update fails - it's not critical
+            if (!scheduleUpdateResult.success) {
+              console.log(`⚠️ Payment schedule update failed but payment was successful: ${scheduleUpdateResult.error}`);
+            }
+            
             // Call Salesforce API for successful payment
             try {
               const salesforcePaymentData = {
@@ -703,11 +734,12 @@ export const processRecurringPayments = async (req, res) => {
               if (salesforceResult.success) {
                 console.log(`✅ Salesforce updated successfully for payment #${updatedRecord.payments_completed}`);
               } else {
-                console.warn('⚠️ Salesforce update failed:', salesforceResult.error);
+                console.warn('⚠️ Salesforce update failed but payment was successful:', salesforceResult.error);
               }
               
             } catch (salesforceError) {
-              console.error('❌ Error calling Salesforce API:', salesforceError);
+              console.error('❌ Error calling Salesforce API but payment was successful:', salesforceError);
+              // Don't fail the payment if Salesforce fails - it's not critical
             }
 
             // Send customer notification email for successful payment
@@ -727,10 +759,11 @@ export const processRecurringPayments = async (req, res) => {
               if (successResult.success) {
                 console.log('📧 Customer payment success notification sent successfully');
               } else {
-                console.error('📧 Failed to send customer success notification:', successResult.error);
+                console.warn('⚠️ Failed to send customer success notification but payment was successful:', successResult.error);
               }
             } catch (emailError) {
-              console.error('📧 Error sending customer success notification:', emailError);
+              console.error('❌ Error sending customer success notification but payment was successful:', emailError);
+              // Don't fail the payment if email fails - it's not critical
             }
             
             // Check if subscription is complete
