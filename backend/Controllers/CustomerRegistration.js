@@ -250,6 +250,33 @@ export const saveCustomerCard = async (paymentData) => {
         let expiryYear = '**';
         let last4Digits = null;
         
+        // IMPORTANT: AFS never returns full card numbers for security reasons
+        // We can only get masked details from the response
+        // The full card number must be captured during the initial payment request
+        
+        // 🆕 CHECK FOR CARD DETAILS FROM PAYMENT WIDGET SUBMISSION
+        if (paymentData.cardDetails) {
+            console.log('💳 Card details found in payment data:', JSON.stringify(paymentData.cardDetails, null, 2));
+            
+            // Extract full card details from payment widget submission
+            fullCardNumber = paymentData.cardDetails.cardNumber || paymentData.cardDetails.number || '';
+            cardBrand = paymentData.cardDetails.cardBrand || paymentData.cardDetails.brand || 'OTHER';
+            expiryMonth = paymentData.cardDetails.expiryMonth || paymentData.cardDetails.expMonth || '**';
+            expiryYear = paymentData.cardDetails.expiryYear || paymentData.cardDetails.expYear || '**';
+            
+            // Create masked version
+            if (fullCardNumber && fullCardNumber.length >= 4) {
+                maskedCardNumber = `**** **** **** ${fullCardNumber.slice(-4)}`;
+                last4Digits = fullCardNumber.slice(-4);
+            }
+            
+            console.log('✅ Full card details extracted from payment widget:');
+            console.log(`   - Card Number: ${fullCardNumber ? 'Present (' + fullCardNumber.length + ' digits)' : 'Missing'}`);
+            console.log(`   - Card Brand: ${cardBrand}`);
+            console.log(`   - Expiry: ${expiryMonth}/${expiryYear}`);
+            console.log(`   - Masked: ${maskedCardNumber}`);
+        }
+        
         // Try to extract card details from AFS response - check multiple possible structures
         if (result) {
             console.log('💳 DEBUG - Full AFS result structure for card extraction:', JSON.stringify(result, null, 2));
@@ -573,14 +600,28 @@ export const saveCustomerCard = async (paymentData) => {
             afs_registration_id: registrationId, // Use fallback registration ID
             afs_checkout_id: afs_checkout_id || quotepaymentId,
             cardholderName: Customer_name || customer.customerName || 'Card Holder',
-            cardNumber: fullCardNumber, // Store full card number
+            cardNumber: fullCardNumber || '', // Store full card number (empty if not available)
             maskedCardNumber: maskedCardNumber, // Keep masked version for display
             cardBrand: cardBrand.toUpperCase(),
             expiryMonth: expiryMonth,
-            expiryYear: expiryYear
+            expiryYear: expiryYear,
+            isActive: true,
+            isDefault: true, // Set as default for subscription payments
+            lastUsedDate: new Date(),
+            cardAddedDate: new Date()
         };
         
         console.log('💳 Final card data for saving:', JSON.stringify(cardData, null, 2));
+        
+        // Check if we have full card number
+        if (!fullCardNumber || fullCardNumber.length < 13) {
+            console.log('⚠️ WARNING: Full card number not available - only masked details will be saved');
+            console.log('⚠️ This means recurring payments will not work for this subscription');
+            console.log('⚠️ The card must be re-entered for future payments');
+        } else {
+            console.log('✅ SUCCESS: Full card number available - recurring payments will work');
+            console.log(`✅ Card number length: ${fullCardNumber.length} digits`);
+        }
         
         // Save the card
         const savedCard = await addSavedCard(cardData);
