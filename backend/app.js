@@ -157,29 +157,88 @@ app.get('/api/payment/result', (req, res) => {
 });
 
 // AFS Payment widget form submission endpoint
-app.post('/payment-result', (req, res) => {
-
+app.post('/payment-result', async (req, res) => {
+  await connectDB();
   
-  // Extract parameters from AFS response
-  const resourcePath = req.body.resourcePath || req.query.resourcePath;
-  const quotepaymentId = req.body.quotepaymentId || req.query.quotepaymentId;
-
-  
-  // Redirect to Angular payment result page with parameters
-  const redirectUrl = `${process.env.FRONTEND_URL}/payment/result?resourcePath=${encodeURIComponent(resourcePath || '')}&quotepaymentId=${encodeURIComponent(quotepaymentId || '')}`;
-  
-  // Log to database
-  Post_Common_DB_Log_Data('/payment-result', {
-    body: req.body,
-    query: req.query
-  }, {
-    resourcePath: resourcePath,
-    quotepaymentId: quotepaymentId,
-    redirectUrl: redirectUrl,
-    message: 'AFS Payment widget form submission processed'
-  });
-  
-  res.redirect(redirectUrl);
+  try {
+    // Extract parameters from AFS response
+    const resourcePath = req.body.resourcePath || req.query.resourcePath;
+    const quotepaymentId = req.body.quotepaymentId || req.query.quotepaymentId;
+    
+    console.log('🔧 Payment widget form submission received:');
+    console.log('   - Resource Path:', resourcePath);
+    console.log('   - Quote Payment ID:', quotepaymentId);
+    console.log('   - Request Body:', JSON.stringify(req.body, null, 2));
+    
+    // 🆕 CAPTURE CARD DETAILS FROM PAYMENT WIDGET SUBMISSION
+    // Check if this is a subscription payment and capture card details
+    if (quotepaymentId && req.body.cardDetails) {
+      try {
+        console.log('💳 Card details found in payment widget submission');
+        console.log('💳 Card details:', JSON.stringify(req.body.cardDetails, null, 2));
+        
+        // Import the card saving function
+        const { saveCustomerCard } = await import('./Controllers/CustomerRegistration.js');
+        
+        // Find the subscription record
+        const Vzat_Recurring_Data = (await import('./model/VzatRecurringDataModel.js')).default;
+        const subscriptionRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
+        
+        if (subscriptionRecord) {
+          console.log('✅ Subscription record found, saving card details...');
+          
+          // Prepare payment data with full card details
+          const paymentData = {
+            ...subscriptionRecord.toObject(),
+            cardDetails: req.body.cardDetails, // Full card details from frontend
+            afs_registration_id: req.body.registrationId || quotepaymentId,
+            afs_checkout_id: req.body.checkoutId || quotepaymentId
+          };
+          
+          // Save the card with full details
+          const cardSaveResult = await saveCustomerCard(paymentData);
+          
+          if (cardSaveResult.success) {
+            console.log('✅ Card saved successfully with full details:', cardSaveResult.cardId);
+          } else {
+            console.log('⚠️ Card saving failed:', cardSaveResult.message);
+          }
+        } else {
+          console.log('⚠️ Subscription record not found for quotepaymentId:', quotepaymentId);
+        }
+      } catch (cardSaveError) {
+        console.error('❌ Error saving card details from payment widget:', cardSaveError);
+        // Don't fail the payment if card saving fails
+      }
+    }
+    
+    // Redirect to Angular payment result page with parameters
+    const redirectUrl = `${process.env.FRONTEND_URL}/payment/result?resourcePath=${encodeURIComponent(resourcePath || '')}&quotepaymentId=${encodeURIComponent(quotepaymentId || '')}`;
+    
+    // Log to database
+    Post_Common_DB_Log_Data('/payment-result', {
+      body: req.body,
+      query: req.query
+    }, {
+      resourcePath: resourcePath,
+      quotepaymentId: quotepaymentId,
+      redirectUrl: redirectUrl,
+      message: 'AFS Payment widget form submission processed',
+      cardDetailsCaptured: !!(quotepaymentId && req.body.cardDetails)
+    });
+    
+    res.redirect(redirectUrl);
+    
+  } catch (error) {
+    console.error('❌ Error processing payment widget submission:', error);
+    
+    // Still redirect even if there's an error
+    const resourcePath = req.body.resourcePath || req.query.resourcePath;
+    const quotepaymentId = req.body.quotepaymentId || req.query.quotepaymentId;
+    const redirectUrl = `${process.env.FRONTEND_URL}/payment/result?resourcePath=${encodeURIComponent(resourcePath || '')}&quotepaymentId=${encodeURIComponent(quotepaymentId || '')}`;
+    
+    res.redirect(redirectUrl);
+  }
 });
 
 // Alternative payment result endpoint for direct access
