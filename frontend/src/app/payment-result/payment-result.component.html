@@ -66,11 +66,11 @@
         <h3>Hey,</h3>
         <h2>{{ customerName || 'Customer' }}!</h2>
         <hr />
-        <p class="mb-2">Your payment against Proforma Invoice <b class="fw-semibold">No - {{ quotepaymentId  }} is </b></p>
+        <p class="mb-2">Your payment against Proforma Invoice <b class="fw-semibold">No - {{ quotepaymentId || 'Not available' }} is </b></p>
         
         <!-- Success tick mark above amount in mobile view -->
         <div class="success-tick-mobile d-block d-md-none mb-3">
-          <img src="assets/images/payment-success.png" class="d-block mx-auto" style="width: 60px; height: 60px;" />
+          <img src="assets/images/payment-success.png" class="d-block mx-auto" style="width: 80px; height: 80px;" />
         </div>
         
         <!-- Payment Successful text for mobile view -->
@@ -78,6 +78,9 @@
           <h4 class="text-center mb-2">Payment Successful!</h4>
           <p class="text-center small">Hooray! You have completed your payment</p>
         </div>
+        
+        <!-- Amount for mobile view - moved below success text -->
+        <h2 class="price-mobile d-block d-md-none mb-3">AED {{ paymentAmount | number:'1.2-2' }}</h2>
         
         <!-- Amount for desktop view only -->
         <h2 class="price d-none d-md-block">AED {{ paymentAmount | number:'1.2-2' }}</h2>
