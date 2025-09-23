@@ -57,7 +57,7 @@ export function extractCardDetailsFromAFS(afsResponse) {
         cardDetails.cardBrand = card.brand || afsResponse.paymentBrand || 'UNKNOWN';
         cardDetails.expiryMonth = card.expiryMonth || '**';
         cardDetails.expiryYear = card.expiryYear || '**';
-        cardDetails.cardholderName = card.holder || 'Card Holder';
+        cardDetails.cardholderName = card.holder || card.cardHolder || card.cardholderName || card.name || card.cardholder || 'Card Holder';
         
         // Extract last 4 digits
         if (card.last4Digits) {
