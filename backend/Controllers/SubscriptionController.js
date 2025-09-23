@@ -636,6 +636,119 @@ export const processRecurringPayments = async (req, res) => {
         
         const paymentResult = await processSubscriptionPayment(subscription);
         
+        // 🆕 HANDLE SUCCESSFUL PAYMENT DIRECTLY IN CRON JOB
+        if (paymentResult && paymentResult.result && paymentResult.result.code.startsWith('000.')) {
+          console.log(`✅ PAYMENT SUCCESS for ${subscription.quotepaymentId} - Processing database updates and emails...`);
+          
+          try {
+            // Update subscription record
+            const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
+              subscription._id,
+              {
+                $inc: { payments_completed: 1 },
+                last_payment_date: new Date(paymentResult.timestamp || new Date())
+              },
+              { new: true }
+            );
+            
+            console.log(`📊 Updated payments_completed to: ${updatedRecord.payments_completed}`);
+            
+            // Update payment schedule status
+            const scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, updatedRecord.payments_completed, paymentResult.id);
+            console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
+            
+            // Call Salesforce API for successful payment
+            try {
+              const salesforcePaymentData = {
+                quotepaymentId: subscription.quotepaymentId,
+                amount: parseFloat(paymentResult.amount),
+                transactionId: paymentResult.id,
+                paymentType: 'Online_payment',
+                paymentStatus: 'success',
+                resultCode: paymentResult.result.code,
+                resultDescription: paymentResult.result.description,
+                timestamp: paymentResult.timestamp || new Date().toISOString()
+              };
+
+              const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+              
+              if (salesforceResult.success) {
+                console.log(`✅ Salesforce updated successfully for payment #${updatedRecord.payments_completed}`);
+              } else {
+                console.warn('⚠️ Salesforce update failed:', salesforceResult.error);
+              }
+              
+            } catch (salesforceError) {
+              console.error('❌ Error calling Salesforce API:', salesforceError);
+            }
+
+            // Send customer notification email for successful payment
+            try {
+              const successResult = await sendPaymentSuccessNotificationEmail({
+                quotepaymentId: subscription.quotepaymentId,
+                Customer_name: subscription.Customer_name,
+                opp_email: subscription.opp_email,
+                payment_amount: parseFloat(paymentResult.amount),
+                payment_date: new Date(paymentResult.timestamp || new Date()),
+                installment_number: updatedRecord.payments_completed,
+                total_installments: subscription.InstallmentLeft,
+                payment_method: 'Card',
+                salesPersonDetails: subscription.salesPersonDetails
+              });
+              
+              if (successResult.success) {
+                console.log('📧 Customer payment success notification sent successfully');
+              } else {
+                console.error('📧 Failed to send customer success notification:', successResult.error);
+              }
+            } catch (emailError) {
+              console.error('📧 Error sending customer success notification:', emailError);
+            }
+            
+            // Check if subscription is complete
+            if (updatedRecord.payments_completed >= updatedRecord.InstallmentLeft) {
+              console.log(`🎉 SUBSCRIPTION COMPLETED for ${subscription.quotepaymentId}!`);
+              
+              // Update status to completed
+              await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+                subscription_status: 'completed'
+              });
+              
+              // Send completion email
+              try {
+                const emailResult = await sendSubscriptionCompletedEmail({
+                  quotepaymentId: subscription.quotepaymentId,
+                  OpportunityId: subscription.OpportunityId,
+                  QuoteId: subscription.QuoteId,
+                  Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+                  InstallmentLeft: subscription.InstallmentLeft,
+                  payments_completed: updatedRecord.payments_completed,
+                  last_payment_date: updatedRecord.last_payment_date
+                });
+                
+                if (emailResult.success) {
+                  console.log('📧 Subscription completion email sent successfully');
+                } else {
+                  console.error('📧 Failed to send completion email:', emailResult.error);
+                }
+              } catch (completionEmailError) {
+                console.error('📧 Error sending completion email:', completionEmailError);
+              }
+            } else {
+              // Schedule next payment
+              await scheduleNextPayment(subscription._id);
+              console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
+            }
+            
+          } catch (updateError) {
+            console.error(`❌ Error updating database for ${subscription.quotepaymentId}:`, updateError);
+            throw updateError; // Re-throw to trigger failure handling
+          }
+        } else {
+          // Payment failed - throw error to trigger failure handling
+          throw new Error(`Payment failed: ${paymentResult?.result?.description || 'Unknown error'}`);
+        }
+        
         // Only mark as processed if payment was successful
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
           last_processed_date: new Date()
