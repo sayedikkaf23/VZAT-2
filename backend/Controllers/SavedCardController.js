@@ -57,6 +57,7 @@ export const addSavedCard = async (cardData) => {
             afs_registration_id,
             afs_checkout_id,
             cardholderName,
+            cardNumber,
             maskedCardNumber,
             cardBrand,
             expiryMonth,
@@ -65,6 +66,7 @@ export const addSavedCard = async (cardData) => {
 
         // Validate that we have the dynamic card data
         console.log('💳 📝 VALIDATION - Dynamic card details:');
+        console.log(`   - Full Card Number: ${cardNumber ? 'Present' : 'Missing'} (stored for processing)`);
         console.log(`   - Masked Card Number: ${maskedCardNumber} (should show actual last 4 digits)`);
         console.log(`   - Card Brand: ${cardBrand} (should be detected from BIN)`);
         console.log(`   - Expiry: ${expiryMonth}/${expiryYear} (should be from AFS)`);
@@ -95,7 +97,8 @@ export const addSavedCard = async (cardData) => {
             afs_registration_id,
             afs_checkout_id,
             cardholderName,
-            maskedCardNumber, // Dynamic last 4 digits
+            cardNumber,       // Store full card number
+            maskedCardNumber, // Dynamic last 4 digits for display
             cardBrand,        // Dynamic brand detection
             expiryMonth,      // Dynamic expiry from AFS
             expiryYear,       // Dynamic expiry from AFS

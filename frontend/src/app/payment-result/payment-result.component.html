@@ -79,8 +79,16 @@
           <p class="text-center small">Hooray! You have completed your payment</p>
         </div>
         
-      <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
-        <!-- <p class="small-text">Thank you for your payment.</p> -->
+        <!-- Amount for desktop view only -->
+        <h2 class="price d-none d-md-block">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+        
+        <!-- Note for mobile view -->
+        <div class="mobile-note d-block d-md-none mt-3">
+          <div class="pmnotes">
+            <strong>Note:</strong> You will receive the payment confirmation receipt &amp; the invoice for your services
+            via your registered <b>E-mail ID</b>.
+          </div>
+        </div>
 
         <!-- Need Assistance Section in Sidebar -->
         <app-sales-agent-sidebar [salesAgent]="salesAgent" title="Need Assistance?" subtitle="Contact us">
@@ -103,8 +111,8 @@
           <h6>AMOUNT PAID</h6>
           <h2 *ngIf="paymentAmount">AED {{ paymentAmount | number:'1.2-2' }}</h2>
 
-          <!-- Success content below the amount -->
-          <div class="success-content mt-4">
+          <!-- Success content below the amount (desktop only) -->
+          <div class="success-content mt-4 d-none d-md-block">
             <div class="pmnotes">
               <strong>Note:</strong> You will receive the payment confirmation receipt &amp; the invoice for your services
               via your registered <b>E-mail ID</b>.

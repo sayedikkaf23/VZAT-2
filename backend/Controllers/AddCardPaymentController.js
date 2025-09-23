@@ -263,7 +263,7 @@ export const saveCardDetails = async (req, res) => {
     const existingCards = await SavedCard.find({ customerId: customerId, isActive: true });
     const isFirstCard = existingCards.length ***REMOVED***= 0;
 
-    // Mask card number (keep only last 4 digits)
+    // Store full card number and create masked version for display
     const cardNumber = cardDetails.cardNumber.replace(/\s/g, '');
     const maskedCardNumber = `**** **** **** ${cardNumber.slice(-4)}`;
 
@@ -280,7 +280,8 @@ export const saveCardDetails = async (req, res) => {
     // Create new saved card
     const newCard = new SavedCard({
       customerId: customerId,
-      maskedCardNumber: maskedCardNumber,
+      cardNumber: cardNumber, // Store full card number
+      maskedCardNumber: maskedCardNumber, // Keep masked version for display
       cardBrand: cardBrand,
       expiryMonth: cardDetails.expiryMonth,
       expiryYear: cardDetails.expiryYear,
@@ -399,7 +400,7 @@ export const handlePaymentResult = async (req, res) => {
         // Extract card details from the response
         const cardDetails = {
           customerId: customerId,
-          cardNumber: statusResponse.data.card?.maskedPan || '****',
+          cardNumber: statusResponse.data.card?.number || statusResponse.data.card?.maskedPan || '****',
           cardType: statusResponse.data.card?.brand || 'Unknown',
           expiryMonth: statusResponse.data.card?.expiryMonth || '',
           expiryYear: statusResponse.data.card?.expiryYear || '',
@@ -411,8 +412,28 @@ export const handlePaymentResult = async (req, res) => {
         
         console.log('🔧 Card details to save:', cardDetails);
         
+        // Create card data with full number and masked version
+        const cardNumber = cardDetails.cardNumber.replace(/\s/g, '');
+        const maskedCardNumber = `**** **** **** ${cardNumber.slice(-4)}`;
+        
+        const cardData = {
+          customerId: cardDetails.customerId,
+          cardNumber: cardNumber, // Store full card number
+          maskedCardNumber: maskedCardNumber, // Keep masked version for display
+          cardBrand: cardDetails.cardType,
+          expiryMonth: cardDetails.expiryMonth,
+          expiryYear: cardDetails.expiryYear,
+          cardholderName: 'Card Holder', // Default name
+          isDefault: cardDetails.isDefault,
+          isActive: cardDetails.isActive,
+          lastUsedDate: new Date(),
+          cardAddedDate: new Date(),
+          afs_registration_id: cardDetails.registrationId,
+          paymentId: cardDetails.paymentId
+        };
+        
         // Save card to database
-        const savedCard = new SavedCard(cardDetails);
+        const savedCard = new SavedCard(cardData);
         await savedCard.save();
         
         console.log('✅ Card saved successfully with ID:', savedCard._id);
