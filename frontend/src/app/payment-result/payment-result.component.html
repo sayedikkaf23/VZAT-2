@@ -112,7 +112,7 @@
           <hr />
 
           <h6>AMOUNT PAID</h6>
-          <h2 *ngIf="paymentAmount">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+          <h2 *ngIf="paymentAmount" class="d-none d-md-block">AED {{ paymentAmount | number:'1.2-2' }}</h2>
 
           <!-- Success content below the amount (desktop only) -->
           <div class="success-content mt-4 d-none d-md-block">
