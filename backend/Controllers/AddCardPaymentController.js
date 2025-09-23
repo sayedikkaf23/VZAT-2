@@ -155,6 +155,56 @@ export const processCardPayment = async (req, res) => {
       const resultCode = response.data.result?.code;
 
       if (resultCode === '000.100.110' || resultCode === '000.000.000') {
+        // Payment successful - save card details immediately
+        try {
+          console.log('✅ Payment successful, saving card details immediately...');
+          
+          // Extract customer ID from checkout ID or request
+          const customerId = req.body.customerId || req.body.checkoutId?.split('_')[0];
+          
+          if (customerId && cardDetails) {
+            // Save card details with full card number
+            const cardNumber = cardDetails.cardNumber.replace(/\s/g, '');
+            const maskedCardNumber = `**** **** **** ${cardNumber.slice(-4)}`;
+            
+            // Determine card brand
+            let cardBrand = 'Unknown';
+            if (cardNumber.startsWith('4')) {
+              cardBrand = 'VISA';
+            } else if (cardNumber.startsWith('5')) {
+              cardBrand = 'MASTERCARD';
+            } else if (cardNumber.startsWith('3')) {
+              cardBrand = 'AMEX';
+            }
+            
+            // Check if this is the first card for the customer
+            const existingCards = await SavedCard.find({ customerId: customerId, isActive: true });
+            const isFirstCard = existingCards.length === 0;
+            
+            const newCard = new SavedCard({
+              customerId: customerId,
+              cardNumber: cardNumber, // Store full card number
+              maskedCardNumber: maskedCardNumber, // Keep masked version for display
+              cardBrand: cardBrand,
+              expiryMonth: cardDetails.expiryMonth,
+              expiryYear: cardDetails.expiryYear,
+              cardholderName: cardDetails.cardholderName,
+              isDefault: isFirstCard, // Set as default if it's the first card
+              isActive: true,
+              lastUsedDate: new Date(),
+              cardAddedDate: new Date(),
+              paymentId: paymentId,
+              afs_registration_id: response.data.registrationId || paymentId
+            });
+            
+            await newCard.save();
+            console.log('✅ Card saved successfully with full details:', newCard._id);
+          }
+        } catch (cardSaveError) {
+          console.error('❌ Error saving card details:', cardSaveError);
+          // Don't fail the payment if card saving fails
+        }
+        
         // Payment successful
         res.status(200).json({
           success: true,
@@ -394,52 +444,23 @@ export const handlePaymentResult = async (req, res) => {
       console.log('🔧 Payment result code:', resultCode);
       
       if (resultCode.startsWith('000.') || resultCode.startsWith('800.')) {
-        // Payment successful - save card details
-        console.log('✅ Payment successful, saving card details...');
+        // Payment successful - card should already be saved from processCardPayment
+        console.log('✅ Payment successful - card details should already be saved');
         
-        // Extract card details from the response
-        const cardDetails = {
+        // Check if card was already saved
+        const existingCard = await SavedCard.findOne({ 
           customerId: customerId,
-          cardNumber: statusResponse.data.card?.number || statusResponse.data.card?.maskedPan || '****',
-          cardType: statusResponse.data.card?.brand || 'Unknown',
-          expiryMonth: statusResponse.data.card?.expiryMonth || '',
-          expiryYear: statusResponse.data.card?.expiryYear || '',
-          isDefault: true, // Set as default since it's the first card
-          isActive: true,
-          paymentId: statusResponse.data.id || '',
-          registrationId: statusResponse.data.registrationId || ''
-        };
+          paymentId: statusResponse.data.id 
+        });
         
-        console.log('🔧 Card details to save:', cardDetails);
-        
-        // Create card data with full number and masked version
-        const cardNumber = cardDetails.cardNumber.replace(/\s/g, '');
-        const maskedCardNumber = `**** **** **** ${cardNumber.slice(-4)}`;
-        
-        const cardData = {
-          customerId: cardDetails.customerId,
-          cardNumber: cardNumber, // Store full card number
-          maskedCardNumber: maskedCardNumber, // Keep masked version for display
-          cardBrand: cardDetails.cardType,
-          expiryMonth: cardDetails.expiryMonth,
-          expiryYear: cardDetails.expiryYear,
-          cardholderName: 'Card Holder', // Default name
-          isDefault: cardDetails.isDefault,
-          isActive: cardDetails.isActive,
-          lastUsedDate: new Date(),
-          cardAddedDate: new Date(),
-          afs_registration_id: cardDetails.registrationId,
-          paymentId: cardDetails.paymentId
-        };
-        
-        // Save card to database
-        const savedCard = new SavedCard(cardData);
-        await savedCard.save();
-        
-        console.log('✅ Card saved successfully with ID:', savedCard._id);
+        if (existingCard) {
+          console.log('✅ Card already saved with full details:', existingCard._id);
+        } else {
+          console.log('⚠️ Card not found in database - this might be an issue');
+        }
         
         // Redirect to frontend with success
-        const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/saved-card?success=true&cardId=${savedCard._id}`;
+        const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/saved-card?success=true&cardId=${existingCard?._id || 'unknown'}`;
         res.redirect(redirectUrl);
         
       } else {
