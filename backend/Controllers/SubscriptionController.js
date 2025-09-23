@@ -123,492 +123,49 @@ async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transa
 export const handleAFSWebhook = async (req, res) => {
   // Using persistent connection - no need to connect/disconnect
   
-  // 🆕 TEMPORARY DISABLE WEBHOOK FOR RECURRING PAYMENTS
-  // This prevents duplicate processing when cron job handles recurring payments
-  const { paymentType, merchantTransactionId } = req.body;
+  console.log('🔔 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= AFS WEBHOOK RECEIVED ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
+  console.log('📅 Timestamp:', new Date().toISOString());
+  console.log('🌐 Request IP:', req.ip);
+  console.log('🌐 User Agent:', req.get('User-Agent'));
+  console.log('📋 Request Body:', JSON.stringify(req.body, null, 2));
   
-  if (paymentType ***REMOVED***= 'PA' && merchantTransactionId && merchantTransactionId.includes('_')) {
-    console.log('🚫 WEBHOOK DISABLED FOR RECURRING PAYMENTS:');
-    console.log(`   - Payment Type: ${paymentType}`);
-    console.log(`   - Merchant Transaction ID: ${merchantTransactionId}`);
-    console.log('ℹ️ Recurring payments are handled by cron job - skipping webhook processing');
-    
-    // Log the disabled webhook
-    Post_Common_DB_Log_Data('/webhook/afs-disabled', req.body, { 
-      message: 'Webhook disabled for recurring payment - handled by cron job',
-      paymentType: paymentType,
-      merchantTransactionId: merchantTransactionId,
-      reason: 'Recurring payment handled by cron job'
-    });
-    
-    return res.status(200).json({ 
-      message: 'Webhook disabled for recurring payment - handled by cron job',
-      paymentType: paymentType,
-      merchantTransactionId: merchantTransactionId,
-      status: 'disabled'
-    });
-  }
+  // 🚫 COMPLETE WEBHOOK DISABLE
+  // This prevents ALL webhook processing to stop failure emails
+  const { paymentType, merchantTransactionId, id, result } = req.body;
   
-  try {
-    
-    const { 
-      id, 
-      paymentType, 
-      result, 
-      amount, 
-      currency,
-      merchantTransactionId,
-      registrationId,
-      paymentBrand,
-      timestamp 
-    } = req.body;
-
-    console.log('🔔 AFS WEBHOOK RECEIVED:');
-    console.log('   - ID:', id);
-    console.log('   - Payment Type:', paymentType);
-    console.log('   - Result:', result);
-    console.log('   - Registration ID:', registrationId);
-    console.log('   - Payment Brand:', paymentBrand);
-    console.log('   - Merchant Transaction ID:', merchantTransactionId);
-    
-    // Find the subscription record
-    const subscriptionRecord = await Vzat_Recurring_Data.findOne({ 
-      quotepaymentId: merchantTransactionId 
-    });
-
-    if (!subscriptionRecord) {
-      
-      const allSubscriptions = await Vzat_Recurring_Data.find({}).select('quotepaymentId Customer_name opp_email').limit(5);
-      console.log('📋 Found these subscriptions:', allSubscriptions.map(sub => ({
-        quotepaymentId: sub.quotepaymentId,
-        customer: sub.Customer_name,
-        email: sub.opp_email
-      })));
-      
-      return res.status(404).json({ message: 'Subscription not found' });
-    }
-
-   
-
-    // Handle different payment types
-    // Support both DB (Direct Bank) and PA (Pre-Authorization) for recurring payments
-    if ((paymentType ***REMOVED***= 'DB' || paymentType ***REMOVED***= 'PA') && result.code.startsWith('000.')) {
-      // Check if this is the first payment (payments_completed is 0 or 1, and we have a registrationId)
-      const isFirstPayment = (subscriptionRecord.payments_completed || 0) <= 1 && registrationId;
-      
-    console.log('🔍 WEBHOOK PAYMENT ANALYSIS:');
-    console.log('   - Subscription Status:', subscriptionRecord.subscription_status);
-    console.log('   - Payments Completed:', subscriptionRecord.payments_completed || 0);
-    console.log('   - Registration ID:', registrationId);
-    console.log('   - Is First Payment:', isFirstPayment);
-    console.log('   - Payment Type:', paymentType);
-    console.log('   - Transaction ID:', id);
-    
-    // 🆕 DUPLICATE PAYMENT DETECTION
-    // Check if this payment has already been processed by checking the payment schedule
-    console.log('🔍 DUPLICATE PAYMENT DETECTION:');
-    console.log(`   - Looking for transaction ID: ${id}`);
-    console.log(`   - Payment schedule has ${subscriptionRecord.payment_schedule?.length || 0} payments`);
-    
-    if (subscriptionRecord.payment_schedule && subscriptionRecord.payment_schedule.length > 0) {
-      console.log('📋 Current payment schedule:');
-      subscriptionRecord.payment_schedule.forEach((payment, index) => {
-        console.log(`   - Payment ${payment.installment_number}: ${payment.status} (Transaction ID: ${payment.transaction_id || 'N/A'})`);
-      });
-    }
-    
-    const existingPayment = subscriptionRecord.payment_schedule?.find(
-      payment => payment.transaction_id ***REMOVED***= id
-    );
-    
-    if (existingPayment) {
-      console.log('⚠️ DUPLICATE PAYMENT DETECTED:');
-      console.log(`   - Transaction ID ${id} already processed`);
-      console.log(`   - Payment #${existingPayment.installment_number} already completed`);
-      console.log('ℹ️ Skipping webhook processing to prevent duplicate emails');
-      
-      // Log the duplicate detection
-      Post_Common_DB_Log_Data('/webhook/afs-duplicate', req.body, { 
-        message: 'Duplicate payment detected - skipping processing',
-        subscriptionId: subscriptionRecord._id,
-        transactionId: id,
-        existingPayment: existingPayment
-      });
-      
-      return res.status(200).json({ 
-        message: 'Duplicate payment detected - already processed',
-        transactionId: id,
-        status: 'skipped'
-      });
-    } else {
-      console.log('ℹ️ No duplicate payment found by transaction ID - checking by payment number and date');
-      
-      // 🆕 ADDITIONAL DUPLICATE DETECTION BY PAYMENT NUMBER AND DATE
-      // Check if a payment with the same installment number was completed recently (within last 5 minutes)
-      const currentPaymentNumber = (subscriptionRecord.payments_completed || 0) + 1;
-      const recentPayment = subscriptionRecord.payment_schedule?.find(
-        payment => payment.installment_number ***REMOVED***= currentPaymentNumber && 
-                   payment.status ***REMOVED***= 'completed' &&
-                   payment.payment_date &&
-                   (new Date() - new Date(payment.payment_date)) < 5 * 60 * 1000 // 5 minutes
-      );
-      
-      if (recentPayment) {
-        console.log('⚠️ DUPLICATE PAYMENT DETECTED BY PAYMENT NUMBER:');
-        console.log(`   - Payment #${currentPaymentNumber} was completed recently`);
-        console.log(`   - Completed at: ${recentPayment.payment_date}`);
-        console.log(`   - Transaction ID: ${recentPayment.transaction_id}`);
-        console.log('ℹ️ Skipping webhook processing to prevent duplicate emails');
-        
-        // Log the duplicate detection
-        Post_Common_DB_Log_Data('/webhook/afs-duplicate-by-number', req.body, { 
-          message: 'Duplicate payment detected by payment number - skipping processing',
-          subscriptionId: subscriptionRecord._id,
-          transactionId: id,
-          currentPaymentNumber: currentPaymentNumber,
-          recentPayment: recentPayment
-        });
-        
-        return res.status(200).json({ 
-          message: 'Duplicate payment detected by payment number - already processed',
-          transactionId: id,
-          paymentNumber: currentPaymentNumber,
-          status: 'skipped'
-        });
-      } else {
-        console.log('ℹ️ No duplicate payment found by payment number - proceeding with webhook processing');
-      }
-    }
-      
-      if (isFirstPayment) {
-        // First payment successful - activate subscription
-        
-        // Calculate next charge date for the next installment
-        let nextChargeDate = null;
-        if (subscriptionRecord.payment_schedule && subscriptionRecord.payment_schedule.length > 1) {
-          // Find the next installment date
-          const nextPayment = subscriptionRecord.payment_schedule.find(
-            payment => payment.installment_number ***REMOVED***= 2
-          );
-          if (nextPayment && nextPayment.due_date) {
-            nextChargeDate = new Date(nextPayment.due_date);
-          }
-        }
-        
-        console.log('💾 WEBHOOK SAVING FIRST PAYMENT DATA:');
-        console.log('   - afs_registration_id:', registrationId);
-        console.log('   - afs_payment_brand:', paymentBrand);
-        console.log('   - next_charge_date:', nextChargeDate);
-        console.log('   - last_payment_date:', new Date(timestamp));
-        
-        const updateResult = await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
-          subscription_status: 'active',
-          afs_registration_id: registrationId,
-          afs_payment_brand: paymentBrand, // Save the payment brand for recurring payments
-          payments_completed: 1,
-          last_payment_date: new Date(timestamp),
-          next_charge_date: nextChargeDate // Set to next installment date
-        }, { new: true });
-        
-        console.log('✅ WEBHOOK UPDATE SUCCESS:');
-        console.log('   - Updated afs_registration_id:', updateResult.afs_registration_id);
-        console.log('   - Updated afs_payment_brand:', updateResult.afs_payment_brand);
-        console.log('   - Updated next_charge_date:', updateResult.next_charge_date);
-        console.log('   - Updated last_payment_date:', updateResult.last_payment_date);
-        
-        
-        // Update payment schedule status for the first payment
-        const scheduleUpdateResult = await updatePaymentScheduleStatus(subscriptionRecord._id, 1, id);
-        
-        // Call Salesforce API for successful payment
-        try {
-          
-          const salesforcePaymentData = {
-            quotepaymentId: subscriptionRecord.quotepaymentId,
-            amount: amount,
-            transactionId: id,
-            paymentType: 'Online_payment',
-            paymentStatus: 'success',
-            resultCode: result.code,
-            resultDescription: result.description,
-            timestamp: timestamp
-          };
-
-          const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
-          
-          if (salesforceResult.success) {
-            const statusText = salesforceResult.payment_was_successful ? 'successful' : 'failed';
-            console.log(`✅ Salesforce has been notified of ${statusText} first payment`);
-          } else {
-            console.warn('⚠️ Salesforce update failed for first payment:', salesforceResult.error);
-          }
-          
-        } catch (salesforceError) {
-          console.error('❌ Error calling Salesforce API for first payment:', salesforceError);
-        }
-        
-        // 🆕 CREATE CUSTOMER ACCOUNT AFTER FIRST SUCCESSFUL PAYMENT
-        // Skip customer creation if this is an auto-triggered webhook (already done in payment result)
-        if (!req.body.skipCustomerCreation) {
-          try {
-            const customerCreationResult = await createCustomerAccount(subscriptionRecord);
-            
-            if (customerCreationResult.success) {
-              console.log('✅ Customer account created successfully');
-            } else {
-              console.error('❌ Failed to create customer account:', customerCreationResult.error);
-            }
-          } catch (customerError) {
-          }
-        } else {
-          console.log('ℹ️ Skipping customer creation (auto-triggered webhook - already done in payment result)');
-        }
-        
-        // 🆕 SAVE CUSTOMER CARD DETAILS AFTER FIRST SUCCESSFUL PAYMENT
-        // Skip card saving if this is an auto-triggered webhook (already done in payment result)
-        if (!req.body.skipCustomerCreation) {
-          try {
-            const cardSaveResult = await saveCustomerCard({
-              ...subscriptionRecord.toObject(),
-              result: result // Pass AFS result for card details
-            });
-            
-            if (cardSaveResult.success) {
-            } else {
-            }
-          } catch (cardError) {
-            console.error('❌ Error saving customer card:', cardError);
-          }
-        } else {
-          console.log('ℹ️ Skipping card saving (auto-triggered webhook - already done in payment result)');
-        }
-        
-        // Schedule next payment if this is a subscription with multiple installments
-        if (subscriptionRecord.InstallmentLeft > 1) {
-          await scheduleNextPayment(subscriptionRecord._id);
-        }
-        
-      } else {
-        // Recurring payment successful
-        console.log('🔄 WEBHOOK PROCESSING RECURRING PAYMENT:');
-        console.log('   - This is NOT the first payment');
-        console.log('   - Payments completed:', subscriptionRecord.payments_completed);
-        console.log('   - Registration ID:', registrationId);
-        console.log('   - Payment Brand:', paymentBrand);
-      
-      const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
-        subscriptionRecord._id,
-        {
-          $inc: { payments_completed: 1 },
-          last_payment_date: new Date(timestamp)
-        },
-        { new: true }
-      );
-
-     
-
-      // Update payment schedule status for the current payment
-      const scheduleUpdateResult = await updatePaymentScheduleStatus(subscriptionRecord._id, updatedRecord.payments_completed, id);
-
-      // Call Salesforce API for successful recurring payment
-      try {
-        
-        const salesforcePaymentData = {
-          quotepaymentId: subscriptionRecord.quotepaymentId,
-          amount: amount,
-          transactionId: id,
-          paymentType: 'Online_payment',
-          paymentStatus: 'success',
-          resultCode: result.code,
-          resultDescription: result.description,
-          timestamp: timestamp
-        };
-
-        const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
-        
-        if (salesforceResult.success) {
-          const statusText = salesforceResult.payment_was_successful ? 'successful' : 'failed';
-        } else {
-          console.warn('⚠️ Salesforce update failed for recurring payment:', salesforceResult.error);
-        }
-        
-      } catch (salesforceError) {
-        console.error('❌ Error calling Salesforce API for recurring payment:', salesforceError);
-      }
-
-      // Send customer notification email for successful payment
-      try {
-        const successResult = await sendPaymentSuccessNotificationEmail({
-          quotepaymentId: updatedRecord.quotepaymentId,
-          Customer_name: updatedRecord.Customer_name,
-          opp_email: updatedRecord.opp_email,
-          payment_amount: amount,
-          payment_date: new Date(timestamp),
-          installment_number: updatedRecord.payments_completed,
-          total_installments: updatedRecord.InstallmentLeft,
-          payment_method: 'Card',
-          salesPersonDetails: updatedRecord.salesPersonDetails
-        });
-        
-        if (successResult.success) {
-          console.log('📧 Customer payment success notification sent successfully');
-        } else {
-          console.error('📧 Failed to send customer success notification:', successResult.error);
-        }
-      } catch (successNotificationError) {
-        console.error('📧 Error sending customer success notification:', successNotificationError);
-      }
-
-      // Check if subscription is complete
-      if (updatedRecord.payments_completed >= updatedRecord.InstallmentLeft) {
-        // Only update status if not already completed (prevents duplicate emails)
-        const currentStatus = await Vzat_Recurring_Data.findById(subscriptionRecord._id).select('subscription_status');
-        
-        if (currentStatus.subscription_status !***REMOVED*** 'completed') {
-          await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionRecord._id, {
-            subscription_status: 'completed'
-          });
-          
-          // Send completion email to business team (only for newly completed subscriptions)
-          try {
-            const emailResult = await sendSubscriptionCompletedEmail({
-              quotepaymentId: updatedRecord.quotepaymentId,
-              OpportunityId: updatedRecord.OpportunityId,
-              QuoteId: updatedRecord.QuoteId,
-              Total_After_VAT_Currency: updatedRecord.Total_After_VAT_Currency,
-              InstallmentLeft: updatedRecord.InstallmentLeft,
-              payments_completed: updatedRecord.payments_completed,
-              last_payment_date: updatedRecord.last_payment_date
-            });
-            
-            if (emailResult.success) {
-            } else {
-              console.error('📧 Failed to send completion email:', emailResult.error);
-            }
-            // Also send final renewal email to customer, devtech, and opp owner
-            try {
-              await sendFinalRenewalEmail({
-                quotepaymentId: updatedRecord.quotepaymentId,
-                Customer_name: updatedRecord.Customer_name,
-                opp_email: updatedRecord.opp_email,
-                payments_completed: updatedRecord.payments_completed,
-                InstallmentLeft: updatedRecord.InstallmentLeft,
-                last_payment_date: updatedRecord.last_payment_date,
-                salesPersonDetails: updatedRecord.salesPersonDetails
-              });
-            } catch (finalEmailError) {
-              console.error('📧 Error sending final renewal email:', finalEmailError);
-            }
-          } catch (emailError) {
-            console.error('📧 Error sending completion email:', emailError);
-          }
-        } else {
-          console.log('ℹ️ Subscription already marked as completed - skipping duplicate completion email');
-        }
-      } else {
-        // Schedule next payment
-        await scheduleNextPayment(subscriptionRecord._id);
-      }
-      }
-      
-    } else {
-      // Payment failed
-      
-      // Call Salesforce API for failed payment
-      try {
-        
-        const salesforcePaymentData = {
-          quotepaymentId: subscriptionRecord.quotepaymentId,
-          amount: amount,
-          transactionId: id,
-          paymentType: 'Online_payment',
-          paymentStatus: 'failed',
-          resultCode: result.code,
-          resultDescription: result.description || 'Payment processing failed',
-          timestamp: timestamp
-        };
-
-        const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
-        
-        if (salesforceResult.success) {
-          console.log('✅ Salesforce has been called and updated successfully for failed payment');
-        } else {
-          console.warn('⚠️ Salesforce update failed for failed payment:', salesforceResult.error);
-        }
-        
-      } catch (salesforceError) {
-        console.error('❌ Error calling Salesforce API for failed payment:', salesforceError);
-      }
-      
-      // Send failure email to operations team
-      // try {
-      //   const emailResult = await sendPaymentFailureEmail({
-      //     quotepaymentId: subscriptionRecord.quotepaymentId,
-      //     OpportunityId: subscriptionRecord.OpportunityId,
-      //     QuoteId: subscriptionRecord.QuoteId,
-      //     error_message: result.description || 'Payment processing failed',
-      //     payment_amount: amount,
-      //     attempt_date: new Date(timestamp),
-      //     payments_completed: subscriptionRecord.payments_completed || 0,
-      //     total_installments: subscriptionRecord.InstallmentLeft,
-      //     afs_response: result
-      //   });
-        
-      //   if (emailResult.success) {
-      //     console.log('📧 Payment failure email sent successfully');
-      //   } else {
-      //     console.error('📧 Failed to send failure email:', emailResult.error);
-      //   }
-      // } catch (emailError) {
-      //   console.error('📧 Error sending failure email:', emailError);
-      // }
-
-      // Send customer notification email for payment failure
-      try {
-        // Get the current payment schedule to find due date
-        const currentPayment = subscriptionRecord.payment_schedule?.find(
-          payment => payment.installment_number ***REMOVED***= (subscriptionRecord.payments_completed || 0) + 1
-        );
-        
-        const notificationResult = await sendPaymentFailureNotificationEmail({
-          quotepaymentId: subscriptionRecord.quotepaymentId,
-          Customer_name: subscriptionRecord.Customer_name,
-          opp_email: subscriptionRecord.opp_email,
-          payment_amount: amount,
-          due_date: currentPayment?.due_date || subscriptionRecord.next_charge_date,
-          failure_reason: result.description || 'Payment processing failed',
-          payment_link: `${process.env.BASE_URL || 'https://vzatnew.yeepeey.com'}/payment-schedule?quotepaymentId=${subscriptionRecord.quotepaymentId}`,
-          salesPersonDetails: subscriptionRecord.salesPersonDetails
-        });
-        
-        if (notificationResult.success) {
-          console.log('📧 Customer payment failure notification sent successfully');
-        } else {
-          console.error('📧 Failed to send customer notification:', notificationResult.error);
-        }
-      } catch (notificationError) {
-        console.error('📧 Error sending customer notification:', notificationError);
-      }
-      
-      // Log the failure but don't cancel subscription immediately
-      // You might want to implement retry logic here
-    }
-
-    // Log the webhook event
-    Post_Common_DB_Log_Data('/webhook/afs', req.body, { 
-      message: 'Webhook processed successfully',
-      subscriptionId: subscriptionRecord._id 
-    });
-
-    res.status(200).json({ message: 'Webhook processed successfully' });
-
-  } catch (error) {
-    console.error(' Webhook processing error:', error);
-    Post_Common_DB_Log_Data('/webhook/afs', req.body, { 
-      error: error.message 
-    });
-    res.status(500).json({ message: 'Webhook processing failed' });
-  }
+  console.log('🔍 WEBHOOK ANALYSIS:');
+  console.log(`   - Payment Type: ${paymentType}`);
+  console.log(`   - Merchant Transaction ID: ${merchantTransactionId}`);
+  console.log(`   - Transaction ID: ${id}`);
+  console.log(`   - Result Code: ${result?.code || 'N/A'}`);
+  console.log(`   - Result Description: ${result?.description || 'N/A'}`);
+  
+  // 🚫 DISABLE ALL WEBHOOK PROCESSING
+  console.log('🚫 WEBHOOK COMPLETELY DISABLED - ALL PAYMENTS:');
+  console.log(`   - Payment Type: ${paymentType}`);
+  console.log(`   - Merchant Transaction ID: ${merchantTransactionId || 'N/A'}`);
+  console.log(`   - Transaction ID: ${id || 'N/A'}`);
+  console.log(`   - Result Code: ${result?.code || 'N/A'}`);
+  console.log('ℹ️ ALL webhook processing disabled to prevent failure emails');
+  console.log('ℹ️ All payments are handled by cron job - webhook completely disabled');
+  
+  // Log the disabled webhook
+  Post_Common_DB_Log_Data('/webhook/afs-disabled-all', req.body, { 
+    message: 'Webhook completely disabled for ALL payments - handled by cron job',
+    paymentType: paymentType,
+    merchantTransactionId: merchantTransactionId,
+    transactionId: id,
+    result: result,
+    reason: 'All payments handled by cron job - preventing failure emails'
+  });
+  
+  return res.status(200).json({ 
+    message: 'Webhook completely disabled for ALL payments - handled by cron job',
+    paymentType: paymentType,
+    merchantTransactionId: merchantTransactionId,
+    transactionId: id,
+    status: 'disabled'
+  });
 };
 
 /**
@@ -984,41 +541,12 @@ export const processRecurringPayments = async (req, res) => {
         //   console.error('📧 Error sending failure email to operations team:', emailError);
         // }
         
-        // Send customer notification email for payment failure
-        try {
-          // Calculate installment amount (handle missing InstallmentLeft)
-          let installmentLeft = subscription.InstallmentLeft;
-          if (!installmentLeft && subscription.payment_schedule) {
-            installmentLeft = subscription.payment_schedule.length;
-          }
-          
-          // Get the current payment schedule to find due date
-          const currentPayment = subscription.payment_schedule?.find(
-            payment => payment.installment_number ***REMOVED***= (subscription.payments_completed || 0) + 1
-          );
-          
-          const installmentAmount = installmentLeft ? parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)) : 0;
-          
-          const customerNotificationResult = await sendPaymentFailureNotificationEmail({
-            quotepaymentId: subscription.quotepaymentId,
-            Customer_name: subscription.Customer_name,
-            opp_email: subscription.opp_email,
-            payment_amount: installmentAmount,
-            due_date: currentPayment?.due_date || subscription.next_charge_date,
-            failure_reason: error.message,
-            payment_link: `${process.env.BASE_URL || 'https://vzatnew.yeepeey.com'}/payment-schedule?quotepaymentId=${subscription.quotepaymentId}`,
-            salesPersonDetails: subscription.salesPersonDetails
-          });
-          
-          if (customerNotificationResult.success) {
-            console.log('📧 Customer payment failure notification sent successfully');
-            console.log('📧 Recipients:', customerNotificationResult.recipients);
-          } else {
-            console.error('📧 Failed to send customer notification:', customerNotificationResult.error);
-          }
-        } catch (customerNotificationError) {
-          console.error('📧 Error sending customer notification:', customerNotificationError);
-        }
+        // 🚫 NO FAILURE EMAILS FROM CRON JOB
+        // The cron job only uses processServerToServerPayment for AFS debit operations
+        // Failure emails should be handled by other systems, not the cron job
+        console.log(`ℹ️ Skipping failure email - cron job only processes payments via processServerToServerPayment`);
+        console.log(`ℹ️ Error from processServerToServerPayment: ${error.message}`);
+        console.log(`ℹ️ Cron job handles AFS debit operations only - no customer notifications sent`);
         
         results.push({
           quotepaymentId: subscription.quotepaymentId,
