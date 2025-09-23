@@ -1,4 +1,6 @@
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
+import SavedCard from "../model/SavedCardModel.js";
+import Customer from "../model/CustomerLoginModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 import { sendSubscriptionCompletedEmail, sendFinalRenewalEmail, sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from "../services/emailService.js";
 import { createCustomerAccount, saveCustomerCard } from "./CustomerRegistration.js";
@@ -800,13 +802,92 @@ export const processRecurringPayments = async (req, res) => {
 };
 
 /**
- * Process a single subscription payment
+ * Process a single subscription payment using server-to-server logic with saved card details
  */
 async function processSubscriptionPayment(subscription) {
   
-  if (!subscription.afs_registration_id) {
-    throw new Error('No registration ID found for subscription');
+  // First, try to get the customer's default saved card
+  const savedCard = await getCustomerDefaultCard(subscription);
+  
+  if (!savedCard) {
+    const errorMsg = `No valid saved card found for customer ${subscription.opp_email || subscription.quotepaymentId}. Customer needs to add a payment method.`;
+    console.error(`❌ ${errorMsg}`);
+    throw new Error(errorMsg);
   }
+  
+  console.log(`💳 Using saved card for payment: ${savedCard.maskedCardNumber} (${savedCard.cardBrand})`);
+  
+  // Use server-to-server payment with full card details
+  return await processServerToServerPayment(subscription, savedCard);
+}
+
+/**
+ * Get customer's default saved card for recurring payments
+ */
+async function getCustomerDefaultCard(subscription) {
+  try {
+    // Find customer by email or quotepaymentId
+    const customer = await Customer.findOne({
+      $or: [
+        { email: subscription.opp_email },
+        { quotepaymentId: subscription.quotepaymentId }
+      ]
+    });
+    
+    if (!customer) {
+      console.log(`❌ Customer not found for subscription: ${subscription.quotepaymentId}`);
+      return null;
+    }
+    
+    // First, try to get the default active card for this customer
+    let savedCard = await SavedCard.findOne({
+      customerId: customer._id,
+      isActive: true,
+      isDefault: true
+    });
+    
+    // If no default card found, get the most recently used active card
+    if (!savedCard) {
+      console.log(`⚠️ No default card found, looking for most recent active card for customer: ${customer.email}`);
+      savedCard = await SavedCard.findOne({
+        customerId: customer._id,
+        isActive: true
+      }).sort({ lastUsedDate: -1, cardAddedDate: -1 });
+    }
+    
+    // If still no card found, get any active card
+    if (!savedCard) {
+      console.log(`⚠️ No recently used card found, getting any active card for customer: ${customer.email}`);
+      savedCard = await SavedCard.findOne({
+        customerId: customer._id,
+        isActive: true
+      }).sort({ cardAddedDate: -1 });
+    }
+    
+    if (!savedCard) {
+      console.log(`❌ No active card found for customer: ${customer.email}`);
+      return null;
+    }
+    
+    // Validate that the card has full card number
+    if (!savedCard.cardNumber || savedCard.cardNumber.length < 13) {
+      console.log(`❌ Card missing full card number for customer: ${customer.email}`);
+      return null;
+    }
+    
+    console.log(`✅ Found card for customer: ${savedCard.maskedCardNumber} (${savedCard.cardBrand})`);
+    return savedCard;
+    
+  } catch (error) {
+    console.error('❌ Error retrieving customer default card:', error);
+    return null;
+  }
+}
+
+/**
+ * Process server-to-server payment using full card details
+ */
+async function processServerToServerPayment(subscription, savedCard) {
   
   // Calculate InstallmentLeft if missing (fallback for older records)
   let installmentLeft = subscription.InstallmentLeft;
@@ -820,9 +901,10 @@ async function processSubscriptionPayment(subscription) {
   }
   
   // Check if we're using mock data for testing
-  if (subscription.afs_registration_id.includes('mock')) {
+  if (subscription.afs_registration_id && subscription.afs_registration_id.includes('mock')) {
+    console.log('🧪 Using mock payment for testing');
     
-    // Simulate successful AFS response for testing
+    // Simulate successful payment response for testing
     const mockResponse = {
       id: `mock-payment-${Date.now()}`,
       result: {
@@ -832,13 +914,20 @@ async function processSubscriptionPayment(subscription) {
       amount: parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)),
       currency: "AED",
       paymentType: "DB",
-      merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`
+      merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`,
+      card: {
+        maskedPan: savedCard.maskedCardNumber,
+        brand: savedCard.cardBrand,
+        holder: savedCard.cardholderName,
+        expiryMonth: savedCard.expiryMonth,
+        expiryYear: savedCard.expiryYear
+      }
     };
     
     return mockResponse;
   }
   
-  // Real AFS API call for production
+  // Real server-to-server payment using full card details
   const afsUrl = `${process.env.AFS_DOMAIN}/v1/payments`;
   const entityId = process.env.AFS_ENTITY_ID;
   const accessToken = process.env.AFS_ACCESS_TOKEN;
@@ -851,53 +940,60 @@ async function processSubscriptionPayment(subscription) {
   afsData.append('amount', installmentAmount.toString());
   afsData.append('currency', 'AED');
   afsData.append('paymentType', 'DB');
-  // For recurring payments, try using recurringType without registrationId first
-  afsData.append('recurringType', 'REPEATED');
   afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
   
-  // Try using checkoutId instead of registrationId for recurring payments
-  if (subscription.afs_checkout_id) {
-    afsData.append('checkoutId', subscription.afs_checkout_id);
-  }
+  // Add full card details for server-to-server payment
+  afsData.append('paymentBrand', savedCard.cardBrand);
+  afsData.append('card.number', savedCard.cardNumber);
+  afsData.append('card.expiryMonth', savedCard.expiryMonth);
+  afsData.append('card.expiryYear', savedCard.expiryYear);
+  afsData.append('card.holder', savedCard.cardholderName);
   
-  // Add payment brand - use stored brand from initial payment
-  const paymentBrand = subscription.afs_payment_brand || 'VISA'; // Use stored brand or default to VISA
-  afsData.append('paymentBrand', paymentBrand);
+  // Add test mode if in development
+  if (process.env.NODE_ENV === 'development') {
+    afsData.append('testMode', 'EXTERNAL');
+  }
   
   const afsHeaders = {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/x-www-form-urlencoded"
   };
   
-  console.log('🔗 AFS API Request Details:');
+  console.log('🔗 Server-to-Server Payment Request Details:');
   console.log('- URL:', afsUrl);
   console.log('- Entity ID:', entityId);
   console.log('- Amount:', installmentAmount);
-  console.log('- Checkout ID:', subscription.afs_checkout_id);
-  console.log('- Registration ID:', subscription.afs_registration_id, '(not used in this request)');
+  console.log('- Card Brand:', savedCard.cardBrand);
+  console.log('- Card Number:', savedCard.cardNumber ? 'Present' : 'Missing');
+  console.log('- Card Holder:', savedCard.cardholderName);
+  console.log('- Expiry:', `${savedCard.expiryMonth}/${savedCard.expiryYear}`);
   console.log('- Merchant Transaction ID:', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
-  console.log('- Payment Type:', 'DB (Debit)');
-  console.log('- Recurring Type:', 'REPEATED (for recurring payments)');
-  console.log('- Payment Brand:', paymentBrand, subscription.afs_payment_brand ? '(from stored data)' : '(default fallback)');
+  console.log('- Payment Type:', 'DB (Direct Debit)');
   
   try {
     const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
     
-    console.log('📡 AFS API Response:');
+    console.log('📡 Server-to-Server Payment Response:');
     console.log('- Status:', response.status);
     console.log('- Data:', JSON.stringify(response.data, null, 2));
     
     if (response.data && response.data.result && response.data.result.code.startsWith('000.')) {
-      // Payment successful - webhook will handle the rest
-      console.log('✅ AFS Payment successful');
+      // Payment successful
+      console.log('✅ Server-to-Server Payment successful');
+      
+      // Update card's last used date
+      await SavedCard.findByIdAndUpdate(savedCard._id, {
+        lastUsedDate: new Date()
+      });
+      
       return response.data;
     } else {
       const errorMsg = `Payment failed: ${response.data?.result?.description || 'Unknown error'}`;
-      console.error('❌ AFS Payment failed:', errorMsg);
+      console.error('❌ Server-to-Server Payment failed:', errorMsg);
       throw new Error(errorMsg);
     }
   } catch (axiosError) {
-    console.error('🚨 AFS API Error:');
+    console.error('🚨 Server-to-Server Payment API Error:');
     console.error('- Status:', axiosError.response?.status);
     console.error('- Status Text:', axiosError.response?.statusText);
     console.error('- Response Data:', JSON.stringify(axiosError.response?.data, null, 2));
@@ -914,6 +1010,89 @@ async function processSubscriptionPayment(subscription) {
     }
   }
 }
+
+/**
+ * Test server-to-server payment with a specific subscription
+ * This endpoint can be used to test the new payment logic
+ */
+export const testServerToServerPayment = async (req, res) => {
+  try {
+    const { quotepaymentId } = req.params;
+    
+    if (!quotepaymentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quote payment ID is required'
+      });
+    }
+    
+    console.log(`🧪 Testing server-to-server payment for subscription: ${quotepaymentId}`);
+    
+    // Find the subscription
+    const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId });
+    
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'Subscription not found'
+      });
+    }
+    
+    // Test card retrieval
+    const savedCard = await getCustomerDefaultCard(subscription);
+    
+    if (!savedCard) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid saved card found for customer',
+        subscription: {
+          quotepaymentId: subscription.quotepaymentId,
+          customerEmail: subscription.opp_email,
+          customerName: subscription.Customer_name
+        }
+      });
+    }
+    
+    // Return test information (don't actually process payment)
+    res.json({
+      success: true,
+      message: 'Server-to-server payment test successful',
+      subscription: {
+        quotepaymentId: subscription.quotepaymentId,
+        customerEmail: subscription.opp_email,
+        customerName: subscription.Customer_name,
+        totalAmount: subscription.Total_After_VAT_Currency,
+        installmentLeft: subscription.InstallmentLeft,
+        paymentsCompleted: subscription.payments_completed
+      },
+      card: {
+        cardId: savedCard._id,
+        maskedCardNumber: savedCard.maskedCardNumber,
+        cardBrand: savedCard.cardBrand,
+        cardholderName: savedCard.cardholderName,
+        expiryMonth: savedCard.expiryMonth,
+        expiryYear: savedCard.expiryYear,
+        hasFullCardNumber: !!savedCard.cardNumber,
+        isDefault: savedCard.isDefault,
+        isActive: savedCard.isActive
+      },
+      paymentDetails: {
+        installmentAmount: parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)),
+        currency: 'AED',
+        paymentType: 'DB',
+        merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Test server-to-server payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Test failed',
+      error: error.message
+    });
+  }
+};
 
 /**
  * Get subscription status

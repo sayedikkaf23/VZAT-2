@@ -7,7 +7,8 @@ import {
   updateNextChargeDate,
   fixInstallmentLeft,
   testSubscriptionCompletionEmail,
-  testPaymentFailureEmail
+  testPaymentFailureEmail,
+  testServerToServerPayment
 } from "../Controllers/SubscriptionController.js";
 import { testEmailConfiguration } from "../services/emailService.js";
 import { testSalesforceConnection, updateQuotePaymentStatus, clearTokenCache } from "../services/salesforceService.js";
@@ -29,6 +30,9 @@ router.put('/update-next-charge/:quotepaymentId', updateNextChargeDate);
 
 // Fix missing InstallmentLeft field (for testing)
 router.put('/fix-installment-left/:quotepaymentId', fixInstallmentLeft);
+
+// Test server-to-server payment logic
+router.post('/test/server-to-server/:quotepaymentId', testServerToServerPayment);
 
 // EMAIL TESTING ENDPOINTS
 // Test basic email configuration
