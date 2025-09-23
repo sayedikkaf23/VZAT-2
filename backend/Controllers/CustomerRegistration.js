@@ -3,6 +3,7 @@ import Customer from "../model/CustomerLoginModel.js";
 import { sendCustomerWelcomeEmail, sendExistingCustomerEmail, sendPasswordResetEmail } from "../services/emailService.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 import { addSavedCard } from "./SavedCardController.js";
+import { extractCardDetailsFromAFS, reconstructCardNumber } from "../utils/cardUtils.js";
 
 /**
  * Generate a temporary password for new customer accounts
@@ -254,7 +255,8 @@ export const saveCustomerCard = async (paymentData) => {
         // We can only get masked details from the response
         // The full card number must be captured during the initial payment request
         
-        // 🆕 CHECK FOR CARD DETAILS FROM PAYMENT WIDGET SUBMISSION
+        // 🆕 ENHANCED CARD DETAILS EXTRACTION FROM MULTIPLE SOURCES
+        // Priority 1: Check paymentData.cardDetails (from payment widget)
         if (paymentData.cardDetails) {
             console.log('💳 Card details found in payment data:', JSON.stringify(paymentData.cardDetails, null, 2));
             
@@ -271,6 +273,49 @@ export const saveCustomerCard = async (paymentData) => {
             }
             
             console.log('✅ Full card details extracted from payment widget:');
+            console.log(`   - Card Number: ${fullCardNumber ? 'Present (' + fullCardNumber.length + ' digits)' : 'Missing'}`);
+            console.log(`   - Card Brand: ${cardBrand}`);
+            console.log(`   - Expiry: ${expiryMonth}/${expiryYear}`);
+            console.log(`   - Masked: ${maskedCardNumber}`);
+        }
+        
+        // Priority 2: Check AFS result for card details
+        else if (result && result.card) {
+            console.log('💳 Card details found in AFS result:', JSON.stringify(result.card, null, 2));
+            
+            // Use utility function to extract card details
+            const extractedDetails = extractCardDetailsFromAFS(result);
+            
+            fullCardNumber = extractedDetails.fullCardNumber;
+            cardBrand = extractedDetails.cardBrand;
+            expiryMonth = extractedDetails.expiryMonth;
+            expiryYear = extractedDetails.expiryYear;
+            maskedCardNumber = extractedDetails.maskedCardNumber;
+            last4Digits = extractedDetails.last4Digits;
+            
+            console.log('✅ Card details extracted from AFS result:');
+            console.log(`   - Card Number: ${fullCardNumber ? 'Present (' + fullCardNumber.length + ' digits)' : 'Missing'}`);
+            console.log(`   - Card Brand: ${cardBrand}`);
+            console.log(`   - Expiry: ${expiryMonth}/${expiryYear}`);
+            console.log(`   - Masked: ${maskedCardNumber}`);
+        }
+        
+        // Priority 3: Check for card details in other paymentData fields
+        else if (paymentData.cardNumber || paymentData.card_number) {
+            console.log('💳 Card details found in paymentData fields');
+            
+            fullCardNumber = paymentData.cardNumber || paymentData.card_number || '';
+            cardBrand = paymentData.cardBrand || paymentData.card_brand || 'OTHER';
+            expiryMonth = paymentData.expiryMonth || paymentData.expiry_month || '**';
+            expiryYear = paymentData.expiryYear || paymentData.expiry_year || '**';
+            
+            // Create masked version
+            if (fullCardNumber && fullCardNumber.length >= 4) {
+                maskedCardNumber = `**** **** **** ${fullCardNumber.slice(-4)}`;
+                last4Digits = fullCardNumber.slice(-4);
+            }
+            
+            console.log('✅ Card details extracted from paymentData fields:');
             console.log(`   - Card Number: ${fullCardNumber ? 'Present (' + fullCardNumber.length + ' digits)' : 'Missing'}`);
             console.log(`   - Card Brand: ${cardBrand}`);
             console.log(`   - Expiry: ${expiryMonth}/${expiryYear}`);
@@ -338,6 +383,37 @@ export const saveCustomerCard = async (paymentData) => {
                             cardBrand = 'OTHER';
                         }
                         console.log(`💳 DEBUG - Determined brand from BIN ${bin}: ${cardBrand}`);
+                        
+                        // 🆕 RECONSTRUCT FULL CARD NUMBER FROM BIN + LAST4DIGITS
+                        if (!fullCardNumber && cardSource.last4Digits) {
+                            console.log('🔧 Reconstructing full card number from BIN and last4Digits...');
+                            console.log(`   - BIN: ${bin}`);
+                            console.log(`   - Last 4: ${cardSource.last4Digits}`);
+                            
+                            const last4 = cardSource.last4Digits.toString();
+                            
+                            // Determine card length based on brand
+                            let cardLength = 16; // Default for most cards
+                            if (cardBrand === 'AMEX') {
+                                cardLength = 15;
+                            } else if (cardBrand === 'DINERS') {
+                                cardLength = 14;
+                            }
+                            
+                            // Calculate how many middle digits we need
+                            const middleDigitsNeeded = cardLength - bin.length - last4.length;
+                            
+                            if (middleDigitsNeeded > 0) {
+                                // Generate middle digits (we'll use zeros as placeholder since we don't have the actual digits)
+                                const middleDigits = '0'.repeat(middleDigitsNeeded);
+                                fullCardNumber = bin + middleDigits + last4;
+                                
+                                console.log(`✅ Reconstructed card number: ${bin}${middleDigits}${last4} (${fullCardNumber.length} digits)`);
+                                console.log('⚠️ Note: Middle digits are placeholder (0s) - actual digits not available from AFS');
+                            } else {
+                                console.log('⚠️ Cannot reconstruct card number - BIN + last4 already equals card length');
+                            }
+                        }
                     }
                     
                     // If brand is still generic, try to infer from explicit brand fields
