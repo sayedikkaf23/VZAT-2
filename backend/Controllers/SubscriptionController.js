@@ -139,17 +139,45 @@ export const handleAFSWebhook = async (req, res) => {
    
 
     // Handle different payment types
-   
-    
-    if (paymentType ***REMOVED***= 'DB' && result.code.startsWith('000.')) {
+    // Support both DB (Direct Bank) and PA (Pre-Authorization) for recurring payments
+    if ((paymentType ***REMOVED***= 'DB' || paymentType ***REMOVED***= 'PA') && result.code.startsWith('000.')) {
       // Check if this is the first payment (payments_completed is 0 or 1, and we have a registrationId)
       const isFirstPayment = (subscriptionRecord.payments_completed || 0) <= 1 && registrationId;
       
-      console.log('🔍 WEBHOOK PAYMENT ANALYSIS:');
-      console.log('   - Subscription Status:', subscriptionRecord.subscription_status);
-      console.log('   - Payments Completed:', subscriptionRecord.payments_completed || 0);
-      console.log('   - Registration ID:', registrationId);
-      console.log('   - Is First Payment:', isFirstPayment);
+    console.log('🔍 WEBHOOK PAYMENT ANALYSIS:');
+    console.log('   - Subscription Status:', subscriptionRecord.subscription_status);
+    console.log('   - Payments Completed:', subscriptionRecord.payments_completed || 0);
+    console.log('   - Registration ID:', registrationId);
+    console.log('   - Is First Payment:', isFirstPayment);
+    console.log('   - Payment Type:', paymentType);
+    console.log('   - Transaction ID:', id);
+    
+    // 🆕 DUPLICATE PAYMENT DETECTION
+    // Check if this payment has already been processed by checking the payment schedule
+    const existingPayment = subscriptionRecord.payment_schedule?.find(
+      payment => payment.transaction_id ***REMOVED***= id
+    );
+    
+    if (existingPayment) {
+      console.log('⚠️ DUPLICATE PAYMENT DETECTED:');
+      console.log(`   - Transaction ID ${id} already processed`);
+      console.log(`   - Payment #${existingPayment.installment_number} already completed`);
+      console.log('ℹ️ Skipping webhook processing to prevent duplicate emails');
+      
+      // Log the duplicate detection
+      Post_Common_DB_Log_Data('/webhook/afs-duplicate', req.body, { 
+        message: 'Duplicate payment detected - skipping processing',
+        subscriptionId: subscriptionRecord._id,
+        transactionId: id,
+        existingPayment: existingPayment
+      });
+      
+      return res.status(200).json({ 
+        message: 'Duplicate payment detected - already processed',
+        transactionId: id,
+        status: 'skipped'
+      });
+    }
       
       if (isFirstPayment) {
         // First payment successful - activate subscription
