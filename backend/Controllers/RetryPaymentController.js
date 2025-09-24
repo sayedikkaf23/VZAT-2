@@ -102,6 +102,12 @@ export const retryPayment = async (req, res) => {
       status: failedPayment.status
     });
 
+    // Debug: Log all payments in the schedule
+    console.log('📋 All payments in schedule:');
+    subscription.payment_schedule.forEach(p => {
+      console.log(`  - Payment ${p.installment_number}: ${p.status} (${p.amount})`);
+    });
+
     // Validate AFS registration ID format (must be UUID format)
     if (!savedCard.afs_registration_id) {
       console.log('❌ No AFS registration ID found');
@@ -264,9 +270,15 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
 async function updateSubscriptionAfterRetry(subscription, payment, transactionId) {
   try {
     console.log('🔄 Updating subscription after successful retry...');
+    console.log('📋 Payment details:', {
+      installment_number: payment.installment_number,
+      status: payment.status,
+      amount: payment.amount,
+      transactionId: transactionId
+    });
 
     // Update payment schedule
-    await Vzat_Recurring_Data.findOneAndUpdate(
+    const updateResult = await Vzat_Recurring_Data.findOneAndUpdate(
       { 
         _id: subscription._id, 
         'payment_schedule.installment_number': payment.installment_number 
@@ -277,8 +289,18 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
           'payment_schedule.$.transaction_id': transactionId,
           'payment_schedule.$.payment_date': new Date()
         } 
-      }
+      },
+      { new: true }
     );
+
+    console.log('✅ Payment schedule updated:', updateResult ? 'Success' : 'Failed');
+    
+    // Verify the update by checking the payment schedule
+    const updatedSubscription = await Vzat_Recurring_Data.findById(subscription._id);
+    const updatedPayment = updatedSubscription.payment_schedule.find(p => 
+      p.installment_number ***REMOVED***= payment.installment_number
+    );
+    console.log('🔍 Verification - Updated payment status:', updatedPayment?.status);
 
     // Update subscription
     const nextDuePayment = subscription.payment_schedule.find(p => 
