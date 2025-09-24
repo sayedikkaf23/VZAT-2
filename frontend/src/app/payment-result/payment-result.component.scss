@@ -1646,4 +1646,51 @@ hr {
   .payment-schedule .price {
     margin-bottom: 15px; /* Add space between amount and message */
   }
+
+  /* Error state mobile styles to match success state */
+  .payment-schedule .error-tick-mobile {
+    margin-bottom: 15px;
+  }
+
+  .payment-schedule .error-text-mobile h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #dc3545;
+    margin-bottom: 8px;
+  }
+
+  .payment-schedule .error-text-mobile p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 0;
+  }
+
+  .payment-schedule .price-mobile {
+    font-size: 24px;
+    font-weight: 700;
+    color: #000;
+    margin-bottom: 20px;
+  }
+
+  /* Desktop error styles */
+  .payment-schedule .desktop-error-title {
+    color: #dc3545;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .payment-schedule .desktop-error-subtitle {
+    font-size: 16px;
+    font-weight: 400;
+    color: #555;
+    margin-bottom: 10px;
+  }
+
+  .payment-schedule .desktop-error-reason {
+    font-size: 16px;
+    font-weight: 400;
+    color: #dc3545;
+    margin-bottom: 20px;
+  }
 }
