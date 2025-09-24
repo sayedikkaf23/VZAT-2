@@ -86,6 +86,16 @@ export const retryPayment = async (req, res) => {
     const failedPayment = subscription.payment_schedule.find(p => 
       p.status ***REMOVED***= 'failed'
     );
+    
+    // Debug: Log the exact failed payment found
+    if (failedPayment) {
+      console.log('🎯 Found failed payment:', {
+        installment_number: failedPayment.installment_number,
+        status: failedPayment.status,
+        amount: failedPayment.amount,
+        _id: failedPayment._id
+      });
+    }
 
     if (!failedPayment) {
       console.log('❌ No failed payments found to retry');
@@ -274,7 +284,14 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
       installment_number: payment.installment_number,
       status: payment.status,
       amount: payment.amount,
-      transactionId: transactionId
+      transactionId: transactionId,
+      paymentId: payment._id
+    });
+    
+    // Debug: Log the exact query being used
+    console.log('🔍 MongoDB Query:', {
+      _id: subscription._id,
+      'payment_schedule.installment_number': payment.installment_number
     });
 
     // Update payment schedule
@@ -301,6 +318,13 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
       p.installment_number ***REMOVED***= payment.installment_number
     );
     console.log('🔍 Verification - Updated payment status:', updatedPayment?.status);
+    console.log('🔍 Verification - Updated payment transaction_id:', updatedPayment?.transaction_id);
+    
+    // Debug: Show all payments after update
+    console.log('📋 All payments after update:');
+    updatedSubscription.payment_schedule.forEach(p => {
+      console.log(`  - Payment ${p.installment_number}: ${p.status} (Transaction: ${p.transaction_id || 'N/A'})`);
+    });
 
     // Update subscription
     const nextDuePayment = subscription.payment_schedule.find(p => 
