@@ -24,8 +24,23 @@
         <h2>{{ customerName || 'Customer' }}!</h2>
         <hr />
         <p class="mb-2">Your payment against Proforma Invoice <b class="fw-semibold">No - {{ quotepaymentId || 'Not available' }} is </b></p>
-      <h2 class="price">AED {{ paymentAmount | number:'1.2-2' }}</h2>
-        <!-- <p class="small-text">Thank you for your payment.</p> -->
+        
+        <!-- Error tick mark above amount in mobile view -->
+        <div class="error-tick-mobile d-block d-md-none mb-3">
+          <img src="assets/images/payment-error.png" class="d-block mx-auto" style="width: 80px; height: 80px;" />
+        </div>
+        
+        <!-- Payment Error text for mobile view -->
+        <div class="error-text-mobile d-block d-md-none mb-3">
+          <h4 class="text-center mb-2">Payment Error!</h4>
+          <p class="text-center small">Sorry, your transaction has failed!</p>
+        </div>
+        
+        <!-- Amount for mobile view - moved below error text -->
+        <h2 class="price-mobile d-block d-md-none mb-3">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+        
+        <!-- Amount for desktop view only -->
+        <h2 class="price d-none d-md-block">AED {{ paymentAmount | number:'1.2-2' }}</h2>
 
         <!-- Need Assistance Section in Sidebar -->
         <app-sales-agent-sidebar [salesAgent]="salesAgent" title="Need Assistance?" subtitle="Contact us">
@@ -36,16 +51,24 @@
     <div class="details-content">
       <div class="container">
         <div class="pm-submit-info text-center">
-          <div class="icon">
-            <img src="assets/images/payment-error.png" class="d-block mx-auto"/>
+          <!-- Error tick mark for desktop view -->
+          <div class="icon d-none d-md-block mb-3">
+            <img src="assets/images/payment-error.png" class="d-block mx-auto" />
           </div>
-          <h3>Payment Error!</h3>
-          <h5>Sorry, your transaction has failed!<br/>
-            {{!reason?"Please try again later.":''}}</h5>
-          <h5 *ngIf="reason"><b>Reason:</b> {{reason}}</h5>
-          <hr/>
-          <div class="text-center mt-5">
-            <a (click)="tryAgain()" class="btn btn-danger">Try Again</a>
+          
+          <h3 class="desktop-error-title d-none d-md-block">Payment Error!</h3>
+          <h5 class="subtitle desktop-error-subtitle d-none d-md-block">Sorry, your transaction has failed!</h5>
+          <h5 *ngIf="reason" class="desktop-error-reason d-none d-md-block"><b>Reason:</b> {{reason}}</h5>
+          <hr class="d-none d-md-block" />
+
+          <h6 class="d-none d-md-block">AMOUNT</h6>
+          <h2 *ngIf="paymentAmount" class="d-none d-md-block">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+
+          <!-- Error content below the amount (desktop only) -->
+          <div class="error-content mt-4 d-none d-md-block">
+            <div class="text-center mt-5">
+              <a (click)="tryAgain()" class="btn btn-danger">Try Again</a>
+            </div>
           </div>
         </div>
       </div>
