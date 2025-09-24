@@ -220,6 +220,13 @@ export const saveCustomerCard = async (paymentData) => {
         // Extract the correct registration ID from AFS result
         let registrationId = null;
         
+        console.log('💳 DEBUG - Checking AFS result for registration ID...');
+        console.log(`💳 DEBUG - result.registrationId: ${result?.registrationId}`);
+        console.log(`💳 DEBUG - result.id: ${result?.id}`);
+        console.log(`💳 DEBUG - result type: ${typeof result}`);
+        console.log(`💳 DEBUG - result keys: ${result ? Object.keys(result) : 'null'}`);
+        
+        // CRITICAL FIX: Always prioritize registrationId over id
         if (result && result.registrationId) {
             // Use the actual card registration ID from AFS result
             registrationId = result.registrationId;
@@ -238,6 +245,13 @@ export const saveCustomerCard = async (paymentData) => {
         
         // Log the final registration ID being used
         console.log(`💳 📋 FINAL REGISTRATION ID FOR CARD SAVE: ${registrationId}`);
+        
+        // ADDITIONAL VALIDATION: If we're using the payment transaction ID, try to find the registration ID
+        if (result && result.id ***REMOVED***= registrationId && result.registrationId) {
+            console.log(`💳 🔧 CORRECTION - Found registrationId in result, updating from ${registrationId} to ${result.registrationId}`);
+            registrationId = result.registrationId;
+            console.log(`💳 ✅ CORRECTED - Final registration ID: ${registrationId}`);
+        }
         
         // Validate required data - relax the registration ID requirement for now
         if (!opp_email || !quotepaymentId) {
