@@ -425,7 +425,7 @@ export const processRecurringPayments = async (req, res) => {
             { 
               $and: [
                 { last_processed_date: { $gte: today } },
-                { payment_retry_count: { $exists: true, $gt: 0, $lt: 3 } }
+                { payment_retry_count: { $exists: true, $eq: 0 } }
               ]
             }
           ]
@@ -451,7 +451,7 @@ export const processRecurringPayments = async (req, res) => {
         allActiveSubscriptions.forEach(sub => {
           const hasRetryCount = sub.payment_retry_count !== undefined && sub.payment_retry_count > 0;
           const processedToday = sub.last_processed_date && new Date(sub.last_processed_date).toDateString() === today.toDateString();
-          const maxRetriesExceeded = sub.payment_retry_count >= 3;
+          const maxRetriesExceeded = sub.payment_retry_count >= 1;
           
           console.log(`   📋 ${sub.quotepaymentId}:`);
           console.log(`      - Processed today: ${processedToday}`);
@@ -647,7 +647,7 @@ export const processRecurringPayments = async (req, res) => {
         // Don't mark as processed on failure - allow retry
         // Only mark as processed if we've exceeded retry limit
         const retryCount = subscription.payment_retry_count || 0;
-        const maxRetries = 3; // Allow 3 retries
+        const maxRetries = 1; // Only attempt once per day, then customer can retry manually
         
         if (retryCount >= maxRetries) {
           console.log(`🚫 MAX RETRIES EXCEEDED for ${subscription.quotepaymentId} (${retryCount}/${maxRetries}), marking as processed`);

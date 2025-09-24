@@ -16,6 +16,7 @@ import TestPaymentRoute from "./routes/TestPaymentRoute.js";
 import TestPaymentUpdate from "./routes/TestPaymentUpdate.js";
 import DebugRoute from "./routes/DebugRoute.js";
 import WebhookDebugRoute from "./routes/WebhookDebugRoute.js";
+import RetryPaymentRoute from "./routes/RetryPaymentRoute.js";
 import { getAFSPaymentResult } from "./Controllers/PostVzatRecurringData.js";
 import { connectDB, disconnectDB } from "./config/db.js";
 import Vzat_Recurring_Data from "./model/VzatRecurringDataModel.js";
@@ -74,6 +75,7 @@ app.use('/api/customer', ActiveServicesRoute);
 app.use('/api/test-payment', TestPaymentRoute);
 app.use('/api/test-payment-update', TestPaymentUpdate);
 app.use('/api/debug', WebhookDebugRoute);
+app.use('/api/retry-payment', RetryPaymentRoute);
 
 // Payment schedule API endpoint for Angular component
 app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
