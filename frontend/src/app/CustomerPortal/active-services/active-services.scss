@@ -422,7 +422,7 @@
 
 // Retry button in payment schedule modal
 .retry-payment-btn {
-  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  background: linear-gradient(135deg, #ff2a47, #dc3545);
   color: white;
   border: none;
   border-radius: 8px;
@@ -430,7 +430,7 @@
   font-size: 12px;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.35);
   min-width: 70px;
   text-align: center;
   display: inline-flex;
@@ -439,18 +439,14 @@
   gap: 4px;
 
   &:hover {
-    background: linear-gradient(135deg, #e55a2b, #e0841a);
+    background: linear-gradient(135deg, #e61e3b, #c82333);
     color: white;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.45);
   }
 
   &:active {
     transform: translateY(0);
-  }
-
-  i {
-    font-size: 10px;
   }
 
   i {
