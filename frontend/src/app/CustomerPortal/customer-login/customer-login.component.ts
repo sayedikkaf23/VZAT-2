@@ -118,20 +118,20 @@ export class CustomerLoginComponent {
               this.router.navigate(['/active-services']);   //set the navigation path for customer, after logging in 
             }
           } else {
-            this.toastr.error(res.message);
+          this.toastr.error(res.message || 'Invalid email or password');
         }
-        },
-        error: (err:any) => {
-        console.log(err)
-        },
-        complete: () => {},
-      });
-    }
-    else{
-      console.log("first");
-      this.toastr.error("Both Email and password are required to login");
-    }
+      },
+      error: (err: any) => {
+        console.error('Login error:', err);
+        this.toastr.error(
+          err?.error?.message || 'Invalid email or password. Please try again.'
+        );
+      }
+    });
+  } else {
+    this.toastr.error('Both Email and password are required to login');
   }
+}
 
     ngOnDestroy(): void {
     this.styleLoader.removeThemes(this.themeUrls);
