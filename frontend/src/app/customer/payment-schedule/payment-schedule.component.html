@@ -9,27 +9,6 @@
     </div>
   </div>
 
-  <!-- First Payment Completed Overlay -->
-  <div *ngIf="isFirstPaymentCompleted && !isLoading" class="first-payment-completed-overlay">
-    <div class="overlay-content text-center">
-      <div class="checkmark-icon mb-3">
-        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
-      </div>
-      <h2 class="text-success mb-3">Payment Schedule Completed</h2>
-      <p class="lead mb-4">Your first payment has been successfully processed.</p>
-      <p class="mb-4">You can view your payment history and manage your subscription through your customer portal.</p>
-      <div class="d-flex justify-content-center gap-3">
-        <button class="btn btn-primary" (click)="goToCustomerPortal()">
-          <i class="fas fa-user-circle me-2"></i>
-          Go to Customer Portal
-        </button>
-        <button class="btn btn-outline-secondary" (click)="contactSupport()">
-          <i class="fas fa-headset me-2"></i>
-          Contact Support
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- Error Message -->
   <div *ngIf="errorMessage && !isLoading" class="alert alert-warning m-3">
