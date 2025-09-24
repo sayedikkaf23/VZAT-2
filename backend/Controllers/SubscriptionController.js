@@ -141,28 +141,28 @@ export const handleAFSWebhook = async (req, res) => {
   // Only process successful payments - disable failed payment processing to prevent failure emails
   if (!result || !result.code || !result.code.startsWith('000.')) {
     console.log('🚫 WEBHOOK DISABLED FOR FAILED PAYMENTS:');
-    console.log(`   - Payment Type: ${paymentType}`);
-    console.log(`   - Merchant Transaction ID: ${merchantTransactionId || 'N/A'}`);
-    console.log(`   - Transaction ID: ${id || 'N/A'}`);
-    console.log(`   - Result Code: ${result?.code || 'N/A'}`);
+  console.log(`   - Payment Type: ${paymentType}`);
+  console.log(`   - Merchant Transaction ID: ${merchantTransactionId || 'N/A'}`);
+  console.log(`   - Transaction ID: ${id || 'N/A'}`);
+  console.log(`   - Result Code: ${result?.code || 'N/A'}`);
     console.log('ℹ️ Failed payment webhook processing disabled to prevent failure emails');
     console.log('ℹ️ Only successful payments are processed');
-    
-    // Log the disabled webhook
+  
+  // Log the disabled webhook
     Post_Common_DB_Log_Data('/webhook/afs-disabled-failed', req.body, { 
       message: 'Webhook disabled for failed payment - preventing failure emails',
-      paymentType: paymentType,
-      merchantTransactionId: merchantTransactionId,
-      transactionId: id,
-      result: result,
+    paymentType: paymentType,
+    merchantTransactionId: merchantTransactionId,
+    transactionId: id,
+    result: result,
       reason: 'Failed payment processing disabled'
-    });
-    
-    return res.status(200).json({ 
+  });
+  
+  return res.status(200).json({ 
       message: 'Webhook disabled for failed payment - preventing failure emails',
-      paymentType: paymentType,
-      merchantTransactionId: merchantTransactionId,
-      transactionId: id,
+    paymentType: paymentType,
+    merchantTransactionId: merchantTransactionId,
+    transactionId: id,
       status: 'disabled_failed_payment'
     });
   }
@@ -639,7 +639,7 @@ export const processRecurringPayments = async (req, res) => {
         
         // Handle failed payment retry logic
         const retryCount = subscription.payment_retry_count || 0;
-        const maxRetries = 1; // Allow retries for 3 days
+        const maxRetries = 3; // Allow retries for 3 days
         
         if (retryCount >= maxRetries) {
           console.log(`🚫 MAX RETRIES EXCEEDED for ${subscription.quotepaymentId} (${retryCount}/${maxRetries}), marking as processed`);
@@ -705,51 +705,65 @@ export const processRecurringPayments = async (req, res) => {
         //   console.error('📧 Error sending failure email to operations team:', emailError);
         // }
         
-        // 📧 SEND FAILURE EMAIL TO CUSTOMER AND OPERATIONS TEAM
+        // 📧 SEND FAILURE EMAIL TO CUSTOMER AND OPERATIONS TEAM (only once per day)
         try {
-          console.log('📧 Sending payment failure email...');
+          // Check if we already sent a failure email today
+          const lastFailureEmailDate = subscription.last_failure_email_date;
+          const today = new Date().toDateString();
+          const shouldSendEmail = !lastFailureEmailDate || new Date(lastFailureEmailDate).toDateString() !***REMOVED*** today;
           
-          // Calculate installment amount for email
-          const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2));
-          
-          // Import email service
-          const { sendPaymentFailureNotificationEmail } = await import('../services/emailService.js');
-          
-          // Extract clean error message from AFS response
-          let cleanErrorMessage = error.message;
-          
-          // If it's an AFS error, extract just the description
-          if (error.message.includes('"description":"')) {
-            try {
-              const match = error.message.match(/"description":"([^"]+)"/);
-              if (match && match[1]) {
-                cleanErrorMessage = match[1];
+          if (shouldSendEmail) {
+            console.log('📧 Sending payment failure email...');
+            
+            // Calculate installment amount for email
+            const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2));
+            
+            // Import email service
+            const { sendPaymentFailureNotificationEmail } = await import('../services/emailService.js');
+            
+            // Extract clean error message from AFS response
+            let cleanErrorMessage = error.message;
+            
+            // If it's an AFS error, extract just the description
+            if (error.message.includes('"description":"')) {
+              try {
+                const match = error.message.match(/"description":"([^"]+)"/);
+                if (match && match[1]) {
+                  cleanErrorMessage = match[1];
+                }
+              } catch (parseError) {
+                // Keep original error if parsing fails
+                console.log('⚠️ Could not parse AFS error message, using original');
               }
-            } catch (parseError) {
-              // Keep original error if parsing fails
-              console.log('⚠️ Could not parse AFS error message, using original');
             }
-          }
-          
-          // Prepare email data
-          const emailData = {
-            quotepaymentId: subscription.quotepaymentId,
-            Customer_name: subscription.Customer_name || 'Customer',
-            opp_email: subscription.opp_email,
-            payment_amount: installmentAmount,
-            due_date: today.toISOString().slice(0, 10),
-            failure_reason: cleanErrorMessage,
-            payment_link: 'https://vzatnew.yeepeey.com/login',
-            salesPersonDetails: subscription.salesPersonDetails
-          };
-          
-          // Send failure email
-          const emailResult = await sendPaymentFailureNotificationEmail(emailData);
-          
-          if (emailResult.success) {
-            console.log('📧 Payment failure email sent successfully to customer');
+            
+            // Prepare email data
+            const emailData = {
+              quotepaymentId: subscription.quotepaymentId,
+              Customer_name: subscription.Customer_name || 'Customer',
+              opp_email: subscription.opp_email,
+              payment_amount: installmentAmount,
+              due_date: today.toISOString().slice(0, 10),
+              failure_reason: cleanErrorMessage,
+              payment_link: 'https://vzatnew.yeepeey.com/login',
+              salesPersonDetails: subscription.salesPersonDetails
+            };
+            
+            // Send failure email
+            const emailResult = await sendPaymentFailureNotificationEmail(emailData);
+            
+            if (emailResult.success) {
+              console.log('📧 Payment failure email sent successfully to customer');
+              
+              // Update last failure email date
+              await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+                last_failure_email_date: new Date()
+              });
+            } else {
+              console.error('📧 Failed to send failure email to customer:', emailResult.error);
+            }
           } else {
-            console.error('📧 Failed to send failure email to customer:', emailResult.error);
+            console.log('📧 Failure email already sent today, skipping...');
           }
         } catch (emailError) {
           console.error('📧 Error sending failure email to customer:', emailError);
