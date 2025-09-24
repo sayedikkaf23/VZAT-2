@@ -28,6 +28,6 @@ export class RetryPaymentService {
    * Retry a failed payment
    */
   retryPayment(request: RetryPaymentRequest): Observable<RetryPaymentResponse> {
-    return this.http.post<RetryPaymentResponse>(`${this.apiUrl}/api/retry-payment/retry-payment`, request);
+    return this.http.post<RetryPaymentResponse>(`${this.apiUrl}/retry-payment/retry-payment`, request);
   }
 }
