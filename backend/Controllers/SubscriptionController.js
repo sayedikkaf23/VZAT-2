@@ -129,8 +129,6 @@ export const handleAFSWebhook = async (req, res) => {
   console.log('🌐 User Agent:', req.get('User-Agent'));
   console.log('📋 Request Body:', JSON.stringify(req.body, null, 2));
   
-  // 🚫 COMPLETE WEBHOOK DISABLE
-  // This prevents ALL webhook processing to stop failure emails
   const { paymentType, merchantTransactionId, id, result } = req.body;
   
   console.log('🔍 WEBHOOK ANALYSIS:');
@@ -140,32 +138,188 @@ export const handleAFSWebhook = async (req, res) => {
   console.log(`   - Result Code: ${result?.code || 'N/A'}`);
   console.log(`   - Result Description: ${result?.description || 'N/A'}`);
   
-  // 🚫 DISABLE ALL WEBHOOK PROCESSING
-  console.log('🚫 WEBHOOK COMPLETELY DISABLED - ALL PAYMENTS:');
+  // Only process successful payments - disable failed payment processing to prevent failure emails
+  if (!result || !result.code || !result.code.startsWith('000.')) {
+    console.log('🚫 WEBHOOK DISABLED FOR FAILED PAYMENTS:');
+    console.log(`   - Payment Type: ${paymentType}`);
+    console.log(`   - Merchant Transaction ID: ${merchantTransactionId || 'N/A'}`);
+    console.log(`   - Transaction ID: ${id || 'N/A'}`);
+    console.log(`   - Result Code: ${result?.code || 'N/A'}`);
+    console.log('ℹ️ Failed payment webhook processing disabled to prevent failure emails');
+    console.log('ℹ️ Only successful payments are processed');
+    
+    // Log the disabled webhook
+    Post_Common_DB_Log_Data('/webhook/afs-disabled-failed', req.body, { 
+      message: 'Webhook disabled for failed payment - preventing failure emails',
+      paymentType: paymentType,
+      merchantTransactionId: merchantTransactionId,
+      transactionId: id,
+      result: result,
+      reason: 'Failed payment processing disabled'
+    });
+    
+    return res.status(200).json({ 
+      message: 'Webhook disabled for failed payment - preventing failure emails',
+      paymentType: paymentType,
+      merchantTransactionId: merchantTransactionId,
+      transactionId: id,
+      status: 'disabled_failed_payment'
+    });
+  }
+  
+  // Process successful payments only
+  console.log('✅ PROCESSING SUCCESSFUL PAYMENT WEBHOOK');
   console.log(`   - Payment Type: ${paymentType}`);
-  console.log(`   - Merchant Transaction ID: ${merchantTransactionId || 'N/A'}`);
-  console.log(`   - Transaction ID: ${id || 'N/A'}`);
-  console.log(`   - Result Code: ${result?.code || 'N/A'}`);
-  console.log('ℹ️ ALL webhook processing disabled to prevent failure emails');
-  console.log('ℹ️ All payments are handled by cron job - webhook completely disabled');
+  console.log(`   - Merchant Transaction ID: ${merchantTransactionId}`);
+  console.log(`   - Transaction ID: ${id}`);
+  console.log(`   - Result Code: ${result.code}`);
   
-  // Log the disabled webhook
-  Post_Common_DB_Log_Data('/webhook/afs-disabled-all', req.body, { 
-    message: 'Webhook completely disabled for ALL payments - handled by cron job',
-    paymentType: paymentType,
-    merchantTransactionId: merchantTransactionId,
-    transactionId: id,
-    result: result,
-    reason: 'All payments handled by cron job - preventing failure emails'
-  });
-  
-  return res.status(200).json({ 
-    message: 'Webhook completely disabled for ALL payments - handled by cron job',
-    paymentType: paymentType,
-    merchantTransactionId: merchantTransactionId,
-    transactionId: id,
-    status: 'disabled'
-  });
+  try {
+    // Find the subscription record
+    const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId: merchantTransactionId });
+    
+    if (!subscription) {
+      console.log('❌ Subscription not found for quotepaymentId:', merchantTransactionId);
+      return res.status(404).json({ 
+        message: 'Subscription not found',
+        quotepaymentId: merchantTransactionId
+      });
+    }
+    
+    console.log('✅ Subscription found:', {
+      quotepaymentId: subscription.quotepaymentId,
+      Customer_name: subscription.Customer_name,
+      subscription_status: subscription.subscription_status,
+      payments_completed: subscription.payments_completed
+    });
+    
+    // Check if this is the first payment
+    const isFirstPayment = (subscription.payments_completed || 0) ***REMOVED***= 0;
+    
+    if (isFirstPayment) {
+      console.log('🎉 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= PROCESSING FIRST PAYMENT WEBHOOK ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
+      
+      // 1. Update subscription status to active
+      console.log('🔄 Activating subscription...');
+      const subscriptionUpdate = await Vzat_Recurring_Data.findByIdAndUpdate(
+        subscription._id,
+        {
+          subscription_status: 'active',
+          afs_registration_id: id,
+          payments_completed: 1,
+          last_payment_date: new Date()
+        },
+        { new: true }
+      );
+      
+      console.log('✅ Subscription activated:');
+      console.log(`  - Status: ${subscriptionUpdate.subscription_status}`);
+      console.log(`  - Payments Completed: ${subscriptionUpdate.payments_completed}`);
+      console.log(`  - Registration ID: ${subscriptionUpdate.afs_registration_id}`);
+      console.log(`  - Last Payment: ${subscriptionUpdate.last_payment_date}`);
+      
+      // 2. Mark payment #1 as completed
+      console.log('🔄 Updating payment schedule...');
+      const payment1Update = await Vzat_Recurring_Data.findOneAndUpdate(
+        { 
+          _id: subscription._id,
+          'payment_schedule.installment_number': 1
+        },
+        {
+          $set: {
+            'payment_schedule.$.status': 'completed',
+            'payment_schedule.$.transaction_id': id,
+            'payment_schedule.$.payment_date': new Date()
+          }
+        },
+        { new: true }
+      );
+      
+      if (payment1Update) {
+        console.log('✅ Payment #1 marked as completed in schedule');
+        
+        // Update the next payment status to 'due' if it exists
+        const nextPaymentUpdate = await Vzat_Recurring_Data.findOneAndUpdate(
+          { 
+            _id: subscription._id,
+            'payment_schedule.installment_number': 2,
+            'payment_schedule.status': 'pending'
+          },
+          {
+            $set: {
+              'payment_schedule.$.status': 'due'
+            }
+          }
+        );
+        
+        if (nextPaymentUpdate) {
+          console.log('✅ Next payment #2 marked as due');
+        }
+      }
+      
+      console.log('🎉 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= FIRST PAYMENT WEBHOOK COMPLETE ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
+      console.log('✅ First payment successfully processed via webhook');
+      console.log('✅ Subscription is now ACTIVE');
+      
+    } else {
+      console.log('ℹ️ This appears to be a recurring payment');
+      console.log(`   Current status: ${subscription.subscription_status}`);
+      console.log(`   Payments completed: ${subscription.payments_completed || 0}`);
+      
+      // Update payments_completed count
+      const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
+        subscription._id,
+        {
+          $inc: { payments_completed: 1 },
+          last_payment_date: new Date()
+        },
+        { new: true }
+      );
+      
+      console.log(`📊 Updated payments_completed to: ${updatedRecord.payments_completed}`);
+      
+      // Update payment schedule status
+      const scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, updatedRecord.payments_completed, id);
+      console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
+    }
+    
+    // Log successful webhook processing
+    Post_Common_DB_Log_Data('/webhook/afs-success', req.body, { 
+      message: 'Successful payment webhook processed',
+      paymentType: paymentType,
+      merchantTransactionId: merchantTransactionId,
+      transactionId: id,
+      result: result,
+      isFirstPayment: isFirstPayment,
+      subscriptionStatus: subscription.subscription_status
+    });
+    
+    return res.status(200).json({ 
+      message: 'Successful payment webhook processed',
+      paymentType: paymentType,
+      merchantTransactionId: merchantTransactionId,
+      transactionId: id,
+      status: 'processed',
+      isFirstPayment: isFirstPayment
+    });
+    
+  } catch (error) {
+    console.error('❌ Error processing webhook:', error);
+    
+    // Log webhook error
+    Post_Common_DB_Log_Data('/webhook/afs-error', req.body, { 
+      message: 'Error processing webhook',
+      error: error.message,
+      paymentType: paymentType,
+      merchantTransactionId: merchantTransactionId,
+      transactionId: id
+    });
+    
+    return res.status(500).json({ 
+      message: 'Error processing webhook',
+      error: error.message
+    });
+  }
 };
 
 /**
