@@ -1,0 +1,8 @@
+@import 'ngx-toastr/toastr';
+
+/* Ensure toasts appear above app overlays */
+.toast-container {
+  z-index: 99999 !important;
+}
+
+
