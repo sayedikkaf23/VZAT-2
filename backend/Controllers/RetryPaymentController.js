@@ -82,24 +82,24 @@ export const retryPayment = async (req, res) => {
       afs_registration_id: savedCard.afs_registration_id
     });
 
-    // Find the next due payment
-    const nextDuePayment = subscription.payment_schedule.find(p => 
-      p.status ***REMOVED***= 'due' || p.status ***REMOVED***= 'pending'
+    // Find the failed payment to retry
+    const failedPayment = subscription.payment_schedule.find(p => 
+      p.status ***REMOVED***= 'failed'
     );
 
-    if (!nextDuePayment) {
-      console.log('❌ No due payments found');
+    if (!failedPayment) {
+      console.log('❌ No failed payments found to retry');
       return res.status(400).json({
         success: false,
-        message: 'No due payments found. All payments are completed.'
+        message: 'No failed payments found to retry. All payments are completed.'
       });
     }
 
-    console.log('✅ Next due payment found:', {
-      installment_number: nextDuePayment.installment_number,
-      due_date: nextDuePayment.due_date,
-      amount: nextDuePayment.amount,
-      status: nextDuePayment.status
+    console.log('✅ Failed payment found for retry:', {
+      installment_number: failedPayment.installment_number,
+      due_date: failedPayment.due_date,
+      amount: failedPayment.amount,
+      status: failedPayment.status
     });
 
     // Validate AFS registration ID format (must be UUID format)
@@ -123,19 +123,19 @@ export const retryPayment = async (req, res) => {
 
     // Attempt the payment
     console.log('💳 Attempting payment retry...');
-    const paymentResult = await attemptPaymentRetry(subscription, savedCard, nextDuePayment);
+    const paymentResult = await attemptPaymentRetry(subscription, savedCard, failedPayment);
 
     if (paymentResult.success) {
       console.log('✅ Payment retry successful');
       
       // Update subscription and payment schedule
-      await updateSubscriptionAfterRetry(subscription, nextDuePayment, paymentResult.transactionId);
+      await updateSubscriptionAfterRetry(subscription, failedPayment, paymentResult.transactionId);
       
       return res.status(200).json({
         success: true,
         message: 'Payment retry successful!',
         transactionId: paymentResult.transactionId,
-        amount: nextDuePayment.amount
+        amount: failedPayment.amount
       });
     } else {
       console.log('❌ Payment retry failed:', paymentResult.error);
@@ -144,7 +144,7 @@ export const retryPayment = async (req, res) => {
       await Vzat_Recurring_Data.findOneAndUpdate(
         { 
           _id: subscription._id,
-          'payment_schedule.installment_number': nextDuePayment.installment_number
+          'payment_schedule.installment_number': failedPayment.installment_number
         },
         {
           $set: {
@@ -153,10 +153,10 @@ export const retryPayment = async (req, res) => {
           }
         }
       );
-      console.log(`❌ Payment #${nextDuePayment.installment_number} marked as failed in payment schedule`);
+      console.log(`❌ Payment #${failedPayment.installment_number} marked as failed in payment schedule`);
       
       // Send failure email to customer
-      await sendRetryFailureEmail(subscription, nextDuePayment, paymentResult.error);
+      await sendRetryFailureEmail(subscription, failedPayment, paymentResult.error);
       
       return res.status(400).json({
         success: false,
@@ -288,6 +288,9 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
     let nextChargeDate = null;
     if (nextDuePayment) {
       nextChargeDate = new Date(nextDuePayment.due_date);
+    } else {
+      // If this was the last payment, set next charge date to null
+      nextChargeDate = null;
     }
 
     await Vzat_Recurring_Data.findByIdAndUpdate(
