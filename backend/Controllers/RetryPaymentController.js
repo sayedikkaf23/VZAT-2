@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { Vzat_Recurring_Data } from '../model/VzatRecurringDataModel.js';
 import { SavedCard } from '../model/SavedCardModel.js';
-import { Customer } from '../model/CustomerLoginModel.js';
+import Customer from '../model/CustomerLoginModel.js';
 import { sendPaymentFailureNotificationEmail } from '../services/emailService.js';
 
 /**
@@ -102,12 +102,22 @@ export const retryPayment = async (req, res) => {
       status: nextDuePayment.status
     });
 
-    // Validate AFS registration ID format
-    if (!savedCard.afs_registration_id || savedCard.afs_registration_id.length !== 32) {
-      console.log('❌ Invalid AFS registration ID format');
+    // Validate AFS registration ID format (must be UUID format)
+    if (!savedCard.afs_registration_id) {
+      console.log('❌ No AFS registration ID found');
       return res.status(400).json({
         success: false,
         message: 'Payment method is not properly configured. Please contact support.'
+      });
+    }
+
+    // Check if registration ID is in UUID format (32 characters, alphanumeric)
+    const uuidRegex = /^[a-f0-9]{32}$/i;
+    if (!uuidRegex.test(savedCard.afs_registration_id)) {
+      console.log('❌ Invalid AFS registration ID format:', savedCard.afs_registration_id);
+      return res.status(400).json({
+        success: false,
+        message: 'Payment method configuration error. Please contact support to update your payment method.'
       });
     }
 
