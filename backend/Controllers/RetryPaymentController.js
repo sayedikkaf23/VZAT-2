@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { Vzat_Recurring_Data } from '../model/VzatRecurringDataModel.js';
-import { SavedCard } from '../model/SavedCardModel.js';
+import Vzat_Recurring_Data from '../model/VzatRecurringDataModel.js';
+import SavedCard from '../model/SavedCardModel.js';
 import Customer from '../model/CustomerLoginModel.js';
 import { sendPaymentFailureNotificationEmail } from '../services/emailService.js';
 
