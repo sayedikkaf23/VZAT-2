@@ -384,6 +384,14 @@ export class ActiveServices implements OnInit {
    */
   getCurrentPayment(service: PaymentScheduleService): PaymentScheduleService | null {
     const payments = this.getPaymentSchedulesForService(service);
+    
+    // First check if there are any failed payments - if so, no current payment
+    const hasFailedPayments = payments.some(p => p.status ***REMOVED***= 'failed');
+    if (hasFailedPayments) {
+      return null; // No current payment if there are failed payments
+    }
+    
+    // If no failed payments, find the first pending/due/overdue payment
     return payments.find(p => p.status ***REMOVED***= 'pending' || p.status ***REMOVED***= 'due' || p.status ***REMOVED***= 'overdue') || null;
   }
 
@@ -394,18 +402,55 @@ export class ActiveServices implements OnInit {
     const payments = this.getPaymentSchedulesForService(service);
     const currentPayment = this.getCurrentPayment(service);
     
+    // If there are failed payments, show the next payment after failed ones
+    const hasFailedPayments = payments.some(p => p.status ***REMOVED***= 'failed');
+    if (hasFailedPayments) {
+      const failedPayments = payments.filter(p => p.status ***REMOVED***= 'failed');
+      const maxFailedInstallment = Math.max(...failedPayments.map(p => p.installment_number));
+      
+      // Return payments that come after the failed payments
+      return payments.filter(p => 
+        p.status ***REMOVED***= 'pending' && 
+        p.installment_number > maxFailedInstallment
+      );
+    }
+    
+    // If no failed payments, show regular pending payments (excluding current)
     return payments.filter(p => 
       p.status !***REMOVED*** 'paid' && 
       p.status !***REMOVED*** 'completed' && 
+      p.status !***REMOVED*** 'failed' &&
       p !***REMOVED*** currentPayment
     );
+  }
+
+  /**
+   * Get failed payments for the payment schedule modal
+   */
+  getFailedPayments(service: PaymentScheduleService): PaymentScheduleService[] {
+    const payments = this.getPaymentSchedulesForService(service);
+    return payments.filter(p => p.status ***REMOVED***= 'failed');
   }
 
   /**
    * Get current payment index (for display purposes)
    */
   getCurrentPaymentIndex(service: PaymentScheduleService): number {
+    const currentPayment = this.getCurrentPayment(service);
+    if (currentPayment) {
+      return currentPayment.installment_number;
+    }
+    
+    // If no current payment (due to failed payments), return the next installment number
+    const payments = this.getPaymentSchedulesForService(service);
     const completedCount = this.getCompletedPayments(service).length;
+    const failedPayments = payments.filter(p => p.status ***REMOVED***= 'failed');
+    
+    if (failedPayments.length > 0) {
+      const maxFailedInstallment = Math.max(...failedPayments.map(p => p.installment_number));
+      return maxFailedInstallment + 1;
+    }
+    
     return completedCount + 1;
   }
 
@@ -566,13 +611,45 @@ export class ActiveServices implements OnInit {
   }
 
   /**
-   * Check if a service has failed payments that can be retried
+   * Check if a payment can be retried (2 minutes must have passed since failure)
    */
-  hasFailedPayments(service: PaymentScheduleService): boolean {
-    if (!service || !service.quotepaymentId) return false;
+  canRetryPayment(payment: any): boolean {
+    if (!payment || payment.status !***REMOVED*** 'failed') {
+      return false;
+    }
     
-    const payments = this.getPaymentSchedulesForService(service);
-    return payments.some(p => p.status ***REMOVED***= 'failed' || p.status ***REMOVED***= 'overdue');
+    // If there's no failure date, allow retry
+    if (!payment.failure_date) {
+      return true;
+    }
+    
+    const failureDate = new Date(payment.failure_date);
+    const now = new Date();
+    const timeDiff = now.getTime() - failureDate.getTime();
+    const minutesDiff = timeDiff / (1000 * 60);
+    
+    return minutesDiff >= 2;
+  }
+
+  /**
+   * Get time remaining before retry is allowed
+   */
+  getRetryTimeRemaining(payment: any): string {
+    if (!payment || payment.status !***REMOVED*** 'failed' || !payment.failure_date) {
+      return '';
+    }
+    
+    const failureDate = new Date(payment.failure_date);
+    const now = new Date();
+    const timeDiff = now.getTime() - failureDate.getTime();
+    const minutesDiff = timeDiff / (1000 * 60);
+    
+    if (minutesDiff >= 2) {
+      return '';
+    }
+    
+    const remainingMinutes = Math.ceil(2 - minutesDiff);
+    return `${remainingMinutes} min`;
   }
 
   /**
@@ -588,13 +665,14 @@ export class ActiveServices implements OnInit {
   /**
    * Retry a failed payment
    */
-  retryPayment(service: PaymentScheduleService): void {
+  retryPayment(service: PaymentScheduleService, payment?: any): void {
     if (!service || !service.quotepaymentId) {
       console.error('❌ Cannot retry payment: Invalid service data');
       return;
     }
 
-    const failedPayment = this.getNextFailedPayment(service);
+    // If payment is provided (from modal), use it; otherwise find the next failed payment
+    const failedPayment = payment || this.getNextFailedPayment(service);
     if (!failedPayment) {
       console.error('❌ Cannot retry payment: No failed payments found');
       return;
@@ -615,6 +693,11 @@ export class ActiveServices implements OnInit {
           
           // Reload active services to reflect the updated status
           this.loadActiveServices();
+          
+          // Close the modal if it's open
+          if (this.selectedService) {
+            this.closeModal();
+          }
         } else {
           console.error('❌ Payment retry failed:', response);
           alert(`Payment retry failed: ${response.message}`);
@@ -631,7 +714,8 @@ export class ActiveServices implements OnInit {
    * Check if retry button should be shown for a service
    */
   shouldShowRetryButton(service: PaymentScheduleService): boolean {
-    return this.hasFailedPayments(service) && service.subscription_status ***REMOVED***= 'active';
+    const failedPayments = this.getFailedPayments(service);
+    return failedPayments.length > 0 && service.subscription_status ***REMOVED***= 'active';
   }
 
     ngOnDestroy(): void {

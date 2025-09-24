@@ -253,17 +253,6 @@
                                                 <span class="d-block d-md-none">Details</span>
                                             </a>
                                             
-                                            <!-- Retry Payment Button -->
-                                            <a href="#" 
-                                               *ngIf="shouldShowRetryButton(service)" 
-                                               (click)="retryPayment(service); $event.preventDefault()" 
-                                               class="retry_btn ms-2">
-                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M8 1.5C4.6875 1.5 2 4.1875 2 7.5C2 10.8125 4.6875 13.5 8 13.5C11.3125 13.5 14 10.8125 14 7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    <path d="M10.5 4.5L8 1.5L5.5 4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                                <span class="d-block d-md-none">Retry</span>
-                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -876,13 +865,15 @@
                       <td>{{ formatDate(payment.due_date) }}</td>
                       <td>{{ formatCurrency(payment.amount) }}</td>
                       <td>
-                        <span class="badge" [ngClass]="getStatusClass(payment.status)">
-                          <i class="fas fa-check" *ngIf="payment.status ***REMOVED***= 'paid'"></i>
-                          <i class="fas fa-clock" *ngIf="payment.status ***REMOVED***= 'pending'"></i>
-                          <i class="fas fa-exclamation-triangle" *ngIf="payment.status ***REMOVED***= 'overdue'"></i>
-                          <i class="fas fa-times" *ngIf="payment.status ***REMOVED***= 'failed'"></i>
-                          {{ payment.status | titlecase }}
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                          <span class="badge" [ngClass]="getStatusClass(payment.status)">
+                            <i class="fas fa-check" *ngIf="payment.status ***REMOVED***= 'paid'"></i>
+                            <i class="fas fa-clock" *ngIf="payment.status ***REMOVED***= 'pending'"></i>
+                            <i class="fas fa-exclamation-triangle" *ngIf="payment.status ***REMOVED***= 'overdue'"></i>
+                            <i class="fas fa-times" *ngIf="payment.status ***REMOVED***= 'failed'"></i>
+                            {{ payment.status | titlecase }}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -1160,12 +1151,39 @@
                     <i class="fas fa-circle"></i>
                   </div>
                   <div class="payment-info ms-3">
-                    <div class="payment-title">Payment {{ getCurrentPaymentIndex(selectedService) }}</div>
+                    <div class="payment-title">Payment {{ currentPayment.installment_number }}</div>
                     <div class="payment-amount">AED {{ formatAmount(currentPayment.amount) }}</div>
                     <div class="payment-date">{{ formatDate(currentPayment.due_date) }}</div>
                   </div>
                   <div class="ms-auto">
                     <span class="status-badge current">Current</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Failed Payments Section -->
+              <div class="item failed" *ngFor="let payment of getFailedPayments(selectedService); let i = index">
+                <div class="d-flex align-items-center">
+                  <div class="failed-icon">
+                    <i class="fas fa-times"></i>
+                  </div>
+                  <div class="payment-info ms-3">
+                    <div class="payment-title">Payment {{ payment.installment_number }}</div>
+                    <div class="payment-amount">AED {{ formatAmount(payment.amount) }}</div>
+                    <div class="payment-date">{{ formatDate(payment.due_date) }}</div>
+                  </div>
+                  <div class="ms-auto d-flex align-items-center gap-2">
+                    <span class="status-badge failed">Failed</span>
+                    <button *ngIf="selectedService.subscription_status ***REMOVED***= 'active' && canRetryPayment(payment)" 
+                            (click)="retryPayment(selectedService, payment)" 
+                            class="btn btn-sm btn-warning retry-payment-btn">
+                      <i class="fas fa-redo me-1"></i>
+                      Retry
+                    </button>
+                    <span *ngIf="selectedService.subscription_status ***REMOVED***= 'active' && !canRetryPayment(payment) && getRetryTimeRemaining(payment)" 
+                          class="text-muted small">
+                      Retry in {{ getRetryTimeRemaining(payment) }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1176,7 +1194,7 @@
                     <i class="fas fa-circle"></i>
                   </div>
                   <div class="payment-info ms-3">
-                    <div class="payment-title">Payment {{ getCurrentPaymentIndex(selectedService) + i + 1 }}</div>
+                    <div class="payment-title">Payment {{ payment.installment_number }}</div>
                     <div class="payment-amount">AED {{ formatAmount(payment.amount) }}</div>
                     <div class="payment-date">{{ formatDate(payment.due_date) }}</div>
                   </div>

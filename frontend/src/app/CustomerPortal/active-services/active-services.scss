@@ -221,6 +221,19 @@
       flex-shrink: 0;
     }
     
+    .failed-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #dc2626;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    
     .payment-info {
       .payment-title {
         font-weight: 600;
@@ -264,6 +277,12 @@
         color: #6b7280;
         margin-left: 15px;
       }
+      
+      &.failed {
+        background-color: #fecaca;
+        color: #dc2626;
+        margin-left: 15px;
+      }
     }
     
     &.success {
@@ -290,6 +309,25 @@
       &:not(:last-child)::after {
         background-color: #ef4444;
       }
+    }
+    
+    &.failed {
+      .payment-info {
+        .payment-title,
+        .payment-amount {
+          color: #dc2626;
+        }
+      }
+      
+      &:not(:last-child)::after {
+        background-color: #dc2626;
+      }
+      
+      // Add subtle background for failed payments
+      background-color: rgba(220, 38, 38, 0.05);
+      border-left: 3px solid #dc2626;
+      border-radius: 4px;
+      margin-bottom: 8px;
     }
   }
 }
@@ -379,5 +417,43 @@
   
   &:hover {
     background-color: #f8f9fa;
+  }
+}
+
+// Retry button in payment schedule modal
+.retry-payment-btn {
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+  min-width: 70px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  &:hover {
+    background: linear-gradient(135deg, #e55a2b, #e0841a);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  i {
+    font-size: 10px;
+  }
+
+  i {
+    font-size: 10px;
   }
 }

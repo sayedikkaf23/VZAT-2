@@ -661,7 +661,8 @@ export const processRecurringPayments = async (req, res) => {
             },
             {
               $set: {
-                'payment_schedule.$.status': 'failed'
+                'payment_schedule.$.status': 'failed',
+                'payment_schedule.$.failure_date': new Date()
               }
             }
           );
