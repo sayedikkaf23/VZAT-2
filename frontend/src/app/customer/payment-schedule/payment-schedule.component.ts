@@ -113,6 +113,9 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   // SalesForce data loading flag
   salesForceDataLoaded: boolean = false;
   
+  // Blur page if first payment is completed
+  isFirstPaymentCompleted: boolean = false;
+  
   // Store the original API sales agent data to prevent overwriting
   originalSalesAgentData: SalesAgent | null = null;
   
@@ -369,10 +372,14 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       // If payment_schedule exists in data, use it directly (new structured approach)
       if (data.payment_schedule && Array.isArray(data.payment_schedule)) {
         this.paymentSchedule = this.convertStructuredPaymentSchedule(data.payment_schedule);
+        // Check if first payment is completed
+        this.checkFirstPaymentStatus(data.payment_schedule);
       } 
       // If paymentSchedule exists in data, use it (legacy format)
       else if (data.paymentSchedule && Array.isArray(data.paymentSchedule)) {
         this.paymentSchedule = data.paymentSchedule;
+        // Check if first payment is completed
+        this.checkFirstPaymentStatus(data.paymentSchedule);
       } else {
         // Generate payment schedule from subscription info (fallback)
         this.generatePaymentScheduleFromData(data);
@@ -471,6 +478,19 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       status: payment.status as 'completed' | 'due' | 'pending',
       isNextPayment: payment.status === 'due'
     }));
+  }
+
+  // Check if first payment is completed to determine if page should be blurred
+  private checkFirstPaymentStatus(paymentSchedule: any[]): void {
+    if (paymentSchedule && paymentSchedule.length > 0) {
+      const firstPayment = paymentSchedule.find(payment => payment.installment_number === 1);
+      this.isFirstPaymentCompleted = firstPayment ? firstPayment.status === 'completed' : false;
+      
+      console.log('🔍 First payment status check:', {
+        firstPayment: firstPayment,
+        isCompleted: this.isFirstPaymentCompleted
+      });
+    }
   }
 
   // Helper method to convert various installment formats to our payment schedule format
@@ -884,5 +904,37 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     // This would need to be checked against the subscription's current registration ID
     // For now, we'll use a simple check
     return card.isDefault;
+  }
+
+  /**
+   * Navigate to customer portal
+   */
+  goToCustomerPortal(): void {
+    // Navigate to customer portal with customer email
+    if (this.customerEmail) {
+      this.router.navigate(['/customer-portal'], {
+        queryParams: { email: this.customerEmail }
+      });
+    } else {
+      // Fallback to login page
+      this.router.navigate(['/login']);
+    }
+  }
+
+  /**
+   * Contact support
+   */
+  contactSupport(): void {
+    // You can implement this based on your support system
+    // For now, we'll show an alert with contact information
+    const supportInfo = `
+      For support, please contact:
+      
+      Email: ${this.salesAgent.email}
+      Phone: ${this.salesAgent.phoneNumber}
+      ${this.salesAgent.mobNo1 ? `Mobile: ${this.salesAgent.mobNo1}` : ''}
+    `;
+    
+    alert(supportInfo);
   }
 }
