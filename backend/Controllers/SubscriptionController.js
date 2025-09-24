@@ -695,12 +695,36 @@ export const processRecurringPayments = async (req, res) => {
         //   console.error('📧 Error sending failure email to operations team:', emailError);
         // }
         
-        // 🚫 NO FAILURE EMAILS FROM CRON JOB
-        // The cron job only uses processServerToServerPayment for AFS debit operations
-        // Failure emails should be handled by other systems, not the cron job
-        console.log(`ℹ️ Skipping failure email - cron job only processes payments via processServerToServerPayment`);
-        console.log(`ℹ️ Error from processServerToServerPayment: ${error.message}`);
-        console.log(`ℹ️ Cron job handles AFS debit operations only - no customer notifications sent`);
+        // 📧 SEND FAILURE EMAIL TO CUSTOMER AND OPERATIONS TEAM
+        try {
+          console.log('📧 Sending payment failure email...');
+          
+          // Import email service
+          const { sendPaymentFailureNotificationEmail } = await import('../services/emailService.js');
+          
+          // Prepare email data
+          const emailData = {
+            quotepaymentId: subscription.quotepaymentId,
+            Customer_name: subscription.Customer_name || 'Customer',
+            opp_email: subscription.opp_email,
+            payment_amount: installmentAmount,
+            due_date: today.toISOString().slice(0, 10),
+            failure_reason: error.message,
+            payment_link: `https://vzatnew.yeepeey.com/payment-schedule?quotepaymentId=${subscription.quotepaymentId}`,
+            salesPersonDetails: subscription.salesPersonDetails
+          };
+          
+          // Send failure email
+          const emailResult = await sendPaymentFailureNotificationEmail(emailData);
+          
+          if (emailResult.success) {
+            console.log('📧 Payment failure email sent successfully to customer');
+          } else {
+            console.error('📧 Failed to send failure email to customer:', emailResult.error);
+          }
+        } catch (emailError) {
+          console.error('📧 Error sending failure email to customer:', emailError);
+        }
         
         results.push({
           quotepaymentId: subscription.quotepaymentId,
