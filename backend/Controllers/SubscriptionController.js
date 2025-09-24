@@ -413,21 +413,14 @@ export const processRecurringPayments = async (req, res) => {
           }
         }
       ],
-      // Prevent duplicate processing: Skip if already processed today AND no retries needed
+      // Prevent duplicate processing: Skip if already processed today
       $and: [
         {
           $or: [
             // Never processed
             { last_processed_date: { $exists: false } },
             // Last processed before today
-            { last_processed_date: { $lt: today } },
-            // Processed today but has retry count (failed payment - allow retry)
-            { 
-              $and: [
-                { last_processed_date: { $gte: today } },
-                { payment_retry_count: { $exists: true, $eq: 0 } }
-              ]
-            }
+            { last_processed_date: { $lt: today } }
           ]
         }
       ]
@@ -451,13 +444,13 @@ export const processRecurringPayments = async (req, res) => {
         allActiveSubscriptions.forEach(sub => {
           const hasRetryCount = sub.payment_retry_count !== undefined && sub.payment_retry_count > 0;
           const processedToday = sub.last_processed_date && new Date(sub.last_processed_date).toDateString() === today.toDateString();
-          const maxRetriesExceeded = sub.payment_retry_count >= 1;
+          const maxRetriesExceeded = sub.payment_retry_count >= 3;
           
           console.log(`   📋 ${sub.quotepaymentId}:`);
           console.log(`      - Processed today: ${processedToday}`);
           console.log(`      - Has retry count: ${hasRetryCount} (${sub.payment_retry_count || 0})`);
           console.log(`      - Max retries exceeded: ${maxRetriesExceeded}`);
-          console.log(`      - Reason excluded: ${processedToday && !hasRetryCount ? 'Already processed today' : 
+          console.log(`      - Reason excluded: ${processedToday ? 'Already processed today' : 
                                               maxRetriesExceeded ? 'Max retries exceeded' : 
                                               'Other criteria not met'}`);
         });
@@ -644,10 +637,9 @@ export const processRecurringPayments = async (req, res) => {
         console.error(`\n❌ PAYMENT FAILED for ${subscription.quotepaymentId}:`, error.message);
         console.error(`   - Error details:`, error);
         
-        // Don't mark as processed on failure - allow retry
-        // Only mark as processed if we've exceeded retry limit
+        // Handle failed payment retry logic
         const retryCount = subscription.payment_retry_count || 0;
-        const maxRetries = 1; // Only attempt once per day, then customer can retry manually
+        const maxRetries = 1; // Allow retries for 3 days
         
         if (retryCount >= maxRetries) {
           console.log(`🚫 MAX RETRIES EXCEEDED for ${subscription.quotepaymentId} (${retryCount}/${maxRetries}), marking as processed`);
@@ -668,17 +660,18 @@ export const processRecurringPayments = async (req, res) => {
           );
           console.log(`❌ Payment #${currentPaymentNumber} marked as failed in payment schedule`);
           
+          // Mark as processed and reset retry count for next day
           await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
             last_processed_date: new Date(),
             payment_retry_count: 0 // Reset for next day
           });
         } else {
-          // Increment retry count and remove last_processed_date to allow retry
+          // Increment retry count and mark as processed for today
           await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-            $unset: { last_processed_date: 1 },
-            $set: { payment_retry_count: retryCount + 1 }
+            last_processed_date: new Date(),
+            payment_retry_count: retryCount + 1
           });
-          console.log(`🔄 RETRY SCHEDULED for ${subscription.quotepaymentId} - Retry ${retryCount + 1}/${maxRetries}`);
+          console.log(`🔄 RETRY SCHEDULED for ${subscription.quotepaymentId} - Retry ${retryCount + 1}/${maxRetries} (will retry tomorrow)`);
         }
         
         // Send failure email to operations team
