@@ -503,6 +503,8 @@ export const saveCustomerCard = async (paymentData) => {
                     const cardholderName = cardSource.holder || cardSource.cardHolder || cardSource.cardholderName || cardSource.name || cardSource.cardholder || null;
                     if (cardholderName) {
                         console.log(`💳 DEBUG - Extracted cardholder name from AFS: ${cardholderName}`);
+                    } else {
+                        console.log(`💳 DEBUG - No cardholder name found in cardSource:`, Object.keys(cardSource));
                     }
                     
                     if (last4Digits) {
@@ -510,6 +512,41 @@ export const saveCustomerCard = async (paymentData) => {
                         break;
                     }
                 }
+            }
+        }
+        
+        // Additional cardholder name extraction from AFS result structure
+        if (!cardholderName && result) {
+            console.log('💳 DEBUG - Attempting additional cardholder name extraction from AFS result...');
+            
+            // Check if result has card object directly
+            if (result.card && result.card.holder) {
+                cardholderName = result.card.holder;
+                console.log(`💳 DEBUG - Found cardholder name in result.card.holder: ${cardholderName}`);
+            }
+            
+            // Check if result has nested card data
+            if (!cardholderName && result.card) {
+                const cardData = result.card;
+                const foundCardholderName = cardData.holder || cardData.cardHolder || cardData.cardholderName || cardData.name || cardData.cardholder || null;
+                if (foundCardholderName) {
+                    cardholderName = foundCardholderName;
+                    console.log(`💳 DEBUG - Found cardholder name in nested card data: ${cardholderName}`);
+                }
+            }
+            
+            // Check if result has payment data with card info
+            if (!cardholderName && result.payment) {
+                const paymentData = result.payment;
+                if (paymentData.card && paymentData.card.holder) {
+                    cardholderName = paymentData.card.holder;
+                    console.log(`💳 DEBUG - Found cardholder name in result.payment.card.holder: ${cardholderName}`);
+                }
+            }
+            
+            // Log the full result structure for debugging
+            if (!cardholderName) {
+                console.log('💳 DEBUG - Full AFS result structure for cardholder name debugging:', JSON.stringify(result, null, 2));
             }
         }
         
