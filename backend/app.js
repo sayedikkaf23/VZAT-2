@@ -222,7 +222,7 @@ app.post('/payment-result', async (req, res) => {
                   cardBrand: statusResponse.data.card.brand || statusResponse.data.card.paymentBrand,
                   expiryMonth: statusResponse.data.card.expiryMonth,
                   expiryYear: statusResponse.data.card.expiryYear,
-                  cardholderName: statusResponse.data.card.holder || statusResponse.data.card.cardHolder,
+                  cardholderName: statusResponse.data.card.holder || 'Not provided',
                   registrationId: statusResponse.data.registrationId || statusResponse.data.id
                 };
                 console.log('✅ Card details extracted from AFS response');
