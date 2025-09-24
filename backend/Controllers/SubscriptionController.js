@@ -699,6 +699,9 @@ export const processRecurringPayments = async (req, res) => {
         try {
           console.log('📧 Sending payment failure email...');
           
+          // Calculate installment amount for email
+          const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2));
+          
           // Import email service
           const { sendPaymentFailureNotificationEmail } = await import('../services/emailService.js');
           
