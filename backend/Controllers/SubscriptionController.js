@@ -705,6 +705,22 @@ export const processRecurringPayments = async (req, res) => {
           // Import email service
           const { sendPaymentFailureNotificationEmail } = await import('../services/emailService.js');
           
+          // Extract clean error message from AFS response
+          let cleanErrorMessage = error.message;
+          
+          // If it's an AFS error, extract just the description
+          if (error.message.includes('"description":"')) {
+            try {
+              const match = error.message.match(/"description":"([^"]+)"/);
+              if (match && match[1]) {
+                cleanErrorMessage = match[1];
+              }
+            } catch (parseError) {
+              // Keep original error if parsing fails
+              console.log('⚠️ Could not parse AFS error message, using original');
+            }
+          }
+          
           // Prepare email data
           const emailData = {
             quotepaymentId: subscription.quotepaymentId,
@@ -712,8 +728,8 @@ export const processRecurringPayments = async (req, res) => {
             opp_email: subscription.opp_email,
             payment_amount: installmentAmount,
             due_date: today.toISOString().slice(0, 10),
-            failure_reason: error.message,
-            payment_link: `https://vzatnew.yeepeey.com/payment-schedule?quotepaymentId=${subscription.quotepaymentId}`,
+            failure_reason: cleanErrorMessage,
+            payment_link: 'https://vzatnew.yeepeey.com/login',
             salesPersonDetails: subscription.salesPersonDetails
           };
           
