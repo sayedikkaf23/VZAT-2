@@ -140,6 +140,21 @@ export const retryPayment = async (req, res) => {
     } else {
       console.log('❌ Payment retry failed:', paymentResult.error);
       
+      // Mark the payment as failed with failure_date
+      await Vzat_Recurring_Data.findOneAndUpdate(
+        { 
+          _id: subscription._id,
+          'payment_schedule.installment_number': nextDuePayment.installment_number
+        },
+        {
+          $set: {
+            'payment_schedule.$.status': 'failed',
+            'payment_schedule.$.failure_date': new Date()
+          }
+        }
+      );
+      console.log(`❌ Payment #${nextDuePayment.installment_number} marked as failed in payment schedule`);
+      
       // Send failure email to customer
       await sendRetryFailureEmail(subscription, nextDuePayment, paymentResult.error);
       
