@@ -651,6 +651,22 @@ export const processRecurringPayments = async (req, res) => {
         
         if (retryCount >= maxRetries) {
           console.log(`🚫 MAX RETRIES EXCEEDED for ${subscription.quotepaymentId} (${retryCount}/${maxRetries}), marking as processed`);
+          
+          // Mark the current payment as failed in payment_schedule
+          const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
+          await Vzat_Recurring_Data.findOneAndUpdate(
+            { 
+              _id: subscription._id,
+              'payment_schedule.installment_number': currentPaymentNumber
+            },
+            {
+              $set: {
+                'payment_schedule.$.status': 'failed'
+              }
+            }
+          );
+          console.log(`❌ Payment #${currentPaymentNumber} marked as failed in payment schedule`);
+          
           await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
             last_processed_date: new Date(),
             payment_retry_count: 0 // Reset for next day
