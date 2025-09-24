@@ -217,8 +217,27 @@ export const saveCustomerCard = async (paymentData) => {
             console.log('💳 DEBUG - AFS Result details:', JSON.stringify(result, null, 2));
         }
         
-        // For now, let's make the registration ID optional or use checkout ID as fallback
-        let registrationId = afs_registration_id || afs_checkout_id || quotepaymentId;
+        // Extract the correct registration ID from AFS result
+        let registrationId = null;
+        
+        if (result && result.registrationId) {
+            // Use the actual card registration ID from AFS result
+            registrationId = result.registrationId;
+            console.log(`💳 ✅ CORRECT - Using card registration ID from AFS result: ${registrationId}`);
+        } else if (result && result.id) {
+            // Fallback to payment transaction ID if registration ID not available
+            registrationId = result.id;
+            console.log(`💳 ⚠️ FALLBACK - Using payment transaction ID as fallback: ${registrationId}`);
+            console.log(`💳 ⚠️ WARNING - This may cause recurring payment issues!`);
+        } else {
+            // Final fallback to existing values
+            registrationId = afs_registration_id || afs_checkout_id || quotepaymentId;
+            console.log(`💳 ⚠️ FINAL FALLBACK - Using fallback registration ID: ${registrationId}`);
+            console.log(`💳 ⚠️ WARNING - This may cause recurring payment issues!`);
+        }
+        
+        // Log the final registration ID being used
+        console.log(`💳 📋 FINAL REGISTRATION ID FOR CARD SAVE: ${registrationId}`);
         
         // Validate required data - relax the registration ID requirement for now
         if (!opp_email || !quotepaymentId) {
