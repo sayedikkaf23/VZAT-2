@@ -14,16 +14,80 @@
   padding-left: 0 !important;
 }
 
-// Custom payment status badges
-.badge-completed {
-  background-color: #28a745 !important; // Green
-  color: white !important;
-  padding: 6px 12px;
-  border-radius: 12px;
+// Retry payment button styles
+.retry_btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background-color: #ff6b35;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
   font-size: 0.85em;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  min-width: 40px;
+  height: 36px;
+
+  &:hover {
+    background-color: #e55a2b;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+  }
+
+  span {
+    font-size: 0.8em;
+    font-weight: 500;
+  }
+
+  // Mobile responsive
+  @media (max-width: 768px) {
+    padding: 6px 8px;
+    min-width: 36px;
+    height: 32px;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+      margin-right: 2px;
+    }
+    
+    span {
+      font-size: 0.75em;
+    }
+  }
+}
+
+// Action group styling for multiple buttons
+.action-group {
+  gap: 8px;
+  
+  @media (max-width: 768px) {
+    gap: 6px;
+    flex-direction: column;
+    
+    .detail_btn,
+    .retry_btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 }
 
 .badge-pending {
