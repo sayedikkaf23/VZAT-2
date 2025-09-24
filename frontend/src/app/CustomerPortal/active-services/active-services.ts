@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { CustomerLoginService } from '../../services/customer-login.service';
 import { StyleLoader } from '../../services/style-loader';
 import { ActiveServicesService, PaymentScheduleService, ActiveServicesResponse } from '../../services/active-services.service';
+import { RetryPaymentService, RetryPaymentRequest, RetryPaymentResponse } from '../../services/retry-payment.service';
 @Component({
   selector: 'app-active-services',
   imports: [NgIf, NgFor, NgClass, RouterLink, TitleCasePipe],
@@ -199,6 +200,7 @@ export class ActiveServices implements OnInit {
     private renderer: Renderer2, 
     private customerLogin: CustomerLoginService,
     private activeServicesService: ActiveServicesService,
+    private retryPaymentService: RetryPaymentService,
     private cdr: ChangeDetectorRef
   ) {}
   ngOnInit(): void {
@@ -561,6 +563,75 @@ export class ActiveServices implements OnInit {
   getCustomerEmail(service?: PaymentScheduleService): string {
     if (!service) return '';
     return service.opp_email || this.customerEmail || '';
+  }
+
+  /**
+   * Check if a service has failed payments that can be retried
+   */
+  hasFailedPayments(service: PaymentScheduleService): boolean {
+    if (!service || !service.quotepaymentId) return false;
+    
+    const payments = this.getPaymentSchedulesForService(service);
+    return payments.some(p => p.status ***REMOVED***= 'failed' || p.status ***REMOVED***= 'overdue');
+  }
+
+  /**
+   * Get the next failed payment that can be retried
+   */
+  getNextFailedPayment(service: PaymentScheduleService): PaymentScheduleService | null {
+    if (!service || !service.quotepaymentId) return null;
+    
+    const payments = this.getPaymentSchedulesForService(service);
+    return payments.find(p => p.status ***REMOVED***= 'failed' || p.status ***REMOVED***= 'overdue') || null;
+  }
+
+  /**
+   * Retry a failed payment
+   */
+  retryPayment(service: PaymentScheduleService): void {
+    if (!service || !service.quotepaymentId) {
+      console.error('❌ Cannot retry payment: Invalid service data');
+      return;
+    }
+
+    const failedPayment = this.getNextFailedPayment(service);
+    if (!failedPayment) {
+      console.error('❌ Cannot retry payment: No failed payments found');
+      return;
+    }
+
+    const request: RetryPaymentRequest = {
+      quotepaymentId: service.quotepaymentId,
+      customerEmail: this.customerEmail
+    };
+
+    console.log('🔄 Retrying payment for:', request);
+
+    this.retryPaymentService.retryPayment(request).subscribe({
+      next: (response: RetryPaymentResponse) => {
+        if (response.success) {
+          console.log('✅ Payment retry successful:', response);
+          alert(`Payment retry successful! Transaction ID: ${response.transactionId}`);
+          
+          // Reload active services to reflect the updated status
+          this.loadActiveServices();
+        } else {
+          console.error('❌ Payment retry failed:', response);
+          alert(`Payment retry failed: ${response.message}`);
+        }
+      },
+      error: (error) => {
+        console.error('💥 Error during payment retry:', error);
+        alert('An error occurred while retrying the payment. Please try again.');
+      }
+    });
+  }
+
+  /**
+   * Check if retry button should be shown for a service
+   */
+  shouldShowRetryButton(service: PaymentScheduleService): boolean {
+    return this.hasFailedPayments(service) && service.subscription_status ***REMOVED***= 'active';
   }
 
     ngOnDestroy(): void {
