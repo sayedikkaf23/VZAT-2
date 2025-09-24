@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Vzat_Recurring_Data from '../model/VzatRecurringDataModel.js';
 import SavedCard from '../model/SavedCardModel.js';
 import Customer from '../model/CustomerLoginModel.js';
-import { sendPaymentFailureNotificationEmail } from '../services/emailService.js';
+import { sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from '../services/emailService.js';
 
 /**
  * Retry a failed payment for a customer
@@ -145,7 +145,13 @@ export const retryPayment = async (req, res) => {
       console.log('✅ Payment retry successful');
       
       // Update subscription and payment schedule
-      await updateSubscriptionAfterRetry(subscription, failedPayment, paymentResult.transactionId);
+      const updatedSubscription = await updateSubscriptionAfterRetry(subscription, failedPayment, paymentResult.transactionId);
+      
+      // Send retry success email (same as regular payment success)
+      await sendRetrySuccessEmail(updatedSubscription, failedPayment, paymentResult.transactionId);
+      
+      // Check if subscription is now complete and send completion email if needed
+      await checkAndHandleSubscriptionCompletion(updatedSubscription);
       
       return res.status(200).json({
         success: true,
@@ -350,9 +356,112 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
     );
 
     console.log('✅ Subscription updated successfully');
+    
+    // Return the updated subscription
+    const finalSubscription = await Vzat_Recurring_Data.findById(subscription._id);
+    return finalSubscription;
   } catch (error) {
     console.error('💥 Error updating subscription:', error);
     throw error;
+  }
+}
+
+/**
+ * Send success email after retry attempt (same as regular payment success)
+ */
+async function sendRetrySuccessEmail(subscription, payment, transactionId) {
+  try {
+    console.log('📧 Sending retry success email...');
+    
+    const emailData = {
+      quotepaymentId: subscription.quotepaymentId,
+      Customer_name: subscription.Customer_name || 'Customer',
+      opp_email: subscription.opp_email,
+      payment_amount: payment.amount,
+      payment_date: new Date(),
+      installment_number: payment.installment_number,
+      total_installments: subscription.InstallmentLeft,
+      payment_method: 'Saved Card (Retry)',
+      salesPersonDetails: subscription.salesPersonDetails
+    };
+    
+    const emailResult = await sendPaymentSuccessNotificationEmail(emailData);
+    
+    if (emailResult.success) {
+      console.log('📧 Retry success email sent successfully');
+    } else {
+      console.error('📧 Failed to send retry success email:', emailResult.error);
+    }
+  } catch (emailError) {
+    console.error('📧 Error sending retry success email:', emailError);
+  }
+}
+
+/**
+ * Check if subscription is complete and send completion email if needed
+ */
+async function checkAndHandleSubscriptionCompletion(subscription) {
+  try {
+    console.log('🔍 Checking if subscription is complete...');
+    
+    // Check if ALL payments are completed (not just payments_completed count)
+    const allPaymentsCompleted = subscription.payment_schedule.every(p => 
+      p.status ***REMOVED***= 'completed' || p.status ***REMOVED***= 'paid'
+    );
+    
+    console.log('📋 Payment completion status:', {
+      payments_completed: subscription.payments_completed,
+      total_installments: subscription.InstallmentLeft,
+      all_payments_completed: allPaymentsCompleted,
+      payment_schedule: subscription.payment_schedule.map(p => ({
+        installment: p.installment_number,
+        status: p.status
+      }))
+    });
+    
+    if (subscription.payments_completed >= subscription.InstallmentLeft && allPaymentsCompleted) {
+      console.log(`🎉 SUBSCRIPTION COMPLETED via retry for ${subscription.quotepaymentId}!`);
+      console.log(`✅ All ${subscription.payment_schedule.length} payments are completed`);
+      
+      // Check if already completed to prevent duplicate emails
+      const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
+      
+      if (currentStatus.subscription_status !***REMOVED*** 'completed') {
+        // Update status to completed
+        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+          subscription_status: 'completed'
+        });
+        
+        // Send completion email to business team
+        try {
+          const { sendSubscriptionCompletedEmail } = await import('../services/emailService.js');
+          
+          const emailResult = await sendSubscriptionCompletedEmail({
+            quotepaymentId: subscription.quotepaymentId,
+            OpportunityId: subscription.OpportunityId,
+            QuoteId: subscription.QuoteId,
+            Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+            InstallmentLeft: subscription.InstallmentLeft,
+            payments_completed: subscription.payments_completed,
+            last_payment_date: subscription.last_payment_date
+          });
+          
+          if (emailResult.success) {
+            console.log('📧 Subscription completion email sent successfully');
+          } else {
+            console.error('📧 Failed to send completion email:', emailResult.error);
+          }
+        } catch (completionEmailError) {
+          console.error('📧 Error sending completion email:', completionEmailError);
+        }
+      } else {
+        console.log('📧 Subscription already marked as completed, skipping completion email');
+      }
+    } else {
+      console.log('📋 Subscription not yet complete - some payments still pending/failed');
+    }
+  } catch (error) {
+    console.error('💥 Error checking subscription completion:', error);
   }
 }
 

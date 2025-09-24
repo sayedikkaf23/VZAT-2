@@ -545,9 +545,24 @@ export const processRecurringPayments = async (req, res) => {
               // Don't fail the payment if email fails - it's not critical
             }
             
-            // Check if subscription is complete
-            if (updatedRecord.payments_completed >= updatedRecord.InstallmentLeft) {
+            // Check if subscription is complete - verify ALL payments are completed
+            const allPaymentsCompleted = updatedRecord.payment_schedule.every(p => 
+              p.status ***REMOVED***= 'completed' || p.status ***REMOVED***= 'paid'
+            );
+            
+            console.log('📋 Payment completion status:', {
+              payments_completed: updatedRecord.payments_completed,
+              total_installments: updatedRecord.InstallmentLeft,
+              all_payments_completed: allPaymentsCompleted,
+              payment_schedule: updatedRecord.payment_schedule.map(p => ({
+                installment: p.installment_number,
+                status: p.status
+              }))
+            });
+            
+            if (updatedRecord.payments_completed >= updatedRecord.InstallmentLeft && allPaymentsCompleted) {
               console.log(`🎉 SUBSCRIPTION COMPLETED for ${subscription.quotepaymentId}!`);
+              console.log(`✅ All ${updatedRecord.payment_schedule.length} payments are completed`);
               
               // Check if already completed to prevent duplicate emails
               const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
