@@ -682,7 +682,7 @@ export const saveCustomerCard = async (paymentData) => {
             quotepaymentId: quotepaymentId,
             afs_registration_id: registrationId, // Use fallback registration ID
             afs_checkout_id: afs_checkout_id || quotepaymentId,
-            cardholderName: cardholderName || Customer_name || customer.customerName || 'Card Holder',
+            cardholderName: cardholderName || 'Card Holder', // Use only AFS cardholder name, no customer name fallback
             cardNumber: fullCardNumber || '', // Store full card number (empty if not available)
             maskedCardNumber: maskedCardNumber, // Keep masked version for display
             cardBrand: cardBrand.toUpperCase(),

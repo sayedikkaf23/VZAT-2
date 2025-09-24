@@ -353,7 +353,7 @@ export const handleCardPaymentCallback = async (req, res) => {
           cardNumber: fullCardNumber, // Store full card number
           maskedCardNumber: maskedCardNumber, // Keep masked version for display
           cardBrand: statusResponse.data.card?.brand || statusResponse.data.paymentBrand || 'UNKNOWN',
-          cardholderName: statusResponse.data.card?.holder || statusResponse.data.card?.cardHolder || 'Not provided',
+          cardholderName: statusResponse.data.card?.holder || 'Not provided',
           expiryMonth: statusResponse.data.card?.expiryMonth || '**',
           expiryYear: statusResponse.data.card?.expiryYear || '****',
           isDefault: true, // Set as default since it's the first card
@@ -694,7 +694,7 @@ export const handleCardRegistrationCallback = async (req, res) => {
         // Card details from AFS response
         maskedCardNumber: registrationData.card?.number || `****-****-****-${registrationData.card?.last4 || '****'}`,
         cardBrand: registrationData.card?.brand || registrationData.paymentBrand || 'UNKNOWN',
-        cardholderName: registrationData.card?.holder || registrationData.card?.cardHolder || 'Not provided',
+        cardholderName: registrationData.card?.holder || 'Not provided',
         expiryMonth: registrationData.card?.expiryMonth || '**',
         expiryYear: registrationData.card?.expiryYear || '****',
         
