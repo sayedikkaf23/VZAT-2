@@ -905,36 +905,4 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     // For now, we'll use a simple check
     return card.isDefault;
   }
-
-  /**
-   * Navigate to customer portal
-   */
-  goToCustomerPortal(): void {
-    // Navigate to customer portal with customer email
-    if (this.customerEmail) {
-      this.router.navigate(['/customer-portal'], {
-        queryParams: { email: this.customerEmail }
-      });
-    } else {
-      // Fallback to login page
-      this.router.navigate(['/login']);
-    }
-  }
-
-  /**
-   * Contact support
-   */
-  contactSupport(): void {
-    // You can implement this based on your support system
-    // For now, we'll show an alert with contact information
-    const supportInfo = `
-      For support, please contact:
-      
-      Email: ${this.salesAgent.email}
-      Phone: ${this.salesAgent.phoneNumber}
-      ${this.salesAgent.mobNo1 ? `Mobile: ${this.salesAgent.mobNo1}` : ''}
-    `;
-    
-    alert(supportInfo);
-  }
 }
