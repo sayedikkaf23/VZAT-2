@@ -372,6 +372,18 @@ export class ActiveServices implements OnInit {
   }
 
   /**
+   * Get all payments in correct installment order for the payment schedule modal
+   */
+  getAllPaymentsInOrder(service: PaymentScheduleService): PaymentScheduleService[] {
+    const payments = this.getPaymentSchedulesForService(service);
+    return payments.sort((a, b) => {
+      const aInstallment = a.installment_number || 0;
+      const bInstallment = b.installment_number || 0;
+      return aInstallment - bInstallment;
+    });
+  }
+
+  /**
    * Get completed payments for the payment schedule modal
    */
   getCompletedPayments(service: PaymentScheduleService): PaymentScheduleService[] {
