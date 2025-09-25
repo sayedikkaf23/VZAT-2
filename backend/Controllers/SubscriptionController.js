@@ -790,28 +790,28 @@ export const processRecurringPayments = async (req, res) => {
         console.error(`\n❌ PAYMENT FAILED for ${subscription.quotepaymentId}:`, error.message);
         console.error(`   - Error details:`, error);
         
+        // Mark the current payment as failed in payment_schedule immediately
+        const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
+        await Vzat_Recurring_Data.findOneAndUpdate(
+          { 
+            _id: subscription._id,
+            'payment_schedule.installment_number': currentPaymentNumber
+          },
+          {
+            $set: {
+              'payment_schedule.$.status': 'failed',
+              'payment_schedule.$.failure_date': new Date()
+            }
+          }
+        );
+        console.log(`❌ Payment #${currentPaymentNumber} marked as failed in payment schedule`);
+        
         // Handle failed payment retry logic
         const retryCount = subscription.payment_retry_count || 0;
         const maxRetries = 3; // Allow retries for 3 days
         
         if (retryCount >= maxRetries) {
           console.log(`🚫 MAX RETRIES EXCEEDED for ${subscription.quotepaymentId} (${retryCount}/${maxRetries}), marking as processed`);
-          
-          // Mark the current payment as failed in payment_schedule
-          const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
-          await Vzat_Recurring_Data.findOneAndUpdate(
-            { 
-              _id: subscription._id,
-              'payment_schedule.installment_number': currentPaymentNumber
-            },
-            {
-              $set: {
-                'payment_schedule.$.status': 'failed',
-                'payment_schedule.$.failure_date': new Date()
-              }
-            }
-          );
-          console.log(`❌ Payment #${currentPaymentNumber} marked as failed in payment schedule`);
           
           // Mark as processed and reset retry count for next day
           await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
