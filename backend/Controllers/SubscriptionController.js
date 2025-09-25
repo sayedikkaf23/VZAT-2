@@ -752,9 +752,9 @@ export const processRecurringPayments = async (req, res) => {
               const isComplete = await checkAndHandleSubscriptionCompletion(freshRecord);
               
               if (!isComplete) {
-                // Schedule next payment
-                await scheduleNextPayment(subscription._id);
-                console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
+              // Schedule next payment
+              await scheduleNextPayment(subscription._id);
+              console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
               } else {
                 console.log(`🎉 SUBSCRIPTION COMPLETED! Final email sent for ${subscription.quotepaymentId}`);
               }
@@ -862,8 +862,8 @@ export const processRecurringPayments = async (req, res) => {
         try {
           // Check if we already sent a failure email today
           const lastFailureEmailDate = subscription.last_failure_email_date;
-          const today = new Date().toDateString();
-          const shouldSendEmail = !lastFailureEmailDate || new Date(lastFailureEmailDate).toDateString() !== today;
+          const todayString = new Date().toDateString();
+          const shouldSendEmail = !lastFailureEmailDate || new Date(lastFailureEmailDate).toDateString() !== todayString;
           
           if (shouldSendEmail) {
             console.log('📧 Sending payment failure email...');
