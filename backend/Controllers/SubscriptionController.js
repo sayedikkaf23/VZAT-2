@@ -458,7 +458,8 @@ export const handleAFSWebhook = async (req, res) => {
       
       // Check if subscription is complete after this payment
       try {
-        console.log('🔍 Checking subscription completion after payment...');
+        console.log('🔍 Checking subscription completion after webhook payment...');
+        // Fetch fresh record to ensure we have the latest payment schedule updates
         const finalRecord = await Vzat_Recurring_Data.findById(subscription._id);
         console.log(`📋 Final record payments_completed: ${finalRecord.payments_completed}/${finalRecord.InstallmentLeft}`);
         
@@ -744,7 +745,11 @@ export const processRecurringPayments = async (req, res) => {
             // Check if subscription is complete - verify ALL payments are completed
             try {
               console.log('🔍 Checking subscription completion after cron payment...');
-              const isComplete = await checkAndHandleSubscriptionCompletion(updatedRecord);
+              // Fetch fresh record to ensure we have the latest payment schedule updates
+              const freshRecord = await Vzat_Recurring_Data.findById(subscription._id);
+              console.log(`📋 Fresh record payments_completed: ${freshRecord.payments_completed}/${freshRecord.InstallmentLeft}`);
+              
+              const isComplete = await checkAndHandleSubscriptionCompletion(freshRecord);
               
               if (!isComplete) {
                 // Schedule next payment
