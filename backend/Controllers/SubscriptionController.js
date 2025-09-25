@@ -717,21 +717,33 @@ export const processRecurringPayments = async (req, res) => {
             const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
               subscription._id,
               {
-                $inc: { payments_completed: 1 },
-                last_payment_date: new Date(paymentResult.timestamp || new Date()),
-                payment_retry_count: 0 // Reset retry count on successful payment
+                $set: { 
+                  payments_completed: paymentToProcess, // Set to actual completed count
+                  last_payment_date: new Date(paymentResult.timestamp || new Date()),
+                  payment_retry_count: 0 // Reset retry count on successful payment
+                }
               },
               { new: true }
             );
             
             console.log(`📊 Updated payments_completed to: ${updatedRecord.payments_completed}`);
             
-            // Update payment schedule status
-            const scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, paymentToProcess, paymentResult.id);
-            console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
+            // Check if this payment was already marked as completed by retry logic
+            const currentPayment = subscription.payment_schedule.find(p => p.installment_number ***REMOVED***= paymentToProcess);
+            const wasAlreadyCompleted = currentPayment && (currentPayment.status ***REMOVED***= 'completed' || currentPayment.status ***REMOVED***= 'paid');
+            
+            let scheduleUpdateResult = null;
+            
+            if (wasAlreadyCompleted) {
+              console.log(`⚠️ Payment #${paymentToProcess} was already marked as completed by retry logic - skipping schedule update`);
+            } else {
+              // Update payment schedule status
+              scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, paymentToProcess, paymentResult.id);
+              console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
+            }
             
             // Don't fail the payment if schedule update fails - it's not critical
-            if (!scheduleUpdateResult.success) {
+            if (scheduleUpdateResult && !scheduleUpdateResult.success) {
               console.log(`⚠️ Payment schedule update failed but payment was successful: ${scheduleUpdateResult.error}`);
             }
             
@@ -888,10 +900,12 @@ export const processRecurringPayments = async (req, res) => {
                 const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
                   subscription._id,
                   {
-                    $inc: { payments_completed: 1 },
-                    last_payment_date: new Date(nextPaymentResult.timestamp || new Date()),
-                    payment_retry_count: 0, // Reset retry count
-                    next_charge_date: null // Will be set by scheduleNextPayment if needed
+                    $set: { 
+                      payments_completed: nextDuePayment.installment_number, // Set to actual completed count
+                      last_payment_date: new Date(nextPaymentResult.timestamp || new Date()),
+                      payment_retry_count: 0, // Reset retry count
+                      next_charge_date: null // Will be set by scheduleNextPayment if needed
+                    }
                   },
                   { new: true }
                 );
@@ -912,6 +926,28 @@ export const processRecurringPayments = async (req, res) => {
                 );
                 
                 console.log(`✅ Payment #${nextDuePayment.installment_number} marked as completed`);
+                
+                // Also mark the failed payment as completed since we successfully processed the next one
+                // This handles the case where Payment #3 failed but Payment #4 succeeded
+                const failedPaymentNumber = nextDuePayment.installment_number - 1;
+                if (failedPaymentNumber > 0) {
+                  await Vzat_Recurring_Data.findOneAndUpdate(
+                    { 
+                      _id: subscription._id,
+                      'payment_schedule.installment_number': failedPaymentNumber,
+                      'payment_schedule.status': 'failed'
+                    },
+                    {
+                      $set: {
+                        'payment_schedule.$.status': 'completed',
+                        'payment_schedule.$.transaction_id': nextPaymentResult.id, // Use same transaction ID
+                        'payment_schedule.$.payment_date': new Date()
+                      }
+                    }
+                  );
+                  
+                  console.log(`✅ Payment #${failedPaymentNumber} also marked as completed (retry logic)`);
+                }
                 
                 // Check if subscription is now complete
                 const finalRecord = await Vzat_Recurring_Data.findById(subscription._id);
