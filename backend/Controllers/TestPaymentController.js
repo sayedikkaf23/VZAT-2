@@ -1,4 +1,5 @@
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
+import { sendFinalRenewalEmail } from '../services/emailService.js';
 
 /**
  * Test endpoint to simulate payment completion for testing purposes
@@ -67,6 +68,80 @@ export const testPaymentCompletion = async (req, res) => {
         { quotepaymentId: quotepaymentId },
         { $inc: { payments_completed: 1 } }
       );
+
+      // Check if subscription is complete after this payment
+      try {
+        console.log('🔍 Checking subscription completion after test payment...');
+        const updatedSubscription = await Vzat_Recurring_Data.findOne({ quotepaymentId: quotepaymentId });
+        
+        if (updatedSubscription) {
+          // Check if ALL payments are completed
+          const allPaymentsCompleted = updatedSubscription.payment_schedule.every(p => 
+            p.status === 'completed' || p.status === 'paid'
+          );
+          
+          // Check for any failed or due payments
+          const failedPayments = updatedSubscription.payment_schedule.filter(p => 
+            p.status === 'failed' || p.status === 'due' || p.status === 'pending'
+          );
+          
+          const isComplete = updatedSubscription.payments_completed >= updatedSubscription.InstallmentLeft && 
+                            allPaymentsCompleted && 
+                            failedPayments.length === 0;
+          
+          console.log('📊 Test Payment Completion Check:', {
+            quotepaymentId: updatedSubscription.quotepaymentId,
+            payments_completed: updatedSubscription.payments_completed,
+            total_installments: updatedSubscription.InstallmentLeft,
+            all_payments_completed: allPaymentsCompleted,
+            failed_or_due_payments: failedPayments.length,
+            isComplete: isComplete
+          });
+          
+          if (isComplete && updatedSubscription.subscription_status !== 'completed') {
+            console.log(`🎉 TEST PAYMENT: SUBSCRIPTION COMPLETED for ${quotepaymentId}!`);
+            
+            // Update status to completed and set next_charge_date to null
+            await Vzat_Recurring_Data.findByIdAndUpdate(updatedSubscription._id, {
+              subscription_status: 'completed',
+              next_charge_date: null,
+              renewal_email_sent: true,
+              renewal_email_sent_date: new Date()
+            });
+            
+            // Send completion email
+            try {
+              const emailResult = await sendFinalRenewalEmail({
+                quotepaymentId: updatedSubscription.quotepaymentId,
+                Customer_name: updatedSubscription.Customer_name,
+                opp_email: updatedSubscription.opp_email,
+                payments_completed: updatedSubscription.payments_completed,
+                InstallmentLeft: updatedSubscription.InstallmentLeft,
+                last_payment_date: updatedSubscription.last_payment_date,
+                salesPersonDetails: updatedSubscription.salesPersonDetails
+              });
+              
+              if (emailResult.success) {
+                console.log('📧 ✅ Test payment completion email sent successfully!');
+                console.log(`📧 Email ID: ${emailResult.messageId}`);
+              } else {
+                console.error('📧 ❌ Failed to send test payment completion email:', emailResult.error);
+              }
+            } catch (emailError) {
+              console.error('📧 ❌ Error sending test payment completion email:', emailError);
+            }
+            
+            console.log(`🎉 TEST PAYMENT: SUBSCRIPTION COMPLETED! Final email sent for ${quotepaymentId}`);
+          } else if (isComplete) {
+            console.log(`📧 Test payment: Subscription already marked as completed for ${quotepaymentId}`);
+          } else {
+            console.log(`📋 Test payment: Subscription not yet complete for ${quotepaymentId}`);
+          }
+        }
+      } catch (completionError) {
+        console.error('❌ Error checking subscription completion in test payment:', completionError);
+        console.log('⚠️ Continuing test payment processing despite completion check error');
+      }
 
       return res.json({
         success: true,
