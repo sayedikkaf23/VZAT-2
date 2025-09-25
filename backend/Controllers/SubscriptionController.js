@@ -2,7 +2,7 @@ import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import SavedCard from "../model/SavedCardModel.js";
 import Customer from "../model/CustomerLoginModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
-import { sendSubscriptionCompletedEmail, sendFinalRenewalEmail, sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from "../services/emailService.js";
+import { sendFinalRenewalEmail, sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from "../services/emailService.js";
 import { createCustomerAccount, saveCustomerCard } from "./CustomerRegistration.js";
 import { updateQuotePaymentStatus } from "../services/salesforceService.js";
 import axios from "axios";
@@ -89,14 +89,14 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
           try {
             console.log(`📧 Sending completion email (attempt ${emailAttempts}/${maxEmailAttempts})...`);
             
-            const emailResult = await sendSubscriptionCompletedEmail({
+            const emailResult = await sendFinalRenewalEmail({
               quotepaymentId: subscription.quotepaymentId,
-              OpportunityId: subscription.OpportunityId,
-              QuoteId: subscription.QuoteId,
-              Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-              InstallmentLeft: subscription.InstallmentLeft,
+              Customer_name: subscription.Customer_name,
+              opp_email: subscription.opp_email,
               payments_completed: subscription.payments_completed,
-              last_payment_date: subscription.last_payment_date
+              InstallmentLeft: subscription.InstallmentLeft,
+              last_payment_date: subscription.last_payment_date,
+              salesPersonDetails: subscription.salesPersonDetails
             });
             
             if (emailResult.success) {
@@ -1507,14 +1507,14 @@ export const checkAllSubscriptionsForCompletion = async () => {
               console.log(`📧 Sending missed completion email for recently completed subscription: ${subscription.quotepaymentId}`);
               
               // Send completion email
-              const emailResult = await sendSubscriptionCompletedEmail({
+              const emailResult = await sendFinalRenewalEmail({
                 quotepaymentId: subscription.quotepaymentId,
-                OpportunityId: subscription.OpportunityId,
-                QuoteId: subscription.QuoteId,
-                Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-                InstallmentLeft: subscription.InstallmentLeft,
+                Customer_name: subscription.Customer_name,
+                opp_email: subscription.opp_email,
                 payments_completed: subscription.payments_completed,
-                last_payment_date: subscription.last_payment_date
+                InstallmentLeft: subscription.InstallmentLeft,
+                last_payment_date: subscription.last_payment_date,
+                salesPersonDetails: subscription.salesPersonDetails
               });
               
               if (emailResult.success) {
@@ -1616,14 +1616,14 @@ export const checkSubscriptionCompletion = async (req, res) => {
         
         // Send completion email to business team
         try {
-          const emailResult = await sendSubscriptionCompletedEmail({
+          const emailResult = await sendFinalRenewalEmail({
             quotepaymentId: subscription.quotepaymentId,
-            OpportunityId: subscription.OpportunityId,
-            QuoteId: subscription.QuoteId,
-            Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-            InstallmentLeft: subscription.InstallmentLeft,
+            Customer_name: subscription.Customer_name,
+            opp_email: subscription.opp_email,
             payments_completed: subscription.payments_completed,
-            last_payment_date: subscription.last_payment_date
+            InstallmentLeft: subscription.InstallmentLeft,
+            last_payment_date: subscription.last_payment_date,
+            salesPersonDetails: subscription.salesPersonDetails
           });
           
           if (emailResult.success) {

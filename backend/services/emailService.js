@@ -91,16 +91,26 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
       Total_After_VAT_Currency,
       InstallmentLeft,
       payments_completed,
-      last_payment_date
+      last_payment_date,
+      Customer_name,
+      opp_email,
+      salesPersonDetails
     } = subscriptionData;
+
+    // Send to both customer and business team
+    const recipientList = [
+      opp_email, // Customer email
+      EMAIL_CONFIG.recipients.business_team, // Business team
+      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined // Sales person
+    ].filter(Boolean);
 
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
         address: EMAIL_CONFIG.sender.email
       },
-      to: EMAIL_CONFIG.recipients.business_team,
-      subject: `🎉 Subscription Completed - ${quotepaymentId}`,
+      to: recipientList,
+      subject: `🎉 Subscription Successfully Completed - ${quotepaymentId}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background-color: #28a745; color: white; padding: 20px; text-align: center;">
@@ -108,7 +118,11 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
           </div>
           
           <div style="padding: 20px; background-color: #f8f9fa;">
-            <h2>Customer Subscription Details</h2>
+            <p>Dear ${Customer_name || 'Valued Customer'},</p>
+            
+            <p>Congratulations! We are pleased to inform you that your subscription with Virtuzone has been <strong>successfully completed</strong>.</p>
+            
+            <h2>Subscription Summary</h2>
             
             <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
               <tr style="background-color: #e9ecef;">
@@ -124,7 +138,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
                 <td style="padding: 12px; border: 1px solid #dee2e6;">${QuoteId}</td>
               </tr>
               <tr>
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Total Amount Collected</td>
+                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Total Amount Paid</td>
                 <td style="padding: 12px; border: 1px solid #dee2e6;"><strong>${Total_After_VAT_Currency} AED</strong></td>
               </tr>
               <tr style="background-color: #e9ecef;">
@@ -136,18 +150,20 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
                 <td style="padding: 12px; border: 1px solid #dee2e6;">${payments_completed}</td>
               </tr>
               <tr style="background-color: #e9ecef;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Last Payment Date</td>
+                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Final Payment Date</td>
                 <td style="padding: 12px; border: 1px solid #dee2e6;">${last_payment_date ? new Date(last_payment_date).toLocaleDateString() : 'N/A'}</td>
               </tr>
             </table>
             
             <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
-              <h3 style="color: #155724; margin-top: 0;">✅ Action Completed</h3>
+              <h3 style="color: #155724; margin-top: 0;">🎉 Payment Complete!</h3>
               <p style="color: #155724; margin-bottom: 0;">
-                This customer has successfully completed all installment payments. 
+                All installment payments have been successfully processed. 
                 <strong>No further charges will be processed</strong> for this subscription.
               </p>
             </div>
+            
+            <p>Thank you for choosing Virtuzone for your corporate services. We appreciate your business and look forward to serving you in the future.</p>
             
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
               <p style="color: #6c757d; font-size: 12px;">
@@ -162,7 +178,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
 
     const result = await transporter.sendMail(mailOptions);
 
-    return { success: true, messageId: result.messageId };
+    return { success: true, messageId: result.messageId, recipients: recipientList };
     
   } catch (error) {
     console.error('❌ Failed to send subscription completion email:', error);
