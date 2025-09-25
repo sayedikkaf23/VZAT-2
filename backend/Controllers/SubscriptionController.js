@@ -79,28 +79,50 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
         
         console.log('✅ Subscription status updated to completed');
         
-        // Send completion email to business team
-        try {
-          console.log('📧 Sending completion email to business team...');
-          
-          const emailResult = await sendSubscriptionCompletedEmail({
-            quotepaymentId: subscription.quotepaymentId,
-            OpportunityId: subscription.OpportunityId,
-            QuoteId: subscription.QuoteId,
-            Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-            InstallmentLeft: subscription.InstallmentLeft,
-            payments_completed: subscription.payments_completed,
-            last_payment_date: subscription.last_payment_date
-          });
-          
-          if (emailResult.success) {
-            console.log('📧 ✅ Subscription completion email sent successfully!');
-            console.log(`📧 Email ID: ${emailResult.messageId}`);
-          } else {
-            console.error('📧 ❌ Failed to send completion email:', emailResult.error);
+        // Send completion email to business team with retry logic
+        let emailSent = false;
+        let emailAttempts = 0;
+        const maxEmailAttempts = 3;
+        
+        while (!emailSent && emailAttempts < maxEmailAttempts) {
+          emailAttempts++;
+          try {
+            console.log(`📧 Sending completion email (attempt ${emailAttempts}/${maxEmailAttempts})...`);
+            
+            const emailResult = await sendSubscriptionCompletedEmail({
+              quotepaymentId: subscription.quotepaymentId,
+              OpportunityId: subscription.OpportunityId,
+              QuoteId: subscription.QuoteId,
+              Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+              InstallmentLeft: subscription.InstallmentLeft,
+              payments_completed: subscription.payments_completed,
+              last_payment_date: subscription.last_payment_date
+            });
+            
+            if (emailResult.success) {
+              emailSent = true;
+              console.log('📧 ✅ Subscription completion email sent successfully!');
+              console.log(`📧 Email ID: ${emailResult.messageId}`);
+              console.log(`📧 Email sent to: ${emailResult.recipients || 'Business Team'}`);
+            } else {
+              console.error(`📧 ❌ Failed to send completion email (attempt ${emailAttempts}):`, emailResult.error);
+              if (emailAttempts < maxEmailAttempts) {
+                console.log(`📧 Retrying email in 2 seconds... (attempt ${emailAttempts + 1}/${maxEmailAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+              }
+            }
+          } catch (completionEmailError) {
+            console.error(`📧 ❌ Error sending completion email (attempt ${emailAttempts}):`, completionEmailError);
+            if (emailAttempts < maxEmailAttempts) {
+              console.log(`📧 Retrying email in 2 seconds... (attempt ${emailAttempts + 1}/${maxEmailAttempts})`);
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+            }
           }
-        } catch (completionEmailError) {
-          console.error('📧 ❌ Error sending completion email:', completionEmailError);
+        }
+        
+        if (!emailSent) {
+          console.error('📧 ❌ Failed to send completion email after all attempts');
+          console.log('⚠️ Completion email will be retried by background job');
         }
       } else {
         console.log('📧 Subscription already marked as completed, skipping completion email');
@@ -1441,21 +1463,75 @@ export const checkAllSubscriptionsForCompletion = async () => {
   try {
     console.log('🔍 =============== BACKGROUND COMPLETION CHECK ===============');
     
-    // Find all active subscriptions that might be complete
-    const activeSubscriptions = await Vzat_Recurring_Data.find({
-      subscription_status: 'active',
-      payments_completed: { $gte: 1 } // At least one payment completed
+    // Find all subscriptions that might be complete (including recently completed ones)
+    const subscriptionsToCheck = await Vzat_Recurring_Data.find({
+      $or: [
+        // Active subscriptions that might be complete
+        {
+          subscription_status: 'active',
+          payments_completed: { $gte: 1 }
+        },
+        // Recently completed subscriptions (within last 24 hours) that might have missed email
+        {
+          subscription_status: 'completed',
+          last_payment_date: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+        }
+      ]
     });
     
-    console.log(`📊 Found ${activeSubscriptions.length} active subscriptions to check`);
+    console.log(`📊 Found ${subscriptionsToCheck.length} subscriptions to check`);
     
     let completedCount = 0;
     let errorCount = 0;
+    let emailSentCount = 0;
     
-    for (const subscription of activeSubscriptions) {
+    for (const subscription of subscriptionsToCheck) {
       try {
-        console.log(`🔍 Checking subscription: ${subscription.quotepaymentId}`);
+        console.log(`🔍 Checking subscription: ${subscription.quotepaymentId} (Status: ${subscription.subscription_status})`);
         
+        // For completed subscriptions, check if email was sent
+        if (subscription.subscription_status === 'completed') {
+          console.log(`📧 Checking if completion email was sent for completed subscription: ${subscription.quotepaymentId}`);
+          
+          // Check if all payments are completed (should be true for completed subscriptions)
+          const allPaymentsCompleted = subscription.payment_schedule.every(p => 
+            p.status === 'completed' || p.status === 'paid'
+          );
+          
+          if (allPaymentsCompleted && subscription.payments_completed >= subscription.InstallmentLeft) {
+            // Only send email if it was completed recently (within last hour) to avoid spam
+            const lastPaymentTime = new Date(subscription.last_payment_date);
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            
+            if (lastPaymentTime > oneHourAgo) {
+              console.log(`📧 Sending missed completion email for recently completed subscription: ${subscription.quotepaymentId}`);
+              
+              // Send completion email
+              const emailResult = await sendSubscriptionCompletedEmail({
+                quotepaymentId: subscription.quotepaymentId,
+                OpportunityId: subscription.OpportunityId,
+                QuoteId: subscription.QuoteId,
+                Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+                InstallmentLeft: subscription.InstallmentLeft,
+                payments_completed: subscription.payments_completed,
+                last_payment_date: subscription.last_payment_date
+              });
+              
+              if (emailResult.success) {
+                emailSentCount++;
+                console.log(`📧 ✅ Completion email sent successfully for: ${subscription.quotepaymentId}`);
+                console.log(`📧 Email ID: ${emailResult.messageId}`);
+              } else {
+                console.error(`📧 ❌ Failed to send completion email for: ${subscription.quotepaymentId}`, emailResult.error);
+              }
+            } else {
+              console.log(`📧 Skipping email for old completed subscription: ${subscription.quotepaymentId} (completed more than 1 hour ago)`);
+            }
+          }
+          continue; // Skip normal completion check for already completed subscriptions
+        }
+        
+        // For active subscriptions, run normal completion check
         const isComplete = await checkAndHandleSubscriptionCompletion(subscription);
         
         if (isComplete) {
@@ -1472,10 +1548,11 @@ export const checkAllSubscriptionsForCompletion = async () => {
     }
     
     console.log('📊 Background completion check results:', {
-      total_checked: activeSubscriptions.length,
+      total_checked: subscriptionsToCheck.length,
       completed: completedCount,
+      emails_sent: emailSentCount,
       errors: errorCount,
-      still_active: activeSubscriptions.length - completedCount
+      still_active: subscriptionsToCheck.length - completedCount - emailSentCount
     });
     
     console.log('🎯 =============== BACKGROUND COMPLETION CHECK COMPLETE ===============');
