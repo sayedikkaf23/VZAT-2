@@ -74,7 +74,9 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
         // Update status to completed and set next_charge_date to null
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
           subscription_status: 'completed',
-          next_charge_date: null
+          next_charge_date: null,
+          renewal_email_sent: true,
+          renewal_email_sent_date: new Date()
         });
         
         console.log('✅ Subscription status updated to completed');
@@ -420,6 +422,30 @@ export const handleAFSWebhook = async (req, res) => {
       // Update payment schedule status
       const scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, updatedRecord.payments_completed, id);
       console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
+      
+      // Send customer notification email for successful payment
+      try {
+        const successResult = await sendPaymentSuccessNotificationEmail({
+          quotepaymentId: subscription.quotepaymentId,
+          Customer_name: subscription.Customer_name,
+          opp_email: subscription.opp_email,
+          payment_amount: parseFloat(result.amount),
+          payment_date: new Date(result.timestamp || new Date()),
+          installment_number: updatedRecord.payments_completed,
+          total_installments: subscription.InstallmentLeft,
+          payment_method: 'Card',
+          salesPersonDetails: subscription.salesPersonDetails
+        });
+        
+        if (successResult.success) {
+          console.log('📧 Customer payment success notification sent successfully');
+        } else {
+          console.warn('⚠️ Failed to send customer success notification but payment was successful:', successResult.error);
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending customer success notification but payment was successful:', emailError);
+        // Don't fail the payment if email fails - it's not critical
+      }
       
       // Check if subscription is complete after this payment
       const finalRecord = await Vzat_Recurring_Data.findById(subscription._id);
@@ -1499,11 +1525,11 @@ export const checkAllSubscriptionsForCompletion = async () => {
           );
           
           if (allPaymentsCompleted && subscription.payments_completed >= subscription.InstallmentLeft) {
-            // Only send email if it was completed recently (within last hour) to avoid spam
+            // Only send email if it was completed recently (within last hour) and renewal email not sent yet
             const lastPaymentTime = new Date(subscription.last_payment_date);
             const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
             
-            if (lastPaymentTime > oneHourAgo) {
+            if (lastPaymentTime > oneHourAgo && !subscription.renewal_email_sent) {
               console.log(`📧 Sending missed completion email for recently completed subscription: ${subscription.quotepaymentId}`);
               
               // Send completion email
@@ -1521,6 +1547,12 @@ export const checkAllSubscriptionsForCompletion = async () => {
                 emailSentCount++;
                 console.log(`📧 ✅ Completion email sent successfully for: ${subscription.quotepaymentId}`);
                 console.log(`📧 Email ID: ${emailResult.messageId}`);
+                
+                // Mark renewal email as sent
+                await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+                  renewal_email_sent: true,
+                  renewal_email_sent_date: new Date()
+                });
               } else {
                 console.error(`📧 ❌ Failed to send completion email for: ${subscription.quotepaymentId}`, emailResult.error);
               }
@@ -1611,7 +1643,9 @@ export const checkSubscriptionCompletion = async (req, res) => {
         // Update status to completed and set next_charge_date to null
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
           subscription_status: 'completed',
-          next_charge_date: null
+          next_charge_date: null,
+          renewal_email_sent: true,
+          renewal_email_sent_date: new Date()
         });
         
         // Send completion email to business team
