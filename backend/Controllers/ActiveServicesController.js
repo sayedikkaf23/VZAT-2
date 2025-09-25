@@ -9,15 +9,40 @@ function validatePaymentSequence(payments) {
   if (!payments || payments.length ***REMOVED***= 0) return payments;
   
   console.log('🔍 Validating payment sequence...');
+  console.log('📋 Input payments:', payments.map(p => ({ 
+    installment: p.installment_number, 
+    status: p.status,
+    amount: p.amount,
+    due_date: p.due_date
+  })));
   
   // Sort by installment number to ensure correct order
-  const sortedPayments = [...payments].sort((a, b) => a.installment_number - b.installment_number);
+  const sortedPayments = [...payments].sort((a, b) => {
+    const aNum = a.installment_number || 0;
+    const bNum = b.installment_number || 0;
+    return aNum - bNum;
+  });
   
   let validatedPayments = [];
   let hasFailedPayment = false;
   
   for (let i = 0; i < sortedPayments.length; i++) {
-    const payment = { ...sortedPayments[i] };
+    // Create a proper copy of the payment object with all fields
+    const payment = {
+      installment_number: sortedPayments[i].installment_number,
+      status: sortedPayments[i].status,
+      amount: sortedPayments[i].amount,
+      due_date: sortedPayments[i].due_date,
+      _id: sortedPayments[i]._id,
+      payment_date: sortedPayments[i].payment_date,
+      transaction_id: sortedPayments[i].transaction_id
+    };
+    
+    // Ensure all required fields are present
+    if (!payment.installment_number) {
+      console.log(`⚠️ Payment missing installment_number, skipping:`, payment);
+      continue;
+    }
     
     // If we've encountered a failed payment, all subsequent payments should be pending/due
     if (hasFailedPayment) {
@@ -37,6 +62,13 @@ function validatePaymentSequence(payments) {
   }
   
   console.log('✅ Payment sequence validation complete');
+  console.log('📋 Output payments:', validatedPayments.map(p => ({ 
+    installment: p.installment_number, 
+    status: p.status,
+    amount: p.amount,
+    due_date: p.due_date
+  })));
+  
   return validatedPayments;
 }
 
@@ -73,37 +105,58 @@ export const getActiveServices = async (req, res) => {
     // Transform subscription data to payment schedule format
     const paymentScheduleServices = [];
 
-    for (const subscription of activeSubscriptions) {
-      // Use the payment_schedule array from database if available
-      if (subscription.payment_schedule && subscription.payment_schedule.length > 0) {
-        // Sort payments by installment number to ensure correct order
-        const sortedPayments = subscription.payment_schedule.sort((a, b) => a.installment_number - b.installment_number);
-        
-        // Validate payment sequence and fix any logical inconsistencies
-        const validatedPayments = validatePaymentSequence(sortedPayments);
-        
-        // Get payment schedule entries directly from database
-        for (const payment of validatedPayments) {
-          paymentScheduleServices.push({
-            id: `${subscription.quotepaymentId}_${payment.installment_number}`,
-            installment_number: payment.installment_number,
-            Customer_name: subscription.Customer_name || 'Customer', // Database field name
-            opp_email: subscription.opp_email || '', // Database field name
-            QuoteLineItemId: subscription.QuoteLineItemId || subscription.quotepaymentId, // Database field name
-            subscription_status: subscription.subscription_status, // Database field name
-            quotepaymentId: subscription.quotepaymentId,
-            due_date: payment.due_date,
-            amount: payment.amount,
-            status: payment.status,
-            // Additional fields for reference
-            opportunityId: subscription.OpportunityId,
-            quoteId: subscription.QuoteId,
-            createdDate: subscription.createdAt,
-            // Keep legacy fields for backward compatibility
-            customerName: subscription.Customer_name || 'Customer',
-            subscriptionStatus: subscription.subscription_status
-          });
-        }
+     for (const subscription of activeSubscriptions) {
+       console.log(`🔍 Processing subscription: ${subscription.quotepaymentId}`);
+       console.log(`📋 Payment schedule from DB:`, subscription.payment_schedule);
+       
+       // Use the payment_schedule array from database if available
+       if (subscription.payment_schedule && subscription.payment_schedule.length > 0) {
+         // Sort payments by installment number to ensure correct order
+         const sortedPayments = subscription.payment_schedule.sort((a, b) => {
+           const aNum = a.installment_number || 0;
+           const bNum = b.installment_number || 0;
+           return aNum - bNum;
+         });
+         
+         console.log(`📋 Sorted payments:`, sortedPayments.map(p => ({ 
+           installment: p.installment_number, 
+           status: p.status,
+           amount: p.amount,
+           due_date: p.due_date
+         })));
+         
+         // Validate payment sequence and fix any logical inconsistencies
+         const validatedPayments = validatePaymentSequence(sortedPayments);
+         
+         // Get payment schedule entries directly from database
+         for (const payment of validatedPayments) {
+           console.log(`📝 Creating payment service for installment ${payment.installment_number}:`, {
+             installment_number: payment.installment_number,
+             status: payment.status,
+             amount: payment.amount,
+             due_date: payment.due_date
+           });
+           
+           paymentScheduleServices.push({
+             id: `${subscription.quotepaymentId}_${payment.installment_number}`,
+             installment_number: payment.installment_number,
+             Customer_name: subscription.Customer_name || 'Customer', // Database field name
+             opp_email: subscription.opp_email || '', // Database field name
+             QuoteLineItemId: subscription.QuoteLineItemId || subscription.quotepaymentId, // Database field name
+             subscription_status: subscription.subscription_status, // Database field name
+             quotepaymentId: subscription.quotepaymentId,
+             due_date: payment.due_date,
+             amount: payment.amount,
+             status: payment.status,
+             // Additional fields for reference
+             opportunityId: subscription.OpportunityId,
+             quoteId: subscription.QuoteId,
+             createdDate: subscription.createdAt,
+             // Keep legacy fields for backward compatibility
+             customerName: subscription.Customer_name || 'Customer',
+             subscriptionStatus: subscription.subscription_status
+           });
+         }
       } else {
         // Fallback: calculate payment schedule if not available in database
         const totalInstallments = subscription.InstallmentLeft || 1;
