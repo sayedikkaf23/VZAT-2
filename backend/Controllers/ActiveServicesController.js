@@ -2,6 +2,45 @@ import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 
 /**
+ * Validate and fix payment sequence to ensure logical consistency
+ * Payments must be sequential - you can't have a later payment completed if an earlier one failed
+ */
+function validatePaymentSequence(payments) {
+  if (!payments || payments.length === 0) return payments;
+  
+  console.log('🔍 Validating payment sequence...');
+  
+  // Sort by installment number to ensure correct order
+  const sortedPayments = [...payments].sort((a, b) => a.installment_number - b.installment_number);
+  
+  let validatedPayments = [];
+  let hasFailedPayment = false;
+  
+  for (let i = 0; i < sortedPayments.length; i++) {
+    const payment = { ...sortedPayments[i] };
+    
+    // If we've encountered a failed payment, all subsequent payments should be pending/due
+    if (hasFailedPayment) {
+      if (payment.status === 'completed' || payment.status === 'paid') {
+        console.log(`⚠️ Fixing payment #${payment.installment_number}: ${payment.status} → pending (due to earlier failed payment)`);
+        payment.status = 'pending';
+      }
+    } else {
+      // Check if this payment is failed
+      if (payment.status === 'failed') {
+        hasFailedPayment = true;
+        console.log(`❌ Found failed payment #${payment.installment_number} - marking subsequent payments as pending`);
+      }
+    }
+    
+    validatedPayments.push(payment);
+  }
+  
+  console.log('✅ Payment sequence validation complete');
+  return validatedPayments;
+}
+
+/**
  * Get active services (payment schedules) for customer portal
  * This will show payment schedule details instead of static service data
  */
@@ -37,8 +76,14 @@ export const getActiveServices = async (req, res) => {
     for (const subscription of activeSubscriptions) {
       // Use the payment_schedule array from database if available
       if (subscription.payment_schedule && subscription.payment_schedule.length > 0) {
+        // Sort payments by installment number to ensure correct order
+        const sortedPayments = subscription.payment_schedule.sort((a, b) => a.installment_number - b.installment_number);
+        
+        // Validate payment sequence and fix any logical inconsistencies
+        const validatedPayments = validatePaymentSequence(sortedPayments);
+        
         // Get payment schedule entries directly from database
-        for (const payment of subscription.payment_schedule) {
+        for (const payment of validatedPayments) {
           paymentScheduleServices.push({
             id: `${subscription.quotepaymentId}_${payment.installment_number}`,
             installment_number: payment.installment_number,
@@ -106,14 +151,18 @@ export const getActiveServices = async (req, res) => {
       activeSubscriptions: activeSubscriptions.length,
       services: paymentScheduleServices,
       summary: {
-        totalPaid: paymentScheduleServices.filter(s => s.status === 'paid').length,
+        totalPaid: paymentScheduleServices.filter(s => s.status === 'paid' || s.status === 'completed').length,
         totalDue: paymentScheduleServices.filter(s => s.status === 'due').length,
         totalPending: paymentScheduleServices.filter(s => s.status === 'pending').length,
+        totalFailed: paymentScheduleServices.filter(s => s.status === 'failed').length,
         totalAmountPaid: paymentScheduleServices
-          .filter(s => s.status === 'paid')
+          .filter(s => s.status === 'paid' || s.status === 'completed')
           .reduce((sum, s) => sum + s.amount, 0),
         totalAmountDue: paymentScheduleServices
           .filter(s => s.status === 'due')
+          .reduce((sum, s) => sum + s.amount, 0),
+        totalAmountPending: paymentScheduleServices
+          .filter(s => s.status === 'pending')
           .reduce((sum, s) => sum + s.amount, 0)
       }
     };
