@@ -792,6 +792,12 @@ export const processRecurringPayments = async (req, res) => {
         
         // Mark the current payment as failed in payment_schedule immediately
         const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
+        
+        // Calculate next charge date (tomorrow)
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        
         await Vzat_Recurring_Data.findOneAndUpdate(
           { 
             _id: subscription._id,
@@ -800,11 +806,13 @@ export const processRecurringPayments = async (req, res) => {
           {
             $set: {
               'payment_schedule.$.status': 'failed',
-              'payment_schedule.$.failure_date': new Date()
+              'payment_schedule.$.failure_date': new Date(),
+              next_charge_date: tomorrow
             }
           }
         );
         console.log(`❌ Payment #${currentPaymentNumber} marked as failed in payment schedule`);
+        console.log(`📅 Next charge date updated to: ${tomorrow.toISOString().slice(0, 10)}`);
         
         // Handle failed payment retry logic
         const retryCount = subscription.payment_retry_count || 0;
