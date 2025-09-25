@@ -53,14 +53,13 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
 
     // Configure AFS checkout for registration with payment
     const checkoutData = {
-
       merchantTransactionId:`${Date.now()}`, // ← usually the same as Pay-by-Link quote ID
       entityId: '8ac7a4c797e1beca0197e482a8200127',        // ← usually DIFFERENT from Pay-by-Link entity
       amount:  1.00,
       currency: "AED",
       paymentType: "DB",
-      integrity: "true" ,      
-
+      integrity: "true",
+      createRegistration: true  // ← ADDED: Create registration for new cards
     };
     
     // Convert to x-www-form-urlencoded string
