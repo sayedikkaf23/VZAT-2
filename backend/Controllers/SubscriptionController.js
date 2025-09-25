@@ -793,11 +793,56 @@ export const processRecurringPayments = async (req, res) => {
         // Mark the current payment as failed in payment_schedule immediately
         const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
         
-        // Calculate next charge date (tomorrow)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
+        // Handle failed payment retry logic
+        const retryCount = subscription.payment_retry_count || 0;
+        const maxRetries = 3; // Allow retries for 3 days
         
+        let nextChargeDate;
+        
+        if (retryCount >= maxRetries) {
+          console.log(`🚫 MAX RETRIES EXCEEDED for ${subscription.quotepaymentId} (${retryCount}/${maxRetries})`);
+          
+          // Find the next due payment in the schedule
+          const nextDuePayment = subscription.payment_schedule.find(p => 
+            p.status ***REMOVED***= 'due' || p.status ***REMOVED***= 'pending'
+          );
+          
+          if (nextDuePayment) {
+            // Move to the next due payment's due date
+            nextChargeDate = new Date(nextDuePayment.due_date);
+            nextChargeDate.setHours(0, 0, 0, 0);
+            console.log(`📅 Moving to next due payment #${nextDuePayment.installment_number} on ${nextChargeDate.toISOString().slice(0, 10)}`);
+          } else {
+            // No more payments due, set to tomorrow as fallback
+            nextChargeDate = new Date();
+            nextChargeDate.setDate(nextChargeDate.getDate() + 1);
+            nextChargeDate.setHours(0, 0, 0, 0);
+            console.log(`📅 No more payments due, setting next charge to tomorrow: ${nextChargeDate.toISOString().slice(0, 10)}`);
+          }
+          
+          // Reset retry count for the next payment attempt
+          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+            last_processed_date: new Date(),
+            payment_retry_count: 0, // Reset for next payment
+            next_charge_date: nextChargeDate
+          });
+          
+        } else {
+          // Calculate next charge date (tomorrow for retry)
+          nextChargeDate = new Date();
+          nextChargeDate.setDate(nextChargeDate.getDate() + 1);
+          nextChargeDate.setHours(0, 0, 0, 0);
+          
+          // Increment retry count and mark as processed for today
+          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+            last_processed_date: new Date(),
+            payment_retry_count: retryCount + 1,
+            next_charge_date: nextChargeDate
+          });
+          console.log(`🔄 RETRY SCHEDULED for ${subscription.quotepaymentId} - Retry ${retryCount + 1}/${maxRetries} (will retry tomorrow)`);
+        }
+        
+        // Update the payment schedule to mark current payment as failed
         await Vzat_Recurring_Data.findOneAndUpdate(
           { 
             _id: subscription._id,
@@ -806,34 +851,12 @@ export const processRecurringPayments = async (req, res) => {
           {
             $set: {
               'payment_schedule.$.status': 'failed',
-              'payment_schedule.$.failure_date': new Date(),
-              next_charge_date: tomorrow
+              'payment_schedule.$.failure_date': new Date()
             }
           }
         );
         console.log(`❌ Payment #${currentPaymentNumber} marked as failed in payment schedule`);
-        console.log(`📅 Next charge date updated to: ${tomorrow.toISOString().slice(0, 10)}`);
-        
-        // Handle failed payment retry logic
-        const retryCount = subscription.payment_retry_count || 0;
-        const maxRetries = 3; // Allow retries for 3 days
-        
-        if (retryCount >= maxRetries) {
-          console.log(`🚫 MAX RETRIES EXCEEDED for ${subscription.quotepaymentId} (${retryCount}/${maxRetries}), marking as processed`);
-          
-          // Mark as processed and reset retry count for next day
-          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-            last_processed_date: new Date(),
-            payment_retry_count: 0 // Reset for next day
-          });
-        } else {
-          // Increment retry count and mark as processed for today
-          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-            last_processed_date: new Date(),
-            payment_retry_count: retryCount + 1
-          });
-          console.log(`🔄 RETRY SCHEDULED for ${subscription.quotepaymentId} - Retry ${retryCount + 1}/${maxRetries} (will retry tomorrow)`);
-        }
+        console.log(`📅 Next charge date updated to: ${nextChargeDate.toISOString().slice(0, 10)}`);
         
         // Send failure email to operations team
         // try {
