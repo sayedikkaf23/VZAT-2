@@ -1386,58 +1386,51 @@
                     </div>
                     <div class="modal-body">
                         <div class="payment-schedule-list">
-                            <div class="item success"
-                                *ngFor="let payment of getCompletedPayments(selectedService); let i = index">
+                            <!-- Display all payments in correct installment order -->
+                            <div class="item" 
+                                [ngClass]="{
+                                    'success': payment.status === 'completed' || payment.status === 'paid',
+                                    'failed': payment.status === 'failed',
+                                    'active': payment.status === 'due' || payment.status === 'overdue',
+                                    '': payment.status === 'pending'
+                                }"
+                                *ngFor="let payment of getAllPaymentsInOrder(selectedService); let i = index">
                                 <div class="d-flex align-items-center">
-                                    <div class="check-icon">
+                                    <!-- Icon based on status -->
+                                    <div class="check-icon" *ngIf="payment.status === 'completed' || payment.status === 'paid'">
                                         <i class="fas fa-check"></i>
                                     </div>
-                                    <div class="payment-info ms-3">
-                                        <div class="payment-title">Payment {{ i + 1 }}</div>
-                                        <div class="payment-amount">AED {{ formatAmount(payment.amount) }}</div>
-
-
-
-                                        <div class="payment-date">{{ formatDate(payment.due_date) }}</div>
-                                    </div>
-                                    <div class="ms-auto">
-                                        <span class="status-badge paid">Paid</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="item active" *ngIf="getCurrentPayment(selectedService) as currentPayment">
-                                <div class="d-flex align-items-center">
-                                    <div class="active-icon">
-                                        <i class="fas fa-circle"></i>
-                                    </div>
-                                    <div class="payment-info ms-3">
-                                        <div class="payment-title">Payment {{ currentPayment.installment_number }}</div>
-                                        <div class="payment-amount">AED {{ formatAmount(currentPayment.amount) }}</div>
-                                        <div class="payment-date">{{ formatDate(currentPayment.due_date) }}</div>
-                                    </div>
-                                    <div class="ms-auto">
-                                        <span class="status-badge current">Current</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Failed Payments Section -->
-                            <div class="item failed"
-                                *ngFor="let payment of getFailedPayments(selectedService); let i = index">
-                                <div class="d-flex align-items-center">
-                                    <div class="failed-icon">
+                                    <div class="failed-icon" *ngIf="payment.status === 'failed'">
                                         <i class="fas fa-times"></i>
                                     </div>
+                                    <div class="active-icon" *ngIf="payment.status === 'due' || payment.status === 'overdue'">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    <div class="pending-icon" *ngIf="payment.status === 'pending'">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    
                                     <div class="payment-info ms-3">
                                         <div class="payment-title">Payment {{ payment.installment_number }}</div>
                                         <div class="payment-amount">AED {{ formatAmount(payment.amount) }}</div>
                                         <div class="payment-date">{{ formatDate(payment.due_date) }}</div>
                                     </div>
+                                    
                                     <div class="ms-auto d-flex align-items-center gap-2">
-                                        <span class="status-badge failed">Failed</span>
+                                        <!-- Status badge -->
+                                        <span class="status-badge" 
+                                            [ngClass]="{
+                                                'paid': payment.status === 'completed' || payment.status === 'paid',
+                                                'failed': payment.status === 'failed',
+                                                'current': payment.status === 'due' || payment.status === 'overdue',
+                                                'pending': payment.status === 'pending'
+                                            }">
+                                            {{ payment.status === 'completed' ? 'Paid' : (payment.status | titlecase) }}
+                                        </span>
+                                        
+                                        <!-- Retry button for failed payments -->
                                         <button
-                                            *ngIf="selectedService.subscription_status === 'active' && canRetryPayment(payment)"
+                                            *ngIf="payment.status === 'failed' && selectedService.subscription_status === 'active' && canRetryPayment(payment)"
                                             (click)="retryPayment(selectedService, payment)"
                                             class="btn btn-sm btn-danger retry-payment-btn">
                                             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-1">
@@ -1445,28 +1438,13 @@
                                             </svg>
                                             Retry
                                         </button>
+                                        
+                                        <!-- Retry countdown for failed payments -->
                                         <span
-                                            *ngIf="selectedService.subscription_status === 'active' && !canRetryPayment(payment) && getRetryTimeRemaining(payment)"
+                                            *ngIf="payment.status === 'failed' && selectedService.subscription_status === 'active' && !canRetryPayment(payment) && getRetryTimeRemaining(payment)"
                                             class="text-muted small">
                                             Retry in {{ getRetryTimeRemaining(payment) }}
                                         </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="item"
-                                *ngFor="let payment of getPendingPayments(selectedService); let i = index">
-                                <div class="d-flex align-items-center">
-                                    <div class="pending-icon">
-                                        <i class="fas fa-circle"></i>
-                                    </div>
-                                    <div class="payment-info ms-3">
-                                        <div class="payment-title">Payment {{ payment.installment_number }}</div>
-                                        <div class="payment-amount">AED {{ formatAmount(payment.amount) }}</div>
-                                        <div class="payment-date">{{ formatDate(payment.due_date) }}</div>
-                                    </div>
-                                    <div class="ms-auto">
-                                        <span class="status-badge pending">Pending</span>
                                     </div>
                                 </div>
                             </div>
