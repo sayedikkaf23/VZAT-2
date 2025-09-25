@@ -689,9 +689,22 @@ export const processRecurringPayments = async (req, res) => {
         
         // Adjust subscription data for processing
         const subscriptionForProcessing = {
-          ...subscription,
+          quotepaymentId: subscription.quotepaymentId,
+          opp_email: subscription.opp_email,
+          Customer_name: subscription.Customer_name,
+          Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+          InstallmentLeft: subscription.InstallmentLeft,
+          afs_registration_id: subscription.afs_registration_id,
+          salesPersonDetails: subscription.salesPersonDetails,
+          payment_schedule: subscription.payment_schedule,
           payments_completed: paymentToProcess - 1 // Adjust for the payment we're processing
         };
+        
+        console.log('🔍 DEBUG - subscriptionForProcessing object:');
+        console.log(`   - quotepaymentId: ${subscriptionForProcessing.quotepaymentId}`);
+        console.log(`   - opp_email: ${subscriptionForProcessing.opp_email}`);
+        console.log(`   - Customer_name: ${subscriptionForProcessing.Customer_name}`);
+        console.log(`   - payments_completed: ${subscriptionForProcessing.payments_completed}`);
         
         const paymentResult = await processSubscriptionPayment(subscriptionForProcessing);
         
@@ -843,10 +856,30 @@ export const processRecurringPayments = async (req, res) => {
             
             try {
               // Automatically process the next payment
-              const nextPaymentResult = await processSubscriptionPayment({
-                ...subscription,
+              console.log('🔍 DEBUG - Processing next payment after max retries:');
+              console.log(`   - Original subscription quotepaymentId: ${subscription.quotepaymentId}`);
+              console.log(`   - Original subscription opp_email: ${subscription.opp_email}`);
+              console.log(`   - Next payment number: ${nextDuePayment.installment_number}`);
+              
+              const nextPaymentSubscription = {
+                quotepaymentId: subscription.quotepaymentId,
+                opp_email: subscription.opp_email,
+                Customer_name: subscription.Customer_name,
+                Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+                InstallmentLeft: subscription.InstallmentLeft,
+                afs_registration_id: subscription.afs_registration_id,
+                salesPersonDetails: subscription.salesPersonDetails,
+                payment_schedule: subscription.payment_schedule,
                 payments_completed: nextDuePayment.installment_number - 1 // Adjust for the next payment
-              });
+              };
+              
+              console.log('🔍 DEBUG - Next payment subscription object:');
+              console.log(`   - quotepaymentId: ${nextPaymentSubscription.quotepaymentId}`);
+              console.log(`   - opp_email: ${nextPaymentSubscription.opp_email}`);
+              console.log(`   - Customer_name: ${nextPaymentSubscription.Customer_name}`);
+              console.log(`   - payments_completed: ${nextPaymentSubscription.payments_completed}`);
+              
+              const nextPaymentResult = await processSubscriptionPayment(nextPaymentSubscription);
               
               if (nextPaymentResult && nextPaymentResult.result && nextPaymentResult.result.code.startsWith('000.')) {
                 console.log(`✅ NEXT PAYMENT #${nextDuePayment.installment_number} PROCESSED SUCCESSFULLY`);
@@ -1176,6 +1209,22 @@ async function processSubscriptionPayment(subscription) {
  */
 async function getCustomerDefaultCard(subscription) {
   try {
+    console.log('🔍 DEBUG - getCustomerDefaultCard called with subscription:');
+    console.log(`   - quotepaymentId: ${subscription.quotepaymentId}`);
+    console.log(`   - opp_email: ${subscription.opp_email}`);
+    console.log(`   - Customer_name: ${subscription.Customer_name}`);
+    
+    // Validate required fields
+    if (!subscription.quotepaymentId) {
+      console.log('❌ No quotepaymentId provided');
+      return null;
+    }
+    
+    if (!subscription.opp_email) {
+      console.log('❌ No opp_email provided - cannot find customer');
+      return null;
+    }
+    
     // Find customer by email or quotepaymentId
     const customer = await Customer.findOne({
       $or: [
@@ -1186,8 +1235,12 @@ async function getCustomerDefaultCard(subscription) {
     
     if (!customer) {
       console.log(`❌ Customer not found for subscription: ${subscription.quotepaymentId}`);
+      console.log(`❌ Searched for email: ${subscription.opp_email}`);
+      console.log(`❌ Searched for quotepaymentId: ${subscription.quotepaymentId}`);
       return null;
     }
+    
+    console.log(`✅ Customer found: ${customer._id} (${customer.email})`);
     
     // First, try to get the default active card for this customer
     let savedCard = await SavedCard.findOne({
