@@ -1385,6 +1385,132 @@ export const updateNextChargeDate = async (req, res) => {
 };
 
 /**
+ * Check and trigger completion email for a specific subscription
+ */
+export const checkSubscriptionCompletion = async (req, res) => {
+  try {
+    const { quotepaymentId } = req.params;
+    
+    console.log(`🔍 Checking completion for subscription: ${quotepaymentId}`);
+    
+    const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId });
+    
+    if (!subscription) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Subscription not found',
+        quotepaymentId 
+      });
+    }
+    
+    console.log('📋 Current subscription data:', {
+      quotepaymentId: subscription.quotepaymentId,
+      subscription_status: subscription.subscription_status,
+      payments_completed: subscription.payments_completed,
+      InstallmentLeft: subscription.InstallmentLeft,
+      next_charge_date: subscription.next_charge_date
+    });
+    
+    const allPaymentsCompleted = subscription.payment_schedule.every(p => 
+      p.status ***REMOVED***= 'completed' || p.status ***REMOVED***= 'paid'
+    );
+    
+    console.log('🔍 Completion check:', {
+      payments_completed: subscription.payments_completed,
+      total_installments: subscription.InstallmentLeft,
+      all_payments_completed: allPaymentsCompleted,
+      payment_schedule: subscription.payment_schedule.map(p => ({
+        installment: p.installment_number,
+        status: p.status
+      }))
+    });
+    
+    if (subscription.payments_completed >= subscription.InstallmentLeft && allPaymentsCompleted) {
+      console.log(`🎉 SUBSCRIPTION IS COMPLETE - Triggering completion email for ${quotepaymentId}!`);
+      
+      // Check if already completed to prevent duplicate emails
+      if (subscription.subscription_status !***REMOVED*** 'completed') {
+        // Update status to completed and set next_charge_date to null
+        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+          subscription_status: 'completed',
+          next_charge_date: null
+        });
+        
+        // Send completion email to business team
+        try {
+          const emailResult = await sendSubscriptionCompletedEmail({
+            quotepaymentId: subscription.quotepaymentId,
+            OpportunityId: subscription.OpportunityId,
+            QuoteId: subscription.QuoteId,
+            Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+            InstallmentLeft: subscription.InstallmentLeft,
+            payments_completed: subscription.payments_completed,
+            last_payment_date: subscription.last_payment_date
+          });
+          
+          if (emailResult.success) {
+            console.log('📧 Subscription completion email sent successfully');
+            return res.status(200).json({ 
+              success: true,
+              message: 'Subscription completed and email sent successfully',
+              quotepaymentId,
+              emailId: emailResult.messageId
+            });
+          } else {
+            console.error('📧 Failed to send completion email:', emailResult.error);
+            return res.status(500).json({ 
+              success: false,
+              message: 'Subscription completed but failed to send email',
+              quotepaymentId,
+              error: emailResult.error
+            });
+          }
+        } catch (completionEmailError) {
+          console.error('📧 Error sending completion email:', completionEmailError);
+          return res.status(500).json({ 
+            success: false,
+            message: 'Subscription completed but error sending email',
+            quotepaymentId,
+            error: completionEmailError.message
+          });
+        }
+      } else {
+        console.log(`ℹ️ Subscription ${quotepaymentId} already marked as completed - skipping completion email`);
+        return res.status(200).json({ 
+          success: true,
+          message: 'Subscription already completed',
+          quotepaymentId
+        });
+      }
+    } else {
+      console.log('📋 Subscription not yet complete - some payments still pending/failed');
+      return res.status(200).json({ 
+        success: false,
+        message: 'Subscription not yet complete',
+        quotepaymentId,
+        details: {
+          payments_completed: subscription.payments_completed,
+          total_installments: subscription.InstallmentLeft,
+          all_payments_completed: allPaymentsCompleted,
+          payment_schedule: subscription.payment_schedule.map(p => ({
+            installment: p.installment_number,
+            status: p.status
+          }))
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('💥 Error checking subscription completion:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error checking subscription completion',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Fix missing InstallmentLeft field (for testing purposes)
  */
 export const fixInstallmentLeft = async (req, res) => {
