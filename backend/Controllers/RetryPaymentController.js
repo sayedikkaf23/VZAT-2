@@ -430,21 +430,23 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
         // Update status to completed and set next_charge_date to null
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
           subscription_status: 'completed',
-          next_charge_date: null
+          next_charge_date: null,
+          renewal_email_sent: true,
+          renewal_email_sent_date: new Date()
         });
         
         // Send completion email to business team
         try {
-          const { sendSubscriptionCompletedEmail } = await import('../services/emailService.js');
+          const { sendFinalRenewalEmail } = await import('../services/emailService.js');
           
-          const emailResult = await sendSubscriptionCompletedEmail({
+          const emailResult = await sendFinalRenewalEmail({
             quotepaymentId: subscription.quotepaymentId,
-            OpportunityId: subscription.OpportunityId,
-            QuoteId: subscription.QuoteId,
-            Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-            InstallmentLeft: subscription.InstallmentLeft,
+            Customer_name: subscription.Customer_name,
+            opp_email: subscription.opp_email,
             payments_completed: subscription.payments_completed,
-            last_payment_date: subscription.last_payment_date
+            InstallmentLeft: subscription.InstallmentLeft,
+            last_payment_date: subscription.last_payment_date,
+            salesPersonDetails: subscription.salesPersonDetails
           });
           
           if (emailResult.success) {
