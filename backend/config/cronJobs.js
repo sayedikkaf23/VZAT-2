@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { processRecurringPayments, checkAllSubscriptionsForCompletion } from '../Controllers/SubscriptionController.js';
+import { processRecurringPayments } from '../Controllers/SubscriptionController.js';
 
 /**
  * Set up cron jobs for subscription management
@@ -22,27 +22,8 @@ export function initializeCronJobs() {
     timezone: "Asia/Dubai" // UAE timezone
   });
   
-  // Run every 5 minutes to check for missed completion emails
-  // This ensures no completed subscriptions are missed
-  cron.schedule('*/2 * * * *', async () => {
-    console.log('🔍 Starting completion check for all active subscriptions...');
-    try {
-      await checkAllSubscriptionsForCompletion();
-      console.log('✅ Completion check completed');
-    } catch (error) {
-      console.error('❌ Completion check failed:', error);
-    }
-  }, {
-    scheduled: true,
-    timezone: "Asia/Dubai" // UAE timezone
-  });
-  
-  // REMOVED: Hourly backup processing to prevent duplicate emails
-  // The single daily run at 9 AM is sufficient for processing payments
-  
   console.log('✅ Cron jobs initialized successfully');
   console.log('📅 TEST MODE: Processing every 2 minutes (Asia/Dubai)');
-  console.log('🔍 COMPLETION CHECK: Running every 5 minutes (Asia/Dubai)');
 }
 
 /**

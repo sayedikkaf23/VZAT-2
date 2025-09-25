@@ -20,6 +20,8 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
   try {
     console.log('🔍 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= COMPLETION CHECK ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
     console.log(`📋 Checking subscription: ${subscription.quotepaymentId}`);
+    console.log(`📋 Current subscription status: ${subscription.subscription_status}`);
+    console.log(`📋 Payments completed: ${subscription.payments_completed}/${subscription.InstallmentLeft}`);
     
     // Validate subscription data
     if (!subscription.payment_schedule || !Array.isArray(subscription.payment_schedule)) {
@@ -67,19 +69,26 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
       
       // Check if already completed to prevent duplicate emails
       const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
+      console.log(`📋 Current status in DB: ${currentStatus.subscription_status}`);
       
       if (currentStatus.subscription_status !***REMOVED*** 'completed') {
         console.log('🔄 Updating subscription status to completed...');
         
-        // Update status to completed and set next_charge_date to null
-        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-          subscription_status: 'completed',
-          next_charge_date: null,
-          renewal_email_sent: true,
-          renewal_email_sent_date: new Date()
-        });
-        
-        console.log('✅ Subscription status updated to completed');
+        try {
+          // Update status to completed and set next_charge_date to null
+          const updateResult = await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+            subscription_status: 'completed',
+            next_charge_date: null,
+            renewal_email_sent: true,
+            renewal_email_sent_date: new Date()
+          });
+          
+          console.log('✅ Subscription status updated to completed');
+          console.log(`📋 Update result: ${updateResult ? 'Success' : 'Failed'}`);
+        } catch (updateError) {
+          console.error('❌ Error updating subscription status:', updateError);
+          throw updateError;
+        }
         
         // Send completion email to business team with retry logic
         let emailSent = false;
@@ -448,16 +457,25 @@ export const handleAFSWebhook = async (req, res) => {
       }
       
       // Check if subscription is complete after this payment
-      const finalRecord = await Vzat_Recurring_Data.findById(subscription._id);
-      const isComplete = await checkAndHandleSubscriptionCompletion(finalRecord);
-      
-      if (!isComplete) {
-        console.log('📋 Subscription not yet complete - scheduling next payment');
-        // Schedule next payment
-        await scheduleNextPayment(subscription._id);
-        console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
-      } else {
-        console.log(`🎉 SUBSCRIPTION COMPLETED via webhook! Final email sent for ${subscription.quotepaymentId}`);
+      try {
+        console.log('🔍 Checking subscription completion after payment...');
+        const finalRecord = await Vzat_Recurring_Data.findById(subscription._id);
+        console.log(`📋 Final record payments_completed: ${finalRecord.payments_completed}/${finalRecord.InstallmentLeft}`);
+        
+        const isComplete = await checkAndHandleSubscriptionCompletion(finalRecord);
+        
+        if (!isComplete) {
+          console.log('📋 Subscription not yet complete - scheduling next payment');
+          // Schedule next payment
+          await scheduleNextPayment(subscription._id);
+          console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
+        } else {
+          console.log(`🎉 SUBSCRIPTION COMPLETED via webhook! Final email sent for ${subscription.quotepaymentId}`);
+        }
+      } catch (completionError) {
+        console.error('❌ Error checking subscription completion:', completionError);
+        // Don't fail the webhook if completion check fails
+        console.log('⚠️ Continuing webhook processing despite completion check error');
       }
     }
     
@@ -724,14 +742,21 @@ export const processRecurringPayments = async (req, res) => {
             }
             
             // Check if subscription is complete - verify ALL payments are completed
-            const isComplete = await checkAndHandleSubscriptionCompletion(updatedRecord);
-            
-            if (!isComplete) {
-              // Schedule next payment
-              await scheduleNextPayment(subscription._id);
-              console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
-            } else {
-              console.log(`🎉 SUBSCRIPTION COMPLETED! Final email sent for ${subscription.quotepaymentId}`);
+            try {
+              console.log('🔍 Checking subscription completion after cron payment...');
+              const isComplete = await checkAndHandleSubscriptionCompletion(updatedRecord);
+              
+              if (!isComplete) {
+                // Schedule next payment
+                await scheduleNextPayment(subscription._id);
+                console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
+              } else {
+                console.log(`🎉 SUBSCRIPTION COMPLETED! Final email sent for ${subscription.quotepaymentId}`);
+              }
+            } catch (completionError) {
+              console.error('❌ Error checking subscription completion in cron:', completionError);
+              // Don't fail the cron job if completion check fails
+              console.log('⚠️ Continuing cron processing despite completion check error');
             }
             
           } catch (updateError) {
@@ -1478,119 +1503,6 @@ export const updateNextChargeDate = async (req, res) => {
     res.status(500).json({ message: 'Failed to update next charge date' });
   } finally {
     
-  }
-};
-
-/**
- * Check all active subscriptions for completion (background job)
- * This runs every 5 minutes to catch any missed completions
- */
-export const checkAllSubscriptionsForCompletion = async () => {
-  try {
-    console.log('🔍 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= BACKGROUND COMPLETION CHECK ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
-    
-    // Find all subscriptions that might be complete (including recently completed ones)
-    const subscriptionsToCheck = await Vzat_Recurring_Data.find({
-      $or: [
-        // Active subscriptions that might be complete
-        {
-          subscription_status: 'active',
-          payments_completed: { $gte: 1 }
-        },
-        // Recently completed subscriptions (within last 24 hours) that might have missed email
-        {
-          subscription_status: 'completed',
-          last_payment_date: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
-        }
-      ]
-    });
-    
-    console.log(`📊 Found ${subscriptionsToCheck.length} subscriptions to check`);
-    
-    let completedCount = 0;
-    let errorCount = 0;
-    let emailSentCount = 0;
-    
-    for (const subscription of subscriptionsToCheck) {
-      try {
-        console.log(`🔍 Checking subscription: ${subscription.quotepaymentId} (Status: ${subscription.subscription_status})`);
-        
-        // For completed subscriptions, check if email was sent
-        if (subscription.subscription_status ***REMOVED***= 'completed') {
-          console.log(`📧 Checking if completion email was sent for completed subscription: ${subscription.quotepaymentId}`);
-          
-          // Check if all payments are completed (should be true for completed subscriptions)
-          const allPaymentsCompleted = subscription.payment_schedule.every(p => 
-            p.status ***REMOVED***= 'completed' || p.status ***REMOVED***= 'paid'
-          );
-          
-          if (allPaymentsCompleted && subscription.payments_completed >= subscription.InstallmentLeft) {
-            // Only send email if it was completed recently (within last hour) and renewal email not sent yet
-            const lastPaymentTime = new Date(subscription.last_payment_date);
-            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-            
-            if (lastPaymentTime > oneHourAgo && !subscription.renewal_email_sent) {
-              console.log(`📧 Sending missed completion email for recently completed subscription: ${subscription.quotepaymentId}`);
-              
-              // Send completion email
-              const emailResult = await sendFinalRenewalEmail({
-                quotepaymentId: subscription.quotepaymentId,
-                Customer_name: subscription.Customer_name,
-                opp_email: subscription.opp_email,
-                payments_completed: subscription.payments_completed,
-                InstallmentLeft: subscription.InstallmentLeft,
-                last_payment_date: subscription.last_payment_date,
-                salesPersonDetails: subscription.salesPersonDetails
-              });
-              
-              if (emailResult.success) {
-                emailSentCount++;
-                console.log(`📧 ✅ Completion email sent successfully for: ${subscription.quotepaymentId}`);
-                console.log(`📧 Email ID: ${emailResult.messageId}`);
-                
-                // Mark renewal email as sent
-                await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-                  renewal_email_sent: true,
-                  renewal_email_sent_date: new Date()
-                });
-              } else {
-                console.error(`📧 ❌ Failed to send completion email for: ${subscription.quotepaymentId}`, emailResult.error);
-              }
-            } else {
-              console.log(`📧 Skipping email for old completed subscription: ${subscription.quotepaymentId} (completed more than 1 hour ago)`);
-            }
-          }
-          continue; // Skip normal completion check for already completed subscriptions
-        }
-        
-        // For active subscriptions, run normal completion check
-        const isComplete = await checkAndHandleSubscriptionCompletion(subscription);
-        
-        if (isComplete) {
-          completedCount++;
-          console.log(`✅ Subscription ${subscription.quotepaymentId} was completed!`);
-        } else {
-          console.log(`📋 Subscription ${subscription.quotepaymentId} not yet complete`);
-        }
-        
-      } catch (error) {
-        errorCount++;
-        console.error(`❌ Error checking subscription ${subscription.quotepaymentId}:`, error);
-      }
-    }
-    
-    console.log('📊 Background completion check results:', {
-      total_checked: subscriptionsToCheck.length,
-      completed: completedCount,
-      emails_sent: emailSentCount,
-      errors: errorCount,
-      still_active: subscriptionsToCheck.length - completedCount - emailSentCount
-    });
-    
-    console.log('🎯 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= BACKGROUND COMPLETION CHECK COMPLETE ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
-    
-  } catch (error) {
-    console.error('💥 Error in background completion check:', error);
   }
 };
 
