@@ -427,9 +427,10 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
       const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
       
       if (currentStatus.subscription_status !== 'completed') {
-        // Update status to completed
+        // Update status to completed and set next_charge_date to null
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-          subscription_status: 'completed'
+          subscription_status: 'completed',
+          next_charge_date: null
         });
         
         // Send completion email to business team

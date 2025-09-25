@@ -12,6 +12,78 @@ import dotenv from "dotenv";
 dotenv.config();
 
 /**
+ * Check if subscription is complete and handle completion logic
+ * This function ensures consistent completion handling across all payment flows
+ */
+async function checkAndHandleSubscriptionCompletion(subscription) {
+  try {
+    console.log('🔍 Checking if subscription is complete...');
+    
+    // Check if ALL payments are completed (not just payments_completed count)
+    const allPaymentsCompleted = subscription.payment_schedule.every(p => 
+      p.status === 'completed' || p.status === 'paid'
+    );
+    
+    console.log('📋 Payment completion status:', {
+      payments_completed: subscription.payments_completed,
+      total_installments: subscription.InstallmentLeft,
+      all_payments_completed: allPaymentsCompleted,
+      payment_schedule: subscription.payment_schedule.map(p => ({
+        installment: p.installment_number,
+        status: p.status
+      }))
+    });
+    
+    if (subscription.payments_completed >= subscription.InstallmentLeft && allPaymentsCompleted) {
+      console.log(`🎉 SUBSCRIPTION COMPLETED for ${subscription.quotepaymentId}!`);
+      console.log(`✅ All ${subscription.payment_schedule.length} payments are completed`);
+      
+      // Check if already completed to prevent duplicate emails
+      const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
+      
+      if (currentStatus.subscription_status !== 'completed') {
+        // Update status to completed and set next_charge_date to null
+        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+          subscription_status: 'completed',
+          next_charge_date: null
+        });
+        
+        // Send completion email to business team
+        try {
+          const emailResult = await sendSubscriptionCompletedEmail({
+            quotepaymentId: subscription.quotepaymentId,
+            OpportunityId: subscription.OpportunityId,
+            QuoteId: subscription.QuoteId,
+            Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+            InstallmentLeft: subscription.InstallmentLeft,
+            payments_completed: subscription.payments_completed,
+            last_payment_date: subscription.last_payment_date
+          });
+          
+          if (emailResult.success) {
+            console.log('📧 Subscription completion email sent successfully');
+          } else {
+            console.error('📧 Failed to send completion email:', emailResult.error);
+          }
+        } catch (completionEmailError) {
+          console.error('📧 Error sending completion email:', completionEmailError);
+        }
+      } else {
+        console.log('📧 Subscription already marked as completed, skipping completion email');
+      }
+      
+      return true; // Subscription is complete
+    } else {
+      console.log('📋 Subscription not yet complete - some payments still pending/failed');
+      return false; // Subscription is not complete
+    }
+  } catch (error) {
+    console.error('💥 Error checking subscription completion:', error);
+    return false;
+  }
+}
+
+/**
  * Update payment schedule status when a payment is completed
  */
 async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transactionId) {
@@ -281,6 +353,17 @@ export const handleAFSWebhook = async (req, res) => {
       // Update payment schedule status
       const scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, updatedRecord.payments_completed, id);
       console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
+      
+      // Check if subscription is complete after this payment
+      const finalRecord = await Vzat_Recurring_Data.findById(subscription._id);
+      const isComplete = await checkAndHandleSubscriptionCompletion(finalRecord);
+      
+      if (!isComplete) {
+        console.log('📋 Subscription not yet complete - scheduling next payment');
+        // Schedule next payment
+        await scheduleNextPayment(subscription._id);
+        console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
+      }
     }
     
     // Log successful webhook processing
@@ -546,81 +629,9 @@ export const processRecurringPayments = async (req, res) => {
             }
             
             // Check if subscription is complete - verify ALL payments are completed
-            const allPaymentsCompleted = updatedRecord.payment_schedule.every(p => 
-              p.status === 'completed' || p.status === 'paid'
-            );
+            const isComplete = await checkAndHandleSubscriptionCompletion(updatedRecord);
             
-            console.log('📋 Payment completion status:', {
-              payments_completed: updatedRecord.payments_completed,
-              total_installments: updatedRecord.InstallmentLeft,
-              all_payments_completed: allPaymentsCompleted,
-              payment_schedule: updatedRecord.payment_schedule.map(p => ({
-                installment: p.installment_number,
-                status: p.status
-              }))
-            });
-            
-            if (updatedRecord.payments_completed >= updatedRecord.InstallmentLeft && allPaymentsCompleted) {
-              console.log(`🎉 SUBSCRIPTION COMPLETED for ${subscription.quotepaymentId}!`);
-              console.log(`✅ All ${updatedRecord.payment_schedule.length} payments are completed`);
-              
-              // Check if already completed to prevent duplicate emails
-              const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
-              
-              if (currentStatus.subscription_status !== 'completed') {
-                // Update status to completed
-                await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-                  subscription_status: 'completed'
-                });
-              
-              // Send completion email to business team
-              try {
-                const emailResult = await sendSubscriptionCompletedEmail({
-                  quotepaymentId: subscription.quotepaymentId,
-                  OpportunityId: subscription.OpportunityId,
-                  QuoteId: subscription.QuoteId,
-                  Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-                  InstallmentLeft: subscription.InstallmentLeft,
-                  payments_completed: updatedRecord.payments_completed,
-                  last_payment_date: updatedRecord.last_payment_date
-                });
-                
-                if (emailResult.success) {
-                  console.log('📧 Subscription completion email sent successfully');
-                } else {
-                  console.error('📧 Failed to send completion email:', emailResult.error);
-                }
-              } catch (completionEmailError) {
-                console.error('📧 Error sending completion email:', completionEmailError);
-              }
-              
-              // Send final renewal email to customer, devtech, and opp owner
-              try {
-                const renewalEmailResult = await sendFinalRenewalEmail({
-                  quotepaymentId: subscription.quotepaymentId,
-                  Customer_name: subscription.Customer_name,
-                  opp_email: subscription.opp_email,
-                  OpportunityId: subscription.OpportunityId,
-                  QuoteId: subscription.QuoteId,
-                  Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-                  InstallmentLeft: subscription.InstallmentLeft,
-                  payments_completed: updatedRecord.payments_completed,
-                  last_payment_date: updatedRecord.last_payment_date,
-                  salesPersonDetails: subscription.salesPersonDetails
-                });
-                
-                if (renewalEmailResult.success) {
-                  console.log('📧 Final renewal email sent successfully to customer');
-                } else {
-                  console.error('📧 Failed to send final renewal email:', renewalEmailResult.error);
-                }
-              } catch (renewalEmailError) {
-                console.error('📧 Error sending final renewal email:', renewalEmailError);
-              }
-              } else {
-                console.log(`ℹ️ Subscription ${subscription.quotepaymentId} already marked as completed - skipping completion emails`);
-              }
-            } else {
+            if (!isComplete) {
               // Schedule next payment
               await scheduleNextPayment(subscription._id);
               console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
