@@ -44,17 +44,27 @@ function validatePaymentSequence(payments) {
       continue;
     }
     
-    // If we've encountered a failed payment, all subsequent payments should be pending/due
+    // Check if this payment is failed
+    if (payment.status ***REMOVED***= 'failed') {
+      hasFailedPayment = true;
+      console.log(`❌ Found failed payment #${payment.installment_number}`);
+    }
+    
+    // Only override status if there's a logical inconsistency:
+    // - A later payment is completed while an earlier one is still pending/due (not failed)
+    // - Don't override if the system has already processed payments according to retry logic
     if (hasFailedPayment) {
+      // Only mark as pending if the payment is completed/paid AND there's no retry logic indication
+      // If the payment is already completed in DB, it means the retry logic processed it successfully
       if (payment.status ***REMOVED***= 'completed' || payment.status ***REMOVED***= 'paid') {
-        console.log(`⚠️ Fixing payment #${payment.installment_number}: ${payment.status} → pending (due to earlier failed payment)`);
-        payment.status = 'pending';
-      }
-    } else {
-      // Check if this payment is failed
-      if (payment.status ***REMOVED***= 'failed') {
-        hasFailedPayment = true;
-        console.log(`❌ Found failed payment #${payment.installment_number} - marking subsequent payments as pending`);
+        // Check if this is a legitimate completion (not a logical inconsistency)
+        const isLegitimateCompletion = payment.payment_date || payment.transaction_id;
+        if (!isLegitimateCompletion) {
+          console.log(`⚠️ Fixing payment #${payment.installment_number}: ${payment.status} → pending (no payment evidence)`);
+          payment.status = 'pending';
+        } else {
+          console.log(`✅ Payment #${payment.installment_number} is legitimately completed (has payment evidence)`);
+        }
       }
     }
     
