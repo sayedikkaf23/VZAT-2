@@ -132,6 +132,7 @@ export const processCardPayment = async (req, res) => {
       amount: amount || '1.00',
       currency: currency || 'AED',
       paymentType: paymentType || 'DB',
+      createRegistration: true,  // ← ADDED: Create registration for new cards
       'card.number': cardDetails.cardNumber.replace(/\s/g, ''),
       'card.holder': cardDetails.cardholderName,
       'card.expiryMonth': cardDetails.expiryMonth,
