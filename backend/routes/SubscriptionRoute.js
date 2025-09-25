@@ -13,6 +13,8 @@ import {
 } from "../Controllers/SubscriptionController.js";
 import { testEmailConfiguration } from "../services/emailService.js";
 import { testSalesforceConnection, updateQuotePaymentStatus, clearTokenCache } from "../services/salesforceService.js";
+import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
+import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 
 const router = express.Router();// Webhook endpoint for AFS notifications
 router.post('/webhook/afs', handleAFSWebhook);
@@ -34,6 +36,7 @@ router.put('/fix-installment-left/:quotepaymentId', fixInstallmentLeft);
 
 // Check and trigger completion email for a specific subscription
 router.post('/check-completion/:quotepaymentId', checkSubscriptionCompletion);
+
 
 // Test server-to-server payment logic
 router.post('/test/server-to-server/:quotepaymentId', testServerToServerPayment);
