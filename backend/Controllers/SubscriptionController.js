@@ -608,6 +608,11 @@ export const processRecurringPayments = async (req, res) => {
           $expr: { 
             $lt: ['$payments_completed', { $size: '$payment_schedule' }] 
           }
+        },
+        // Case 3: Max retries exceeded - process next payment
+        {
+          payment_retry_count: { $gte: 3 },
+          'payment_schedule.status': { $in: ['due', 'pending'] }
         }
       ],
       // Prevent duplicate processing: Skip if already processed today
@@ -658,13 +663,37 @@ export const processRecurringPayments = async (req, res) => {
     
     for (const subscription of dueSubscriptions) {
       try {
-        console.log(`\n🔄 PROCESSING PAYMENT #${subscription.payments_completed + 1} for subscription: ${subscription.quotepaymentId}`);
+        // Determine which payment to process
+        let paymentToProcess = subscription.payments_completed + 1;
+        let isProcessingNextPayment = false;
+        
+        // Check if this is a max retry exceeded case - process next payment
+        if (subscription.payment_retry_count >= 3) {
+          const nextDuePayment = subscription.payment_schedule.find(p => 
+            p.status === 'due' || p.status === 'pending'
+          );
+          if (nextDuePayment) {
+            paymentToProcess = nextDuePayment.installment_number;
+            isProcessingNextPayment = true;
+            console.log(`\n🔄 PROCESSING NEXT PAYMENT #${paymentToProcess} (after max retries exceeded) for subscription: ${subscription.quotepaymentId}`);
+          }
+        } else {
+          console.log(`\n🔄 PROCESSING PAYMENT #${paymentToProcess} for subscription: ${subscription.quotepaymentId}`);
+        }
+        
         console.log(`   - Customer: ${subscription.Customer_name}`);
         console.log(`   - Email: ${subscription.opp_email}`);
         console.log(`   - Amount: ${parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2))} AED`);
         console.log(`   - Retry count: ${subscription.payment_retry_count || 0}`);
+        console.log(`   - Processing next payment: ${isProcessingNextPayment}`);
         
-        const paymentResult = await processSubscriptionPayment(subscription);
+        // Adjust subscription data for processing
+        const subscriptionForProcessing = {
+          ...subscription,
+          payments_completed: paymentToProcess - 1 // Adjust for the payment we're processing
+        };
+        
+        const paymentResult = await processSubscriptionPayment(subscriptionForProcessing);
         
         // 🆕 HANDLE SUCCESSFUL PAYMENT DIRECTLY IN CRON JOB
         if (paymentResult && paymentResult.result && paymentResult.result.code.startsWith('000.')) {
@@ -676,7 +705,8 @@ export const processRecurringPayments = async (req, res) => {
               subscription._id,
               {
                 $inc: { payments_completed: 1 },
-                last_payment_date: new Date(paymentResult.timestamp || new Date())
+                last_payment_date: new Date(paymentResult.timestamp || new Date()),
+                payment_retry_count: 0 // Reset retry count on successful payment
               },
               { new: true }
             );
@@ -684,7 +714,7 @@ export const processRecurringPayments = async (req, res) => {
             console.log(`📊 Updated payments_completed to: ${updatedRecord.payments_completed}`);
             
             // Update payment schedule status
-            const scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, updatedRecord.payments_completed, paymentResult.id);
+            const scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, paymentToProcess, paymentResult.id);
             console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
             
             // Don't fail the payment if schedule update fails - it's not critical
@@ -702,13 +732,14 @@ export const processRecurringPayments = async (req, res) => {
                 paymentStatus: 'success',
                 resultCode: paymentResult.result.code,
                 resultDescription: paymentResult.result.description,
-                timestamp: paymentResult.timestamp || new Date().toISOString()
+                timestamp: paymentResult.timestamp || new Date().toISOString(),
+                installmentNumber: paymentToProcess
               };
 
               const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
               
               if (salesforceResult.success) {
-                console.log(`✅ Salesforce updated successfully for payment #${updatedRecord.payments_completed}`);
+                console.log(`✅ Salesforce updated successfully for payment #${paymentToProcess}`);
               } else {
                 console.warn('⚠️ Salesforce update failed but payment was successful:', salesforceResult.error);
               }
@@ -726,7 +757,7 @@ export const processRecurringPayments = async (req, res) => {
                 opp_email: subscription.opp_email,
                 payment_amount: parseFloat(paymentResult.amount),
                 payment_date: new Date(paymentResult.timestamp || new Date()),
-                installment_number: updatedRecord.payments_completed,
+                installment_number: paymentToProcess,
                 total_installments: subscription.InstallmentLeft,
                 payment_method: 'Card',
                 salesPersonDetails: subscription.salesPersonDetails
@@ -784,7 +815,7 @@ export const processRecurringPayments = async (req, res) => {
           result: paymentResult
         });
         
-        console.log(`✅ PAYMENT SUCCESS for ${subscription.quotepaymentId} - Payment #${subscription.payments_completed + 1} completed!`);
+        console.log(`✅ PAYMENT SUCCESS for ${subscription.quotepaymentId} - Payment #${paymentToProcess} completed!`);
         
       } catch (error) {
         console.error(`\n❌ PAYMENT FAILED for ${subscription.quotepaymentId}:`, error.message);
@@ -808,24 +839,109 @@ export const processRecurringPayments = async (req, res) => {
           );
           
           if (nextDuePayment) {
-            // Move to the next due payment's due date
-            nextChargeDate = new Date(nextDuePayment.due_date);
-            nextChargeDate.setHours(0, 0, 0, 0);
-            console.log(`📅 Moving to next due payment #${nextDuePayment.installment_number} on ${nextChargeDate.toISOString().slice(0, 10)}`);
+            console.log(`🔄 MAX RETRIES EXCEEDED - Automatically processing next payment #${nextDuePayment.installment_number}`);
+            
+            try {
+              // Automatically process the next payment
+              const nextPaymentResult = await processSubscriptionPayment({
+                ...subscription,
+                payments_completed: nextDuePayment.installment_number - 1 // Adjust for the next payment
+              });
+              
+              if (nextPaymentResult && nextPaymentResult.result && nextPaymentResult.result.code.startsWith('000.')) {
+                console.log(`✅ NEXT PAYMENT #${nextDuePayment.installment_number} PROCESSED SUCCESSFULLY`);
+                
+                // Update subscription with successful next payment
+                const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
+                  subscription._id,
+                  {
+                    $inc: { payments_completed: 1 },
+                    last_payment_date: new Date(nextPaymentResult.timestamp || new Date()),
+                    payment_retry_count: 0, // Reset retry count
+                    next_charge_date: null // Will be set by scheduleNextPayment if needed
+                  },
+                  { new: true }
+                );
+                
+                // Update payment schedule for the next payment
+                await Vzat_Recurring_Data.findOneAndUpdate(
+                  { 
+                    _id: subscription._id,
+                    'payment_schedule.installment_number': nextDuePayment.installment_number
+                  },
+                  {
+                    $set: {
+                      'payment_schedule.$.status': 'completed',
+                      'payment_schedule.$.transaction_id': nextPaymentResult.id,
+                      'payment_schedule.$.payment_date': new Date()
+                    }
+                  }
+                );
+                
+                console.log(`✅ Payment #${nextDuePayment.installment_number} marked as completed`);
+                
+                // Check if subscription is now complete
+                const finalRecord = await Vzat_Recurring_Data.findById(subscription._id);
+                const isComplete = await checkAndHandleSubscriptionCompletion(finalRecord);
+                
+                if (!isComplete) {
+                  // Schedule next payment if there are more
+                  await scheduleNextPayment(subscription._id);
+                } else {
+                  console.log(`🎉 SUBSCRIPTION COMPLETED after processing next payment!`);
+                }
+                
+                // Mark as processed
+                await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+                  last_processed_date: new Date()
+                });
+                
+                console.log(`✅ Successfully processed next payment after max retries exceeded`);
+                
+              } else {
+                console.log(`❌ Next payment #${nextDuePayment.installment_number} also failed`);
+                // Move to the next due payment's due date
+                nextChargeDate = new Date(nextDuePayment.due_date);
+                nextChargeDate.setHours(0, 0, 0, 0);
+                console.log(`📅 Moving to next due payment #${nextDuePayment.installment_number} on ${nextChargeDate.toISOString().slice(0, 10)}`);
+                
+                // Reset retry count for the next payment attempt
+                await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+                  last_processed_date: new Date(),
+                  payment_retry_count: 0, // Reset for next payment
+                  next_charge_date: nextChargeDate
+                });
+              }
+              
+            } catch (nextPaymentError) {
+              console.error(`❌ Error processing next payment after max retries:`, nextPaymentError);
+              
+              // Fallback: Move to the next due payment's due date
+              nextChargeDate = new Date(nextDuePayment.due_date);
+              nextChargeDate.setHours(0, 0, 0, 0);
+              console.log(`📅 Fallback: Moving to next due payment #${nextDuePayment.installment_number} on ${nextChargeDate.toISOString().slice(0, 10)}`);
+              
+              // Reset retry count for the next payment attempt
+              await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+                last_processed_date: new Date(),
+                payment_retry_count: 0, // Reset for next payment
+                next_charge_date: nextChargeDate
+              });
+            }
           } else {
             // No more payments due, set to tomorrow as fallback
             nextChargeDate = new Date();
             nextChargeDate.setDate(nextChargeDate.getDate() + 1);
             nextChargeDate.setHours(0, 0, 0, 0);
             console.log(`📅 No more payments due, setting next charge to tomorrow: ${nextChargeDate.toISOString().slice(0, 10)}`);
+            
+            // Reset retry count for the next payment attempt
+            await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+              last_processed_date: new Date(),
+              payment_retry_count: 0, // Reset for next payment
+              next_charge_date: nextChargeDate
+            });
           }
-          
-          // Reset retry count for the next payment attempt
-          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-            last_processed_date: new Date(),
-            payment_retry_count: 0, // Reset for next payment
-            next_charge_date: nextChargeDate
-          });
           
         } else {
           // Calculate next charge date (tomorrow for retry)
