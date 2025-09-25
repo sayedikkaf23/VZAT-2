@@ -14,42 +14,75 @@ dotenv.config();
 /**
  * Check if subscription is complete and handle completion logic
  * This function ensures consistent completion handling across all payment flows
+ * Runs automatically after every payment to check for completion
  */
 async function checkAndHandleSubscriptionCompletion(subscription) {
   try {
-    console.log('🔍 Checking if subscription is complete...');
+    console.log('🔍 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= COMPLETION CHECK ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
+    console.log(`📋 Checking subscription: ${subscription.quotepaymentId}`);
+    
+    // Validate subscription data
+    if (!subscription.payment_schedule || !Array.isArray(subscription.payment_schedule)) {
+      console.log('❌ No payment schedule found - subscription not complete');
+      return false;
+    }
     
     // Check if ALL payments are completed (not just payments_completed count)
     const allPaymentsCompleted = subscription.payment_schedule.every(p => 
       p.status ***REMOVED***= 'completed' || p.status ***REMOVED***= 'paid'
     );
     
-    console.log('📋 Payment completion status:', {
+    // Check for any failed or due payments
+    const failedPayments = subscription.payment_schedule.filter(p => 
+      p.status ***REMOVED***= 'failed' || p.status ***REMOVED***= 'due' || p.status ***REMOVED***= 'pending'
+    );
+    
+    console.log('📊 Payment Analysis:', {
+      quotepaymentId: subscription.quotepaymentId,
       payments_completed: subscription.payments_completed,
       total_installments: subscription.InstallmentLeft,
+      total_payments_in_schedule: subscription.payment_schedule.length,
       all_payments_completed: allPaymentsCompleted,
+      failed_or_due_payments: failedPayments.length,
       payment_schedule: subscription.payment_schedule.map(p => ({
         installment: p.installment_number,
-        status: p.status
+        status: p.status,
+        amount: p.amount,
+        due_date: p.due_date
       }))
     });
     
-    if (subscription.payments_completed >= subscription.InstallmentLeft && allPaymentsCompleted) {
+    // Completion criteria: 
+    // 1. payments_completed >= InstallmentLeft
+    // 2. ALL payments in schedule are completed/paid
+    // 3. No failed or due payments
+    const isComplete = subscription.payments_completed >= subscription.InstallmentLeft && 
+                      allPaymentsCompleted && 
+                      failedPayments.length ***REMOVED***= 0;
+    
+    if (isComplete) {
       console.log(`🎉 SUBSCRIPTION COMPLETED for ${subscription.quotepaymentId}!`);
       console.log(`✅ All ${subscription.payment_schedule.length} payments are completed`);
+      console.log(`✅ No failed or due payments remaining`);
       
       // Check if already completed to prevent duplicate emails
       const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
       
       if (currentStatus.subscription_status !***REMOVED*** 'completed') {
+        console.log('🔄 Updating subscription status to completed...');
+        
         // Update status to completed and set next_charge_date to null
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
           subscription_status: 'completed',
           next_charge_date: null
         });
         
+        console.log('✅ Subscription status updated to completed');
+        
         // Send completion email to business team
         try {
+          console.log('📧 Sending completion email to business team...');
+          
           const emailResult = await sendSubscriptionCompletedEmail({
             quotepaymentId: subscription.quotepaymentId,
             OpportunityId: subscription.OpportunityId,
@@ -61,24 +94,36 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
           });
           
           if (emailResult.success) {
-            console.log('📧 Subscription completion email sent successfully');
+            console.log('📧 ✅ Subscription completion email sent successfully!');
+            console.log(`📧 Email ID: ${emailResult.messageId}`);
           } else {
-            console.error('📧 Failed to send completion email:', emailResult.error);
+            console.error('📧 ❌ Failed to send completion email:', emailResult.error);
           }
         } catch (completionEmailError) {
-          console.error('📧 Error sending completion email:', completionEmailError);
+          console.error('📧 ❌ Error sending completion email:', completionEmailError);
         }
       } else {
         console.log('📧 Subscription already marked as completed, skipping completion email');
       }
       
+      console.log('🎯 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= COMPLETION CHECK COMPLETE ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
       return true; // Subscription is complete
     } else {
-      console.log('📋 Subscription not yet complete - some payments still pending/failed');
+      console.log('📋 Subscription not yet complete:');
+      if (failedPayments.length > 0) {
+        console.log(`❌ ${failedPayments.length} payments still failed/due:`, 
+          failedPayments.map(p => `Payment ${p.installment_number} (${p.status})`));
+      }
+      if (subscription.payments_completed < subscription.InstallmentLeft) {
+        console.log(`❌ Payments completed (${subscription.payments_completed}) < Total installments (${subscription.InstallmentLeft})`);
+      }
+      
+      console.log('🎯 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= COMPLETION CHECK COMPLETE ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
       return false; // Subscription is not complete
     }
   } catch (error) {
     console.error('💥 Error checking subscription completion:', error);
+    console.log('🎯 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= COMPLETION CHECK COMPLETE ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
     return false;
   }
 }
@@ -363,6 +408,8 @@ export const handleAFSWebhook = async (req, res) => {
         // Schedule next payment
         await scheduleNextPayment(subscription._id);
         console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
+      } else {
+        console.log(`🎉 SUBSCRIPTION COMPLETED via webhook! Final email sent for ${subscription.quotepaymentId}`);
       }
     }
     
@@ -635,6 +682,8 @@ export const processRecurringPayments = async (req, res) => {
               // Schedule next payment
               await scheduleNextPayment(subscription._id);
               console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
+            } else {
+              console.log(`🎉 SUBSCRIPTION COMPLETED! Final email sent for ${subscription.quotepaymentId}`);
             }
             
           } catch (updateError) {
@@ -1381,6 +1430,58 @@ export const updateNextChargeDate = async (req, res) => {
     res.status(500).json({ message: 'Failed to update next charge date' });
   } finally {
     
+  }
+};
+
+/**
+ * Check all active subscriptions for completion (background job)
+ * This runs every 5 minutes to catch any missed completions
+ */
+export const checkAllSubscriptionsForCompletion = async () => {
+  try {
+    console.log('🔍 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= BACKGROUND COMPLETION CHECK ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
+    
+    // Find all active subscriptions that might be complete
+    const activeSubscriptions = await Vzat_Recurring_Data.find({
+      subscription_status: 'active',
+      payments_completed: { $gte: 1 } // At least one payment completed
+    });
+    
+    console.log(`📊 Found ${activeSubscriptions.length} active subscriptions to check`);
+    
+    let completedCount = 0;
+    let errorCount = 0;
+    
+    for (const subscription of activeSubscriptions) {
+      try {
+        console.log(`🔍 Checking subscription: ${subscription.quotepaymentId}`);
+        
+        const isComplete = await checkAndHandleSubscriptionCompletion(subscription);
+        
+        if (isComplete) {
+          completedCount++;
+          console.log(`✅ Subscription ${subscription.quotepaymentId} was completed!`);
+        } else {
+          console.log(`📋 Subscription ${subscription.quotepaymentId} not yet complete`);
+        }
+        
+      } catch (error) {
+        errorCount++;
+        console.error(`❌ Error checking subscription ${subscription.quotepaymentId}:`, error);
+      }
+    }
+    
+    console.log('📊 Background completion check results:', {
+      total_checked: activeSubscriptions.length,
+      completed: completedCount,
+      errors: errorCount,
+      still_active: activeSubscriptions.length - completedCount
+    });
+    
+    console.log('🎯 ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***= BACKGROUND COMPLETION CHECK COMPLETE ***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***=');
+    
+  } catch (error) {
+    console.error('💥 Error in background completion check:', error);
   }
 };
 
