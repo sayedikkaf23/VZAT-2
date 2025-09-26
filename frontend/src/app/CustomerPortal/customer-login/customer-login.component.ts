@@ -123,6 +123,9 @@ export class CustomerLoginComponent {
             }
 
             console.log('Logged In');
+            
+            // Show success toast
+            this.toastr.success('Login successful! Welcome back.');
 
             // Check if there's a redirect parameter
             const urlParams = new URLSearchParams(window.location.search);

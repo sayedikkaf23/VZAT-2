@@ -6,6 +6,7 @@ import { CustomerLoginService } from '../../services/customer-login.service';
 import { StyleLoader } from '../../services/style-loader';
 import { SavedCardsService, SavedCard as SavedCardModel, ApiResponse } from '../../customer/saved-cards/saved-cards.service';
 import { CookieService } from 'ngx-cookie-service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-saved-card',
@@ -40,7 +41,8 @@ export class SavedCard implements OnInit, OnDestroy {
     private savedCardsService: SavedCardsService,
     private cookieService: CookieService,
     private cdr: ChangeDetectorRef,
-    private router: Router
+    private router: Router,
+    private toastr: ToastrService
   ) {}
   
   ngOnInit(): void {
@@ -107,13 +109,14 @@ export class SavedCard implements OnInit, OnDestroy {
     const isDefault = urlParams.get('isDefault');
 
     if (cardAdded ***REMOVED***= 'success') {
-      let message = '✅ Card added successfully!';
+      let message = 'Card added successfully!';
       
       if (isDefault ***REMOVED***= 'true') {
         message += ' This card has been set as your default payment method.';
       }
       
-      this.success = message;
+      // Show toast notification
+      this.toastr.success(message);
       
       // Clear the query parameters from URL after showing the message
       setTimeout(() => {
@@ -121,8 +124,7 @@ export class SavedCard implements OnInit, OnDestroy {
           queryParams: {},
           replaceUrl: true
         });
-        this.success = null;
-      }, 5000);
+      }, 1000);
     }
   }
 
@@ -235,9 +237,13 @@ export class SavedCard implements OnInit, OnDestroy {
           
           if (this.cards.length ***REMOVED***= 0) {
             console.log('No cards found for this customer');
+          } else {
+            // Show success toast for successful loading
+            // this.toastr.success(`Loaded ${this.cards.length} saved card(s)`);
           }
         } else {
           this.error = response.message || 'Failed to load saved cards';
+          this.toastr.error(this.error);
           this.cdr.detectChanges();
         }
       },
@@ -253,6 +259,7 @@ export class SavedCard implements OnInit, OnDestroy {
         
         if (error.status ***REMOVED***= 0) {
           this.error = 'Unable to connect to server. Please check your internet connection and try again.';
+          this.toastr.error(this.error);
           // Auto-retry once for network errors
           setTimeout(() => {
             if (this.error && this.customerId) {
@@ -261,12 +268,16 @@ export class SavedCard implements OnInit, OnDestroy {
           }, 2000);
         } else if (error.status ***REMOVED***= 404) {
           this.error = 'Cards service not found. Please contact support.';
+          this.toastr.error(this.error);
         } else if (error.status ***REMOVED***= 500) {
           this.error = 'Server error. Please try again in a few moments.';
+          this.toastr.error(this.error);
         } else if (error.status ***REMOVED***= 401 || error.status ***REMOVED***= 403) {
           this.error = 'Session expired. Please login again.';
+          this.toastr.error(this.error);
         } else {
           this.error = `Failed to load saved cards. Error: ${error.status || 'Network error'}`;
+          this.toastr.error(this.error);
         }
       }
     });
@@ -318,6 +329,9 @@ export class SavedCard implements OnInit, OnDestroy {
       clearTimeout(this.loadingTimeout);
     }
     
+    // Show loading toast
+    // this.toastr.info('Refreshing cards...', '', { timeOut: 2000 });
+    
     if (this.customerId) {
       this.loadSavedCards();
     } else {
@@ -345,23 +359,22 @@ export class SavedCard implements OnInit, OnDestroy {
             card.isDefault = card._id ***REMOVED***= cardId;
           });
           console.log('Default card updated');
-          this.success = 'Default card updated successfully!';
+          
+          // Show toast notification
+          this.toastr.success('Default card updated successfully!');
+          
           // Force change detection to update the UI immediately
           this.cdr.detectChanges();
-          
-          // Clear success message after 3 seconds
-          setTimeout(() => {
-            this.success = null;
-            this.cdr.detectChanges();
-          }, 3000);
         } else {
           this.error = response.message || 'Failed to set default card';
+          this.toastr.error(this.error);
           this.cdr.detectChanges();
         }
       },
       error: (error: any) => {
         console.error('Error setting default card:', error);
         this.error = 'Failed to set default card. Please try again.';
+        this.toastr.error(this.error);
         this.cdr.detectChanges();
       }
     });
@@ -377,13 +390,21 @@ export class SavedCard implements OnInit, OnDestroy {
             // Remove card from local array
             this.cards = this.cards.filter(card => card._id !***REMOVED*** cardId);
             console.log('Card removed successfully');
+            
+            // Show success toast
+            this.toastr.success('Card removed successfully!');
+            
+            // Refresh the cards list to ensure UI is updated
+            this.refreshCards();
           } else {
             this.error = response.message || 'Failed to remove card';
+            this.toastr.error(this.error);
           }
         },
         error: (error: any) => {
           console.error('Error removing card:', error);
           this.error = 'Failed to remove card. Please try again.';
+          this.toastr.error(this.error);
         }
       });
     }
