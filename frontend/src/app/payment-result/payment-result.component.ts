@@ -140,8 +140,23 @@ export class PaymentResultComponent implements OnInit {
                        data?.name ||
                        'Customer';
     
-    // Extract payment amount
-    this.paymentAmount = parseFloat(data?.Total_After_VAT_Currency) || 
+    // Extract installment amount from payment schedule (first installment)
+    let installmentAmount = 0;
+    if (data?.payment_schedule && Array.isArray(data.payment_schedule) && data.payment_schedule.length > 0) {
+      installmentAmount = parseFloat(data.payment_schedule[0].amount) || 0;
+    }
+    
+    // If no payment schedule, try to get installment amount from other fields
+    if (installmentAmount ***REMOVED***= 0) {
+      installmentAmount = parseFloat(data?.installment_amount) || 
+                         parseFloat(data?.Installment_amount) ||
+                         parseFloat(data?.payment_amount) ||
+                         0;
+    }
+    
+    // Store installment amount for display
+    this.paymentAmount = installmentAmount > 0 ? installmentAmount : 
+                        parseFloat(data?.Total_After_VAT_Currency) || 
                         parseFloat(data?.total_after_vat_currency) ||
                         parseFloat(data?.amount) ||
                         0;
@@ -197,6 +212,31 @@ export class PaymentResultComponent implements OnInit {
                         parseFloat(result?.paid_amount) ||
                         parseFloat(result?.Paid_Amount) ||
                         0;
+    
+    // Extract installment amount from payment schedule (first installment)
+    let installmentAmount = 0;
+    if (result?.payment_schedule && Array.isArray(result.payment_schedule) && result.payment_schedule.length > 0) {
+      installmentAmount = parseFloat(result.payment_schedule[0].amount) || 0;
+    }
+    
+    // If no payment schedule, try to get installment amount from other fields
+    if (installmentAmount ***REMOVED***= 0) {
+      installmentAmount = parseFloat(result?.installment_amount) || 
+                         parseFloat(result?.Installment_amount) ||
+                         parseFloat(result?.payment_amount) ||
+                         0;
+    }
+    
+    // Store installment amount for display
+    this.paymentAmount = installmentAmount > 0 ? installmentAmount : this.paymentAmount;
+    
+    console.log('💰 Payment Amount Logic:', {
+      installmentAmount,
+      originalPaymentAmount: parseFloat(result?.amount) || 0,
+      finalPaymentAmount: this.paymentAmount,
+      totalAmount: this.totalAmount,
+      paymentSchedule: result?.payment_schedule
+    });
     
     // Extract sales agent information with better fallback handling
     if (result?.salesPersonDetails) {
