@@ -82,7 +82,7 @@ const vzatRecurringDataSchema = new Schema({
         required: false
     },
     // Customer and Opportunity owner information
-    quote_payment_number: {
+    Quote_payment_number: {
         type: String,
         required: false
     },

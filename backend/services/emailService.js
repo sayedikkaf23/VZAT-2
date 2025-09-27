@@ -1,42 +1,62 @@
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 
 dotenv.config();
+
+// Helper function to format numbers with thousand separators
+const formatAmount = (amount) => {
+  if (amount ***REMOVED***= null || amount ***REMOVED***= undefined || amount ***REMOVED***= '') {
+    return '0.00';
+  }
+  
+  // Convert to number if it's a string
+  const numAmount = typeof amount ***REMOVED***= 'string' ? parseFloat(amount) : amount;
+  
+  // Check if it's a valid number
+  if (isNaN(numAmount)) {
+    return '0.00';
+  }
+  
+  // Format with thousand separators and 2 decimal places
+  return numAmount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
 
 // Email configuration
 const EMAIL_CONFIG = {
   sender: {
-    email: process.env.EMAIL_SENDER || "workerappzpayments@gmail.com",
-    password: process.env.EMAIL_PASSWORD || "voib cvgx tuko hcxs", // Use app password
-    name: "VZAT Payment System",
+    email: process.env.EMAIL_SENDER || 'workerappzpayments@gmail.com',
+    password: process.env.EMAIL_PASSWORD || 'voib cvgx tuko hcxs', // Use app password
+    name: 'VZAT Payment System'
   },
   recipients: {
-    business_team: process.env.BUSINESS_TEAM_EMAIL || "saeedikkaf3@gmail.com",
-    operations_team:
-      process.env.OPERATIONS_TEAM_EMAIL || "saeedikkaf3@gmail.com",
-    devtech_team: process.env.DEVTECH_TEAM_EMAIL || "devtec3h@virtuzone.com",
-    ar_team: process.env.AR_TEAM_EMAIL || "ar3@virtuzone.com",
-  },
+    business_team: process.env.BUSINESS_TEAM_EMAIL || 'saeedikkaf3@gmail.com',
+    operations_team: process.env.OPERATIONS_TEAM_EMAIL || 'saeedikkaf3@gmail.com',
+    devtech_team: process.env.DEVTECH_TEAM_EMAIL || 'devtec3h@virtuzone.com',
+    ar_team: process.env.AR_TEAM_EMAIL || 'ar3@virtuzone.com'
+  }
 };
 
 // Validate email configuration
 const validateEmailConfig = () => {
   const issues = [];
-
+  
   if (!EMAIL_CONFIG.sender.email) {
-    issues.push("EMAIL_SENDER not set");
+    issues.push('EMAIL_SENDER not set');
   }
-
+  
   if (!EMAIL_CONFIG.sender.password) {
-    issues.push("EMAIL_PASSWORD not set");
+    issues.push('EMAIL_PASSWORD not set');
   }
-
+  
   if (issues.length > 0) {
-    console.error("❌ EMAIL CONFIG ISSUES:", issues);
+    console.error('❌ EMAIL CONFIG ISSUES:', issues);
     return false;
   }
-
-  console.log("✅ EMAIL CONFIG VALIDATION PASSED");
+  
+  console.log('✅ EMAIL CONFIG VALIDATION PASSED');
   return true;
 };
 
@@ -44,37 +64,37 @@ const validateEmailConfig = () => {
 const createTransporter = () => {
   // Validate configuration first
   if (!validateEmailConfig()) {
-    throw new Error("Email configuration validation failed");
+    throw new Error('Email configuration validation failed');
   }
-
-  console.log("📧 EMAIL SERVICE - Creating transporter with config:", {
+  
+  console.log('📧 EMAIL SERVICE - Creating transporter with config:', {
     email: EMAIL_CONFIG.sender.email,
-    password: EMAIL_CONFIG.sender.password ? "***" : "MISSING",
-    name: EMAIL_CONFIG.sender.name,
+    password: EMAIL_CONFIG.sender.password ? '***' : 'MISSING',
+    name: EMAIL_CONFIG.sender.name
   });
-
+  
   // For Gmail (requires app password)
-  if (EMAIL_CONFIG.sender.email.includes("gmail.com")) {
-    console.log("📧 EMAIL SERVICE - Using Gmail service");
+  if (EMAIL_CONFIG.sender.email.includes('gmail.com')) {
+    console.log('📧 EMAIL SERVICE - Using Gmail service');
     return nodemailer.createTransport({
-      service: "gmail",
+      service: 'gmail',
       auth: {
         user: EMAIL_CONFIG.sender.email,
-        pass: EMAIL_CONFIG.sender.password,
-      },
+        pass: EMAIL_CONFIG.sender.password
+      }
     });
   }
-
+  
   // For other email providers (generic SMTP)
-  console.log("📧 EMAIL SERVICE - Using generic SMTP");
+  console.log('📧 EMAIL SERVICE - Using generic SMTP');
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: process.env.SMTP_PORT || 587,
     secure: false, // true for 465, false for other ports
     auth: {
       user: EMAIL_CONFIG.sender.email,
-      pass: EMAIL_CONFIG.sender.password,
-    },
+      pass: EMAIL_CONFIG.sender.password
+    }
   });
 };
 
@@ -84,7 +104,7 @@ const createTransporter = () => {
 export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
   try {
     const transporter = createTransporter();
-
+    
     const {
       quotepaymentId,
       OpportunityId,
@@ -95,20 +115,20 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
       last_payment_date,
       Customer_name,
       opp_email,
-      salesPersonDetails,
+      salesPersonDetails
     } = subscriptionData;
 
     // Send to both customer and business team
     const recipientList = [
       opp_email, // Customer email
       EMAIL_CONFIG.recipients.business_team, // Business team
-      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined, // Sales person
+      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined // Sales person
     ].filter(Boolean);
 
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email,
+        address: EMAIL_CONFIG.sender.email
       },
       to: recipientList,
       subject: `🎉 Subscription Successfully Completed - ${quotepaymentId}`,
@@ -119,7 +139,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
           </div>
           
           <div style="padding: 20px; background-color: #f8f9fa;">
-            <p>Dear ${Customer_name || "Valued Customer"},</p>
+            <p>Dear ${Customer_name || 'Valued Customer'},</p>
             
             <p>Congratulations! We are pleased to inform you that your subscription with Virtuzone has been <strong>successfully completed</strong>.</p>
             
@@ -152,11 +172,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
               </tr>
               <tr style="background-color: #e9ecef;">
                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Final Payment Date</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${
-                  last_payment_date
-                    ? new Date(last_payment_date).toLocaleDateString()
-                    : "N/A"
-                }</td>
+                <td style="padding: 12px; border: 1px solid #dee2e6;">${last_payment_date ? new Date(last_payment_date).toLocaleDateString() : 'N/A'}</td>
               </tr>
             </table>
             
@@ -178,18 +194,15 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
             </div>
           </div>
         </div>
-      `,
+      `
     };
 
     const result = await transporter.sendMail(mailOptions);
 
-    return {
-      success: true,
-      messageId: result.messageId,
-      recipients: recipientList,
-    };
+    return { success: true, messageId: result.messageId, recipients: recipientList };
+    
   } catch (error) {
-    console.error("❌ Failed to send subscription completion email:", error);
+    console.error('❌ Failed to send subscription completion email:', error);
     return { success: false, error: error.message };
   }
 };
@@ -207,33 +220,29 @@ export const sendFinalRenewalEmail = async (data) => {
       payments_completed,
       InstallmentLeft,
       last_payment_date,
-      salesPersonDetails,
+      salesPersonDetails
     } = data;
 
     // Safety check: only send if completed
     if (!InstallmentLeft || payments_completed < InstallmentLeft) {
-      return { success: false, error: "Subscription not completed yet" };
+      return { success: false, error: 'Subscription not completed yet' };
     }
 
     const subject = `Virtuzone | Your Corporate Service Term Is Ending – Let's Renew for Continued Success`;
     const recipientList = [
       opp_email,
       EMAIL_CONFIG.recipients.devtech_team,
-      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined,
+      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined
     ].filter(Boolean);
 
-    const finalDate = last_payment_date
-      ? new Date(last_payment_date)
-      : new Date();
-    const finalDateStr = finalDate.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+    const finalDate = last_payment_date ? new Date(last_payment_date) : new Date();
+    const finalDateStr = finalDate.toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
     });
 
     const bodyHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
-        <p>Dear ${Customer_name || "Customer"},</p>
+        <p>Dear ${Customer_name || 'Customer'},</p>
 
         <p>We hope this message finds you well.</p>
 
@@ -243,31 +252,24 @@ export const sendFinalRenewalEmail = async (data) => {
 
         <p>We would be delighted to assist you with renewing your services and tailoring a new plan that fits your current needs.</p>
 
-        <p style="margin-top: 40px;">Warm regards,<br>${
-          (salesPersonDetails && salesPersonDetails.salesPersonName) ||
-          "Virtuzone Team"
-        }</p>
+        <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
       </div>
     `;
 
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email,
+        address: EMAIL_CONFIG.sender.email
       },
       to: recipientList,
       subject,
-      html: bodyHtml,
+      html: bodyHtml
     };
 
     const result = await transporter.sendMail(mailOptions);
-    return {
-      success: true,
-      messageId: result.messageId,
-      recipients: recipientList,
-    };
+    return { success: true, messageId: result.messageId, recipients: recipientList };
   } catch (error) {
-    console.error("❌ Failed to send final renewal email:", error);
+    console.error('❌ Failed to send final renewal email:', error);
     return { success: false, error: error.message };
   }
 };
@@ -286,44 +288,38 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
       due_date,
       failure_reason,
       payment_link,
-      salesPersonDetails,
+      salesPersonDetails
     } = data;
 
     const subject = `Action Required: Virtuzone | Payment Attempt Unsuccessful for Your Scheduled Installment`;
-
+    
     // Recipients: customer, devtech, opp owner, AR team
     const recipientList = [
       opp_email,
       EMAIL_CONFIG.recipients.devtech_team,
       EMAIL_CONFIG.recipients.ar_team,
-      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined,
+      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined
     ].filter(Boolean);
 
-    const dueDateStr = due_date
-      ? new Date(due_date).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
-      : "N/A";
+    const dueDateStr = due_date ? new Date(due_date).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    }) : 'N/A';
 
-    const reasonText = failure_reason || "Payment processing failed";
-    const paymentLinkHtml = payment_link
-      ? `<a href="${payment_link}" style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Click here to complete the payment</a>`
-      : "Please contact us for payment assistance.";
+    const reasonText = failure_reason || 'Payment processing failed';
+    const paymentLinkHtml = payment_link ? 
+      `<a href="${payment_link}" style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Click here to complete the payment</a>` :
+      'Please contact us for payment assistance.';
 
     const bodyHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
-        <p>Dear ${Customer_name || "Customer"},</p>
+        <p>Dear ${Customer_name || 'Customer'},</p>
 
         <p>We hope you're doing well.</p>
 
         <p>This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed successfully.</p>
 
         <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
-          <p style="margin: 0;"><strong>Amount:</strong> AED ${
-            payment_amount || "N/A"
-          }</p>
+          <p style="margin: 0;"><strong>Amount:</strong> AED ${payment_amount || 'N/A'}</p>
           <p style="margin: 5px 0 0 0;"><strong>Reason:</strong> ${reasonText}</p>
         </div>
 
@@ -339,34 +335,24 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
 
         <p>Thank you for your attention to this matter.</p>
 
-        <p style="margin-top: 40px;">Warm regards,<br>${
-          (salesPersonDetails && salesPersonDetails.salesPersonName) ||
-          "Virtuzone Team"
-        }</p>
+        <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
       </div>
     `;
 
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email,
+        address: EMAIL_CONFIG.sender.email
       },
       to: recipientList,
       subject,
-      html: bodyHtml,
+      html: bodyHtml
     };
 
     const result = await transporter.sendMail(mailOptions);
-    return {
-      success: true,
-      messageId: result.messageId,
-      recipients: recipientList,
-    };
+    return { success: true, messageId: result.messageId, recipients: recipientList };
   } catch (error) {
-    console.error(
-      "❌ Failed to send payment failure notification email:",
-      error
-    );
+    console.error('❌ Failed to send payment failure notification email:', error);
     return { success: false, error: error.message };
   }
 };
@@ -386,43 +372,34 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       installment_number,
       total_installments,
       payment_method,
-      salesPersonDetails,
+      salesPersonDetails
     } = data;
 
     const subject = `Virtuzone | Payment Received`;
-
+    
     // Recipients: customer, devtech, opp owner, AR team
     const recipientList = [
       opp_email,
       EMAIL_CONFIG.recipients.devtech_team,
       EMAIL_CONFIG.recipients.ar_team,
-      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined,
+      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined
     ].filter(Boolean);
 
-    const paymentDateStr = payment_date
-      ? new Date(payment_date).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
-      : new Date().toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
+    const paymentDateStr = payment_date ? new Date(payment_date).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    }) : new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
 
-    const installmentText =
-      installment_number && total_installments
-        ? `${installment_number} of ${total_installments}`
-        : "N/A";
+    const installmentText = installment_number && total_installments ? 
+      `${installment_number} of ${total_installments}` : 
+      'N/A';
 
     const bodyHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
-        <p>Dear ${Customer_name || "Customer"},</p>
+        <p>Dear ${Customer_name || 'Customer'},</p>
 
-        <p>We are pleased to confirm that your scheduled payment of <strong>AED ${
-          payment_amount || "N/A"
-        }</strong> for your Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
+        <p>We are pleased to confirm that your scheduled payment of <strong>AED ${payment_amount || 'N/A'}</strong> for your Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
 
         <div style="border: 2px solid #28a745; margin: 20px 0;">
           <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #28a745;">
@@ -439,9 +416,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
             </tr>
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Amount Paid</td>
-              <td style="border: 1px solid #ddd; padding: 12px;"><strong>AED ${
-                payment_amount || "N/A"
-              }</strong></td>
+              <td style="border: 1px solid #ddd; padding: 12px;"><strong>AED ${payment_amount || 'N/A'}</strong></td>
             </tr>
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
@@ -449,9 +424,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
             </tr>
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Method</td>
-              <td style="border: 1px solid #ddd; padding: 12px;">${
-                payment_method || "Card"
-              }</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">${payment_method || 'Card'}</td>
             </tr>
           </table>
         </div>
@@ -462,34 +435,24 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 
         <p>Thank you once again for choosing Virtuzone.</p>
 
-        <p style="margin-top: 40px;">Warm regards,<br>${
-          (salesPersonDetails && salesPersonDetails.salesPersonName) ||
-          "Virtuzone Team"
-        }</p>
+        <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
       </div>
     `;
 
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email,
+        address: EMAIL_CONFIG.sender.email
       },
       to: recipientList,
       subject,
-      html: bodyHtml,
+      html: bodyHtml
     };
 
     const result = await transporter.sendMail(mailOptions);
-    return {
-      success: true,
-      messageId: result.messageId,
-      recipients: recipientList,
-    };
+    return { success: true, messageId: result.messageId, recipients: recipientList };
   } catch (error) {
-    console.error(
-      "❌ Failed to send payment success notification email:",
-      error
-    );
+    console.error('❌ Failed to send payment success notification email:', error);
     return { success: false, error: error.message };
   }
 };
@@ -500,7 +463,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 // export const sendPaymentFailureEmail = async (failureData) => {
 //   try {
 //     const transporter = createTransporter();
-
+    
 //     const {
 //       quotepaymentId,
 //       OpportunityId,
@@ -525,7 +488,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 //           <div style="background-color: #dc3545; color: white; padding: 20px; text-align: center;">
 //             <h1>🚨 Payment Failure Alert</h1>
 //           </div>
-
+          
 //           <div style="padding: 20px; background-color: #f8f9fa;">
 //             <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
 //               <h3 style="color: #721c24; margin-top: 0;">⚠️ Immediate Action Required</h3>
@@ -533,9 +496,9 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 //                 A recurring payment has failed and requires immediate attention from the operations team.
 //               </p>
 //             </div>
-
+            
 //             <h2>Payment Failure Details</h2>
-
+            
 //             <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
 //               <tr style="background-color: #e9ecef;">
 //                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote Payment ID</td>
@@ -566,14 +529,14 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 //                 <td style="padding: 12px; border: 1px solid #dee2e6; color: #dc3545;"><strong>${error_message}</strong></td>
 //               </tr>
 //             </table>
-
+            
 //             ${afs_response ? `
 //             <h3>AFS Response Details</h3>
 //             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; overflow-x: auto;">
 //               <pre>${JSON.stringify(afs_response, null, 2)}</pre>
 //             </div>
 //             ` : ''}
-
+            
 //             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
 //               <h3 style="color: #856404; margin-top: 0;">📋 Recommended Actions</h3>
 //               <ul style="color: #856404;">
@@ -584,7 +547,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 //                 <li>Consider rescheduling payment or offering alternative payment methods</li>
 //               </ul>
 //             </div>
-
+            
 //             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
 //               <p style="color: #6c757d; font-size: 12px;">
 //                 This is an automated alert from VZAT Payment System<br>
@@ -599,7 +562,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 
 //     const result = await transporter.sendMail(mailOptions);
 //     return { success: true, messageId: result.messageId };
-
+    
 //   } catch (error) {
 //     console.error('❌ Failed to send payment failure email:', error);
 //     return { success: false, error: error.message };
@@ -612,9 +575,9 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 export const sendPdfEmail = async (emailData) => {
   try {
     const transporter = createTransporter();
-
+    
     const {
-      quote_payment_number,
+      Quote_payment_number,
       Total_After_VAT_Currency,
       quote_email,
       quotepaymentId,
@@ -625,16 +588,14 @@ export const sendPdfEmail = async (emailData) => {
       Customer_name,
       opp_owner,
       salesPersonDetails,
-      installmentSchedule, // New parameter for dynamic payment schedule
+      installmentSchedule // New parameter for dynamic payment schedule
     } = emailData;
 
     // Get base URL from environment
-    const baseUrl = process.env.BASE_URL || "https://vzatnew.yeepeey.com";
-
+    const baseUrl = process.env.BASE_URL || 'https://vzatnew.yeepeey.com';
+    
     // Construct payment link with proper base URL
-    const fullPaymentLink = paymentLink.startsWith("http")
-      ? paymentLink
-      : `${baseUrl}${paymentLink.startsWith("/") ? "" : "/"}${paymentLink}`;
+    const fullPaymentLink = paymentLink.startsWith('http') ? paymentLink : `${baseUrl}${paymentLink.startsWith('/') ? '' : '/'}${paymentLink}`;
 
     // Process PDF attachments
     const attachments = [];
@@ -644,41 +605,29 @@ export const sendPdfEmail = async (emailData) => {
           attachments.push({
             filename: `${pdf.name}.pdf`,
             content: pdf.pdfContent,
-            encoding: "base64",
-            contentType: pdf.ContentType || "application/pdf",
+            encoding: 'base64',
+            contentType: pdf.ContentType || 'application/pdf'
           });
         }
       }
     }
 
     // Generate payment schedule table rows
-    let paymentScheduleRows = "";
+    let paymentScheduleRows = '';
     if (installmentSchedule && Array.isArray(installmentSchedule)) {
       installmentSchedule.forEach((installment, index) => {
-        const paymentDate = new Date(
-          installment.date || installment.dueDate
-        ).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
+        const paymentDate = new Date(installment.date || installment.dueDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
         });
-
+        
         paymentScheduleRows += `
           <tr>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${
-              index + 1
-            }</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${index + 1}</td>
             <td style="border: 1px solid #ddd; padding: 8px;">${paymentDate}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${
-              installment.amount || Installment_amount
-            }</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${
-              index ***REMOVED***= 0
-                ? "Upfront Payment"
-                : index ***REMOVED***= installmentSchedule.length - 1
-                ? "Final Installment"
-                : "Monthly Installment"
-            }</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatAmount(installment.amount || Installment_amount)}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${index ***REMOVED***= 0 ? 'Upfront Payment' : index ***REMOVED***= installmentSchedule.length - 1 ? 'Final Installment' : 'Monthly Installment'}</td>
           </tr>
         `;
       });
@@ -687,20 +636,10 @@ export const sendPdfEmail = async (emailData) => {
       for (let i = 0; i < (Total_Installments || 1); i++) {
         paymentScheduleRows += `
           <tr>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${
-              i + 1
-            }</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${i + 1}</td>
             <td style="border: 1px solid #ddd; padding: 8px;">TBD</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${
-              Installment_amount || Total_After_VAT_Currency
-            }</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${
-              i ***REMOVED***= 0
-                ? "Upfront Payment"
-                : i ***REMOVED***= Total_Installments - 1
-                ? "Final Installment"
-                : "Monthly Installment"
-            }</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatAmount(Installment_amount || Total_After_VAT_Currency)}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${i ***REMOVED***= 0 ? 'Upfront Payment' : i ***REMOVED***= (Total_Installments - 1) ? 'Final Installment' : 'Monthly Installment'}</td>
           </tr>
         `;
       }
@@ -709,14 +648,14 @@ export const sendPdfEmail = async (emailData) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email,
+        address: EMAIL_CONFIG.sender.email
       },
       to: quote_email,
-      subject: `Virtuzone | Proforma Invoice & Payment Link – PI QP- No-${quote_payment_number}`,
+      subject: `Virtuzone | Proforma Invoice & Payment Link – PI ${Quote_payment_number}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; overflow-wrap: anywhere; word-break: break-word;">
           <div style="padding: 20px;">
-            <p>Hello ${Customer_name || "Sir/Madam"},</p>
+            <p>Hello ${Customer_name || 'Sir/Madam'},</p>
             
             <p>Thank you for choosing Virtuzone as your preferred Corporate Services Provider.</p>
             
@@ -735,13 +674,11 @@ export const sendPdfEmail = async (emailData) => {
                 </tr>
                 <tr>
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Proforma Invoice #</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">${
-                    quotepaymentId || quote_payment_number
-                  }</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">${Quote_payment_number || quotepaymentId}</td>
                 </tr>
                 <tr>
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Invoice Value with VAT</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${Total_After_VAT_Currency}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Total_After_VAT_Currency)}</td>
                 </tr>
                 <tr>
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Payment Link</td>
@@ -751,7 +688,7 @@ export const sendPdfEmail = async (emailData) => {
                 </tr>
                 <tr>
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Amount Requested</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${Total_After_VAT_Currency}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Total_After_VAT_Currency)}</td>
                 </tr>
               </table>
             </div>
@@ -788,29 +725,20 @@ export const sendPdfEmail = async (emailData) => {
             
             <p style="margin-top: 40px;">
               Regards,<br>
-              ${
-                (salesPersonDetails && salesPersonDetails.salesPersonName) ||
-                opp_owner ||
-                "Rodney Raymond Lewis"
-              }
+              ${(salesPersonDetails && salesPersonDetails.salesPersonName) || opp_owner || 'Rodney Raymond Lewis'}
             </p>
           </div>
         </div>
       `,
-      attachments: attachments,
+      attachments: attachments
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(
-      `✅ PDF email sent successfully to ${quote_email}: ${result.messageId}`
-    );
-    return {
-      success: true,
-      messageId: result.messageId,
-      recipient: quote_email,
-    };
+    console.log(`✅ PDF email sent successfully to ${quote_email}: ${result.messageId}`);
+    return { success: true, messageId: result.messageId, recipient: quote_email };
+    
   } catch (error) {
-    console.error("❌ Failed to send PDF email:", error);
+    console.error('❌ Failed to send PDF email:', error);
     return { success: false, error: error.message };
   }
 };
@@ -819,34 +747,37 @@ export const sendPdfEmail = async (emailData) => {
  * Send welcome email to new customer with login credentials
  */
 export const sendCustomerWelcomeEmail = async (customerData) => {
-  console.log(
-    "📧 EMAIL SERVICE - Input data:",
-    JSON.stringify(customerData, null, 2)
-  );
 
+  console.log('📧 EMAIL SERVICE - Input data:', JSON.stringify(customerData, null, 2));
+  
   try {
-    console.log("📧 EMAIL SERVICE - Creating transporter...");
+    console.log('📧 EMAIL SERVICE - Creating transporter...');
     const transporter = createTransporter();
-    console.log("📧 EMAIL SERVICE - Transporter created successfully");
-
-    const { customerName, email, temporaryPassword, quotepaymentId, loginUrl } =
-      customerData;
-
-    console.log("📧 EMAIL SERVICE - Extracted data:", {
+    console.log('📧 EMAIL SERVICE - Transporter created successfully');
+    
+    const {
       customerName,
       email,
-      temporaryPassword: temporaryPassword ? "***" : "MISSING",
+      temporaryPassword,
       quotepaymentId,
-      loginUrl,
+      loginUrl
+    } = customerData;
+    
+    console.log('📧 EMAIL SERVICE - Extracted data:', {
+      customerName,
+      email,
+      temporaryPassword: temporaryPassword ? '***' : 'MISSING',
+      quotepaymentId,
+      loginUrl
     });
 
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email,
+        address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: "🎉 Welcome to VZAT Customer Portal - Your Account is Ready!",
+      subject: '🎉 Welcome to VZAT Customer Portal - Your Account is Ready!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #007bff;">
@@ -873,12 +804,11 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
               <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #007bff; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
             </div>
             
-           <div style="text-align: center; margin: 30px 0;">
-  <a href="${loginUrl}" style="background-color: #ff0000; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #ff0000;">
-    🚀 Login to Your Account
-  </a>
-</div>
-
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" style="background-color: #007bff; color: #000000; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #007bff;">
+                🚀 Login to Your Account
+              </a>
+            </div>
             
             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
               <h4 style="color: #856404; margin-top: 0;">⚠️ Important Security Notice:</h4>
@@ -912,36 +842,37 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
             </div>
           </div>
         </div>
-      `,
+      `
     };
 
-    console.log("📧 EMAIL SERVICE - Sending email...");
-    console.log("📧 EMAIL SERVICE - Mail options:", {
+    console.log('📧 EMAIL SERVICE - Sending email...');
+    console.log('📧 EMAIL SERVICE - Mail options:', {
       from: mailOptions.from,
       to: mailOptions.to,
       subject: mailOptions.subject,
-      htmlLength: mailOptions.html?.length || 0,
+      htmlLength: mailOptions.html?.length || 0
     });
-
+    
     const result = await transporter.sendMail(mailOptions);
-
-    console.log("📧 EMAIL SERVICE - Email sent successfully!");
-    console.log("📧 EMAIL SERVICE - Result:", {
+    
+    console.log('📧 EMAIL SERVICE - Email sent successfully!');
+    console.log('📧 EMAIL SERVICE - Result:', {
       messageId: result.messageId,
       accepted: result.accepted,
       rejected: result.rejected,
-      response: result.response,
+      response: result.response
     });
-
+    
     return { success: true, messageId: result.messageId, recipient: email };
+    
   } catch (error) {
-    console.error("❌ 📧 EMAIL SERVICE - Error details:", {
+    console.error('❌ 📧 EMAIL SERVICE - Error details:', {
       name: error.name,
       message: error.message,
       code: error.code,
       command: error.command,
       response: error.response,
-      responseCode: error.responseCode,
+      responseCode: error.responseCode
     });
     return { success: false, error: error.message, details: error };
   }
@@ -953,22 +884,22 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
 export const sendExistingCustomerEmail = async (customerData) => {
   try {
     const transporter = createTransporter();
-
+    
     const {
       customerName,
       email,
       quotepaymentId,
       existingQuotePaymentId,
-      loginUrl,
+      loginUrl
     } = customerData;
 
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email,
+        address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: "🔐 Welcome Back! Your VZAT Account is Ready to Use",
+      subject: '🔐 Welcome Back! Your VZAT Account is Ready to Use',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #28a745;">
@@ -995,12 +926,11 @@ export const sendExistingCustomerEmail = async (customerData) => {
               <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #28a745; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
             </div>
             
-       <div style="text-align: center; margin: 30px 0;">
-  <a href="${loginUrl}" style="background-color: #ff0000; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #ff0000;">
-    🔑 Login to Your Account
-  </a>
-</div>
-
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" style="background-color: #28a745; color: #000000; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #28a745;">
+                🔑 Login to Your Account
+              </a>
+            </div>
             
             <div style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 6px; padding: 15px; margin: 20px 0;">
               <h4 style="color: #1565c0; margin-top: 0;">💡 Forgot Your Password?</h4>
@@ -1032,13 +962,14 @@ export const sendExistingCustomerEmail = async (customerData) => {
             </div>
           </div>
         </div>
-      `,
+      `
     };
 
     const result = await transporter.sendMail(mailOptions);
     return { success: true, messageId: result.messageId, recipient: email };
+    
   } catch (error) {
-    console.error("❌ Failed to send existing customer email:", error);
+    console.error('❌ Failed to send existing customer email:', error);
     return { success: false, error: error.message };
   }
 };
@@ -1049,16 +980,21 @@ export const sendExistingCustomerEmail = async (customerData) => {
 export const sendPasswordResetEmail = async (customerData) => {
   try {
     const transporter = createTransporter();
-
-    const { customerName, email, resetToken, resetUrl } = customerData;
+    
+    const {
+      customerName,
+      email,
+      resetToken,
+      resetUrl
+    } = customerData;
 
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email,
+        address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: "🔐 Reset Your VZAT Account Password",
+      subject: '🔐 Reset Your VZAT Account Password',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -1122,13 +1058,14 @@ export const sendPasswordResetEmail = async (customerData) => {
             </div>
           </div>
         </div>
-      `,
+      `
     };
 
     const result = await transporter.sendMail(mailOptions);
     return { success: true, messageId: result.messageId, recipient: email };
+    
   } catch (error) {
-    console.error("❌ Failed to send password reset email:", error);
+    console.error('❌ Failed to send password reset email:', error);
     return { success: false, error: error.message };
   }
 };
@@ -1139,14 +1076,14 @@ export const sendPasswordResetEmail = async (customerData) => {
 export const testEmailConfiguration = async () => {
   try {
     const transporter = createTransporter();
-
+    
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: EMAIL_CONFIG.sender.email,
+        address: EMAIL_CONFIG.sender.email
       },
       to: EMAIL_CONFIG.recipients.business_team,
-      subject: "✅ VZAT Email Service Test",
+      subject: '✅ VZAT Email Service Test',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2>✅ Email Service Test Successful</h2>
@@ -1155,11 +1092,12 @@ export const testEmailConfiguration = async () => {
           <p><strong>Sender:</strong> ${EMAIL_CONFIG.sender.email}</p>
           <p>If you receive this email, the configuration is working properly.</p>
         </div>
-      `,
+      `
     };
 
     const result = await transporter.sendMail(mailOptions);
     return { success: true, messageId: result.messageId };
+    
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -1175,5 +1113,5 @@ export default {
   sendFinalRenewalEmail,
   sendPaymentFailureNotificationEmail,
   sendPaymentSuccessNotificationEmail,
-  testEmailConfiguration,
+  testEmailConfiguration
 };
