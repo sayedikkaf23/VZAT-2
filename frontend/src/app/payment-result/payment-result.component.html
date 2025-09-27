@@ -37,10 +37,10 @@
         </div>
         
         <!-- Amount for mobile view - moved below error text -->
-        <h2 class="price-mobile d-block d-md-none mb-3">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+        <h2 class="price-mobile d-block d-md-none mb-3">AED {{ sidebarPaymentAmount | number:'1.2-2' }}</h2>
         
         <!-- Amount for desktop view only -->
-        <h2 class="price d-none d-md-block">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+        <h2 class="price d-none d-md-block">AED {{ sidebarPaymentAmount | number:'1.2-2' }}</h2>
 
         <!-- Need Assistance Section in Sidebar -->
         <app-sales-agent-sidebar [salesAgent]="salesAgent" title="Need Assistance?" subtitle="Contact us">
@@ -103,10 +103,10 @@
         </div>
         
         <!-- Amount for mobile view - moved below success text -->
-        <h2 class="price-mobile d-block d-md-none mb-3">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+        <h2 class="price-mobile d-block d-md-none mb-3">AED {{ sidebarPaymentAmount | number:'1.2-2' }}</h2>
         
         <!-- Amount for desktop view only -->
-        <h2 class="price d-none d-md-block">AED {{ paymentAmount | number:'1.2-2' }}</h2>
+        <h2 class="price d-none d-md-block">AED {{ sidebarPaymentAmount | number:'1.2-2' }}</h2>
         
         <!-- Note for mobile view -->
         <div class="mobile-note d-block d-md-none mt-3">
