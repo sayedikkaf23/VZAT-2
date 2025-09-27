@@ -218,7 +218,7 @@
 
                                     <!-- Product Name -->
                                     <td data-title="Product Name">
-                                        {{ service.Product_details?.[0]?.ProductName || service.quotepaymentId || 'N/A' }}
+                                        {{ service.Product_details?.[0]?.ProductName || service.Quote_payment_number || service.quotepaymentId || 'N/A' }}
                                     </td>
 
                                     <!-- Details -->
@@ -1019,7 +1019,7 @@
                     <div class="row" *ngIf="selectedService.quotepaymentId">
                         <div class="col-12">
                             <h6 class="text-primary">Additional Information</h6>
-                            <p><strong>Quote Payment ID:</strong> {{ selectedService.quotepaymentId }}</p>
+                            <p><strong>Quote Payment Number:</strong> {{ selectedService.Quote_payment_number || selectedService.quotepaymentId }}</p>
                         </div>
                     </div>
                 </div>
