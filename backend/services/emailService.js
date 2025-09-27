@@ -808,20 +808,13 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
               <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #007bff; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
             </div>
             
-<<<<<<< HEAD
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${loginUrl}" style="background-color: #007bff; color: #000000; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #007bff;">
-                🚀 Login to Your Account
-              </a>
-            </div>
-***REMOVED******REMOVED******REMOVED***=
+
            <div style="text-align: center; margin: 30px 0;">
   <a href="${loginUrl}" style="background-color: #ff0000; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #ff0000;">
      Login to Your Account
   </a>
 </div>
 
->>>>>>> 5b29517d69b8033b5b8f1902d7026b32e0ba5219
             
             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
               <h4 style="color: #856404; margin-top: 0;">⚠️ Important Security Notice:</h4>
