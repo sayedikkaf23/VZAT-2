@@ -49,6 +49,8 @@ jspm_packages/
 .env.test.local
 .env.production.local
 .env
+.env.sandbox
+.env.development
 
 # Runtime logs
 logs
