@@ -131,80 +131,25 @@
                     </div>
                 </div>
                 <div class="col-auto d-flex align-items-center">
-                    <div class="search_bar_wrap d-flex align-items-center row">
-                        <div class="col-auto p-0 d-none d-md-block">
-                            <div class="search-input-box d-flex align-items-center">
-                                <a href="#" (click)="$event.preventDefault()">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M6.8087 12.6174C10.0168 12.6174 12.6174 10.0168 12.6174 6.8087C12.6174 3.60064 10.0168 1 6.8087 1C3.60064 1 1 3.60064 1 6.8087C1 10.0168 3.60064 12.6174 6.8087 12.6174Z"
-                                            stroke="#767676" stroke-width="1.4" stroke-linecap="round"
-                                            stroke-linejoin="round" />
-                                        <path d="M15 15L10.9111 10.9111" stroke="#767676" stroke-width="1.4"
-                                            stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                </a>
-                                <input type="text" placeholder="Search here..." name="search"
-                                    class="search-input form-control">
-                            </div>
-                        </div>
-                        <div class="col-auto p-0">
-                            <a href="#" (click)="$event.preventDefault()" class="header_icon">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15Z"
-                                        stroke="#767676" stroke-width="1.4" stroke-linecap="round"
-                                        stroke-linejoin="round" />
-                                    <path
-                                        d="M5.96289 5.89994C6.12746 5.43211 6.4523 5.03762 6.87986 4.78634C7.30742 4.53506 7.81012 4.4432 8.29891 4.52704C8.78771 4.61088 9.23106 4.86501 9.55044 5.24441C9.86983 5.62382 10.0446 6.10401 10.0439 6.59994C10.0439 7.99994 7.94389 8.69994 7.94389 8.69994"
-                                        stroke="#767676" stroke-width="1.4" stroke-linecap="round"
-                                        stroke-linejoin="round" />
-                                    <path d="M8 11.5H8.01" stroke="#767676" stroke-width="1.4" stroke-linecap="round"
-                                        stroke-linejoin="round" />
-                                </svg>
-                            </a>
-                        </div>
-                        <div class="col-auto p-0">
-                            <a href="#" (click)="$event.preventDefault()" class="header_icon">
-                                <svg width="14" height="16" viewBox="0 0 14 16" fill="none"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M11.2006 5.20074C11.2006 4.08664 10.758 3.01816 9.97022 2.23037C9.18243 1.44258 8.11395 1 6.99985 1C5.88574 1 4.81726 1.44258 4.02947 2.23037C3.24168 3.01816 2.7991 4.08664 2.7991 5.20074C2.7991 10.1016 0.69873 11.5019 0.69873 11.5019H13.301C13.301 11.5019 11.2006 10.1016 11.2006 5.20074Z"
-                                        stroke="currentcolor" stroke-width="1.4" stroke-linecap="round"
-                                        stroke-linejoin="round" />
-                                    <path
-                                        d="M8.211 14.3024C8.08791 14.5146 7.91124 14.6907 7.69867 14.8131C7.4861 14.9356 7.2451 15 6.99979 15C6.75448 15 6.51348 14.9356 6.30091 14.8131C6.08834 14.6907 5.91166 14.5146 5.78857 14.3024"
-                                        stroke="currentcolor" stroke-width="1.4" stroke-linecap="round"
-                                        stroke-linejoin="round" />
-                                </svg>
-                            </a>
-                        </div>
-                        <div class="col-auto p-0">
-                            <div class="profile_image">
-                                <a href="#" (click)="$event.preventDefault()">
-                                    <img src="assets/CustomerPortal/images/profile-image.png" alt="">
-                                </a>
-                                <ul class="profile_menu">
-                                    <li>
-                                        <a href="#" (click)="$event.preventDefault()">My Account</a>
-                                    </li>
-                                    <li>
-                                        <a href="#" (click)="onLogout(); $event.preventDefault();">Logout</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                    </div>
-                    <div class="navbar-toggle" (click)="toggleNavbar()">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+                    <div class="profile_image">
+                        <a  (click)="$event.preventDefault()">
+                            <img src="assets/CustomerPortal/images/profile-image.png" alt="" style="border-radius: 50%; width: 40px; height: 40px; object-fit: cover;">
+                        </a>
+                        <ul class="profile_menu">
+                            <li>
+                                <a href="#" (click)="$event.preventDefault()">My Account</a>
+                            </li>
+                            <li>
+                                <a href="#" (click)="onLogout(); $event.preventDefault();">Logout</a>
+                            </li>
+                        </ul>
                     </div>
                 </div>
-
+                <div class="navbar-toggle" (click)="toggleNavbar()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
             </div>
         </div>
         <div class="text-center d-block d-md-none sm_inr_bnr">
@@ -329,36 +274,38 @@
                 <div class="col-auto">
                     <div class="nav_wrap">
                         <nav aria-label="Page navigation example">
-                            <ul class="pagination">
+                            <ul class="pagination mb-0" style="gap: 8px;">
                                 <li class="page-item" [class.disabled]="currentPage ***REMOVED***= 1">
-                                    <a class="page-link" href="#" (click)="previousPage(); $event.preventDefault()"
-                                        aria-label="Previous">
-                                        <span aria-hidden="true">
-                                            <svg width="8" height="12" viewBox="0 0 8 12" fill="none"
-                                                xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M6.5 1L1.5 6L6.5 11" stroke="#121212" stroke-width="1.5"
-                                                    stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-
-                                        </span>
+                                    <a class="page-link d-flex align-items-center justify-content-center" 
+                                       href="#" (click)="previousPage(); $event.preventDefault()"
+                                       aria-label="Previous" 
+                                       style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid #ddd; background: white;">
+                                        <svg width="8" height="12" viewBox="0 0 8 12" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M6.5 1L1.5 6L6.5 11" stroke="#121212" stroke-width="1.5"
+                                                stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
                                     </a>
                                 </li>
                                 <li class="page-item" *ngFor="let page of pageNumbers"
                                     [class.active]="page ***REMOVED***= currentPage">
-                                    <a class="page-link" href="#" (click)="goToPage(page); $event.preventDefault()"
-                                        [class.active]="page ***REMOVED***= currentPage">{{ page }}</a>
+                                    <a class="page-link d-flex align-items-center justify-content-center" 
+                                       href="#" (click)="goToPage(page); $event.preventDefault()"
+                                       [style.background]="page ***REMOVED***= currentPage ? '#FF2A47' : 'white'"
+                                       [style.color]="page ***REMOVED***= currentPage ? 'white' : '#121212'"
+                                       [style.border]="page ***REMOVED***= currentPage ? '1px solid #FF2A47' : '1px solid #ddd'"
+                                       style="width: 40px; height: 40px; border-radius: 8px; text-decoration: none; font-weight: 500;">{{ page }}</a>
                                 </li>
                                 <li class="page-item" [class.disabled]="currentPage ***REMOVED***= totalPages">
-                                    <a class="page-link" href="#" (click)="nextPage(); $event.preventDefault()"
-                                        aria-label="Next">
-                                        <span aria-hidden="true">
-                                            <svg width="8" height="12" viewBox="0 0 8 12" fill="none"
-                                                xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M1.5 1L6.5 6L1.5 11" stroke="#121212" stroke-width="1.5"
-                                                    stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-
-                                        </span>
+                                    <a class="page-link d-flex align-items-center justify-content-center" 
+                                       href="#" (click)="nextPage(); $event.preventDefault()"
+                                       aria-label="Next"
+                                       style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid #ddd; background: white;">
+                                        <svg width="8" height="12" viewBox="0 0 8 12" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M1.5 1L6.5 6L1.5 11" stroke="#121212" stroke-width="1.5"
+                                                stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
                                     </a>
                                 </li>
                             </ul>
