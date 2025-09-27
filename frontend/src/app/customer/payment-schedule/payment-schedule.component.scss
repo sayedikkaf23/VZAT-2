@@ -662,7 +662,12 @@ html .schedule-list-box  .form-check .form-check-label {
     }
     .payment-schedule .sidebar-row .payment-schedule-list .item h6 {
     }
-    .payment-schedule .sidebar-row .payment-schedule-list .price a {
+    .payment-schedule .sidebar-row {
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 43px;
+} 
+.payment-schedule-list .price a {
         padding: 0 8px;
         width: fit-content;
         line-height: 19px;
