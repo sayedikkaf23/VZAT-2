@@ -759,7 +759,8 @@ export const processRecurringPayments = async (req, res) => {
                 resultDescription: paymentResult.result.description,
                 timestamp: paymentResult.timestamp || new Date().toISOString(),
                 installmentNumber: paymentToProcess,
-                nextDueDate: subscription.next_charge_date ? new Date(subscription.next_charge_date).toISOString().slice(0, 10) : null
+                nextDueDate: subscription.next_charge_date ? new Date(subscription.next_charge_date).toISOString().slice(0, 10) : null,
+                Qp_number: currentPayment?.q_payment_id || null // Add QP number from payment schedule
               };
 
               const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
