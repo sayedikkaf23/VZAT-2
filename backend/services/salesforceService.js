@@ -11,12 +11,13 @@ dotenv.config();
 // Cache for access token
 let accessTokenCache = {
   token: null,
+  instanceUrl: null,
   expiresAt: null
 };
 
 /**
  * Get Salesforce access token using OAuth2
- * @returns {string} - Access token
+ * @returns {object} - Token response with access_token and instance_url
  */
 const getSalesforceAccessToken = async () => {
   const startTime = Date.now();
@@ -24,9 +25,12 @@ const getSalesforceAccessToken = async () => {
   
   try {
     // Check if we have a valid cached token
-    if (accessTokenCache.token && accessTokenCache.expiresAt > Date.now()) {
+    if (accessTokenCache.token && accessTokenCache.instanceUrl && accessTokenCache.expiresAt > Date.now()) {
       console.log('🔄 Using cached Salesforce access token');
-      return accessTokenCache.token;
+      return {
+        access_token: accessTokenCache.token,
+        instance_url: accessTokenCache.instanceUrl
+      };
     }
 
     console.log('🔄 Requesting new Salesforce access token...');
@@ -56,10 +60,11 @@ const getSalesforceAccessToken = async () => {
       }
     );
 
-    const { access_token, expires_in } = response.data;
+    const { access_token, instance_url, expires_in } = response.data;
     
-    // Cache the token (expires_in is typically 7200 seconds = 2 hours, we'll cache for 1.5 hours to be safe)
+    // Cache the token and instance URL (expires_in is typically 7200 seconds = 2 hours, we'll cache for 1.5 hours to be safe)
     accessTokenCache.token = access_token;
+    accessTokenCache.instanceUrl = instance_url;
     accessTokenCache.expiresAt = Date.now() + (expires_in - 300) * 1000; // 5 minutes buffer
 
     // Log successful authentication
@@ -78,7 +83,10 @@ const getSalesforceAccessToken = async () => {
     });
 
     console.log('✅ Salesforce access token obtained successfully');
-    return access_token;
+    return {
+      access_token,
+      instance_url
+    };
 
   } catch (error) {
     // Log failed authentication
@@ -108,7 +116,6 @@ const getSalesforceAccessToken = async () => {
  */
 export const updateQuotePaymentStatus = async (paymentData) => {
   const startTime = Date.now();
-  const endpoint = process.env.SALESFORCE_API_URL;
   
   try {
     console.log('🔄 Calling Salesforce API to update quote payment status...');
@@ -150,8 +157,13 @@ export const updateQuotePaymentStatus = async (paymentData) => {
 
     console.log('📋 Salesforce payload:', JSON.stringify(salesforcePayload, null, 2));
 
-    // Get access token
-    const accessToken = await getSalesforceAccessToken();
+    // Get access token and instance URL
+    const tokenResponse = await getSalesforceAccessToken();
+    const { access_token, instance_url } = tokenResponse;
+    
+    // Build dynamic endpoint using instance URL
+    const endpoint = `${instance_url}/services/apexrest/updateQuotePaymentStatus`;
+    console.log('🔗 Salesforce endpoint:', endpoint);
 
     // Make the API call to Salesforce
     const salesforceResponse = await axios.put(
@@ -161,7 +173,7 @@ export const updateQuotePaymentStatus = async (paymentData) => {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${access_token}`
         },
         timeout: 30000 // 30 seconds timeout
       }

@@ -107,6 +107,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
     
     const {
       quotepaymentId,
+      Quote_payment_number,
       OpportunityId,
       QuoteId,
       Total_After_VAT_Currency,
@@ -131,7 +132,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: recipientList,
-      subject: `🎉 Subscription Successfully Completed - ${quotepaymentId}`,
+      subject: `🎉 Subscription Successfully Completed - ${Quote_payment_number || quotepaymentId}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background-color: #28a745; color: white; padding: 20px; text-align: center;">
@@ -148,7 +149,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
             <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
               <tr style="background-color: #e9ecef;">
                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote Payment ID</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${quotepaymentId}</td>
+                <td style="padding: 12px; border: 1px solid #dee2e6;">${Quote_payment_number || quotepaymentId}</td>
               </tr>
               <tr>
                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Opportunity ID</td>
@@ -215,6 +216,7 @@ export const sendFinalRenewalEmail = async (data) => {
     const transporter = createTransporter();
     const {
       quotepaymentId,
+      Quote_payment_number,
       Customer_name,
       opp_email,
       payments_completed,
@@ -246,7 +248,7 @@ export const sendFinalRenewalEmail = async (data) => {
 
         <p>We hope this message finds you well.</p>
 
-        <p>This is a gentle reminder that your current corporate service package with Virtuzone, under Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong>, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
+        <p>This is a gentle reminder that your current corporate service package with Virtuzone, under Proforma Invoice <strong>#PI ${Quote_payment_number || quotepaymentId}</strong>, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
 
         <p>We thank you sincerely for placing your trust in Virtuzone over the past year.</p>
 
@@ -282,6 +284,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
     const transporter = createTransporter();
     const {
       quotepaymentId,
+      Quote_payment_number,
       Customer_name,
       opp_email,
       payment_amount,
@@ -316,7 +319,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
 
         <p>We hope you're doing well.</p>
 
-        <p>This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed successfully.</p>
+        <p>This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI ${Quote_payment_number || quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed successfully.</p>
 
         <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
           <p style="margin: 0;"><strong>Amount:</strong> AED ${payment_amount || 'N/A'}</p>
@@ -365,6 +368,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
     const transporter = createTransporter();
     const {
       quotepaymentId,
+      Quote_payment_number,
       Customer_name,
       opp_email,
       payment_amount,
@@ -399,7 +403,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
         <p>Dear ${Customer_name || 'Customer'},</p>
 
-        <p>We are pleased to confirm that your scheduled payment of <strong>AED ${formatAmount(payment_amount)}</strong> for your Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
+        <p>We are pleased to confirm that your scheduled payment of <strong>AED ${formatAmount(payment_amount)}</strong> for your Proforma Invoice <strong>#PI ${Quote_payment_number || quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
 
         <div style="border: 2px solid #28a745; margin: 20px 0;">
           <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #28a745;">
@@ -408,7 +412,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
           <table style="border-collapse: collapse; width: 100%;">
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 40%;">Invoice Number</td>
-              <td style="border: 1px solid #ddd; padding: 12px;">PI QP-No-${quotepaymentId}</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">PI ${Quote_payment_number || quotepaymentId}</td>
             </tr>
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Installment</td>
