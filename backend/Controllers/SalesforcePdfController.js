@@ -177,7 +177,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
 
         // Prepare email data
         const emailData = {
-            quote_payment_number,
+            Quote_payment_number: quote_payment_number,
             Total_After_VAT_Currency,
             quote_email,
             quotepaymentId,
