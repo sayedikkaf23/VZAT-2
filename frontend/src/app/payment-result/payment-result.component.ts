@@ -24,11 +24,14 @@ export class PaymentResultComponent implements OnInit {
   
   // Dynamic data properties
   customerName: string = '';
-  paymentAmount: number = 0;
-  totalAmount: number = 0;
+  paymentAmount: number = 0; // Installment amount for main display
+  totalAmount: number = 0; // Full contract amount
   remainingAmount: number = 0;
   quotepaymentId: string = '';
   showDebugInfo: boolean = false; // Set to true to show debug information
+  
+  // Sidebar specific properties
+  sidebarPaymentAmount: number = 0; // Full amount for sidebar display
   
   // Sales agent data
   salesAgent: any = {
@@ -154,12 +157,17 @@ export class PaymentResultComponent implements OnInit {
                          0;
     }
     
-    // Store installment amount for display
-    this.paymentAmount = installmentAmount > 0 ? installmentAmount : 
-                        parseFloat(data?.Total_After_VAT_Currency) || 
-                        parseFloat(data?.total_after_vat_currency) ||
-                        parseFloat(data?.amount) ||
-                        0;
+    // Store full amount for sidebar display (total contract value)
+    this.sidebarPaymentAmount = parseFloat(data?.Total_After_VAT_Currency) || 
+                               parseFloat(data?.total_after_vat_currency) ||
+                               parseFloat(data?.amount) ||
+                               0;
+    
+    console.log('💰 Sidebar Amount Logic:', {
+      totalAfterVAT: data?.Total_After_VAT_Currency,
+      sidebarPaymentAmount: this.sidebarPaymentAmount,
+      installmentAmount: installmentAmount
+    });
     
     // Store quotepaymentId for display
     this.quotepaymentId = data?.quotepaymentId || this.quotepaymentId;
