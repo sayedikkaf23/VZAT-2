@@ -72,6 +72,9 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     totalAmount: 0
   };
 
+  // Quote payment number
+  Quote_payment_number: string = '';
+
   // Sales agent data - will be populated from API
   salesAgent: SalesAgent = {
     name: "Loading...",
@@ -273,6 +276,12 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   try {
       // Store API data for reference
       this.apiData = data;
+      
+      // Extract Quote_payment_number
+      this.Quote_payment_number = data.Quote_payment_number || 
+                                 data.quote_payment_number ||
+                                 data.QuotePaymentNumber ||
+                                 '';
       
       // Update customer data - handle both API response formats
       this.customerData = {

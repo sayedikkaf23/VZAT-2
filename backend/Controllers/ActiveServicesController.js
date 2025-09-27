@@ -155,9 +155,13 @@ export const getActiveServices = async (req, res) => {
              QuoteLineItemId: subscription.QuoteLineItemId || subscription.quotepaymentId, // Database field name
              subscription_status: subscription.subscription_status, // Database field name
              quotepaymentId: subscription.quotepaymentId,
+             Quote_payment_number: subscription.Quote_payment_number, // Include quote payment number
              due_date: payment.due_date,
              amount: payment.amount,
              status: payment.status,
+             // Include Product_details from database
+             Product_details: subscription.Product_details || [],
+             Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
              // Additional fields for reference
              opportunityId: subscription.OpportunityId,
              quoteId: subscription.QuoteId,
@@ -190,9 +194,13 @@ export const getActiveServices = async (req, res) => {
             QuoteLineItemId: subscription.QuoteLineItemId || subscription.quotepaymentId, // Database field name
             subscription_status: subscription.subscription_status, // Database field name
             quotepaymentId: subscription.quotepaymentId,
+            Quote_payment_number: subscription.Quote_payment_number, // Include quote payment number
             due_date: paymentDate.toLocaleDateString('en-CA'), // YYYY-MM-DD format
             amount: installmentAmount,
             status: status,
+            // Include Product_details from database
+            Product_details: subscription.Product_details || [],
+            Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
             opportunityId: subscription.OpportunityId,
             quoteId: subscription.QuoteId,
             createdDate: subscription.createdAt,

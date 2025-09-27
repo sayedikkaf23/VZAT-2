@@ -23,7 +23,7 @@
         <h3>Hey,</h3>
         <h2>{{ customerName || 'Customer' }}!</h2>
         <hr />
-        <p class="mb-2">Your payment against Proforma Invoice <b class="fw-semibold">No - {{ quotepaymentId || 'Not available' }} is </b></p>
+        <p class="mb-2">Your payment against Proforma Invoice <b class="fw-semibold">No - {{ Quote_payment_number || quotepaymentId || 'Not available' }} is </b></p>
         
         <!-- Error tick mark above amount in mobile view -->
         <div class="error-tick-mobile d-block d-md-none mb-3">
@@ -89,7 +89,7 @@
         <h3>Hey,</h3>
         <h2>{{ customerName || 'Customer' }}!</h2>
         <hr />
-        <p class="mb-2">Your payment against Proforma Invoice <b class="fw-semibold">No - {{ quotepaymentId || 'Not available' }} is </b></p>
+        <p class="mb-2">Your payment against Proforma Invoice <b class="fw-semibold">No - {{ Quote_payment_number || quotepaymentId || 'Not available' }} is </b></p>
         
         <!-- Success tick mark above amount in mobile view -->
         <div class="success-tick-mobile d-block d-md-none mb-3">
