@@ -875,7 +875,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
             
            <div style="text-align: center; margin: 30px 0;">
   <a href="${loginUrl}" style="background-color: #ff0000; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #ff0000;">
-    🚀 Login to Your Account
+     Login to Your Account
   </a>
 </div>
 
@@ -997,7 +997,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
             
        <div style="text-align: center; margin: 30px 0;">
   <a href="${loginUrl}" style="background-color: #ff0000; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #ff0000;">
-    🔑 Login to Your Account
+     Login to Your Account
   </a>
 </div>
 
