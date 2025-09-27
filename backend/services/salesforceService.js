@@ -183,6 +183,11 @@ export const updateQuotePaymentStatus = async (paymentData) => {
     );
 
     console.log('✅ Salesforce API response:', salesforceResponse.data);
+    console.log('🔍 Response type check:', {
+      isArray: Array.isArray(salesforceResponse.data),
+      dataType: typeof salesforceResponse.data,
+      dataKeys: salesforceResponse.data ? Object.keys(salesforceResponse.data) : 'null'
+    });
     
     // Check if the response contains an error
     if (salesforceResponse.data && salesforceResponse.data.error) {
@@ -461,6 +466,11 @@ export const updateQuotePaymentNumber = async (paymentData) => {
     const salesforceResponse = await axios.request(config);
 
     console.log('✅ Salesforce API response:', salesforceResponse.data);
+    console.log('🔍 Response type check:', {
+      isArray: Array.isArray(salesforceResponse.data),
+      dataType: typeof salesforceResponse.data,
+      dataKeys: salesforceResponse.data ? Object.keys(salesforceResponse.data) : 'null'
+    });
     
     // Check if the response contains an error
     if (salesforceResponse.data && salesforceResponse.data.error) {
@@ -629,6 +639,11 @@ export const getPaymentStatusAndUpdateSchedule = async (paymentData) => {
     const salesforceResponse = await axios.request(config);
 
     console.log('✅ Salesforce API response:', salesforceResponse.data);
+    console.log('🔍 Response type check:', {
+      isArray: Array.isArray(salesforceResponse.data),
+      dataType: typeof salesforceResponse.data,
+      dataKeys: salesforceResponse.data ? Object.keys(salesforceResponse.data) : 'null'
+    });
     
     // Check if the response contains an error
     if (salesforceResponse.data && salesforceResponse.data.error) {
