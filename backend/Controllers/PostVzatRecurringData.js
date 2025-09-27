@@ -163,7 +163,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       TotalPrice,
       Total_After_VAT_Currency,
       Product_details: [],
-      quote_payment_number,
+      Quote_payment_number: quote_payment_number,
       Customer_name,
       opp_owner,
       opp_email,
