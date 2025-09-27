@@ -210,12 +210,7 @@ const vzatRecurringDataSchema = new Schema({
             type: String,
             required: false
         }
-    }],
-    // Store full Salesforce payment status response
-    salesforce_payment_status: {
-        type: Schema.Types.Mixed,
-        required: false
-    }
+    }]
 });
 
 const Vzat_Recurring_Data = mongoose.model('Vzat_Recurring_Data',vzatRecurringDataSchema);
