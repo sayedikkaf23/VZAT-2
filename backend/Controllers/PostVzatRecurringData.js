@@ -236,6 +236,14 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
 
         const salesforceStatusResult = await getPaymentStatusAndUpdateSchedule(salesforceStatusData);
         
+        console.log('🔍 Salesforce API Response Debug:', {
+          success: salesforceStatusResult.success,
+          hasPaymentSchedule: !!salesforceStatusResult.paymentSchedule,
+          paymentScheduleLength: salesforceStatusResult.paymentSchedule?.length,
+          paymentScheduleData: salesforceStatusResult.paymentSchedule,
+          fullResponse: salesforceStatusResult.data
+        });
+        
         if (salesforceStatusResult.success && salesforceStatusResult.paymentSchedule) {
           console.log('✅ Salesforce payment status retrieved, updating payment schedule...');
           
