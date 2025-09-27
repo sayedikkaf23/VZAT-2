@@ -28,6 +28,7 @@ export class PaymentResultComponent implements OnInit {
   totalAmount: number = 0; // Full contract amount
   remainingAmount: number = 0;
   quotepaymentId: string = '';
+  Quote_payment_number: string = ''; // Quote payment number field
   showDebugInfo: boolean = false; // Set to true to show debug information
   
   // Sidebar specific properties
@@ -143,6 +144,12 @@ export class PaymentResultComponent implements OnInit {
                        data?.name ||
                        'Customer';
     
+    // Extract Quote_payment_number
+    this.Quote_payment_number = data?.Quote_payment_number || 
+                               data?.quote_payment_number ||
+                               data?.QuotePaymentNumber ||
+                               '';
+    
     // Extract installment amount from payment schedule (first installment)
     let installmentAmount = 0;
     if (data?.payment_schedule && Array.isArray(data.payment_schedule) && data.payment_schedule.length > 0) {
@@ -207,6 +214,12 @@ export class PaymentResultComponent implements OnInit {
                        result?.customerName ||
                        result?.name ||
                        'Customer';
+    
+    // Extract Quote_payment_number
+    this.Quote_payment_number = result?.Quote_payment_number || 
+                               result?.quote_payment_number ||
+                               result?.QuotePaymentNumber ||
+                               '';
     
     // Extract total amount from Total_After_VAT_Currency
     this.totalAmount = parseFloat(result?.Total_After_VAT_Currency) || 

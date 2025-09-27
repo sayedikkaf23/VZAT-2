@@ -11,6 +11,7 @@ export interface PaymentScheduleService {
   opp_email: string; // Database field
   QuoteLineItemId: string; // Database field
   quotepaymentId: string;
+  Quote_payment_number?: string; // Quote payment number field
   due_date: string;
   amount: number;
   status: 'due' | 'pending' | 'completed' | 'paid' | 'failed' | 'overdue' | 'cancelled';
