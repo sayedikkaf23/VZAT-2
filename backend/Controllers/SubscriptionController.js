@@ -758,7 +758,8 @@ export const processRecurringPayments = async (req, res) => {
                 resultCode: paymentResult.result.code,
                 resultDescription: paymentResult.result.description,
                 timestamp: paymentResult.timestamp || new Date().toISOString(),
-                installmentNumber: paymentToProcess
+                installmentNumber: paymentToProcess,
+                nextDueDate: subscription.next_charge_date ? new Date(subscription.next_charge_date).toISOString().slice(0, 10) : null
               };
 
               const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);

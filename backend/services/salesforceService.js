@@ -128,17 +128,20 @@ export const updateQuotePaymentStatus = async (paymentData) => {
       paymentStatus,
       resultCode,
       resultDescription,
-      timestamp
+      timestamp,
+      nextDueDate
     } = paymentData;
 
     // Determine if payment was successful
     const isSuccess = paymentStatus ***REMOVED***= 'success' || 
                      (resultCode && resultCode.startsWith('000.'));
     
-    // Calculate next due date (30 days from now as default)
-    const nextDueDate = new Date();
-    nextDueDate.setDate(nextDueDate.getDate() + 30);
-    const formattedNextDueDate = nextDueDate.toISOString().slice(0, 10);
+    // Calculate next due date - use provided date or default to 30 days from now
+    const formattedNextDueDate = nextDueDate || (() => {
+      const nextDueDate = new Date();
+      nextDueDate.setDate(nextDueDate.getDate() + 30);
+      return nextDueDate.toISOString().slice(0, 10);
+    })();
 
     // Process amount
     const processedAmount = Math.round(parseFloat(amount)) || 0;
@@ -151,7 +154,7 @@ export const updateQuotePaymentStatus = async (paymentData) => {
       Paid_Amount: processedAmount, // Round to nearest integer
       Transaction_Number: transactionId || 'N/A',
       Message: isSuccess ? 'Transaction completed successfully' : (resultDescription || 'Transaction failed'),
-      // Next_due_date: formattedNextDueDate,
+      Next_due_date: formattedNextDueDate,
       Payment_Type: paymentType
     };
 
@@ -412,6 +415,343 @@ export const testSalesforceConnection = async () => {
 };
 
 /**
+ * Call Salesforce API to update quote payment number
+ * @param {Object} paymentData - Payment data containing QuotePaymentId
+ * @returns {Object} - Result of the Salesforce API call
+ */
+export const updateQuotePaymentNumber = async (paymentData) => {
+  const startTime = Date.now();
+  
+  try {
+    console.log('🔄 Calling Salesforce API to update quote payment number...');
+    
+    const {
+      QuotePaymentId
+    } = paymentData;
+
+    // Prepare Salesforce request payload
+    const requestBody = {
+      QuotePaymentId: QuotePaymentId
+    };
+
+    console.log('📋 Salesforce request body:', JSON.stringify(requestBody, null, 2));
+
+    // Get access token and instance URL
+    const tokenResponse = await getSalesforceAccessToken();
+    const { access_token, instance_url } = tokenResponse;
+    
+    // Build dynamic endpoint using instance URL
+    const salesforceUrl = instance_url;
+    const endpoint = `${salesforceUrl}/services/apexrest/updatequotepaymentnumber`;
+    console.log('🔗 Salesforce endpoint:', endpoint);
+
+    // Create config object for axios request
+    const config = {
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: endpoint,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+      },
+      data: requestBody
+    };
+
+    // Make the API call to Salesforce
+    const salesforceResponse = await axios.request(config);
+
+    console.log('✅ Salesforce API response:', salesforceResponse.data);
+    
+    // Check if the response contains an error
+    if (salesforceResponse.data && salesforceResponse.data.error) {
+      console.error('❌ Salesforce returned an error:', salesforceResponse.data.error);
+      
+      // Log failed API call
+      await logSalesforceApiCall({
+        endpoint,
+        method: 'GET',
+        requestData: requestBody,
+        responseData: salesforceResponse.data,
+        statusCode: salesforceResponse.status,
+        isSuccess: false,
+        errorMessage: salesforceResponse.data.error,
+        executionTime: Date.now() - startTime,
+        quotepaymentId: QuotePaymentId
+      });
+      
+      throw new Error(`Salesforce API returned error: ${salesforceResponse.data.error}`);
+    }
+    
+    // Log successful API call
+    await logSalesforceApiCall({
+      endpoint,
+      method: 'GET',
+      requestData: requestBody,
+      responseData: salesforceResponse.data,
+      statusCode: salesforceResponse.status,
+      isSuccess: true,
+      executionTime: Date.now() - startTime,
+      quotepaymentId: QuotePaymentId
+    });
+    
+    const salesforceMessage = `Salesforce has been notified to update quote payment number for ${QuotePaymentId}`;
+    console.log(`🎉 ${salesforceMessage}`);
+
+    return {
+      success: true,
+      data: salesforceResponse.data,
+      message: salesforceMessage
+    };
+
+  } catch (error) {
+    console.error('❌ Error calling Salesforce API:', error);
+    
+    let errorMessage = 'Failed to update Salesforce quote payment number';
+    let errorDetails = {};
+
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      errorMessage = `Salesforce API error: ${error.response.status} - ${error.response.statusText}`;
+      errorDetails = {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      };
+      console.error('❌ Salesforce response error:', error.response.data);
+      
+      // Log failed API call with response
+      await logSalesforceApiCall({
+        endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
+        method: 'GET',
+        requestData: paymentData,
+        responseData: error.response.data,
+        statusCode: error.response.status,
+        isSuccess: false,
+        errorMessage: error.message,
+        executionTime: Date.now() - startTime,
+        quotepaymentId: paymentData.QuotePaymentId
+      });
+      
+    } else if (error.request) {
+      // The request was made but no response was received
+      errorMessage = 'No response received from Salesforce API';
+      errorDetails = { request: error.request };
+      console.error('❌ No response from Salesforce:', error.request);
+      
+      // Log failed API call without response
+      await logSalesforceApiCall({
+        endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
+        method: 'GET',
+        requestData: paymentData,
+        statusCode: 0,
+        isSuccess: false,
+        errorMessage: 'No response received',
+        executionTime: Date.now() - startTime,
+        quotepaymentId: paymentData.QuotePaymentId
+      });
+      
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      errorMessage = `Request setup error: ${error.message}`;
+      errorDetails = { message: error.message };
+      console.error('❌ Request setup error:', error.message);
+      
+      // Log failed API call setup error
+      await logSalesforceApiCall({
+        endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
+        method: 'GET',
+        requestData: paymentData,
+        statusCode: 0,
+        isSuccess: false,
+        errorMessage: error.message,
+        executionTime: Date.now() - startTime,
+        quotepaymentId: paymentData.QuotePaymentId
+      });
+    }
+
+    // Log the error but don't fail the payment processing
+    console.error('⚠️ Salesforce quote payment number update failed, but payment processing will continue');
+
+    return {
+      success: false,
+      error: errorMessage,
+      details: errorDetails,
+      message: 'Failed to update Salesforce quote payment number, but payment was processed'
+    };
+  }
+};
+
+/**
+ * Call Salesforce API to get payment status and update payment schedule
+ * @param {Object} paymentData - Payment data containing QuotePaymentId
+ * @returns {Object} - Result of the Salesforce API call with payment schedule data
+ */
+export const getPaymentStatusAndUpdateSchedule = async (paymentData) => {
+  const startTime = Date.now();
+  
+  try {
+    console.log('🔄 Calling Salesforce API to get payment status...');
+    
+    const {
+      QuotePaymentId
+    } = paymentData;
+
+    // Prepare Salesforce request payload
+    const requestBody = {
+      QuotePaymentId: QuotePaymentId
+    };
+
+    console.log('📋 Salesforce request body:', JSON.stringify(requestBody, null, 2));
+
+    // Get access token and instance URL
+    const tokenResponse = await getSalesforceAccessToken();
+    const { access_token, instance_url } = tokenResponse;
+    
+    // Build dynamic endpoint using instance URL
+    const salesforceUrl = instance_url;
+    const endpoint = `${salesforceUrl}/services/apexrest/updatequotepaymentnumber`;
+    console.log('🔗 Salesforce endpoint:', endpoint);
+
+    // Create config object for axios request
+    const config = {
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: endpoint,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+      },
+      data: requestBody
+    };
+
+    // Make the API call to Salesforce
+    const salesforceResponse = await axios.request(config);
+
+    console.log('✅ Salesforce API response:', salesforceResponse.data);
+    
+    // Check if the response contains an error
+    if (salesforceResponse.data && salesforceResponse.data.error) {
+      console.error('❌ Salesforce returned an error:', salesforceResponse.data.error);
+      
+      // Log failed API call
+      await logSalesforceApiCall({
+        endpoint,
+        method: 'GET',
+        requestData: requestBody,
+        responseData: salesforceResponse.data,
+        statusCode: salesforceResponse.status,
+        isSuccess: false,
+        errorMessage: salesforceResponse.data.error,
+        executionTime: Date.now() - startTime,
+        quotepaymentId: QuotePaymentId
+      });
+      
+      throw new Error(`Salesforce API returned error: ${salesforceResponse.data.error}`);
+    }
+    
+    // Log successful API call
+    await logSalesforceApiCall({
+      endpoint,
+      method: 'GET',
+      requestData: requestBody,
+      responseData: salesforceResponse.data,
+      statusCode: salesforceResponse.status,
+      isSuccess: true,
+      executionTime: Date.now() - startTime,
+      quotepaymentId: QuotePaymentId
+    });
+    
+    const salesforceMessage = `Salesforce payment status retrieved successfully for ${QuotePaymentId}`;
+    console.log(`🎉 ${salesforceMessage}`);
+
+    return {
+      success: true,
+      data: salesforceResponse.data,
+      message: salesforceMessage,
+      paymentSchedule: salesforceResponse.data // Return the payment schedule array
+    };
+
+  } catch (error) {
+    console.error('❌ Error calling Salesforce API:', error);
+    
+    let errorMessage = 'Failed to get payment status from Salesforce';
+    let errorDetails = {};
+
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      errorMessage = `Salesforce API error: ${error.response.status} - ${error.response.statusText}`;
+      errorDetails = {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      };
+      console.error('❌ Salesforce response error:', error.response.data);
+      
+      // Log failed API call with response
+      await logSalesforceApiCall({
+        endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
+        method: 'GET',
+        requestData: paymentData,
+        responseData: error.response.data,
+        statusCode: error.response.status,
+        isSuccess: false,
+        errorMessage: error.message,
+        executionTime: Date.now() - startTime,
+        quotepaymentId: paymentData.QuotePaymentId
+      });
+      
+    } else if (error.request) {
+      // The request was made but no response was received
+      errorMessage = 'No response received from Salesforce API';
+      errorDetails = { request: error.request };
+      console.error('❌ No response from Salesforce:', error.request);
+      
+      // Log failed API call without response
+      await logSalesforceApiCall({
+        endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
+        method: 'GET',
+        requestData: paymentData,
+        statusCode: 0,
+        isSuccess: false,
+        errorMessage: 'No response received',
+        executionTime: Date.now() - startTime,
+        quotepaymentId: paymentData.QuotePaymentId
+      });
+      
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      errorMessage = `Request setup error: ${error.message}`;
+      errorDetails = { message: error.message };
+      console.error('❌ Request setup error:', error.message);
+      
+      // Log failed API call setup error
+      await logSalesforceApiCall({
+        endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
+        method: 'GET',
+        requestData: paymentData,
+        statusCode: 0,
+        isSuccess: false,
+        errorMessage: error.message,
+        executionTime: Date.now() - startTime,
+        quotepaymentId: paymentData.QuotePaymentId
+      });
+    }
+
+    // Log the error but don't fail the payment processing
+    console.error('⚠️ Salesforce payment status retrieval failed, but payment processing will continue');
+
+    return {
+      success: false,
+      error: errorMessage,
+      details: errorDetails,
+      message: 'Failed to get payment status from Salesforce, but payment was processed'
+    };
+  }
+};
+
+/**
  * Clear the access token cache (useful for testing or when token issues occur)
  */
 export const clearTokenCache = () => {
@@ -422,6 +762,8 @@ export const clearTokenCache = () => {
 
 export default {
   updateQuotePaymentStatus,
+  updateQuotePaymentNumber,
+  getPaymentStatusAndUpdateSchedule,
   testSalesforceConnection,
   clearTokenCache
 };
