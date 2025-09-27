@@ -1,7 +1,7 @@
 import {connectDB,disconnectDB} from "../config/db.js";
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
-import { updateQuotePaymentStatus } from "../services/salesforceService.js";
+import { updateQuotePaymentStatus, getPaymentStatusAndUpdateSchedule } from "../services/salesforceService.js";
 import { createCustomerAccount, saveCustomerCard } from "./CustomerRegistration.js";
 import axios from "axios";
 import dotenv from "dotenv";
@@ -223,6 +223,51 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         { payment_schedule: paymentSchedule },
         { new: true }
       );
+    }
+
+    // Call Salesforce API to get updated payment status and update payment schedule
+    if (quotepaymentId) {
+      try {
+        console.log('🔄 Calling Salesforce to get updated payment status...');
+        
+        const salesforceStatusData = {
+          QuotePaymentId: quotepaymentId
+        };
+
+        const salesforceStatusResult = await getPaymentStatusAndUpdateSchedule(salesforceStatusData);
+        
+        if (salesforceStatusResult.success && salesforceStatusResult.paymentSchedule) {
+          console.log('✅ Salesforce payment status retrieved, updating payment schedule...');
+          
+          // Transform Salesforce response to match our payment_schedule format
+          const updatedPaymentSchedule = salesforceStatusResult.paymentSchedule.map((item, index) => ({
+            // installment_number: index + 1,
+            // due_date: item.duedate,
+            // amount: item.amount || installmentAmount, // Use Salesforce amount or fallback to calculated amount
+            // status: item.status === 'Paid' ? 'completed' : (item.status === 'Unpaid' ? 'pending' : 'due'),
+            q_payment_id: item[' Qp_number '] || null, // Add QP number from Salesforce
+            salesforce_status: item.status // Keep original Salesforce status for reference
+          }));
+
+          // Update the record with the Salesforce payment schedule
+          await Vzat_Recurring_Data.findByIdAndUpdate(
+            result._id,
+            { 
+              payment_schedule: updatedPaymentSchedule,
+              salesforce_payment_status: salesforceStatusResult.data // Store full Salesforce response
+            },
+            { new: true }
+          );
+
+          console.log('✅ Payment schedule updated with Salesforce data');
+        } else {
+          console.warn('⚠️ Salesforce payment status retrieval failed, using local payment schedule');
+        }
+        
+      } catch (salesforceError) {
+        console.error('❌ Error updating payment schedule from Salesforce:', salesforceError);
+        // Continue with local payment schedule if Salesforce fails
+      }
     }
 
     // Insert product details
@@ -502,7 +547,8 @@ export const getAFSPaymentResult = async (req, res) => {
             paymentStatus: actualPaymentStatus, // Use actual status, not hardcoded
             resultCode: resultData.result?.code,
             resultDescription: resultData.result?.description,
-            timestamp: resultData.timestamp
+            timestamp: resultData.timestamp,
+            nextDueDate: resultData.next_installment_due_date // Add actual next due date
           };
 
           const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
@@ -833,7 +879,8 @@ export const getAFSPaymentResult = async (req, res) => {
               paymentStatus: 'success',
               resultCode: '000.100.110',
               resultDescription: 'Payment completed successfully',
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              nextDueDate: result.next_installment_due_date // Add actual next due date
             };
 
             const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
