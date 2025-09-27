@@ -129,7 +129,8 @@ export const updateQuotePaymentStatus = async (paymentData) => {
       resultCode,
       resultDescription,
       timestamp,
-      nextDueDate
+      nextDueDate,
+      Qp_number
     } = paymentData;
 
     // Determine if payment was successful
@@ -155,7 +156,8 @@ export const updateQuotePaymentStatus = async (paymentData) => {
       Transaction_Number: transactionId || 'N/A',
       Message: isSuccess ? 'Transaction completed successfully' : (resultDescription || 'Transaction failed'),
       Next_due_date: formattedNextDueDate,
-      Payment_Type: paymentType
+      Payment_Type: paymentType,
+      Qp_number: Qp_number || null // Add QP number to payload
     };
 
     console.log('📋 Salesforce payload:', JSON.stringify(salesforcePayload, null, 2));

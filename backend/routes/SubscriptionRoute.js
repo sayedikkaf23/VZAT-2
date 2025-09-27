@@ -118,7 +118,8 @@ router.post('/test/salesforce-update', async (req, res) => {
       paymentStatus: status ? 'success' : 'failed',
       resultCode: status ? '000.100.110' : '800.100.162',
       resultDescription: status ? 'Transaction completed successfully' : 'Transaction failed',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      Qp_number: req.body.Qp_number || 'QP- No-TEST123' // Add QP number for testing
     };
 
     const result = await updateQuotePaymentStatus(testPaymentData);

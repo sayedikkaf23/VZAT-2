@@ -225,57 +225,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       );
     }
 
-    // Call Salesforce API to get updated payment status and update payment schedule
-    if (quotepaymentId) {
-      try {
-        console.log('🔄 Calling Salesforce to get updated payment status...');
-        
-        const salesforceStatusData = {
-          QuotePaymentId: quotepaymentId
-        };
-
-        const salesforceStatusResult = await getPaymentStatusAndUpdateSchedule(salesforceStatusData);
-        
-        console.log('🔍 Salesforce API Response Debug:', {
-          success: salesforceStatusResult.success,
-          hasPaymentSchedule: !!salesforceStatusResult.paymentSchedule,
-          paymentScheduleLength: salesforceStatusResult.paymentSchedule?.length,
-          paymentScheduleData: salesforceStatusResult.paymentSchedule,
-          fullResponse: salesforceStatusResult.data
-        });
-        
-        if (salesforceStatusResult.success && salesforceStatusResult.paymentSchedule) {
-          console.log('✅ Salesforce payment status retrieved, updating payment schedule...');
-          
-          // Update existing payment_schedule with q_payment_id from Salesforce
-          const updatedPaymentSchedule = paymentSchedule.map((scheduleItem, index) => {
-            const salesforceItem = salesforceStatusResult.paymentSchedule[index];
-            return {
-              ...scheduleItem, // Keep all existing fields
-              q_payment_id: salesforceItem ? salesforceItem[' Qp_number '] || null : null, // Add QP number from Salesforce
-              salesforce_status: salesforceItem ? salesforceItem.status : null // Keep original Salesforce status for reference
-            };
-          });
-
-          // Update the record with the enhanced payment schedule
-          await Vzat_Recurring_Data.findByIdAndUpdate(
-            result._id,
-            { 
-              payment_schedule: updatedPaymentSchedule
-            },
-            { new: true }
-          );
-
-          console.log('✅ Payment schedule updated with Salesforce data');
-        } else {
-          console.warn('⚠️ Salesforce payment status retrieval failed, using local payment schedule');
-        }
-        
-      } catch (salesforceError) {
-        console.error('❌ Error updating payment schedule from Salesforce:', salesforceError);
-        // Continue with local payment schedule if Salesforce fails
-      }
-    }
+    // Note: Salesforce API call moved to after response is sent to avoid delaying the response
 
     // Insert product details
     for (const product of Product_details) {
@@ -429,7 +379,64 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     };
 
     Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link", req.body, data);
-    return res.status(200).json(data);
+    
+    // Send response first to avoid delaying the client
+    res.status(200).json(data);
+    
+    // Call Salesforce API AFTER response is sent (non-blocking)
+    if (quotepaymentId) {
+      // Use setImmediate to ensure this runs after the response is sent
+      setImmediate(async () => {
+        try {
+          console.log('🔄 Calling Salesforce to get updated payment status (after response sent)...');
+          
+          const salesforceStatusData = {
+            QuotePaymentId: quotepaymentId
+          };
+
+          const salesforceStatusResult = await getPaymentStatusAndUpdateSchedule(salesforceStatusData);
+          
+          console.log('🔍 Salesforce API Response Debug:', {
+            success: salesforceStatusResult.success,
+            hasPaymentSchedule: !!salesforceStatusResult.paymentSchedule,
+            paymentScheduleLength: salesforceStatusResult.paymentSchedule?.length,
+            paymentScheduleData: salesforceStatusResult.paymentSchedule,
+            fullResponse: salesforceStatusResult.data
+          });
+          
+          if (salesforceStatusResult.success && salesforceStatusResult.paymentSchedule) {
+            console.log('✅ Salesforce payment status retrieved, updating payment schedule...');
+            
+            // Update existing payment_schedule with q_payment_id from Salesforce
+            const updatedPaymentSchedule = paymentSchedule.map((scheduleItem, index) => {
+              const salesforceItem = salesforceStatusResult.paymentSchedule[index];
+              return {
+                ...scheduleItem, // Keep all existing fields
+                q_payment_id: salesforceItem ? salesforceItem[' Qp_number '] || null : null, // Add QP number from Salesforce
+                salesforce_status: salesforceItem ? salesforceItem.status : null // Keep original Salesforce status for reference
+              };
+            });
+
+            // Update the record with the enhanced payment schedule
+            await Vzat_Recurring_Data.findByIdAndUpdate(
+              result._id,
+              { 
+                payment_schedule: updatedPaymentSchedule
+              },
+              { new: true }
+            );
+
+            console.log('✅ Payment schedule updated with Salesforce data');
+          } else {
+            console.warn('⚠️ Salesforce payment status retrieval failed, using local payment schedule');
+          }
+          
+        } catch (salesforceError) {
+          console.error('❌ Error updating payment schedule from Salesforce:', salesforceError);
+          // Continue with local payment schedule if Salesforce fails
+        }
+      });
+    }
 
   } catch (error) {
     const data = { message: error.message || "Internal server error" };
@@ -555,7 +562,8 @@ export const getAFSPaymentResult = async (req, res) => {
             resultCode: resultData.result?.code,
             resultDescription: resultData.result?.description,
             timestamp: resultData.timestamp,
-            nextDueDate: resultData.next_installment_due_date // Add actual next due date
+            nextDueDate: resultData.next_installment_due_date, // Add actual next due date
+            Qp_number: paymentRecord?.payment_schedule?.[0]?.q_payment_id || result.Quote_payment_number || null // Add QP number from payment schedule (first installment)
           };
 
           const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
@@ -887,7 +895,8 @@ export const getAFSPaymentResult = async (req, res) => {
               resultCode: '000.100.110',
               resultDescription: 'Payment completed successfully',
               timestamp: new Date().toISOString(),
-              nextDueDate: result.next_installment_due_date // Add actual next due date
+              nextDueDate: result.next_installment_due_date, // Add actual next due date
+              Qp_number: result?.payment_schedule?.[0]?.q_payment_id || result.Quote_payment_number || null // Add QP number from payment schedule (first installment)
             };
 
             const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
