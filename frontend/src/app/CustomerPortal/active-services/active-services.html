@@ -218,7 +218,7 @@
 
                                     <!-- Product Name -->
                                     <td data-title="Product Name">
-                                        {{ service.quotepaymentId || 'N/A' }}
+                                        {{ service.Product_details?.[0]?.ProductName || service.quotepaymentId || 'N/A' }}
                                     </td>
 
                                     <!-- Details -->
@@ -970,7 +970,7 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <h6 class="text-primary">Product Details</h6>
-                            <p><strong>Product Name:</strong> {{ selectedService.QuoteLineItemId }}</p>
+                            <p><strong>Product Name:</strong> {{ selectedService.Product_details?.[0]?.ProductName || selectedService.QuoteLineItemId || 'N/A' }}</p>
                         </div>
                     </div>
 

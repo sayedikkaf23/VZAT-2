@@ -17,6 +17,12 @@ export interface PaymentScheduleService {
   subscription_status: 'active' | 'inactive' | 'cancelled' | 'pending' | 'expired' | 'failed' | 'overdue' | 'completed'; // Database field
   subscriptionStatus: string;
   Total_After_VAT_Currency?: number; // Total amount after VAT for remaining calculation
+  Product_details?: Array<{
+    ProductName?: string;
+    TotalPrice?: number;
+    Total_Price_After_VAT?: number;
+    QuoteLineItemId?: string;
+  }>; // Product details array
   // Additional fields for reference
   opportunityId: string;
   quoteId: string;

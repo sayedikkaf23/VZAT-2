@@ -34,6 +34,10 @@ const vzatRecurringDataSchema = new Schema({
                 type: String,
                 required: true
             },
+            ProductName: {
+                type: String,
+                required: false
+            },
             TotalPrice: {
                 type: Number,
                 required: true
