@@ -12,7 +12,7 @@ import {
   checkSubscriptionCompletion
 } from "../Controllers/SubscriptionController.js";
 import { testEmailConfiguration } from "../services/emailService.js";
-import { testSalesforceConnection, updateQuotePaymentStatus, clearTokenCache } from "../services/salesforceService.js";
+import { testSalesforceConnection, updateQuotePaymentStatus, clearTokenCache, getPaymentStatusAndUpdateSchedule } from "../services/salesforceService.js";
 import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
 
@@ -170,6 +170,49 @@ router.post('/test/salesforce-clear-cache', async (req, res) => {
     
     // Log error to database
     Post_Common_DB_Log_Data('/api/subscription/test/salesforce-clear-cache', req.body, errorData);
+    
+    res.status(500).json(errorData);
+  }
+});
+
+// Test Salesforce payment status API
+router.post('/test/salesforce-payment-status', async (req, res) => {
+  try {
+    const { QuotePaymentId } = req.body;
+    
+    if (!QuotePaymentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'QuotePaymentId is required'
+      });
+    }
+    
+    console.log('🧪 Testing Salesforce payment status API with QuotePaymentId:', QuotePaymentId);
+    
+    const result = await getPaymentStatusAndUpdateSchedule({ QuotePaymentId });
+    
+    const responseData = {
+      success: result.success,
+      message: result.message,
+      data: result.data,
+      paymentSchedule: result.paymentSchedule,
+      error: result.error || null
+    };
+    
+    // Log test to database
+    Post_Common_DB_Log_Data('/api/subscription/test/salesforce-payment-status', req.body, responseData);
+    
+    res.json(responseData);
+  } catch (error) {
+    console.error('Error testing Salesforce payment status:', error);
+    const errorData = { 
+      success: false, 
+      error: error.message,
+      message: 'Failed to test Salesforce payment status API'
+    };
+    
+    // Log error to database
+    Post_Common_DB_Log_Data('/api/subscription/test/salesforce-payment-status', req.body, errorData);
     
     res.status(500).json(errorData);
   }
