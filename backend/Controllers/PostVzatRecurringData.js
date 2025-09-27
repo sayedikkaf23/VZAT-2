@@ -239,22 +239,21 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         if (salesforceStatusResult.success && salesforceStatusResult.paymentSchedule) {
           console.log('✅ Salesforce payment status retrieved, updating payment schedule...');
           
-          // Transform Salesforce response to match our payment_schedule format
-          const updatedPaymentSchedule = salesforceStatusResult.paymentSchedule.map((item, index) => ({
-            // installment_number: index + 1,
-            // due_date: item.duedate,
-            // amount: item.amount || installmentAmount, // Use Salesforce amount or fallback to calculated amount
-            // status: item.status ***REMOVED***= 'Paid' ? 'completed' : (item.status ***REMOVED***= 'Unpaid' ? 'pending' : 'due'),
-            q_payment_id: item[' Qp_number '] || null, // Add QP number from Salesforce
-            salesforce_status: item.status // Keep original Salesforce status for reference
-          }));
+          // Update existing payment_schedule with q_payment_id from Salesforce
+          const updatedPaymentSchedule = paymentSchedule.map((scheduleItem, index) => {
+            const salesforceItem = salesforceStatusResult.paymentSchedule[index];
+            return {
+              ...scheduleItem, // Keep all existing fields
+              q_payment_id: salesforceItem ? salesforceItem[' Qp_number '] || null : null, // Add QP number from Salesforce
+              salesforce_status: salesforceItem ? salesforceItem.status : null // Keep original Salesforce status for reference
+            };
+          });
 
-          // Update the record with the Salesforce payment schedule
+          // Update the record with the enhanced payment schedule
           await Vzat_Recurring_Data.findByIdAndUpdate(
             result._id,
             { 
-              payment_schedule: updatedPaymentSchedule,
-              salesforce_payment_status: salesforceStatusResult.data // Store full Salesforce response
+              payment_schedule: updatedPaymentSchedule
             },
             { new: true }
           );
