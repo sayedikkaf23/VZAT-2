@@ -399,7 +399,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
         <p>Dear ${Customer_name || 'Customer'},</p>
 
-        <p>We are pleased to confirm that your scheduled payment of <strong>AED ${payment_amount || 'N/A'}</strong> for your Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
+        <p>We are pleased to confirm that your scheduled payment of <strong>AED ${formatAmount(payment_amount)}</strong> for your Proforma Invoice <strong>#PI QP-No-${quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
 
         <div style="border: 2px solid #28a745; margin: 20px 0;">
           <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #28a745;">
@@ -416,7 +416,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
             </tr>
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Amount Paid</td>
-              <td style="border: 1px solid #ddd; padding: 12px;"><strong>AED ${payment_amount || 'N/A'}</strong></td>
+              <td style="border: 1px solid #ddd; padding: 12px;"><strong>AED ${formatAmount(payment_amount)}</strong></td>
             </tr>
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
@@ -927,7 +927,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${loginUrl}" style="background-color: #28a745; color: #000000; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #28a745;">
+              <a href="${loginUrl}" style="background-color: #FF2A47; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #FF2A47;">
                 🔑 Login to Your Account
               </a>
             </div>
