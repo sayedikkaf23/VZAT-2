@@ -549,78 +549,7 @@ export const getAFSPaymentResult = async (req, res) => {
         paymentMessage = resultData.result?.description || 'Payment failed for unknown reason';
       }
       
-      // Call Salesforce API to update quote payment status (for both success and failure)
-      if (quotepaymentId) {
-        try {
-          
-          const salesforcePaymentData = {
-            quotepaymentId: quotepaymentId,
-            amount: resultData.amount,
-            transactionId: resultData.id,
-            paymentType: 'Online_payment',
-            paymentStatus: actualPaymentStatus, // Use actual status, not hardcoded
-            resultCode: resultData.result?.code,
-            resultDescription: resultData.result?.description,
-            timestamp: resultData.timestamp,
-            nextDueDate: resultData.next_installment_due_date, // Add actual next due date
-            Qp_number: paymentRecord?.payment_schedule?.[0]?.q_payment_id || result.Quote_payment_number || null // Add QP number from payment schedule (first installment)
-          };
-
-          const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
-          
-          // Add comprehensive Salesforce result to response data
-          resultData.salesforce_update = {
-            status: salesforceResult.success ? 'success' : 'failed',
-            success: salesforceResult.success,
-            message: salesforceResult.message,
-            error: salesforceResult.error || null,
-            data: salesforceResult.data || null,
-            updated_at: new Date().toISOString()
-          };
-          
-          if (salesforceResult.success) {
-            const statusText = actualPaymentStatus === 'success' ? 'successful payment' : 'failed payment';
-            if (actualPaymentStatus === 'success') {
-              resultData.overall_status = 'complete_success'; // Payment + Salesforce both successful
-            } else {
-              resultData.overall_status = 'payment_failed_salesforce_updated'; // Payment failed but Salesforce notified
-            }
-          } else {
-            if (actualPaymentStatus === 'success') {
-              resultData.overall_status = 'payment_success_salesforce_failed'; // Payment OK, Salesforce failed
-            } else {
-              resultData.overall_status = 'payment_failed_salesforce_failed'; // Both failed
-            }
-          }
-          
-        } catch (salesforceError) {
-          resultData.salesforce_update = {
-            status: 'failed',
-            success: false,
-            error: salesforceError.message,
-            message: 'Failed to update Salesforce',
-            updated_at: new Date().toISOString()
-          };
-          if (actualPaymentStatus === 'success') {
-            resultData.overall_status = 'payment_success_salesforce_failed';
-          } else {
-            resultData.overall_status = 'payment_failed_salesforce_failed';
-          }
-        }
-      } else {
-        // No quotepaymentId provided, so we can't update Salesforce
-        resultData.salesforce_update = {
-          status: 'skipped',
-          success: null,
-          message: 'No Quote Payment ID provided - Salesforce update skipped',
-          updated_at: new Date().toISOString()
-        };
-        if (actualPaymentStatus === 'success') {
-          resultData.overall_status = 'payment_success_salesforce_skipped';
-        } else {
-          resultData.overall_status = 'payment_failed_salesforce_skipped';
-        }
-      }
+      // Note: Salesforce API call moved to after paymentRecord is retrieved
       
       // Set the actual payment status and message based on AFS result
       resultData.paymentStatus = actualPaymentStatus;
@@ -732,6 +661,69 @@ export const getAFSPaymentResult = async (req, res) => {
               console.log('👤 Sales person details added to response:', paymentRecord.salesPersonDetails);
             } else {
               console.log('⚠️ No sales person details found in payment record');
+            }
+            
+            // Call Salesforce API to update quote payment status (now that paymentRecord is available)
+            if (quotepaymentId) {
+              try {
+                console.log('🔄 Calling Salesforce API to update quote payment status...');
+                
+                const salesforcePaymentData = {
+                  quotepaymentId: quotepaymentId,
+                  amount: resultData.amount,
+                  transactionId: resultData.id,
+                  paymentType: 'Online_payment',
+                  paymentStatus: actualPaymentStatus,
+                  resultCode: resultData.result?.code,
+                  resultDescription: resultData.result?.description,
+                  timestamp: resultData.timestamp,
+                  nextDueDate: resultData.next_installment_due_date,
+                  Qp_number: paymentRecord?.payment_schedule?.[0]?.q_payment_id || paymentRecord.Quote_payment_number || null
+                };
+
+                const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+                
+                // Add comprehensive Salesforce result to response data
+                resultData.salesforce_update = {
+                  status: salesforceResult.success ? 'success' : 'failed',
+                  success: salesforceResult.success,
+                  message: salesforceResult.message,
+                  error: salesforceResult.error || null,
+                  data: salesforceResult.data || null,
+                  updated_at: new Date().toISOString()
+                };
+                
+                if (salesforceResult.success) {
+                  if (actualPaymentStatus === 'success') {
+                    resultData.overall_status = 'complete_success'; // Payment + Salesforce both successful
+                  } else {
+                    resultData.overall_status = 'payment_failed_salesforce_updated'; // Payment failed but Salesforce notified
+                  }
+                } else {
+                  if (actualPaymentStatus === 'success') {
+                    resultData.overall_status = 'payment_success_salesforce_failed'; // Payment OK, Salesforce failed
+                  } else {
+                    resultData.overall_status = 'payment_failed_salesforce_failed'; // Both failed
+                  }
+                }
+                
+                console.log('✅ Salesforce API call completed:', salesforceResult.success ? 'Success' : 'Failed');
+                
+              } catch (salesforceError) {
+                console.error('❌ Salesforce API call failed:', salesforceError.message);
+                resultData.salesforce_update = {
+                  status: 'failed',
+                  success: false,
+                  error: salesforceError.message,
+                  message: 'Failed to update Salesforce',
+                  updated_at: new Date().toISOString()
+                };
+                if (actualPaymentStatus === 'success') {
+                  resultData.overall_status = 'payment_success_salesforce_failed';
+                } else {
+                  resultData.overall_status = 'payment_failed_salesforce_failed';
+                }
+              }
             }
             
             // Handle customer account creation for ALL successful payments (both subscription and one-time)
