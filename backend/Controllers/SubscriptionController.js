@@ -102,6 +102,7 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
             
             const emailResult = await sendFinalRenewalEmail({
               quotepaymentId: subscription.quotepaymentId,
+              Quote_payment_number: subscription.Quote_payment_number,
               Customer_name: subscription.Customer_name,
               opp_email: subscription.opp_email,
               payments_completed: subscription.payments_completed,
@@ -434,8 +435,13 @@ export const handleAFSWebhook = async (req, res) => {
       
       // Send customer notification email for successful payment
       try {
+        // Get q_payment_id from the payment schedule for the current payment
+        const currentPayment = subscription.payment_schedule.find(p => p.installment_number === updatedRecord.payments_completed);
+        const q_payment_id = currentPayment?.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId;
+        
         const successResult = await sendPaymentSuccessNotificationEmail({
           quotepaymentId: subscription.quotepaymentId,
+          q_payment_id: q_payment_id,
           Customer_name: subscription.Customer_name,
           opp_email: subscription.opp_email,
           payment_amount: parseFloat(result.amount),
@@ -798,8 +804,13 @@ export const processRecurringPayments = async (req, res) => {
 
             // Send customer notification email for successful payment
             try {
+              // Get q_payment_id from the payment schedule for the current payment
+              const currentPayment = subscription.payment_schedule.find(p => p.installment_number === paymentToProcess);
+              const q_payment_id = currentPayment?.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId;
+              
               const successResult = await sendPaymentSuccessNotificationEmail({
                 quotepaymentId: subscription.quotepaymentId,
+                q_payment_id: q_payment_id,
                 Customer_name: subscription.Customer_name,
                 opp_email: subscription.opp_email,
                 payment_amount: parseFloat(paymentResult.amount),
@@ -1129,8 +1140,14 @@ export const processRecurringPayments = async (req, res) => {
             }
             
             // Prepare email data
+            // Get q_payment_id from the payment schedule for the failed payment
+            const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
+            const failedPayment = subscription.payment_schedule.find(p => p.installment_number === currentPaymentNumber);
+            const q_payment_id = failedPayment?.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId;
+            
             const emailData = {
               quotepaymentId: subscription.quotepaymentId,
+              q_payment_id: q_payment_id,
               Customer_name: subscription.Customer_name || 'Customer',
               opp_email: subscription.opp_email,
               payment_amount: installmentAmount,
@@ -1827,6 +1844,7 @@ export const checkSubscriptionCompletion = async (req, res) => {
         try {
           const emailResult = await sendFinalRenewalEmail({
             quotepaymentId: subscription.quotepaymentId,
+            Quote_payment_number: subscription.Quote_payment_number,
             Customer_name: subscription.Customer_name,
             opp_email: subscription.opp_email,
             payments_completed: subscription.payments_completed,

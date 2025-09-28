@@ -3,6 +3,7 @@ import Vzat_Recurring_Data from '../model/VzatRecurringDataModel.js';
 import SavedCard from '../model/SavedCardModel.js';
 import Customer from '../model/CustomerLoginModel.js';
 import { sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from '../services/emailService.js';
+import { updateQuotePaymentStatus } from '../services/salesforceService.js';
 
 /**
  * Retry a failed payment for a customer
@@ -357,6 +358,55 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
 
     console.log('✅ Subscription updated successfully');
     
+    // Call Salesforce API for successful retry payment
+    try {
+      console.log('🔍 Debug payment for Salesforce:', {
+        installment_number: payment.installment_number,
+        q_payment_id: payment.q_payment_id,
+        status: payment.status,
+        amount: payment.amount
+      });
+      
+      const salesforcePaymentData = {
+        quotepaymentId: subscription.quotepaymentId,
+        amount: parseFloat(payment.amount),
+        transactionId: transactionId,
+        paymentType: 'Online_payment',
+        paymentStatus: 'success',
+        resultCode: '000.100.110', // Success code for retry
+        resultDescription: 'Payment retry successful',
+        timestamp: new Date().toISOString(),
+        installmentNumber: payment.installment_number,
+        nextDueDate: nextChargeDate ? new Date(nextChargeDate).toISOString().slice(0, 10) : null,
+        Qp_number: payment.q_payment_id || subscription.Quote_payment_number || null // Add QP number from payment schedule with fallback
+      };
+      
+      console.log('📋 Salesforce payload for retry payment:', {
+        quotepaymentId: salesforcePaymentData.quotepaymentId,
+        Qp_number: salesforcePaymentData.Qp_number,
+        installmentNumber: salesforcePaymentData.installmentNumber,
+        amount: salesforcePaymentData.amount
+      });
+
+      const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+      
+      console.log('📊 Salesforce API result:', {
+        success: salesforceResult.success,
+        message: salesforceResult.message,
+        error: salesforceResult.error || null
+      });
+      
+      if (salesforceResult.success) {
+        console.log(`✅ Salesforce updated successfully for retry payment #${payment.installment_number}`);
+      } else {
+        console.warn('⚠️ Salesforce update failed but retry payment was successful:', salesforceResult.error);
+      }
+      
+    } catch (salesforceError) {
+      console.error('❌ Error calling Salesforce API but retry payment was successful:', salesforceError);
+      // Don't fail the retry if Salesforce fails - it's not critical
+    }
+    
     // Return the updated subscription
     const finalSubscription = await Vzat_Recurring_Data.findById(subscription._id);
     return finalSubscription;
@@ -375,6 +425,7 @@ async function sendRetrySuccessEmail(subscription, payment, transactionId) {
     
     const emailData = {
       quotepaymentId: subscription.quotepaymentId,
+      q_payment_id: payment.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId,
       Customer_name: subscription.Customer_name || 'Customer',
       opp_email: subscription.opp_email,
       payment_amount: payment.amount,
@@ -441,6 +492,7 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
           
           const emailResult = await sendFinalRenewalEmail({
             quotepaymentId: subscription.quotepaymentId,
+            Quote_payment_number: subscription.Quote_payment_number,
             Customer_name: subscription.Customer_name,
             opp_email: subscription.opp_email,
             payments_completed: subscription.payments_completed,
@@ -492,6 +544,7 @@ async function sendRetryFailureEmail(subscription, payment, error) {
     
     const emailData = {
       quotepaymentId: subscription.quotepaymentId,
+      q_payment_id: payment.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId,
       Customer_name: subscription.Customer_name || 'Customer',
       opp_email: subscription.opp_email,
       payment_amount: installmentAmount,
