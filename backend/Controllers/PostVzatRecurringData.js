@@ -412,7 +412,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
               const salesforceItem = salesforceStatusResult.paymentSchedule[index];
               return {
                 ...scheduleItem, // Keep all existing fields
-                q_payment_id: salesforceItem ? salesforceItem[' Qp_number '] || null : null, // Add QP number from Salesforce
+                q_payment_id: salesforceItem ? salesforceItem.Qp_number || null : null, // Add QP number from Salesforce
                 salesforce_status: salesforceItem ? salesforceItem.status : null // Keep original Salesforce status for reference
               };
             });
