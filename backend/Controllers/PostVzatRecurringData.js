@@ -668,6 +668,17 @@ export const getAFSPaymentResult = async (req, res) => {
               try {
                 console.log('🔄 Calling Salesforce API to update quote payment status...');
                 
+                // Find the installment that was just paid (should be the first installment for initial payment)
+                const paidInstallment = paymentRecord?.payment_schedule?.find(schedule => 
+                  schedule.status === 'completed' || schedule.status === 'paid'
+                ) || paymentRecord?.payment_schedule?.[0]; // Fallback to first installment
+                
+                console.log('🔍 Found paid installment:', {
+                  installment_number: paidInstallment?.installment_number,
+                  q_payment_id: paidInstallment?.q_payment_id,
+                  status: paidInstallment?.status
+                });
+                
                 const salesforcePaymentData = {
                   quotepaymentId: quotepaymentId,
                   amount: resultData.amount,
@@ -678,7 +689,7 @@ export const getAFSPaymentResult = async (req, res) => {
                   resultDescription: resultData.result?.description,
                   timestamp: resultData.timestamp,
                   nextDueDate: resultData.next_installment_due_date,
-                  Qp_number: paymentRecord?.payment_schedule?.[0]?.q_payment_id || paymentRecord.Quote_payment_number || null
+                  Qp_number: paidInstallment?.q_payment_id || paymentRecord.Quote_payment_number || null
                 };
 
                 const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
