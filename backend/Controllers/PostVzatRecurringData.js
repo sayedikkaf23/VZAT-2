@@ -668,15 +668,19 @@ export const getAFSPaymentResult = async (req, res) => {
               try {
                 console.log('🔄 Calling Salesforce API to update quote payment status...');
                 
-                // Find the installment that was just paid (should be the first installment for initial payment)
+                // Find the installment that was just paid
+                // For initial payment, it's always the first installment (installment_number: 1)
                 const paidInstallment = paymentRecord?.payment_schedule?.find(schedule => 
                   schedule.status ***REMOVED***= 'completed' || schedule.status ***REMOVED***= 'paid'
-                ) || paymentRecord?.payment_schedule?.[0]; // Fallback to first installment
+                ) || paymentRecord?.payment_schedule?.find(schedule => 
+                  schedule.installment_number ***REMOVED***= 1
+                ) || paymentRecord?.payment_schedule?.[0]; // Final fallback
                 
                 console.log('🔍 Found paid installment:', {
                   installment_number: paidInstallment?.installment_number,
                   q_payment_id: paidInstallment?.q_payment_id,
-                  status: paidInstallment?.status
+                  status: paidInstallment?.status,
+                  due_date: paidInstallment?.due_date
                 });
                 
                 const salesforcePaymentData = {
