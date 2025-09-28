@@ -749,6 +749,13 @@ export const processRecurringPayments = async (req, res) => {
             
             // Call Salesforce API for successful payment
             try {
+              console.log('🔍 Debug currentPayment for Salesforce:', {
+                installment_number: currentPayment?.installment_number,
+                q_payment_id: currentPayment?.q_payment_id,
+                status: currentPayment?.status,
+                amount: currentPayment?.amount
+              });
+              
               const salesforcePaymentData = {
                 quotepaymentId: subscription.quotepaymentId,
                 amount: parseFloat(paymentResult.amount),
@@ -760,10 +767,23 @@ export const processRecurringPayments = async (req, res) => {
                 timestamp: paymentResult.timestamp || new Date().toISOString(),
                 installmentNumber: paymentToProcess,
                 nextDueDate: subscription.next_charge_date ? new Date(subscription.next_charge_date).toISOString().slice(0, 10) : null,
-                Qp_number: currentPayment?.q_payment_id || null // Add QP number from payment schedule
+                Qp_number: currentPayment?.q_payment_id || subscription.Quote_payment_number || null // Add QP number from payment schedule with fallback
               };
+              
+              console.log('📋 Salesforce payload for recurring payment:', {
+                quotepaymentId: salesforcePaymentData.quotepaymentId,
+                Qp_number: salesforcePaymentData.Qp_number,
+                installmentNumber: salesforcePaymentData.installmentNumber,
+                amount: salesforcePaymentData.amount
+              });
 
               const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
+              
+              console.log('📊 Salesforce API result:', {
+                success: salesforceResult.success,
+                message: salesforceResult.message,
+                error: salesforceResult.error || null
+              });
               
               if (salesforceResult.success) {
                 console.log(`✅ Salesforce updated successfully for payment #${paymentToProcess}`);
