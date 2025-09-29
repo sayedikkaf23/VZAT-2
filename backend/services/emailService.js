@@ -684,10 +684,7 @@ export const sendPdfEmail = async (emailData) => {
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Invoice Value with VAT</td>
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Installment_amount)}</td>
                 </tr>
-                <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">First Payment Amount</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Installment_amount)}</td>
-                </tr>
+               
                   <tr>
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Total Amount</td>
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Total_After_VAT_Currency)}</td>
