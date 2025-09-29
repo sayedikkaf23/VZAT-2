@@ -175,6 +175,19 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
         
         // console.log('🎯 Final customer name to use:', finalCustomerName);
 
+        // Calculate Installment_amount from first payment in payment_schedule
+        let calculatedInstallmentAmount = Installment_amount; // Default to webhook value
+        
+        if (paymentScheduleFromDB && paymentScheduleFromDB.length > 0) {
+            // Use first payment amount from database
+            calculatedInstallmentAmount = paymentScheduleFromDB[0].amount;
+            console.log(`✅ Using first payment amount from DB: ${calculatedInstallmentAmount}`);
+        } else if (Total_After_VAT_Currency && Total_Installments) {
+            // Calculate from total and installments as fallback
+            calculatedInstallmentAmount = Math.round((Total_After_VAT_Currency / Total_Installments) * 100) / 100;
+            console.log(`✅ Calculated installment amount: ${calculatedInstallmentAmount} (${Total_After_VAT_Currency} / ${Total_Installments})`);
+        }
+
         // Prepare email data
         const emailData = {
             Quote_payment_number: quote_payment_number,
@@ -182,7 +195,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             quote_email,
             quotepaymentId,
             paymentLink,
-            Installment_amount,
+            Installment_amount: calculatedInstallmentAmount, // Use calculated amount
             Total_Installments,
             quotePdf,
             Customer_name: finalCustomerName, // Use the corrected customer name

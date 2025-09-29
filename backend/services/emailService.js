@@ -405,9 +405,9 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 
         <p>We are pleased to confirm that your scheduled payment of <strong>AED ${formatAmount(payment_amount)}</strong> for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
 
-        <div style="border: 2px solid #28a745; margin: 20px 0;">
-          <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #28a745;">
-            <h3 style="margin: 0; text-align: center; color: #28a745;">Payment Details</h3>
+        <div style="border: 2px solid #dc3545; margin: 20px 0;">
+          <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #dc3545;">
+            <h3 style="margin: 0; text-align: center; color: #dc3545;">Payment Details</h3>
           </div>
           <table style="border-collapse: collapse; width: 100%;">
             <tr>
@@ -677,11 +677,19 @@ export const sendPdfEmail = async (emailData) => {
                   <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Information</td>
                 </tr>
                 <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Proforma Invoice #</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">${Quote_payment_number || quotepaymentId}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Quote Payment Number #</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">PI ${Quote_payment_number || quotepaymentId}</td>
                 </tr>
                 <tr>
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Invoice Value with VAT</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Installment_amount)}</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">First Payment Amount</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Installment_amount)}</td>
+                </tr>
+                  <tr>
+                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Total Amount</td>
                   <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Total_After_VAT_Currency)}</td>
                 </tr>
                 <tr>
@@ -690,10 +698,7 @@ export const sendPdfEmail = async (emailData) => {
                     <a href="${fullPaymentLink}" style="color: #007bff; text-decoration: none; word-break: break-all;">${fullPaymentLink}</a>
                   </td>
                 </tr>
-                <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Amount Requested</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Total_After_VAT_Currency)}</td>
-                </tr>
+              
               </table>
             </div>
             
