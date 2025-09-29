@@ -495,6 +495,11 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       const firstPayment = paymentSchedule.find(payment => payment.installment_number === 1);
       this.isFirstPaymentCompleted = firstPayment ? firstPayment.status === 'completed' : false;
       
+      // Show popup alert if first payment is completed
+      if (this.isFirstPaymentCompleted) {
+        alert("You have already paid for the Proforma Invoice. Please contact your sales agent for more information.");
+      }
+      
       console.log('🔍 First payment status check:', {
         firstPayment: firstPayment,
         isCompleted: this.isFirstPaymentCompleted
