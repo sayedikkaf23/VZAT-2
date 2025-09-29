@@ -932,20 +932,12 @@ export const sendExistingCustomerEmail = async (customerData) => {
               <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #28a745; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
             </div>
             
-<<<<<<< HEAD
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${loginUrl}" style="background-color: #FF2A47; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #FF2A47;">
-                🔑 Login to Your Account
-              </a>
-            </div>
-=======
        <div style="text-align: center; margin: 30px 0;">
   <a href="${loginUrl}" style="background-color: #ff0000; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #ff0000;">
      Login to Your Account
   </a>
 </div>
 
->>>>>>> 5b29517d69b8033b5b8f1902d7026b32e0ba5219
             
             <div style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 6px; padding: 15px; margin: 20px 0;">
               <h4 style="color: #1565c0; margin-top: 0;">💡 Forgot Your Password?</h4>
