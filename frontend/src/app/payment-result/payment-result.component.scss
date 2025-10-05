@@ -155,8 +155,8 @@ html a {
 }
 .sidebar-row{
     flex-direction: column;
-    min-height: 105vh;
-    padding: 50px;
+    min-height: 100vh;
+    padding: 30px;
 }
 .row>* {
     flex-shrink: 0;
@@ -556,8 +556,6 @@ html .schedule-list-box  .form-check .form-check-label {
     .payment-schedule-list .total-item {
         padding: 12px 15px;
     }
-    .payment-schedule-head h3 {
-    }
     body.payment-schedule  .details-content {
         display: flex;
         align-items: center;
@@ -585,9 +583,10 @@ html .schedule-list-box  .form-check .form-check-label {
         position: static;
         width: 100%;
         text-align: center;
-        height:50%
-    }
-    .payment-schedule .detils-sidebar p {
+        /* Remove large sidebar height on mobile causing big gap */
+        min-height: unset !important;
+        height: auto !important;
+        padding-bottom: 10px;
     }
     .payment-schedule .sidebar-row {
         min-height: unset;
@@ -731,12 +730,6 @@ html .schedule-list-box  .form-check .form-check-label {
     .payment-schedule .sidebar-row .payment-schedule .contact-info-box {
         margin-top: 33px;
     }
-    .payment-schedule .sidebar-row .payment-schedule-head h6 b {
-    }
-    .payment-schedule .sidebar-row .payment-schedule-head h3 {
-    }
-    .payment-schedule .sidebar-row .payment-schedule-list .item h6 {
-    }
     .payment-schedule .sidebar-row .payment-schedule-list .price a {
         padding: 4px 8px;
         width: fit-content;
@@ -773,10 +766,6 @@ html .schedule-list-box  .form-check .form-check-label {
         background: var(--light-primary);
         overflow: hidden;
     }
-    .payment-schedule-list .item p {
-    }
-    .payment-schedule-head  h6 {
-    }
     .payment-schedule .details-content .details-footer {
         position: relative;
         bottom: 0;
@@ -796,10 +785,6 @@ html .schedule-list-box  .form-check .form-check-label {
         line-height: 12px;
         padding-right: 10px;
         margin-right: 10px;
-    }
-    html .payment-schedule .schedule-list-box  .form-check .form-check-label {
-    }
-    .payment-schedule-list .price {
     }
     .payment-schedule-list .total-item h5 {
         margin: 0;
@@ -976,9 +961,6 @@ html .schedule-list-box  .form-check .form-check-label {
     margin-bottom: 0.4rem;
   }
   
-  .summary-label,
-  .summary-value {
-  }
 } 
 
 @import '../../assets/css/payment-schedual.css';
@@ -1653,5 +1635,53 @@ hr {
 
   .payment-schedule .price {
     margin-bottom: 15px; /* Add space between amount and message */
+  }
+}
+
+/* Mobile responsive styles for payment-result component */
+@media (max-width: 767px) {
+  .payment-schedule {
+    background-color: var(--light-primary);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .payment-schedule .detils-sidebar {
+    position: static;
+    width: 100%;
+    text-align: center;
+    min-height: unset !important;
+    height: auto !important;
+    padding-bottom: 10px;
+  }
+  
+  .payment-schedule .sidebar-row {
+    min-height: unset;
+    padding: 20px 30px 20px;
+  }
+  
+  .payment-schedule .details-content {
+    display: flex;
+    flex-direction: column;
+    padding: 0px 10px 0;
+    min-height: unset;
+    width: 100%;
+    background: var(--light-primary);
+    overflow: hidden;
+  }
+  
+  .payment-schedule .details-content .container {
+    max-width: 100%;
+    padding: 0 8px;
+  }
+  
+  /* Hide desktop-only elements on mobile */
+  .payment-schedule .d-none.d-md-block {
+    display: none !important;
+  }
+  
+  /* Show mobile-only elements */
+  .payment-schedule .d-block.d-md-none {
+    display: block !important;
   }
 }
