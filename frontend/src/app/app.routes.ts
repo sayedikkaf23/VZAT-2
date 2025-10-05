@@ -21,6 +21,8 @@ import { ManualInvoicePayment } from './admin/manual-invoice-payment/manual-invo
 import { InvoiceGenerator } from './admin/invoice-generator/invoice-generator';
 import { PaymentMethods } from './admin/payment-methods/payment-methods';
 import { PaymentWidgetComponent } from './payment-widget/payment-widget.component';
+import { ForgotPasswordComponent } from './CustomerPortal/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from './CustomerPortal/reset-password/reset-password.component';
 
 export const routes: Routes = [
   // Default route - redirect to customer login
@@ -38,6 +40,8 @@ export const routes: Routes = [
   //  },
   // { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: 'login', component: CustomerLoginComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'active-services', component: ActiveServices },
   { path: 'help-center', component: HelpCenter },
   { path: 'saved-card', component: SavedCard },

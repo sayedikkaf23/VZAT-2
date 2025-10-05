@@ -8,7 +8,7 @@ import {
 //import { isPlatformBrowser, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CustomerLoginService } from '../../services/customer-login.service';
 import { ToastrService } from 'ngx-toastr';
 import { CookieService } from 'ngx-cookie-service';
@@ -16,7 +16,7 @@ import { StyleLoader } from '../../services/style-loader';
 
 @Component({
   selector: 'app-customer-login',
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, RouterModule],
   templateUrl: './customer-login.component.html',
   styleUrl: './customer-login.component.scss',
 })
