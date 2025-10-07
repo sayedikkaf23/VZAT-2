@@ -415,7 +415,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
                       (installment_number && index + 1 <= installment_number);
         const statusText = isPaid ? 'Paid' : 'Pending';
         const statusColor = isPaid ? '#28a745' : '#6c757d';
-        const rowBgColor = isPaid ? '#f8fff8' : '#ffffff';
+        const rowBgColor = '#ffffff';
         
         paymentScheduleRows += `
           <tr style="background-color: ${rowBgColor};">
@@ -434,7 +434,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
         const isPaid = installment_number && i + 1 <= installment_number;
         const statusText = isPaid ? 'Paid' : 'Pending';
         const statusColor = isPaid ? '#28a745' : '#6c757d';
-        const rowBgColor = isPaid ? '#f8fff8' : '#ffffff';
+        const rowBgColor = '#ffffff';
 
         // Derive a schedule date if possible: monthly from payment_date
         const baseDate = payment_date ? new Date(payment_date) : new Date();
