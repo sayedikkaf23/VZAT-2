@@ -199,7 +199,7 @@
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      background-color: #ef4444;
+      background-color: #000000;
       color: white;
       display: flex;
       align-items: center;
@@ -267,8 +267,8 @@
       }
       
       &.current {
-        background-color: #fecaca;
-        color: #dc2626;
+        background-color: #ffffff;
+        color: #ffffff;
         margin-left: 15px;
 
       }
@@ -308,12 +308,12 @@
       .payment-info {
         .payment-title,
         .payment-amount {
-          color: #ef4444;
+          color: #000000;
         }
       }
       
       &:not(:last-child)::after {
-        background-color: #ef4444;
+        background-color: #000000;
       }
     }
     

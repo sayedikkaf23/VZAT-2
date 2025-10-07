@@ -1372,7 +1372,7 @@
                                                 'current': payment.status ***REMOVED***= 'due' || payment.status ***REMOVED***= 'overdue',
                                                 'pending': payment.status ***REMOVED***= 'pending'
                                             }">
-                                            {{ payment.status ***REMOVED***= 'completed' ? 'Paid' : (payment.status | titlecase) }}
+                                            {{ payment.status ***REMOVED***= 'completed' ? 'Paid' : (payment.status ***REMOVED***= 'due' ? '' : (payment.status | titlecase)) }}
                                         </span>
                                         
                                         <!-- Retry button for failed payments -->

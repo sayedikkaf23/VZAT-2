@@ -132,11 +132,11 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: recipientList,
-      subject: `🎉 Subscription Successfully Completed - ${Quote_payment_number || quotepaymentId}`,
+      subject: `Subscription Successfully Completed - ${Quote_payment_number || quotepaymentId}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background-color: #28a745; color: white; padding: 20px; text-align: center;">
-            <h1>✅ Subscription Successfully Completed</h1>
+            <h1>Subscription Successfully Completed</h1>
           </div>
           
           <div style="padding: 20px; background-color: #f8f9fa;">
@@ -178,7 +178,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
             </table>
             
             <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
-              <h3 style="color: #155724; margin-top: 0;">🎉 Payment Complete!</h3>
+              <h3 style="color: #155724; margin-top: 0;">Payment Complete!</h3>
               <p style="color: #155724; margin-bottom: 0;">
                 All installment payments have been successfully processed. 
                 <strong>No further charges will be processed</strong> for this subscription.
@@ -376,7 +376,8 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       installment_number,
       total_installments,
       payment_method,
-      salesPersonDetails
+      salesPersonDetails,
+      installmentSchedule // New parameter for payment schedule
     } = data;
 
     const subject = `Virtuzone | Payment Received`;
@@ -399,15 +400,64 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       `${installment_number} of ${total_installments}` : 
       'N/A';
 
+    // Generate payment schedule table rows
+    let paymentScheduleRows = '';
+    if (installmentSchedule && Array.isArray(installmentSchedule)) {
+      installmentSchedule.forEach((installment, index) => {
+        const paymentDate = new Date(installment.date || installment.dueDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        // Determine status and styling
+        const isPaid = installment.status ***REMOVED***= 'paid' || installment.status ***REMOVED***= 'completed' || 
+                      (installment_number && index + 1 <= installment_number);
+        const statusText = isPaid ? 'Paid' : 'Pending';
+        const statusColor = isPaid ? '#28a745' : '#6c757d';
+        const rowBgColor = isPaid ? '#f8fff8' : '#ffffff';
+        
+        paymentScheduleRows += `
+          <tr style="background-color: ${rowBgColor};">
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${index + 1}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${paymentDate}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatAmount(installment.amount || payment_amount)}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+              <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
+            </td>
+          </tr>
+        `;
+      });
+    } else {
+      // Fallback if no schedule provided
+      for (let i = 0; i < (total_installments || 1); i++) {
+        const isPaid = installment_number && i + 1 <= installment_number;
+        const statusText = isPaid ? 'Paid' : 'Pending';
+        const statusColor = isPaid ? '#28a745' : '#6c757d';
+        const rowBgColor = isPaid ? '#f8fff8' : '#ffffff';
+        
+        paymentScheduleRows += `
+          <tr style="background-color: ${rowBgColor};">
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${i + 1}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">TBD</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatAmount(payment_amount)}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+              <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
     const bodyHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
         <p>Dear ${Customer_name || 'Customer'},</p>
 
         <p>We are pleased to confirm that your scheduled payment of <strong>AED ${formatAmount(payment_amount)}</strong> for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
 
-        <div style="border: 2px solid #dc3545; margin: 20px 0;">
-          <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #dc3545;">
-            <h3 style="margin: 0; text-align: center; color: #dc3545;">Payment Details</h3>
+        <div style="border: 2px solid #6c757d; margin: 20px 0;">
+          <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #6c757d;">
+            <h3 style="margin: 0; text-align: center; color: #6c757d;">Payment Details</h3>
           </div>
           <table style="border-collapse: collapse; width: 100%;">
             <tr>
@@ -430,6 +480,21 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
               <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Method</td>
               <td style="border: 1px solid #ddd; padding: 12px;">${payment_method || 'Card'}</td>
             </tr>
+          </table>
+        </div>
+
+        <div style="border: 2px solid #6c757d; margin: 20px 0;">
+          <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #6c757d;">
+            <h3 style="margin: 0; text-align: center; color: #6c757d;">Payment Schedule</h3>
+          </div>
+          <table style="border-collapse: collapse; width: 100%;">
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Installment No.</td>
+              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
+              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Amount (AED)</td>
+              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Status</td>
+            </tr>
+            ${paymentScheduleRows}
           </table>
         </div>
 
@@ -783,11 +848,11 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: '🎉 Welcome to VZAT Customer Portal - Your Account is Ready!',
+      subject: 'Welcome to VZAT Customer Portal - Your Account is Ready!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #007bff;">
-            <h1 style="margin: 0; font-size: 28px; color: #000000;">🎉 Welcome to VZAT!</h1>
+            <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome to VZAT!</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is Ready</p>
           </div>
           
@@ -802,11 +867,11 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
             </p>
             
             <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #e3f2fd;">
-              <h3 style="color: #000000; margin-top: 0;">🔐 Your Login Credentials</h3>
+              <h3 style="color: #000000; margin-top: 0;">Your Login Credentials</h3>
               <p style="margin: 10px 0; color: #333;"><strong>Email:</strong> ${email}</p>
               <p style="margin: 10px 0; color: #333;"><strong>Temporary Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #000000; font-weight: bold;">${temporaryPassword}</code></p>
               <p style="margin: 10px 0; color: #333;"><strong>Quote Payment ID:</strong> ${quotepaymentId}</p>
-              <p style="margin: 15px 0 5px 0; color: #333;"><strong>🔗 Portal Login URL:</strong></p>
+              <p style="margin: 15px 0 5px 0; color: #333;"><strong>Portal Login URL:</strong></p>
               <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #007bff; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
             </div>
             
@@ -819,7 +884,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
 
             
             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #856404; margin-top: 0;">⚠️ Important Security Notice:</h4>
+              <h4 style="color: #856404; margin-top: 0;">Important Security Notice:</h4>
               <p style="color: #856404; margin-bottom: 0; font-size: 14px;">
                 This is a temporary password. For your security, please change it immediately after your first login. 
                 You'll be prompted to create a new password when you sign in.
@@ -827,7 +892,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
             </div>
             
             <div style="background-color: #e8f5e8; border: 1px solid #c3e6c3; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #2d5a2d; margin-top: 0;">✨ What You Can Do in Your Portal:</h4>
+              <h4 style="color: #2d5a2d; margin-top: 0;">What You Can Do in Your Portal:</h4>
               <ul style="color: #2d5a2d; margin-bottom: 0; padding-left: 20px;">
                 <li>View your payment schedules and due dates</li>
                 <li>Access your active services</li>
@@ -907,11 +972,11 @@ export const sendExistingCustomerEmail = async (customerData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: '🔐 Welcome Back! Your VZAT Account is Ready to Use',
+      subject: 'Welcome Back! Your VZAT Account is Ready to Use',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #28a745;">
-            <h1 style="margin: 0; font-size: 28px; color: #000000;">🔐 Welcome Back!</h1>
+            <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome Back!</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your VZAT Account is Already Active</p>
           </div>
           
@@ -926,11 +991,11 @@ export const sendExistingCustomerEmail = async (customerData) => {
             </p>
             
             <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #e8f5e8;">
-              <h3 style="color: #000000; margin-top: 0;">📋 Account Information</h3>
+              <h3 style="color: #000000; margin-top: 0;">Account Information</h3>
               <p style="margin: 10px 0; color: #333;"><strong>Email:</strong> ${email}</p>
               <p style="margin: 10px 0; color: #333;"><strong>Original Quote Payment ID:</strong> ${existingQuotePaymentId}</p>
               <p style="margin: 10px 0; color: #333;"><strong>New Quote Payment ID:</strong> ${quotepaymentId}</p>
-              <p style="margin: 15px 0 5px 0; color: #333;"><strong>🔗 Portal Login URL:</strong></p>
+              <p style="margin: 15px 0 5px 0; color: #333;"><strong>Portal Login URL:</strong></p>
               <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #28a745; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
             </div>
             
@@ -942,14 +1007,14 @@ export const sendExistingCustomerEmail = async (customerData) => {
 
             
             <div style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #1565c0; margin-top: 0;">💡 Forgot Your Password?</h4>
+              <h4 style="color: #1565c0; margin-top: 0;">Forgot Your Password?</h4>
               <p style="color: #1565c0; margin-bottom: 0; font-size: 14px;">
                 If you've forgotten your password, click "Forgot Password?" on the login page to reset it securely.
               </p>
             </div>
             
             <div style="background-color: #fff3e0; border: 1px solid #ffcc02; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #f57c00; margin-top: 0;">🎯 Your Customer Portal Features:</h4>
+              <h4 style="color: #f57c00; margin-top: 0;">Your Customer Portal Features:</h4>
               <ul style="color: #f57c00; margin-bottom: 0; padding-left: 20px;">
                 <li>View all your payment schedules and history</li>
                 <li>Access your active services across all payments</li>
@@ -1003,11 +1068,11 @@ export const sendPasswordResetEmail = async (customerData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: '🔐 Reset Your VZAT Account Password',
+      subject: 'Reset Your VZAT Account Password',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">🔐 Password Reset</h1>
+            <h1 style="margin: 0; font-size: 28px;">Password Reset</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px;">Reset Your VZAT Account Password</p>
           </div>
           
@@ -1023,12 +1088,12 @@ export const sendPasswordResetEmail = async (customerData) => {
             
             <div style="text-align: center; margin: 30px 0;">
               <a href="${resetUrl}" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px;">
-                🔑 Reset My Password
+                Reset My Password
               </a>
             </div>
             
             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #856404; margin-top: 0;">⏰ Important:</h4>
+              <h4 style="color: #856404; margin-top: 0;">Important:</h4>
               <p style="color: #856404; margin-bottom: 0; font-size: 14px;">
                 This password reset link will expire in <strong>1 hour</strong> for security reasons. 
                 If you don't reset your password within this time, you'll need to request a new reset link.
@@ -1036,7 +1101,7 @@ export const sendPasswordResetEmail = async (customerData) => {
             </div>
             
             <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #721c24; margin-top: 0;">🛡️ Security Notice:</h4>
+              <h4 style="color: #721c24; margin-top: 0;">Security Notice:</h4>
               <p style="color: #721c24; margin-bottom: 5px; font-size: 14px;">
                 If you didn't request this password reset, please ignore this email. Your account will remain secure.
               </p>
@@ -1046,7 +1111,7 @@ export const sendPasswordResetEmail = async (customerData) => {
             </div>
             
             <div style="background-color: #e8f4f8; border: 1px solid #bee5eb; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #0c5460; margin-top: 0;">🔗 Alternative Method:</h4>
+              <h4 style="color: #0c5460; margin-top: 0;">Alternative Method:</h4>
               <p style="color: #0c5460; margin-bottom: 5px; font-size: 14px;">
                 If the button doesn't work, copy and paste this link into your browser:
               </p>
@@ -1092,10 +1157,10 @@ export const testEmailConfiguration = async () => {
         address: EMAIL_CONFIG.sender.email
       },
       to: EMAIL_CONFIG.recipients.business_team,
-      subject: '✅ VZAT Email Service Test',
+      subject: 'VZAT Email Service Test',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2>✅ Email Service Test Successful</h2>
+          <h2>Email Service Test Successful</h2>
           <p>This is a test email to verify that the VZAT payment system email service is working correctly.</p>
           <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
           <p><strong>Sender:</strong> ${EMAIL_CONFIG.sender.email}</p>
