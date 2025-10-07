@@ -435,11 +435,19 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
         const statusText = isPaid ? 'Paid' : 'Pending';
         const statusColor = isPaid ? '#28a745' : '#6c757d';
         const rowBgColor = isPaid ? '#f8fff8' : '#ffffff';
+
+        // Derive a schedule date if possible: monthly from payment_date
+        const baseDate = payment_date ? new Date(payment_date) : new Date();
+        const installmentDateObj = new Date(baseDate);
+        installmentDateObj.setMonth(installmentDateObj.getMonth() + i);
+        const installmentDateStr = installmentDateObj.toLocaleDateString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric'
+        });
         
         paymentScheduleRows += `
           <tr style="background-color: ${rowBgColor};">
             <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${i + 1}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">TBD</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${installmentDateStr}</td>
             <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatAmount(payment_amount)}</td>
             <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
               <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
