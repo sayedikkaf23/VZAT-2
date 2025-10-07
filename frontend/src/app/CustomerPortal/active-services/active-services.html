@@ -1372,7 +1372,7 @@
                                                 'current': payment.status === 'due' || payment.status === 'overdue',
                                                 'pending': payment.status === 'pending'
                                             }">
-                                            {{ payment.status === 'completed' ? 'Paid' : (payment.status | titlecase) }}
+                                            {{ payment.status === 'completed' ? 'Paid' : (payment.status === 'due' ? '' : (payment.status | titlecase)) }}
                                         </span>
                                         
                                         <!-- Retry button for failed payments -->
