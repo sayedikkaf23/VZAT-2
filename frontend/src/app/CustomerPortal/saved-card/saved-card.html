@@ -213,15 +213,15 @@
                   <div *ngFor="let card of cards; trackBy: trackByCardId"
              class="col-12 col-sm-6 col-lg-4 col-xl-3">
           <div class="s-card" [class.border-warning]="card.isDefault">
-            <a href="#" (click)="removeCard(card._id); $event.preventDefault()" class="card-remove">
+            <a *ngIf="!card.isDefault" href="#" (click)="removeCard(card._id); $event.preventDefault()" class="card-remove">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M9 1L1.00054 8.99947M8.99947 9L1 1.00057" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </a>
 
             <!-- Default badge -->
-            <div *ngIf="card.isDefault" class="position-absolute top-0 start-0 bg-warning text-dark px-2 py-1 small">
-              ⭐ Default
+            <div *ngIf="card.isDefault" class="position-absolute top-0 start-0 bg-dark text-white px-2 py-1 small">
+               Default
             </div>
 
             <h4 class="card-name">
