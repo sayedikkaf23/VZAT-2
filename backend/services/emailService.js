@@ -29,7 +29,7 @@ const EMAIL_CONFIG = {
   sender: {
     email: process.env.EMAIL_SENDER || 'workerappzpayments@gmail.com',
     password: process.env.EMAIL_PASSWORD || 'voib cvgx tuko hcxs', // Use app password
-    name: 'VZAT Payment System'
+    name: 'Recurring Payment System'
   },
   recipients: {
     business_team: process.env.BUSINESS_TEAM_EMAIL || 'saeedikkaf3@gmail.com',
@@ -189,7 +189,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
             
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
               <p style="color: #6c757d; font-size: 12px;">
-                This is an automated notification from VZAT Payment System<br>
+                This is an automated notification from Recurring Payment System<br>
                 Generated on: ${new Date().toLocaleString()}
               </p>
             </div>
@@ -627,7 +627,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
             
 //             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
 //               <p style="color: #6c757d; font-size: 12px;">
-//                 This is an automated alert from VZAT Payment System<br>
+//                 This is an automated alert from Recurring Payment System<br>
 //                 Generated on: ${new Date().toLocaleString()}<br>
 //                 Please address this issue promptly to maintain customer satisfaction.
 //               </p>
@@ -856,11 +856,11 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: 'Welcome to VZAT Customer Portal - Your Account is Ready!',
+      subject: 'Welcome to Recurring Customer Portal - Your Account is Ready!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #007bff;">
-            <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome to VZAT!</h1>
+            <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome to Recurring!</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is Ready</p>
           </div>
           
@@ -912,13 +912,13 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
             
             <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">
               If you have any questions or need assistance, please don't hesitate to contact our support team. 
-              We're here to help you make the most of your VZAT experience.
+              We're here to help you make the most of your Recurring experience.
             </p>
             
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
               <p style="font-size: 14px; color: #888; margin: 0;">
                 Best regards,<br>
-                <strong>The VZAT Team</strong>
+                <strong>The Recurring Team</strong>
               </p>
             </div>
           </div>
@@ -980,12 +980,12 @@ export const sendExistingCustomerEmail = async (customerData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: 'Welcome Back! Your VZAT Account is Ready to Use',
+      subject: 'Welcome Back! Your Recurring Account is Ready to Use',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #28a745;">
             <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome Back!</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your VZAT Account is Already Active</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Recurring Account is Already Active</p>
           </div>
           
           <div style="padding: 30px; background-color: #f9f9f9;">
@@ -1039,7 +1039,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
               <p style="font-size: 14px; color: #888; margin: 0;">
                 Best regards,<br>
-                <strong>The VZAT Team</strong>
+                <strong>The Recurring Team</strong>
               </p>
             </div>
           </div>
@@ -1076,12 +1076,12 @@ export const sendPasswordResetEmail = async (customerData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: 'Reset Your VZAT Account Password',
+      subject: 'Reset Your Recurring Account Password',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 28px;">Password Reset</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">Reset Your VZAT Account Password</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">Reset Your Recurring Account Password</p>
           </div>
           
           <div style="padding: 30px; background-color: #f9f9f9;">
@@ -1090,7 +1090,7 @@ export const sendPasswordResetEmail = async (customerData) => {
             </p>
             
             <p style="font-size: 16px; color: #333; line-height: 1.6;">
-              We received a request to reset your password for your VZAT customer account. 
+              We received a request to reset your password for your Recurring customer account. 
               Click the button below to set a new password:
             </p>
             
@@ -1135,7 +1135,7 @@ export const sendPasswordResetEmail = async (customerData) => {
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
               <p style="font-size: 14px; color: #888; margin: 0;">
                 Best regards,<br>
-                <strong>The VZAT Team</strong>
+                <strong>The Recurring Team</strong>
               </p>
             </div>
           </div>
@@ -1165,11 +1165,11 @@ export const testEmailConfiguration = async () => {
         address: EMAIL_CONFIG.sender.email
       },
       to: EMAIL_CONFIG.recipients.business_team,
-      subject: 'VZAT Email Service Test',
+      subject: 'Recurring Email Service Test',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2>Email Service Test Successful</h2>
-          <p>This is a test email to verify that the VZAT payment system email service is working correctly.</p>
+          <p>This is a test email to verify that the Recurring payment system email service is working correctly.</p>
           <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
           <p><strong>Sender:</strong> ${EMAIL_CONFIG.sender.email}</p>
           <p>If you receive this email, the configuration is working properly.</p>
