@@ -137,11 +137,13 @@ export const updateQuotePaymentStatus = async (paymentData) => {
     const isSuccess = paymentStatus === 'success' || 
                      (resultCode && resultCode.startsWith('000.'));
     
-    // Calculate next due date - use provided date or default to 30 days from now
-    const formattedNextDueDate = nextDueDate || (() => {
-      const nextDueDate = new Date();
-      nextDueDate.setDate(nextDueDate.getDate() + 30);
-      return nextDueDate.toISOString().slice(0, 10);
+    // Send Current_due_date as today's date in YYYY-MM-DD (no extra logic)
+    const formattedNextDueDate = (() => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     })();
 
     // Process amount
