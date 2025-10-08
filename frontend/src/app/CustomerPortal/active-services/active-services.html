@@ -1359,7 +1359,7 @@
                                     
                                     <div class="payment-info ms-3">
                                         <div class="payment-title">Payment {{ payment.installment_number }}</div>
-                                        <div class="payment-amount">AED {{ formatAmount(payment.amount) }}</div>
+                                        <div class="payment-amount fw-medium">AED {{ formatAmount(payment.amount) }}</div>
                                         <div class="payment-date">{{ formatDate(payment.due_date) }}</div>
                                     </div>
                                     
@@ -1403,13 +1403,13 @@
                                 <div class="col-md-6 mb-2">
                                     <div class="summary-item">
                                         <span class="summary-label">Total Amount:</span>
-                                        <span class="summary-value">{{ formatTotalAmount(selectedService) }}</span>
+                                        <span class="summary-value fw-medium">{{ formatTotalAmount(selectedService) }}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <div class="summary-item">
                                         <span class="summary-label">Paid Amount:</span>
-                                        <span class="summary-value text-success">{{
+                                        <span class="summary-value text-success fw-medium">{{
                                             formatTotalPaidAmount(selectedService) }}</span>
                                     </div>
                                 </div>
@@ -1418,7 +1418,7 @@
                                 <div class="col-md-6 mb-2">
                                     <div class="summary-item">
                                         <span class="summary-label">Remaining:</span>
-                                        <span class="summary-value text-primary fw-bold">{{
+                                        <span class="summary-value text-primary fw-medium">{{
                                             formatRemainingAmount(selectedService) }}</span>
                                     </div>
                                 </div>
