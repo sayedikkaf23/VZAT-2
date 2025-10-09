@@ -107,6 +107,11 @@ const savedCardSchema = new Schema({
 savedCardSchema.index({ customerId: 1 });
 savedCardSchema.index({ customerEmail: 1 });
 // Note: afs_registration_id already has unique: true, so no need for separate index
+// Prevent saving the same physical card multiple times for the same customer
+savedCardSchema.index(
+    { customerId: 1, maskedCardNumber: 1 },
+    { unique: true }
+);
 
 const SavedCard = mongoose.model('SavedCard', savedCardSchema);
 
