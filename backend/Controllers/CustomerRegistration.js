@@ -745,6 +745,52 @@ export const saveCustomerCard = async (paymentData) => {
             }
         }
         
+        // If this payment used an existing saved card (same registration or same masked digits),
+        // do NOT create a new record. Just refresh metadata and return success.
+        try {
+            if (registrationId) {
+                const existingByRegistration = await SavedCard.findOne({ afs_registration_id: registrationId, isActive: true });
+                if (existingByRegistration) {
+                    await SavedCard.updateOne(
+                        { _id: existingByRegistration._id },
+                        {
+                            $set: {
+                                cardBrand: cardBrand.toUpperCase(),
+                                expiryMonth: expiryMonth,
+                                expiryYear: expiryYear,
+                                cardholderName: cardholderName || existingByRegistration.cardholderName,
+                                lastUsedDate: new Date()
+                            }
+                        }
+                    );
+                    console.log('ℹ️ Existing saved card used for payment (by registration). Skipping new save.');
+                    return { success: true, message: 'Existing card used; not saved again', cardId: existingByRegistration._id };
+                }
+            }
+
+            if (maskedCardNumber) {
+                const existingByMask = await SavedCard.findOne({ customerId: customer._id, maskedCardNumber: maskedCardNumber, isActive: true });
+                if (existingByMask) {
+                    await SavedCard.updateOne(
+                        { _id: existingByMask._id },
+                        {
+                            $set: {
+                                cardBrand: cardBrand.toUpperCase(),
+                                expiryMonth: expiryMonth,
+                                expiryYear: expiryYear,
+                                cardholderName: cardholderName || existingByMask.cardholderName,
+                                lastUsedDate: new Date()
+                            }
+                        }
+                    );
+                    console.log('ℹ️ Existing saved card used for payment (by masked number). Skipping new save.');
+                    return { success: true, message: 'Existing card used; not saved again', cardId: existingByMask._id };
+                }
+            }
+        } catch (dupCheckErr) {
+            console.warn('⚠️ Duplicate card check failed, proceeding to normal save:', dupCheckErr.message);
+        }
+
         // Prepare card data for saving
         const cardData = {
             customerId: customer._id,
