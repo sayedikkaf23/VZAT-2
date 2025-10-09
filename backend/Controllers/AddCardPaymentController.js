@@ -178,28 +178,51 @@ export const processCardPayment = async (req, res) => {
               cardBrand = 'AMEX';
             }
             
-            // Check if this is the first card for the customer
-            const existingCards = await SavedCard.find({ customerId: customerId, isActive: true });
-            const isFirstCard = existingCards.length ***REMOVED***= 0;
-            
-            const newCard = new SavedCard({
+            // Duplicate guard: if same masked number already exists for this customer, update metadata instead
+            const existingSameCard = await SavedCard.findOne({
               customerId: customerId,
-              cardNumber: cardNumber, // Store full card number
-              maskedCardNumber: maskedCardNumber, // Keep masked version for display
-              cardBrand: cardBrand,
-              expiryMonth: cardDetails.expiryMonth,
-              expiryYear: cardDetails.expiryYear,
-              cardholderName: cardDetails.cardholderName,
-              isDefault: isFirstCard, // Set as default if it's the first card
-              isActive: true,
-              lastUsedDate: new Date(),
-              cardAddedDate: new Date(),
-              paymentId: paymentId,
-              afs_registration_id: response.data.registrationId || paymentId
+              maskedCardNumber: maskedCardNumber,
+              isActive: true
             });
-            
-            await newCard.save();
-            console.log('✅ Card saved successfully with full details:', newCard._id);
+
+            if (existingSameCard) {
+              await SavedCard.updateOne(
+                { _id: existingSameCard._id },
+                {
+                  $set: {
+                    cardBrand: cardBrand,
+                    expiryMonth: cardDetails.expiryMonth,
+                    expiryYear: cardDetails.expiryYear,
+                    cardholderName: cardDetails.cardholderName,
+                    lastUsedDate: new Date()
+                  },
+                  $setOnInsert: { cardAddedDate: new Date() }
+                }
+              );
+              console.log('ℹ️ Duplicate card detected for customer. Updated existing card:', existingSameCard._id);
+            } else {
+              // Check if this is the first card for the customer
+              const existingCards = await SavedCard.find({ customerId: customerId, isActive: true });
+              const isFirstCard = existingCards.length ***REMOVED***= 0;
+
+              const newCard = new SavedCard({
+                customerId: customerId,
+                cardNumber: cardNumber, // Store full card number
+                maskedCardNumber: maskedCardNumber, // Keep masked version for display
+                cardBrand: cardBrand,
+                expiryMonth: cardDetails.expiryMonth,
+                expiryYear: cardDetails.expiryYear,
+                cardholderName: cardDetails.cardholderName,
+                isDefault: isFirstCard, // Set as default if it's the first card
+                isActive: true,
+                lastUsedDate: new Date(),
+                cardAddedDate: new Date(),
+                paymentId: paymentId,
+                afs_registration_id: response.data.registrationId || paymentId
+              });
+              await newCard.save();
+              console.log('✅ Card saved successfully with full details:', newCard._id);
+            }
           }
         } catch (cardSaveError) {
           console.error('❌ Error saving card details:', cardSaveError);
@@ -310,10 +333,6 @@ export const saveCardDetails = async (req, res) => {
       });
     }
 
-    // Check if this is the first card for the customer
-    const existingCards = await SavedCard.find({ customerId: customerId, isActive: true });
-    const isFirstCard = existingCards.length ***REMOVED***= 0;
-
     // Store full card number and create masked version for display
     const cardNumber = cardDetails.cardNumber.replace(/\s/g, '');
     const maskedCardNumber = `**** **** **** ${cardNumber.slice(-4)}`;
@@ -328,31 +347,58 @@ export const saveCardDetails = async (req, res) => {
       cardBrand = 'AMEX';
     }
 
-    // Create new saved card
-    const newCard = new SavedCard({
+    // Duplicate guard: if same masked number already exists for this customer, update metadata instead of inserting
+    const existingSameCard = await SavedCard.findOne({
       customerId: customerId,
-      cardNumber: cardNumber, // Store full card number
-      maskedCardNumber: maskedCardNumber, // Keep masked version for display
-      cardBrand: cardBrand,
-      expiryMonth: cardDetails.expiryMonth,
-      expiryYear: cardDetails.expiryYear,
-      cardholderName: cardDetails.cardholderName,
-      isDefault: isFirstCard || isDefault, // Set as default if it's the first card
-      isActive: isActive !***REMOVED*** false, // Default to true
-      lastUsedDate: new Date(),
-      cardAddedDate: new Date(),
-      paymentId: paymentId // Store reference to the payment
+      maskedCardNumber: maskedCardNumber,
+      isActive: true
     });
 
-    // If this is not the first card and it's being set as default, remove default from other cards
-    if (!isFirstCard && isDefault) {
-      await SavedCard.updateMany(
-        { customerId: customerId, isActive: true },
-        { isDefault: false }
+    if (existingSameCard) {
+      await SavedCard.updateOne(
+        { _id: existingSameCard._id },
+        {
+          $set: {
+            cardBrand: cardBrand,
+            expiryMonth: cardDetails.expiryMonth,
+            expiryYear: cardDetails.expiryYear,
+            cardholderName: cardDetails.cardholderName,
+            lastUsedDate: new Date()
+          },
+          $setOnInsert: { cardAddedDate: new Date() }
+        }
       );
-    }
+    } else {
+      // Check if this is the first card for the customer
+      const existingCards = await SavedCard.find({ customerId: customerId, isActive: true });
+      const isFirstCard = existingCards.length ***REMOVED***= 0;
 
-    await newCard.save();
+      // Create new saved card
+      const newCard = new SavedCard({
+        customerId: customerId,
+        cardNumber: cardNumber, // Store full card number
+        maskedCardNumber: maskedCardNumber, // Keep masked version for display
+        cardBrand: cardBrand,
+        expiryMonth: cardDetails.expiryMonth,
+        expiryYear: cardDetails.expiryYear,
+        cardholderName: cardDetails.cardholderName,
+        isDefault: isFirstCard || isDefault, // Set as default if it's the first card
+        isActive: isActive !***REMOVED*** false, // Default to true
+        lastUsedDate: new Date(),
+        cardAddedDate: new Date(),
+        paymentId: paymentId // Store reference to the payment
+      });
+
+      // If this is not the first card and it's being set as default, remove default from other cards
+      if (!isFirstCard && isDefault) {
+        await SavedCard.updateMany(
+          { customerId: customerId, isActive: true },
+          { isDefault: false }
+        );
+      }
+
+      await newCard.save();
+    }
 
     res.status(201).json({
       success: true,
