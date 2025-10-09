@@ -72,17 +72,47 @@ export const addSavedCard = async (cardData) => {
         console.log(`   - Expiry: ${expiryMonth}/${expiryYear} (should be from AFS)`);
         console.log(`   - Cardholder: ${cardholderName} (should be from user input)`);
 
-        // Check if this registration ID already exists
-        const existingCard = await SavedCard.findOne({ afs_registration_id });
-        if (existingCard) {
-            console.log('💳 📝 Card already exists for registration ID:', afs_registration_id);
-            console.log('💳 📝 Existing card details:', {
-                maskedCardNumber: existingCard.maskedCardNumber,
-                cardBrand: existingCard.cardBrand,
-                expiryMonth: existingCard.expiryMonth,
-                expiryYear: existingCard.expiryYear
-            });
-            return existingCard;
+        // Duplicate guards:
+        // 1) By registration ID
+        if (afs_registration_id) {
+            const existingByReg = await SavedCard.findOne({ afs_registration_id, isActive: true });
+            if (existingByReg) {
+                await SavedCard.updateOne(
+                    { _id: existingByReg._id },
+                    {
+                        $set: {
+                            cardBrand,
+                            expiryMonth,
+                            expiryYear,
+                            cardholderName,
+                            lastUsedDate: new Date()
+                        }
+                    }
+                );
+                console.log('ℹ️ Duplicate by registrationId. Updated existing card:', existingByReg._id);
+                return existingByReg;
+            }
+        }
+
+        // 2) By customer + masked last4 (same physical card used again)
+        if (customerId && maskedCardNumber) {
+            const existingByMask = await SavedCard.findOne({ customerId, maskedCardNumber, isActive: true });
+            if (existingByMask) {
+                await SavedCard.updateOne(
+                    { _id: existingByMask._id },
+                    {
+                        $set: {
+                            cardBrand,
+                            expiryMonth,
+                            expiryYear,
+                            cardholderName,
+                            lastUsedDate: new Date()
+                        }
+                    }
+                );
+                console.log('ℹ️ Duplicate by maskedCardNumber for customer. Updated existing card:', existingByMask._id);
+                return existingByMask;
+            }
         }
 
         // If this is the customer's first card, make it default
@@ -109,7 +139,33 @@ export const addSavedCard = async (cardData) => {
         console.log('💳 📝 Final card object to save:', JSON.stringify(newCardData, null, 2));
 
         const newCard = new SavedCard(newCardData);
-        const savedCard = await newCard.save();
+        let savedCard;
+        try {
+            savedCard = await newCard.save();
+        } catch (e) {
+            // Handle unique index race (customerId + maskedCardNumber)
+            if (e && e.code === 11000) {
+                console.log('ℹ️ Duplicate key on save detected. Updating existing card instead.');
+                const existing = await SavedCard.findOne({ customerId, maskedCardNumber, isActive: true });
+                if (existing) {
+                    await SavedCard.updateOne(
+                        { _id: existing._id },
+                        {
+                            $set: {
+                                cardBrand,
+                                expiryMonth,
+                                expiryYear,
+                                cardholderName,
+                                lastUsedDate: new Date()
+                            }
+                        }
+                    );
+                    return existing;
+                }
+                throw e;
+            }
+            throw e;
+        }
         
         console.log('💳 ✅ CARD SAVED SUCCESSFULLY!');
         console.log('💳 📝 Saved card details in DB:', {
