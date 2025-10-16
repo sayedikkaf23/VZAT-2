@@ -248,7 +248,7 @@ export const sendFinalRenewalEmail = async (data) => {
 
         <p>We hope this message finds you well.</p>
 
-        <p>This is a gentle reminder that your current corporate service package with Virtuzone, under Proforma Invoice <strong>#PI ${Quote_payment_number || quotepaymentId}</strong>, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
+        <p>This is a gentle reminder that your current corporate service package with Virtuzone, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
 
         <p>We thank you sincerely for placing your trust in Virtuzone over the past year.</p>
 
