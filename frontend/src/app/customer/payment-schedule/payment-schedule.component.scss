@@ -73,12 +73,22 @@ html a {
   padding: 12px 30px;
   font-weight: 600;
   transition: all 0.3s ease;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #d72848 0%, #c21e3a 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(250, 46, 82, 0.3);
+}
+
+.btn-primary:focus,
+.btn-primary:focus-visible,
+.btn-primary:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 /* Responsive adjustments */
@@ -448,9 +458,20 @@ html .payment-schedule .schedule-list-box .form-check .form-check-input:checked{
     text-transform: capitalize;
     color: #fff;
     line-height: 50px;
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
 }
 .payment-schedule .btn-wrp .btn:hover{
     background: #000 !important;
+}
+
+.payment-schedule .btn-wrp .btn:focus,
+.payment-schedule .btn-wrp .btn:focus-visible,
+.payment-schedule .btn-wrp .btn:active {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
 } 
 html .schedule-list-box  .form-check .form-check-label {
     color: #444444;
@@ -776,6 +797,9 @@ html .schedule-list-box  .form-check .form-check-label {
         padding: 0 24px;
         line-height: 40px;
         margin-top: 12px;
+        outline: none !important;
+        box-shadow: none !important;
+        border: none !important;
     }
 } 
 /* Add your payment page styles here or import global styles if needed. */
