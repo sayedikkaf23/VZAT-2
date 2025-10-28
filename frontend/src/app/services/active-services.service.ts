@@ -35,7 +35,10 @@ export interface PaymentScheduleItem {
   installment_number: number;
   due_date: string;
   amount: number;
-  status: string;
+  status: 'due' | 'pending' | 'completed' | 'paid' | 'failed' | 'overdue' | 'cancelled';
+  q_payment_id?: string;
+  salesforce_status?: string;
+  _id?: string;
 }
 
 export interface ActiveServicesResponse {

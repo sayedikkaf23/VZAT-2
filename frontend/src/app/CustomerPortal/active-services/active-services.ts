@@ -341,6 +341,26 @@ export class ActiveServices implements OnInit {
   getPaymentSchedulesForService(service: PaymentScheduleService): PaymentScheduleService[] {
     if (!service.quotepaymentId) return [service];
     
+    // Check if service has payment_schedule array (new API structure)
+    if (service.payment_schedule && service.payment_schedule.length > 0) {
+      // Convert payment_schedule items to PaymentScheduleService format
+      return service.payment_schedule.map(payment => ({
+        ...service,
+        installment_number: payment.installment_number,
+        due_date: payment.due_date,
+        amount: payment.amount,
+        status: payment.status as 'due' | 'pending' | 'completed' | 'paid' | 'failed' | 'overdue' | 'cancelled',
+        q_payment_id: payment.q_payment_id,
+        salesforce_status: payment.salesforce_status,
+        _id: payment._id
+      })).sort((a, b) => {
+        const aInstallment = a.installment_number || 0;
+        const bInstallment = b.installment_number || 0;
+        return aInstallment - bInstallment;
+      });
+    }
+    
+    // Fallback: filter by quotepaymentId (old API structure)
     return this.activeServices.filter(s => s.quotepaymentId === service.quotepaymentId)
       .sort((a, b) => {
         // Sort by installment number if available
@@ -403,8 +423,9 @@ export class ActiveServices implements OnInit {
       return null; // No current payment if there are failed payments
     }
     
-    // If no failed payments, find the first pending/due/overdue payment
-    return payments.find(p => p.status === 'pending' || p.status === 'due' || p.status === 'overdue') || null;
+    // If no failed payments, find the first due/overdue payment (not pending)
+    // Pending payments are future payments, not current ones
+    return payments.find(p => p.status === 'due' || p.status === 'overdue') || null;
   }
 
   /**

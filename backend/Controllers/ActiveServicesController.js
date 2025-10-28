@@ -119,6 +119,8 @@ export const getActiveServices = async (req, res) => {
        console.log(`🔍 Processing subscription: ${subscription.quotepaymentId}`);
        console.log(`📋 Payment schedule from DB:`, subscription.payment_schedule);
        
+       let paymentSchedule = [];
+       
        // Use the payment_schedule array from database if available
        if (subscription.payment_schedule && subscription.payment_schedule.length > 0) {
          // Sort payments by installment number to ensure correct order
@@ -138,39 +140,17 @@ export const getActiveServices = async (req, res) => {
          // Validate payment sequence and fix any logical inconsistencies
          const validatedPayments = validatePaymentSequence(sortedPayments);
          
-         // Get payment schedule entries directly from database
-         for (const payment of validatedPayments) {
-           console.log(`📝 Creating payment service for installment ${payment.installment_number}:`, {
-             installment_number: payment.installment_number,
-             status: payment.status,
-             amount: payment.amount,
-             due_date: payment.due_date
-           });
-           
-           paymentScheduleServices.push({
-             id: `${subscription.quotepaymentId}_${payment.installment_number}`,
-             installment_number: payment.installment_number,
-             Customer_name: subscription.Customer_name || 'Customer', // Database field name
-             opp_email: subscription.opp_email || '', // Database field name
-             QuoteLineItemId: subscription.QuoteLineItemId || subscription.quotepaymentId, // Database field name
-             subscription_status: subscription.subscription_status, // Database field name
-             quotepaymentId: subscription.quotepaymentId,
-             Quote_payment_number: subscription.Quote_payment_number, // Include quote payment number
-             due_date: payment.due_date,
-             amount: payment.amount,
-             status: payment.status,
-             // Include Product_details from database
-             Product_details: subscription.Product_details || [],
-             Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-             // Additional fields for reference
-             opportunityId: subscription.OpportunityId,
-             quoteId: subscription.QuoteId,
-             createdDate: subscription.createdAt,
-             // Keep legacy fields for backward compatibility
-             customerName: subscription.Customer_name || 'Customer',
-             subscriptionStatus: subscription.subscription_status
-           });
-         }
+         // Create payment schedule array from database payments
+         paymentSchedule = validatedPayments.map(payment => ({
+           installment_number: payment.installment_number,
+           due_date: payment.due_date,
+           amount: payment.amount,
+           status: payment.status,
+           q_payment_id: payment.q_payment_id || subscription.Quote_payment_number,
+           salesforce_status: payment.salesforce_status || 'Unpaid',
+           _id: payment._id
+         }));
+         
       } else {
         // Fallback: calculate payment schedule if not available in database
         const totalInstallments = subscription.InstallmentLeft || 1;
@@ -186,35 +166,44 @@ export const getActiveServices = async (req, res) => {
           if (isPaid) status = 'paid';
           else if (isDue) status = 'due';
           
-          paymentScheduleServices.push({
-            id: `${subscription.quotepaymentId}_${i}`,
+          paymentSchedule.push({
             installment_number: i,
-            Customer_name: subscription.Customer_name || 'Customer', // Database field name
-            opp_email: subscription.opp_email || '', // Database field name
-            QuoteLineItemId: subscription.QuoteLineItemId || subscription.quotepaymentId, // Database field name
-            subscription_status: subscription.subscription_status, // Database field name
-            quotepaymentId: subscription.quotepaymentId,
-            Quote_payment_number: subscription.Quote_payment_number, // Include quote payment number
             due_date: paymentDate.toLocaleDateString('en-CA'), // YYYY-MM-DD format
             amount: installmentAmount,
             status: status,
-            // Include Product_details from database
-            Product_details: subscription.Product_details || [],
-            Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-            opportunityId: subscription.OpportunityId,
-            quoteId: subscription.QuoteId,
-            createdDate: subscription.createdAt,
-            // Keep legacy fields for backward compatibility
-            customerName: subscription.Customer_name || 'Customer',
-            subscriptionStatus: subscription.subscription_status
+            q_payment_id: subscription.Quote_payment_number,
+            salesforce_status: 'Unpaid',
+            _id: `${subscription.quotepaymentId}_${i}`
           });
         }
       }
+      
+      // Create the service object with payment_schedule array
+      paymentScheduleServices.push({
+        id: subscription.quotepaymentId,
+        quotepaymentId: subscription.quotepaymentId,
+        Customer_name: subscription.Customer_name || 'Customer',
+        opp_email: subscription.opp_email || '',
+        QuoteLineItemId: subscription.QuoteLineItemId || subscription.quotepaymentId,
+        subscription_status: subscription.subscription_status,
+        Quote_payment_number: subscription.Quote_payment_number,
+        Product_details: subscription.Product_details || [],
+        Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
+        opportunityId: subscription.OpportunityId,
+        quoteId: subscription.QuoteId,
+        createdDate: subscription.createdAt,
+        customerName: subscription.Customer_name || 'Customer',
+        subscriptionStatus: subscription.subscription_status,
+        payment_schedule: paymentSchedule
+      });
     }
 
-    // Sort by due date (most recent first)
-    paymentScheduleServices.sort((a, b) => new Date(b.due_date) - new Date(a.due_date));
+    // Sort services by customer name
+    paymentScheduleServices.sort((a, b) => (a.Customer_name || '').localeCompare(b.Customer_name || ''));
 
+    // Calculate summary statistics from all payment schedules
+    const allPayments = paymentScheduleServices.flatMap(service => service.payment_schedule || []);
+    
     const response = {
       success: true,
       customerEmail: customerEmail,
@@ -222,19 +211,19 @@ export const getActiveServices = async (req, res) => {
       activeSubscriptions: activeSubscriptions.length,
       services: paymentScheduleServices,
       summary: {
-        totalPaid: paymentScheduleServices.filter(s => s.status === 'paid' || s.status === 'completed').length,
-        totalDue: paymentScheduleServices.filter(s => s.status === 'due').length,
-        totalPending: paymentScheduleServices.filter(s => s.status === 'pending').length,
-        totalFailed: paymentScheduleServices.filter(s => s.status === 'failed').length,
-        totalAmountPaid: paymentScheduleServices
-          .filter(s => s.status === 'paid' || s.status === 'completed')
-          .reduce((sum, s) => sum + s.amount, 0),
-        totalAmountDue: paymentScheduleServices
-          .filter(s => s.status === 'due')
-          .reduce((sum, s) => sum + s.amount, 0),
-        totalAmountPending: paymentScheduleServices
-          .filter(s => s.status === 'pending')
-          .reduce((sum, s) => sum + s.amount, 0)
+        totalPaid: allPayments.filter(p => p.status === 'paid' || p.status === 'completed').length,
+        totalDue: allPayments.filter(p => p.status === 'due').length,
+        totalPending: allPayments.filter(p => p.status === 'pending').length,
+        totalFailed: allPayments.filter(p => p.status === 'failed').length,
+        totalAmountPaid: allPayments
+          .filter(p => p.status === 'paid' || p.status === 'completed')
+          .reduce((sum, p) => sum + (p.amount || 0), 0),
+        totalAmountDue: allPayments
+          .filter(p => p.status === 'due')
+          .reduce((sum, p) => sum + (p.amount || 0), 0),
+        totalAmountPending: allPayments
+          .filter(p => p.status === 'pending')
+          .reduce((sum, p) => sum + (p.amount || 0), 0)
       }
     };
 

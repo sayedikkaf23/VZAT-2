@@ -1366,11 +1366,11 @@
                                     <div class="ms-auto d-flex align-items-center gap-2">
                                         <!-- Status badge -->
                                         <span class="status-badge" 
+                                            *ngIf="payment.status !== 'pending'"
                                             [ngClass]="{
                                                 'paid': payment.status === 'completed' || payment.status === 'paid',
                                                 'failed': payment.status === 'failed',
-                                                'current': payment.status === 'due' || payment.status === 'overdue',
-                                                'pending': payment.status === 'pending'
+                                                'current': payment.status === 'due' || payment.status === 'overdue'
                                             }">
                                             {{ payment.status === 'completed' ? 'Paid' : (payment.status === 'due' ? '' : (payment.status | titlecase)) }}
                                         </span>
