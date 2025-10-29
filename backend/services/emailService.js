@@ -918,7 +918,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
               <p style="font-size: 14px; color: #888; margin: 0;">
                 Best regards,<br>
-                <strong>The Recurring Team</strong>
+                <strong>TaxReady Team</strong>
               </p>
             </div>
           </div>
@@ -1039,7 +1039,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
               <p style="font-size: 14px; color: #888; margin: 0;">
                 Best regards,<br>
-                <strong>The Recurring Team</strong>
+                <strong>TaxReady Team</strong>
               </p>
             </div>
           </div>
@@ -1135,7 +1135,7 @@ export const sendPasswordResetEmail = async (customerData) => {
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
               <p style="font-size: 14px; color: #888; margin: 0;">
                 Best regards,<br>
-                <strong>The Recurring Team</strong>
+                <strong>TaxReady Team</strong>
               </p>
             </div>
           </div>
