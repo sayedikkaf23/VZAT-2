@@ -856,11 +856,11 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: 'Welcome to Recurring Customer Portal - Your Account is Ready!',
+      subject: 'Welcome to  Customer Portal - Your Account is Ready!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #007bff;">
-            <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome to Recurring!</h1>
+            <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome to Customer Portal!</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is Ready</p>
           </div>
           
