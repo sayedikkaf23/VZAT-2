@@ -903,10 +903,10 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
               <h4 style="color: #2d5a2d; margin-top: 0;">What You Can Do in Your Portal:</h4>
               <ul style="color: #2d5a2d; margin-bottom: 0; padding-left: 20px;">
                 <li>View your payment schedules and due dates</li>
-                <li>Access your active services</li>
+              
                 <li>Update your saved payment methods</li>
                 <li>Get help and support</li>
-                <li>Download invoices and receipts</li>
+              
               </ul>
             </div>
             
