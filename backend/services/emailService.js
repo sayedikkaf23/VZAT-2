@@ -980,45 +980,31 @@ export const sendExistingCustomerEmail = async (customerData) => {
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
-      subject: 'Welcome Back! Your Recurring Account is Ready to Use',
+      subject: 'Welcome Back! Your Customer Portal account is Ready to Use',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #28a745;">
             <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome Back!</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Recurring Account is Already Active</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is already active</p>
           </div>
           
           <div style="padding: 30px; background-color: #f9f9f9;">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              Dear <strong>${customerName}</strong>,
-            </p>
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Dear <strong>${customerName}</strong>,</p>
             
             <p style="font-size: 16px; color: #333; line-height: 1.6;">
-              We noticed you've made another payment, but you already have an active account with us! 
-              No need to create a new account - you can continue using your existing credentials.
+              We noticed you've made another payment. Since you already have an active account with us, no need to create a new account - you can continue using your existing credentials.
             </p>
             
             <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #e8f5e8;">
               <h3 style="color: #000000; margin-top: 0;">Account Information</h3>
               <p style="margin: 10px 0; color: #333;"><strong>Email:</strong> ${email}</p>
-              <p style="margin: 10px 0; color: #333;"><strong>Original Quote Payment ID:</strong> ${existingQuotePaymentId}</p>
-              <p style="margin: 10px 0; color: #333;"><strong>New Quote Payment ID:</strong> ${quotepaymentId}</p>
               <p style="margin: 15px 0 5px 0; color: #333;"><strong>Portal Login URL:</strong></p>
               <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #28a745; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
             </div>
-            
-       <div style="text-align: center; margin: 30px 0;">
-  <a href="${loginUrl}" style="background-color: #ff0000; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #ff0000;">
-     Login to Your Account
-  </a>
-</div>
 
-            
             <div style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 6px; padding: 15px; margin: 20px 0;">
               <h4 style="color: #1565c0; margin-top: 0;">Forgot Your Password?</h4>
-              <p style="color: #1565c0; margin-bottom: 0; font-size: 14px;">
-                If you've forgotten your password, click "Forgot Password?" on the login page to reset it securely.
-              </p>
+              <p style="color: #1565c0; margin-bottom: 0; font-size: 14px;">If you've forgotten your password, click "Forgot Password?" on the login page to reset it securely.</p>
             </div>
             
             <div style="background-color: #fff3e0; border: 1px solid #ffcc02; border-radius: 6px; padding: 15px; margin: 20px 0;">
@@ -1032,15 +1018,10 @@ export const sendExistingCustomerEmail = async (customerData) => {
               </ul>
             </div>
             
-            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">
-              If you have any questions or need assistance accessing your account, please don't hesitate to contact our support team.
-            </p>
+            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">If you have any questions or need assistance accessing your account, please don't hesitate to contact our support team.</p>
             
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-              <p style="font-size: 14px; color: #888; margin: 0;">
-                Best regards,<br>
-                <strong>TaxReady Team</strong>
-              </p>
+              <p style="font-size: 14px; color: #888; margin: 0;">Best regards,<br><strong>TaxReady Team</strong></p>
             </div>
           </div>
         </div>
