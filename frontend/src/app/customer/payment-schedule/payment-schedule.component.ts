@@ -309,35 +309,37 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       // Update sales agent data with dynamic fields from API
       // Priority: salesPersonDetails > SalesForce data > fallback data
       if (data.salesPersonDetails) {
-        // Use salesPersonDetails from API response
+        // Prefer landline/phone for phoneNumber; keep mobile distinct
+        const phoneRaw = data.salesPersonDetails.salesPersonPhone || data.opp_phone || '';
+        const mobileRaw = data.salesPersonDetails.salesPersonMobile || data.opp_mobile || '';
+        const phone = (phoneRaw || '').trim();
+        const mobile = (mobileRaw || '').trim();
+        const same = this.normalizePhone(phone) === this.normalizePhone(mobile);
+
         this.salesAgent = {
           name: data.salesPersonDetails.salesPersonName || "NA",
           position:  "NA",
           faxNumber:  "NA",
-          phoneNumber: data.salesPersonDetails.salesPersonMobile || "NA",
-          email: data.salesPersonDetails.salesPersonEmail || "NA"
+          phoneNumber: phone || (mobile || "NA"),
+          email: data.salesPersonDetails.salesPersonEmail || "NA",
+          mobNo1: same ? null : (mobile || null)
         };
-
-        // Add mobile number if available from salesPersonDetails
-        if (data.salesPersonDetails.salesPersonMobile) {
-          this.salesAgent.mobNo1 = data.salesPersonDetails.salesPersonMobile;
-        } else if (data.opp_mobile) {
-          this.salesAgent.mobNo1 = data.opp_mobile;
-        }
       } else if (!this.salesForceDataLoaded || !this.originalSalesAgentData) {
         // Fallback to opp_owner data if salesPersonDetails not available
+        const phoneRaw = data.opp_phone || '';
+        const mobileRaw = data.opp_mobile || '';
+        const phone = (phoneRaw || '').trim();
+        const mobile = (mobileRaw || '').trim();
+        const same = this.normalizePhone(phone) === this.normalizePhone(mobile);
+
         this.salesAgent = {
           name: data.opp_owner || "NA",
           position:  "NA",
           faxNumber:  "NA",
-          phoneNumber:  "NA",
-          email: data.opp_email || "NA"
+          phoneNumber: phone || (mobile || "NA"),
+          email: data.opp_email || "NA",
+          mobNo1: same ? null : (mobile || null)
         };
-
-        // Add mobile number if available
-        if (data.opp_mobile) {
-          this.salesAgent.mobNo1 = data.opp_mobile;
-        }
       } else {
         // Use the original SalesForce data but supplement with API data if fields are missing
         this.salesAgent = {
@@ -350,6 +352,11 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           mobNo2: this.originalSalesAgentData.mobNo2 || "NA",
           token: this.originalSalesAgentData.token
         };
+
+        // De-duplicate if phone and mobile are the same
+        if (this.normalizePhone(this.salesAgent.phoneNumber) === this.normalizePhone(this.salesAgent.mobNo1 || '')) {
+          this.salesAgent.mobNo1 = null as any;
+        }
       }
 
       this.quotepaymentId = data.quotepaymentId || 
@@ -677,7 +684,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     document.body.appendChild(script);
   }
 
-   getSalesForceDetails()  {
+  getSalesForceDetails()  {
     // Prevent multiple calls if data already loaded
     if (this.salesForceDataLoaded) {
       console.log('🔄 SalesForce data already loaded, skipping API call');
@@ -699,6 +706,11 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
             mobNo2: res.mobNo2,
             token: res.token
           };
+
+          // De-duplicate phone/mobile if identical
+          if (this.normalizePhone(this.salesAgent.phoneNumber) === this.normalizePhone(this.salesAgent.mobNo1 || '')) {
+            this.salesAgent.mobNo1 = null as any;
+          }
           
           // Store a copy of the original data to prevent future overwrites
           this.originalSalesAgentData = { ...this.salesAgent };
@@ -918,5 +930,9 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     // This would need to be checked against the subscription's current registration ID
     // For now, we'll use a simple check
     return card.isDefault;
+  }
+
+  private normalizePhone(n: string | null | undefined): string {
+    return (n || '').replace(/\D+/g, '');
   }
 }

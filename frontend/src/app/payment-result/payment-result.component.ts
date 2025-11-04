@@ -40,7 +40,8 @@ export class PaymentResultComponent implements OnInit {
     position: "NA",
     faxNumber: "NA",
     phoneNumber: "NA",
-    email: "NA"
+    email: "NA",
+    mobNo1: null
   };
 
   constructor(private route: ActivatedRoute, private http: HttpClient, private cdr: ChangeDetectorRef) {}
@@ -181,13 +182,19 @@ export class PaymentResultComponent implements OnInit {
     
     // Extract sales agent information from VzatRecurringData with better fallback
     if (data?.salesPersonDetails) {
+      const phoneRaw = data.salesPersonDetails.salesPersonPhone || '';
+      const mobileRaw = data.salesPersonDetails.salesPersonMobile || '';
+      const phone = phoneRaw.trim();
+      const mobile = mobileRaw.trim();
+      const same = this.normalizePhone(phone) === this.normalizePhone(mobile);
+
       this.salesAgent = {
-        name: data.salesPersonDetails.salesPersonName ,
+        name: data.salesPersonDetails.salesPersonName,
         // position: data.salesPersonDetails.salesPersonPosition || "Sales Representative",
         faxNumber: data.salesPersonDetails.salesPersonFax || "NA",
-        phoneNumber: data.salesPersonDetails.salesPersonMobile || data.salesPersonDetails.salesPersonPhone || "NA",
+        phoneNumber: phone || (mobile || 'NA'),
         email: data.salesPersonDetails.salesPersonEmail || "support@virtuzone.com",
-        mobNo1: data.salesPersonDetails.salesPersonMobile || null
+        mobNo1: same ? null : (mobile || null)
       };
     } else {
       // Fallback to default contact information
@@ -196,7 +203,8 @@ export class PaymentResultComponent implements OnInit {
         position: "Customer Support",
         faxNumber: "+971 4 457 8271",
         phoneNumber: "+971 4 457 8271",
-        email: "support@virtuzone.com"
+        email: "support@virtuzone.com",
+        mobNo1: null
       };
     }
     
@@ -261,13 +269,19 @@ export class PaymentResultComponent implements OnInit {
     
     // Extract sales agent information with better fallback handling
     if (result?.salesPersonDetails) {
+      const phoneRaw = result.salesPersonDetails.salesPersonPhone || '';
+      const mobileRaw = result.salesPersonDetails.salesPersonMobile || '';
+      const phone = phoneRaw.trim();
+      const mobile = mobileRaw.trim();
+      const same = this.normalizePhone(phone) === this.normalizePhone(mobile);
+
       this.salesAgent = {
-        name: result.salesPersonDetails.salesPersonName ,
-        position: result.salesPersonDetails.salesPersonPosition ,
+        name: result.salesPersonDetails.salesPersonName,
+        position: result.salesPersonDetails.salesPersonPosition,
         faxNumber: result.salesPersonDetails.salesPersonFax || "NA",
-        phoneNumber: result.salesPersonDetails.salesPersonMobile || result.salesPersonDetails.salesPersonPhone || "NA",
+        phoneNumber: phone || (mobile || 'NA'),
         email: result.salesPersonDetails.salesPersonEmail || "NA",
-        mobNo1: result.salesPersonDetails.salesPersonMobile || null
+        mobNo1: same ? null : (mobile || null)
       };
     } else {
       // Fallback to default contact information
@@ -276,7 +290,8 @@ export class PaymentResultComponent implements OnInit {
         position: "Customer Support",
         faxNumber: "+971 4 457 8271",
         phoneNumber: "+971 4 457 8271",
-        email: "support@virtuzone.com"
+        email: "support@virtuzone.com",
+        mobNo1: null
       };
     }
     
@@ -304,5 +319,9 @@ export class PaymentResultComponent implements OnInit {
     
     // Enable debug info in development environment
     this.showDebugInfo = !environment.production;
+  }
+
+  private normalizePhone(n: string | null | undefined): string {
+    return (n || '').replace(/\D+/g, '');
   }
 }

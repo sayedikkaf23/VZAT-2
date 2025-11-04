@@ -108,7 +108,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
 
     // Installment logic
     const finalInstallmentType = InstallmentType || "Installments";
-    const createdDateObj = new Date(2026, 0, 1); // Year, Month (0 = Jan), Day
+    const createdDateObj = new Date(CreatedDate); // Year, Month (0 = Jan), Day
     const year = createdDateObj.getFullYear();
     const month = createdDateObj.getMonth(); // 0-based: Jan=0 ... Dec=11
     const day = createdDateObj.getDate();
