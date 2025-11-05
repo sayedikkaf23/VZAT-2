@@ -44,6 +44,14 @@ export class PaymentResultComponent implements OnInit {
     mobNo1: null
   };
 
+  private sanitizeField(val: any): string {
+    if (val == null) return '';
+    const s = String(val).trim();
+    const up = s.toUpperCase();
+    if (!s || up === 'NA' || up === 'N/A') return '';
+    return s;
+  }
+
   constructor(private route: ActivatedRoute, private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
@@ -191,7 +199,7 @@ export class PaymentResultComponent implements OnInit {
       this.salesAgent = {
         name: data.salesPersonDetails.salesPersonName,
         // position: data.salesPersonDetails.salesPersonPosition || "Sales Representative",
-        faxNumber: data.salesPersonDetails.salesPersonFax || "NA",
+        faxNumber: this.sanitizeField(data.salesPersonDetails.salesPersonFax),
         phoneNumber: phone || (mobile || 'NA'),
         email: data.salesPersonDetails.salesPersonEmail || "support@virtuzone.com",
         mobNo1: same ? null : (mobile || null)
@@ -278,7 +286,7 @@ export class PaymentResultComponent implements OnInit {
       this.salesAgent = {
         name: result.salesPersonDetails.salesPersonName,
         position: result.salesPersonDetails.salesPersonPosition,
-        faxNumber: result.salesPersonDetails.salesPersonFax || "NA",
+        faxNumber: this.sanitizeField(result.salesPersonDetails.salesPersonFax),
         phoneNumber: phone || (mobile || 'NA'),
         email: result.salesPersonDetails.salesPersonEmail || "NA",
         mobNo1: same ? null : (mobile || null)
