@@ -25,4 +25,12 @@ export class SalesAgentSidebarComponent {
   @Input() subtitle: string = 'Contact your sales agent:';
   @Input() showTitle: boolean = true;
   @Input() showSubtitle: boolean = true;
+
+
+
+  isPresent(val: any): boolean {
+  if (val ***REMOVED*** null) return false;
+  const s = String(val).trim().toUpperCase();
+  return s !***REMOVED*** '' && s !***REMOVED*** 'NA' && s !***REMOVED*** 'N/A';
+}
 }
