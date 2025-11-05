@@ -118,7 +118,7 @@
               </div>
             </div>
             <!-- Show mobile number if available and different from phone -->
-            <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.mobNo1 && salesAgent.mobNo1 !== salesAgent.phoneNumber">
+            <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.mobNo1 && salesAgent.mobNo1 !== 'NA' && salesAgent.mobNo1 !== salesAgent.phoneNumber">
               <div class="col-auto">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -276,7 +276,7 @@
                 </div>
               </div>
               <!-- Show mobile number if available and different from phone -->
-              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.mobNo1 && salesAgent.mobNo1 !== salesAgent.phoneNumber">
+              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.mobNo1 && salesAgent.mobNo1 !== 'NA' && salesAgent.mobNo1 !== salesAgent.phoneNumber">
                 <div class="col-auto">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
