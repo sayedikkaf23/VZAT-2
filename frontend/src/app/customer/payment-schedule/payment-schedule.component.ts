@@ -132,6 +132,15 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     private cdr: ChangeDetectorRef
   ) {}
 
+  // Normalize optional text fields like fax/email/phone coming from API
+  private sanitizeField(val: any): string {
+    if (val ***REMOVED*** null) return '';
+    const s = String(val).trim();
+    const up = s.toUpperCase();
+    if (!s || up ***REMOVED***= 'NA' || up ***REMOVED***= 'N/A') return '';
+    return s;
+  }
+
   ngOnInit(): void {
     // Get route parameters
     this.route.params.subscribe((params: any) => {
@@ -319,7 +328,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         this.salesAgent = {
           name: data.salesPersonDetails.salesPersonName || "NA",
           position:  "NA",
-          faxNumber:  "NA",
+          faxNumber:  this.sanitizeField(data.salesPersonDetails.salesPersonFax),
           phoneNumber: phone || (mobile || "NA"),
           email: data.salesPersonDetails.salesPersonEmail || "NA",
           mobNo1: same ? null : (mobile || null)
@@ -335,7 +344,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         this.salesAgent = {
           name: data.opp_owner || "NA",
           position:  "NA",
-          faxNumber:  "NA",
+          faxNumber:  this.sanitizeField(data.opp_fax),
           phoneNumber: phone || (mobile || "NA"),
           email: data.opp_email || "NA",
           mobNo1: same ? null : (mobile || null)
