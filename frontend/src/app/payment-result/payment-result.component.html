@@ -87,7 +87,7 @@
             <h6>{{ salesAgent.position }}</h6>
           </div>
           <div class="col-auto">
-            <div class="row align-items-center gx-1 mb-1">
+            <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.faxNumber && salesAgent.faxNumber !***REMOVED*** 'NA'">
               <div class="col-auto">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -99,7 +99,7 @@
                 <h6 class="mb-0"><a [href]="'fax:' + salesAgent.faxNumber">{{ salesAgent.faxNumber }}</a></h6>
               </div>
             </div>
-            <div class="row align-items-center gx-1 mb-1">
+            <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.phoneNumber && salesAgent.phoneNumber !***REMOVED*** 'NA'">
               <div class="col-auto">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -244,8 +244,8 @@
               <p><b>{{ salesAgent.name }}</b></p>
               <h6>{{ salesAgent.position }}</h6>
             </div>
-            <div class="col-auto">
-              <div class="row align-items-center gx-1 mb-1">
+              <div class="col-auto">
+                <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.faxNumber && salesAgent.faxNumber !***REMOVED*** 'NA'">
                 <div class="col-auto">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -257,7 +257,7 @@
                   <h6 class="mb-0"><a [href]="'fax:' + salesAgent.faxNumber">{{ salesAgent.faxNumber }}</a></h6>
                 </div>
               </div>
-              <div class="row align-items-center gx-1 mb-1">
+              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.phoneNumber && salesAgent.phoneNumber !***REMOVED*** 'NA'">
                 <div class="col-auto">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
