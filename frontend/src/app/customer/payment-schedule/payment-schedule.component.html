@@ -250,7 +250,8 @@
               <h6>{{ salesAgent.position }}</h6>
             </div>
             <div class="col-auto">
-              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.faxNumber && salesAgent.faxNumber !== 'NA'">
+              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.faxNumber && salesAgent.faxNumber.trim() !== '' && salesAgent.faxNumber !== 'NA'"
+>
                 <div class="col-auto">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
