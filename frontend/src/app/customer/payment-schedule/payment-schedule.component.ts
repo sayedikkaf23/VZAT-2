@@ -307,11 +307,11 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       };
 
       // Update sales agent data with dynamic fields from API
-      // Priority: salesPersonDetails > SalesForce data > fallback data
-      if (data.salesPersonDetails) {
-        // Prefer landline/phone for phoneNumber; keep mobile distinct
-        const phoneRaw = data.salesPersonDetails.salesPersonPhone || data.opp_phone || '';
-        const mobileRaw = data.salesPersonDetails.salesPersonMobile || data.opp_mobile || '';
+        // Priority: salesPersonDetails > SalesForce data > fallback data
+        if (data.salesPersonDetails) {
+          // Use only salesPersonDetails here; do not fallback to opp_*
+          const phoneRaw = data.salesPersonDetails.salesPersonPhone || '';
+          const mobileRaw = data.salesPersonDetails.salesPersonMobile || '';
         const phone = (phoneRaw || '').trim();
         const mobile = (mobileRaw || '').trim();
         const same = this.normalizePhone(phone) === this.normalizePhone(mobile);

@@ -13,7 +13,7 @@
   
   <div class="mb-3">
     <!-- Fax Number -->
-    <div class="row align-items-center gx-1 mb-1">
+    <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.faxNumber && salesAgent.faxNumber !== 'NA'">
       <div class="col-auto">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -27,7 +27,7 @@
     </div>
     
     <!-- Phone Number -->
-    <div class="row align-items-center gx-1">
+    <div class="row align-items-center gx-1" *ngIf="salesAgent.phoneNumber && salesAgent.phoneNumber !== 'NA'">
       <div class="col-auto">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
