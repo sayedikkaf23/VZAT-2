@@ -316,55 +316,53 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       };
 
       // Update sales agent data with dynamic fields from API
-        // Priority: salesPersonDetails > SalesForce data > fallback data
-        if (data.salesPersonDetails) {
-          // Use only salesPersonDetails here; do not fallback to opp_*
-          const phoneRaw = data.salesPersonDetails.salesPersonPhone || '';
-          const mobileRaw = data.salesPersonDetails.salesPersonMobile || '';
-        const phone = (phoneRaw || '').trim();
-        const mobile = (mobileRaw || '').trim();
+      // Priority: salesPersonDetails > SalesForce data > fallback data
+      if (data.salesPersonDetails) {
+        // Use only salesPersonDetails here; do not fallback to opp_*
+        const phoneRaw = data.salesPersonDetails.salesPersonPhone;
+        const mobileRaw = data.salesPersonDetails.salesPersonMobile;
+        const phone = this.sanitizeField(phoneRaw);
+        const mobile = this.sanitizeField(mobileRaw);
         const same = this.normalizePhone(phone) ***REMOVED***= this.normalizePhone(mobile);
 
         this.salesAgent = {
-          name: data.salesPersonDetails.salesPersonName || "NA",
-          position:  "NA",
-          faxNumber:  this.sanitizeField(data.salesPersonDetails.salesPersonFax),
-          phoneNumber: phone || (mobile || "NA"),
-          email: data.salesPersonDetails.salesPersonEmail || "NA",
-          mobNo1: same ? null : (mobile || null)
+          name: this.sanitizeField(data.salesPersonDetails.salesPersonName),
+          position: '',
+          faxNumber: this.sanitizeField(data.salesPersonDetails.salesPersonFax),
+          phoneNumber: phone || mobile || '',
+          email: this.sanitizeField(data.salesPersonDetails.salesPersonEmail),
+          mobNo1: same ? undefined : (mobile || undefined)
         };
       } else if (!this.salesForceDataLoaded || !this.originalSalesAgentData) {
         // Fallback to opp_owner data if salesPersonDetails not available
-        const phoneRaw = data.opp_phone || '';
-        const mobileRaw = data.opp_mobile || '';
-        const phone = (phoneRaw || '').trim();
-        const mobile = (mobileRaw || '').trim();
+        const phone = this.sanitizeField(data.opp_phone);
+        const mobile = this.sanitizeField(data.opp_mobile);
         const same = this.normalizePhone(phone) ***REMOVED***= this.normalizePhone(mobile);
 
         this.salesAgent = {
-          name: data.opp_owner || "NA",
-          position:  "NA",
-          faxNumber:  this.sanitizeField(data.opp_fax),
-          phoneNumber: phone || (mobile || "NA"),
-          email: data.opp_email || "NA",
-          mobNo1: same ? null : (mobile || null)
+          name: this.sanitizeField(data.opp_owner),
+          position: '',
+          faxNumber: this.sanitizeField(data.opp_fax),
+          phoneNumber: phone || mobile || '',
+          email: this.sanitizeField(data.opp_email),
+          mobNo1: same ? undefined : (mobile || undefined)
         };
       } else {
         // Use the original SalesForce data but supplement with API data if fields are missing
         this.salesAgent = {
-          name: this.originalSalesAgentData.name || data.opp_owner || "NA",
-          position: this.originalSalesAgentData.position || data.opp_title || "NA",
-          faxNumber: this.originalSalesAgentData.faxNumber || data.opp_number || "NA",
-          phoneNumber: this.originalSalesAgentData.phoneNumber || data.opp_phone || "NA",
-          email: this.originalSalesAgentData.email || data.opp_email || "NA",
-          mobNo1: this.originalSalesAgentData.mobNo1 || data.opp_mobile || "NA",
-          mobNo2: this.originalSalesAgentData.mobNo2 || "NA",
+          name: this.sanitizeField(this.originalSalesAgentData.name) || this.sanitizeField(data.opp_owner),
+          position: this.sanitizeField(this.originalSalesAgentData.position) || this.sanitizeField(data.opp_title),
+          faxNumber: this.sanitizeField(this.originalSalesAgentData.faxNumber) || this.sanitizeField(data.opp_number),
+          phoneNumber: this.sanitizeField(this.originalSalesAgentData.phoneNumber) || this.sanitizeField(data.opp_phone),
+          email: this.sanitizeField(this.originalSalesAgentData.email) || this.sanitizeField(data.opp_email),
+          mobNo1: this.sanitizeField(this.originalSalesAgentData.mobNo1) || this.sanitizeField(data.opp_mobile),
+          mobNo2: this.sanitizeField(this.originalSalesAgentData.mobNo2),
           token: this.originalSalesAgentData.token
         };
 
         // De-duplicate if phone and mobile are the same
         if (this.normalizePhone(this.salesAgent.phoneNumber) ***REMOVED***= this.normalizePhone(this.salesAgent.mobNo1 || '')) {
-          this.salesAgent.mobNo1 = null as any;
+          this.salesAgent.mobNo1 = undefined;
         }
       }
 
