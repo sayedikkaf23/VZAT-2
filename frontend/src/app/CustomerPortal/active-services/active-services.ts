@@ -5,6 +5,8 @@ import { CustomerLoginService } from '../../services/customer-login.service';
 import { StyleLoader } from '../../services/style-loader';
 import { ActiveServicesService, PaymentScheduleService, ActiveServicesResponse } from '../../services/active-services.service';
 import { RetryPaymentService, RetryPaymentRequest, RetryPaymentResponse } from '../../services/retry-payment.service';
+import { ToastrService } from 'ngx-toastr';
+import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'app-active-services',
   imports: [NgIf, NgFor, NgClass, RouterLink, TitleCasePipe],
@@ -23,6 +25,7 @@ export class ActiveServices implements OnInit {
   isUploadModalOpen: boolean = false;
   isSidebarHidden = false;
   isNavbarActive = false;
+  retryingPaymentKey: string | null = null;
 
   // Dynamic data properties
   activeServices: PaymentScheduleService[] = [];
@@ -201,7 +204,8 @@ export class ActiveServices implements OnInit {
     private customerLogin: CustomerLoginService,
     private activeServicesService: ActiveServicesService,
     private retryPaymentService: RetryPaymentService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toastr: ToastrService
   ) {}
   ngOnInit(): void {
     this.styleLoader.loadThemes(this.themeUrls)
@@ -695,6 +699,27 @@ export class ActiveServices implements OnInit {
     return payments.find(p => p.status ***REMOVED***= 'failed' || p.status ***REMOVED***= 'overdue') || null;
   }
 
+  private getPaymentIdentifier(service: PaymentScheduleService | null, payment?: any): string {
+    if (!service) {
+      return '';
+    }
+
+    const serviceId = service.quotepaymentId || service.id || 'service';
+    if (!payment) {
+      return serviceId;
+    }
+
+    const paymentId = payment._id || payment.q_payment_id || payment.installment_number || 'payment';
+    return `${serviceId}-${paymentId}`;
+  }
+
+  isPaymentRetrying(service: PaymentScheduleService | null, payment?: any): boolean {
+    if (!this.retryingPaymentKey) {
+      return false;
+    }
+    return this.retryingPaymentKey ***REMOVED***= this.getPaymentIdentifier(service, payment);
+  }
+
   /**
    * Retry a failed payment
    */
@@ -708,6 +733,7 @@ export class ActiveServices implements OnInit {
     const failedPayment = payment || this.getNextFailedPayment(service);
     if (!failedPayment) {
       console.error('❌ Cannot retry payment: No failed payments found');
+      this.toastr.error('No failed payments available to retry.');
       return;
     }
 
@@ -718,29 +744,45 @@ export class ActiveServices implements OnInit {
 
     console.log('🔄 Retrying payment for:', request);
 
-    this.retryPaymentService.retryPayment(request).subscribe({
-      next: (response: RetryPaymentResponse) => {
-        if (response.success) {
-          console.log('✅ Payment retry successful:', response);
-          alert(`Payment retry successful! Transaction ID: ${response.transactionId}`);
-          
-          // Reload active services to reflect the updated status
-          this.loadActiveServices();
-          
-          // Close the modal if it's open
-          if (this.selectedService) {
-            this.closeModal();
+    const paymentIdentifier = this.getPaymentIdentifier(service, failedPayment);
+    this.retryingPaymentKey = paymentIdentifier;
+    this.cdr.detectChanges();
+
+    this.retryPaymentService.retryPayment(request)
+      .pipe(
+        finalize(() => {
+          this.retryingPaymentKey = null;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (response: RetryPaymentResponse) => {
+          if (response.success) {
+            console.log('✅ Payment retry successful:', response);
+            const successMessage = response.message ||
+              (response.transactionId
+                ? `Payment retry successful! Transaction ID: ${response.transactionId}`
+                : 'Payment retry successful!');
+            this.toastr.success(successMessage);
+
+            // Reload active services to reflect the updated status
+            this.loadActiveServices();
+
+            // Close the modal if it's open
+            if (this.selectedService) {
+              this.closeModal();
+            }
+          } else {
+            console.error('❌ Payment retry failed:', response);
+            this.toastr.error(response.message || 'Payment retry failed. Please try again.');
           }
-        } else {
-          console.error('❌ Payment retry failed:', response);
-          alert(`Payment retry failed: ${response.message}`);
+        },
+        error: (error) => {
+          console.error('💥 Error during payment retry:', error);
+          const errorMessage = error?.error?.message || error?.message || 'An error occurred while retrying the payment. Please try again.';
+          this.toastr.error(errorMessage);
         }
-      },
-      error: (error) => {
-        console.error('💥 Error during payment retry:', error);
-        alert('An error occurred while retrying the payment. Please try again.');
-      }
-    });
+      });
   }
 
   /**

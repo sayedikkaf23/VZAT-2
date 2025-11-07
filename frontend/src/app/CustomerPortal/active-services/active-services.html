@@ -1378,12 +1378,18 @@
                                         <!-- Retry button for failed payments -->
                                         <button
                                             *ngIf="payment.status ***REMOVED***= 'failed' && selectedService.subscription_status ***REMOVED***= 'active' && canRetryPayment(payment)"
+                                            type="button"
                                             (click)="retryPayment(selectedService, payment)"
-                                            class="btn btn-sm btn-danger retry-payment-btn">
-                                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-1">
+                                            [disabled]="isPaymentRetrying(selectedService, payment)"
+                                            class="btn btn-sm btn-danger retry-payment-btn d-flex align-items-center">
+                                            <span *ngIf="isPaymentRetrying(selectedService, payment)"
+                                                  class="spinner-border spinner-border-sm me-2"
+                                                  role="status"
+                                                  aria-hidden="true"></span>
+                                            <svg *ngIf="!isPaymentRetrying(selectedService, payment)" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-1">
                                                 <path d="M8 1.5C4.41015 1.5 1.5 4.41015 1.5 8C1.5 11.5899 4.41015 14.5 8 14.5C10.402 14.5 12.5177 13.2755 13.7202 11.402C13.9611 11.0282 13.8571 10.5312 13.4833 10.2902C13.1095 10.0493 12.6125 10.1533 12.3716 10.5271C11.4167 12.0066 9.81338 12.9999 8 12.9999C5.23858 12.9999 3 10.7613 3 7.99987C3 5.23845 5.23858 2.99987 8 2.99987H8.5V4.75L11 2.75L8.5 0.75V2.5H8C8 2.5 8 2.5 8 2.5Z" fill="currentColor"/>
                                             </svg>
-                                            Retry
+                                            <span>{{ isPaymentRetrying(selectedService, payment) ? 'Processing...' : 'Retry' }}</span>
                                         </button>
                                         
                                         <!-- Retry countdown for failed payments -->
