@@ -310,8 +310,8 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
 
     const reasonText = failure_reason || 'Payment processing failed';
     const paymentLinkHtml = payment_link ? 
-      `<a href="${payment_link}" style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Click here to complete the payment</a>` :
-      'Please contact us for payment assistance.';
+      `<a href="${payment_link}" style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Click here to access your Customer Portal account</a>` :
+      'Please contact us for assistance accessing your Customer Portal account.';
 
     const bodyHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
@@ -326,8 +326,10 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
           <p style="margin: 5px 0 0 0;"><strong>Reason:</strong> ${reasonText}</p>
         </div>
 
-        <p>We kindly request you to take the following action at your earliest convenience:</p>
-        
+        <p>We kindly request you to log into Customer Portal and update the correct card details.</p>
+
+        <p>Once updated, you will be able to retry the payment under Active Service(s) section clicking the eye icon on the service details.</p>
+
         <div style="text-align: center; margin: 30px 0;">
           ${paymentLinkHtml}
         </div>
