@@ -112,6 +112,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     const year = createdDateObj.getFullYear();
     const month = createdDateObj.getMonth(); // 0-based: Jan=0 ... Dec=11
     const day = createdDateObj.getDate();
+    const isDecemberSpecialCase = finalInstallmentType === "Installments" && month === 11;
 
     let InstallmentLeft = 1; // fallback default
     let firstPaymentDueDate = new Date(createdDateObj); // First payment due on CreatedDate itself
@@ -124,7 +125,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       const currentDate = new Date();
 
       // Calculate installments left based on CreatedDate month (including current month)
-      if (year <= currentDate.getFullYear()) {
+      if (isDecemberSpecialCase) {
+        InstallmentLeft = 2;
+      } else if (year <= currentDate.getFullYear()) {
         InstallmentLeft = 12 - month;
       } else {
         InstallmentLeft = 12;
@@ -135,16 +138,20 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       firstPaymentDueDate = new Date(createdDateObj.getTime());
 
       // Next installment due date logic
-      let chargeDay = day <= 15 ? 10 : 25;
-      let chargeMonth = month + 1;
-      let chargeYear = year;
-      if (chargeMonth > 11) {
-        chargeMonth = 0;
-        chargeYear += 1;
+      if (isDecemberSpecialCase) {
+        nextInstallmentDate = new Date(Date.UTC(year, month, 31, 0, 0, 0, 0));
+      } else {
+        let chargeDay = day <= 15 ? 10 : 25;
+        let chargeMonth = month + 1;
+        let chargeYear = year;
+        if (chargeMonth > 11) {
+          chargeMonth = 0;
+          chargeYear += 1;
+        }
+        // Always set to 10th or 25th of next month
+        // Use UTC to avoid timezone issues
+        nextInstallmentDate = new Date(Date.UTC(chargeYear, chargeMonth, chargeDay, 0, 0, 0, 0));
       }
-      // Always set to 10th or 25th of next month
-      // Use UTC to avoid timezone issues
-      nextInstallmentDate = new Date(Date.UTC(chargeYear, chargeMonth, chargeDay, 0, 0, 0, 0));
 
       installmentAmount = parseFloat((Total_After_VAT_Currency / InstallmentLeft).toFixed(2));
     }
@@ -196,6 +203,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         if (i === 0) {
           // FIRST payment: ALWAYS use the CreatedDate itself (not modified)
           dueDate = new Date(createdDateObj.getTime()); // Use exact CreatedDate
+        } else if (isDecemberSpecialCase && i === 1) {
+          // December special case: second installment within December on 31st
+          dueDate = new Date(year, month, 31);
         } else {
           // Subsequent payments: 10th or 25th of each month based on original creation date
           const paymentDay = getPaymentDay(createdDateObj);
