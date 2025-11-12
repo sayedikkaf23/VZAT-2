@@ -115,6 +115,7 @@ export const testPaymentCompletion = async (req, res) => {
                 quotepaymentId: updatedSubscription.quotepaymentId,
                 Customer_name: updatedSubscription.Customer_name,
                 opp_email: updatedSubscription.opp_email,
+                opp_owner: updatedSubscription.opp_owner,
                 payments_completed: updatedSubscription.payments_completed,
                 InstallmentLeft: updatedSubscription.InstallmentLeft,
                 last_payment_date: updatedSubscription.last_payment_date,
