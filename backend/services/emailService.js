@@ -39,6 +39,8 @@ const EMAIL_CONFIG = {
   }
 };
 
+const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'dev.tech1@vz.ae';
+
 // Validate email configuration
 const validateEmailConfig = () => {
   const issues = [];
@@ -219,6 +221,7 @@ export const sendFinalRenewalEmail = async (data) => {
       Quote_payment_number,
       Customer_name,
       opp_email,
+      opp_owner,
       payments_completed,
       InstallmentLeft,
       last_payment_date,
@@ -231,11 +234,14 @@ export const sendFinalRenewalEmail = async (data) => {
     }
 
     const subject = `Virtuzone | Your Corporate Service Term Is Ending – Let's Renew for Continued Success`;
-    const recipientList = [
-      opp_email,
-      EMAIL_CONFIG.recipients.devtech_team,
-      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined
-    ].filter(Boolean);
+
+    const oppOwnerEmail =
+      salesPersonDetails?.salesPersonEmail ||
+      (typeof opp_owner === 'string' && opp_owner.includes('@') ? opp_owner : undefined);
+
+    const ccRecipients = oppOwnerEmail ? [oppOwnerEmail] : [];
+
+    const devTechBccEmail = getDevTechBccEmail();
 
     const finalDate = last_payment_date ? new Date(last_payment_date) : new Date();
     const finalDateStr = finalDate.toLocaleDateString('en-US', {
@@ -250,9 +256,9 @@ export const sendFinalRenewalEmail = async (data) => {
 
         <p>This is a gentle reminder that your current corporate service package with Virtuzone, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
 
-        <p>We thank you sincerely for placing your trust in Virtuzone over the past year.</p>
+        <p>We thank you sincerely for placing your trust in Virtuzone. Your corporate services consultant is added in CC to this e-mail to assist you with </p>
 
-        <p>We would be delighted to assist you with renewing your services and tailoring a new plan that fits your current needs.</p>
+        <p> tailoring a new plan for next year that fits your current needs.</p>
 
         <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
       </div>
@@ -263,13 +269,20 @@ export const sendFinalRenewalEmail = async (data) => {
         name: EMAIL_CONFIG.sender.name,
         address: EMAIL_CONFIG.sender.email
       },
-      to: recipientList,
+      to: opp_email,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject,
       html: bodyHtml
     };
 
     const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId, recipients: recipientList };
+    const recipients = {
+      to: opp_email,
+      cc: ccRecipients,
+      bcc: devTechBccEmail ? [devTechBccEmail] : []
+    };
+    return { success: true, messageId: result.messageId, recipients };
   } catch (error) {
     console.error('❌ Failed to send final renewal email:', error);
     return { success: false, error: error.message };
@@ -287,6 +300,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
       q_payment_id,
       Customer_name,
       opp_email,
+      opp_owner,
       payment_amount,
       due_date,
       failure_reason,
@@ -296,13 +310,20 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
 
     const subject = `Action Required: Virtuzone | Payment Attempt Unsuccessful for Your Scheduled Installment`;
     
-    // Recipients: customer, devtech, opp owner, AR team
-    const recipientList = [
-      opp_email,
-      EMAIL_CONFIG.recipients.devtech_team,
-      EMAIL_CONFIG.recipients.ar_team,
-      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined
-    ].filter(Boolean);
+    const oppOwnerEmail =
+      salesPersonDetails?.salesPersonEmail ||
+      (typeof opp_owner === 'string' && opp_owner.includes('@') ? opp_owner : undefined);
+
+    const ccRecipientsSet = new Set(
+      [
+        oppOwnerEmail,
+        'maryia.vinahradava1@virtuzone.com',
+        'arteam1@vz.ae'
+      ].filter(Boolean)
+    );
+    const ccRecipients = Array.from(ccRecipientsSet);
+
+    const devTechBccEmail = getDevTechBccEmail();
 
     const dueDateStr = due_date ? new Date(due_date).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
@@ -319,16 +340,16 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
 
         <p>We hope you're doing well.</p>
 
-        <p>This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed successfully.</p>
+        <p>This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed.</p>
 
         <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
           <p style="margin: 0;"><strong>Amount:</strong> AED ${payment_amount || 'N/A'}</p>
           <p style="margin: 5px 0 0 0;"><strong>Reason:</strong> ${reasonText}</p>
         </div>
 
-        <p>We kindly request you to log into Customer Portal and update the correct card details.</p>
+        <p>We kindly request you update your payment information to avoid service discontinuation:</p>
 
-        <p>Once updated, you will be able to retry the payment under Active Service(s) section clicking the eye icon on the service details.</p>
+      
 
         <div style="text-align: center; margin: 30px 0;">
           ${paymentLinkHtml}
@@ -349,13 +370,20 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
         name: EMAIL_CONFIG.sender.name,
         address: EMAIL_CONFIG.sender.email
       },
-      to: recipientList,
+      to: opp_email,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject,
       html: bodyHtml
     };
 
     const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId, recipients: recipientList };
+    const recipients = {
+      to: opp_email,
+      cc: ccRecipients,
+      bcc: devTechBccEmail ? [devTechBccEmail] : []
+    };
+    return { success: true, messageId: result.messageId, recipients };
   } catch (error) {
     console.error('❌ Failed to send payment failure notification email:', error);
     return { success: false, error: error.message };
@@ -373,6 +401,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       q_payment_id,
       Customer_name,
       opp_email,
+      opp_owner,
       payment_amount,
       payment_date,
       installment_number,
@@ -384,13 +413,21 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 
     const subject = `Virtuzone | Payment Received`;
     
-    // Recipients: customer, devtech, opp owner, AR team
-    const recipientList = [
-      opp_email,
-      EMAIL_CONFIG.recipients.devtech_team,
-      EMAIL_CONFIG.recipients.ar_team,
-      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined
-    ].filter(Boolean);
+    const oppOwnerEmail =
+      salesPersonDetails?.salesPersonEmail ||
+      (typeof opp_owner === 'string' && opp_owner.includes('@') ? opp_owner : undefined);
+
+    const ccRecipientsSet = new Set(
+      [
+        oppOwnerEmail,
+        salesPersonDetails?.salesPersonEmail,
+        'maryia.vinahradava1@virtuzone.com',
+        'arteam1@vz.ae'
+      ].filter(Boolean)
+    );
+    const ccRecipients = Array.from(ccRecipientsSet);
+
+    const devTechBccEmail = getDevTechBccEmail();
 
     const paymentDateStr = payment_date ? new Date(payment_date).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
@@ -523,13 +560,20 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
         name: EMAIL_CONFIG.sender.name,
         address: EMAIL_CONFIG.sender.email
       },
-      to: recipientList,
+      to: opp_email,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject,
       html: bodyHtml
     };
 
     const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId, recipients: recipientList };
+    const recipients = {
+      to: opp_email,
+      cc: ccRecipients,
+      bcc: devTechBccEmail ? [devTechBccEmail] : []
+    };
+    return { success: true, messageId: result.messageId, recipients };
   } catch (error) {
     console.error('❌ Failed to send payment success notification email:', error);
     return { success: false, error: error.message };
@@ -724,12 +768,22 @@ export const sendPdfEmail = async (emailData) => {
       }
     }
 
+    const salesPersonEmail = salesPersonDetails?.salesPersonEmail;
+    const ccRecipients = [];
+    if (salesPersonEmail) {
+      ccRecipients.push(salesPersonEmail);
+    }
+
+    const devTechBccEmail = getDevTechBccEmail();
+
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
         address: EMAIL_CONFIG.sender.email
       },
       to: quote_email,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: `Virtuzone | Proforma Invoice & Payment Link – PI ${Quote_payment_number}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; overflow-wrap: anywhere; word-break: break-word;">
@@ -852,12 +906,15 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       loginUrl
     });
 
+    const devTechBccEmail = getDevTechBccEmail();
+
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
+      ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome to  Customer Portal - Your Account is Ready!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
@@ -976,12 +1033,15 @@ export const sendExistingCustomerEmail = async (customerData) => {
       loginUrl
     } = customerData;
 
+    const devTechBccEmail = getDevTechBccEmail();
+
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
         address: EMAIL_CONFIG.sender.email
       },
       to: email,
+      ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome Back! Your Customer Portal account is Ready to Use',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
