@@ -256,9 +256,9 @@ export const sendFinalRenewalEmail = async (data) => {
 
         <p>This is a gentle reminder that your current corporate service package with Virtuzone, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
 
-        <p>We thank you sincerely for placing your trust in Virtuzone. Your corporate services consultant is added in CC to this e-mail to assist you with </p>
+        <p>We thank you sincerely for placing your trust in Virtuzone. Your corporate services consultant is added in CC to this e-mail to assist you with  tailoring a new plan for next year that fits your current needs.</p>
 
-        <p> tailoring a new plan for next year that fits your current needs.</p>
+        
 
         <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
       </div>
