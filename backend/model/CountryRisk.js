@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const CountryRiskSchema = new mongoose.Schema({
   country: { type: String, required: true, unique: true },
@@ -26,4 +26,6 @@ const CountryRiskSchema = new mongoose.Schema({
     },
 });
 
-module.exports = mongoose.model("CountryRisk", CountryRiskSchema);
+const CountryRisk = mongoose.model("CountryRisk", CountryRiskSchema);
+
+export default CountryRisk;

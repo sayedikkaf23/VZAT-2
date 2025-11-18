@@ -460,10 +460,10 @@ export class PaymentFormComponent implements OnInit {
               const status = checkStatusResponse.data.CustomerStatus;
               if (status ***REMOVED***= 'Auto Approved') {
                 sessionStorage.setItem("quotePaymentId", quotePaymentId);
-                this.router.navigate([`/onlinepayment/${this.orderId}`]);
+                this.router.navigate([`/payment/${this.orderId}`]);
               } else {
                 window.alert('Your request has been submitted successfully. You will receive an email when your application is approved.');
-                this.router.navigate([`/payment-pending/${quotePaymentId}`]);
+                this.router.navigate([`/payment-pending/${this.orderId}`]);
               }
             })
           );

@@ -1,43 +1,26 @@
-// const BankTransfer = require("../model/BankTransferModel");
-const Decimal = require('decimal.js'); // Install the library if needed
-const mailgun = require('mailgun-js');
-const qs     = require("querystring");
+// import BankTransfer from "../model/BankTransferModel";
+import Decimal from 'decimal.js'; // Install the library if needed
 
-const { validationResult } = require("express-validator");
-const PiData = require("../model/PiData");
-const AWS = require('aws-sdk'); // Remove the import * as AWS from 'aws-sdk';
-const fs = require('fs');
-const nodemailer = require("nodemailer");
+import qs from "querystring";
 
-const CountryRisk = require("../model/CountryRisk");
+import VzatRecurringDataModel from "../model/VzatRecurringDataModel.js";
+// Remove the import * as AWS from 'aws-sdk';
+import fs from 'fs';
+import nodemailer from "nodemailer";
 
-const axios = require("axios");
+import CountryRisk from "../model/CountryRisk.js";
 
-const crypto = require("crypto");
-const { request } = require("http");
-require("dotenv").config();
-const stripe = require("stripe")(
-  ***REMOVED***
-);
+import axios from "axios";
+
+import crypto from "crypto";
+import { request } from "http";
+import dotenv from "dotenv";
+dotenv.config();
+
 
 // Load AWS credentials and S3 bucket name from environment variables
-const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
-const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-const awsRegion = process.env.AWS_REGION_NAME;
-const s3BucketName = process.env.S3_BUCKET_NAME;
 
-const s3 = new AWS.S3({
-  accessKeyId: awsAccessKeyId,
-  secretAccessKey: awsSecretAccessKey,
-  region: awsRegion,
-});
 
-const DOMAIN = process.env.MAILGUN_DOMAIN || "vz.ae";
-
-const mg = mailgun({ 
-  apiKey: ***REMOVED***, 
-  domain: DOMAIN 
-});
 
 // const mg = nodemailer.createTransport({
 //   host: process.env.SMTP_HOST,
@@ -72,7 +55,7 @@ const mailTransporter = nodemailer.createTransport({
 
 
 
-exports.callSalesforceEndpoint = async (req, res) => {
+export const callSalesforceEndpoint = async (req, res) => {
   // Destructure fields from the request body
   const { firstName, lastName, nationality, dob, CustomerType, quotePaymentId} = req.body;
 
@@ -236,7 +219,7 @@ console.log(`${process.env.EXTERNAL_API_SCREENING_URL}`)
     
     const { matchScore } = screeningResponse.data;
     // const newEmail = req.body.email.toLowerCase();
-    // Step 5: Create a new Pidata document
+    // Step 5: Create a new VzatRecurringDataModel document
  
 
     // Send a success MatchScoreProductService
@@ -249,7 +232,7 @@ console.log(`${process.env.EXTERNAL_API_SCREENING_URL}`)
 
 
 
-exports.checkStatus = async (req, res) => {
+export const checkStatus = async (req, res) => {
   // Destructure CustomerId and CompanyName from the request body
   const { CustomerId, CompanyName } = req.body;
  
@@ -290,12 +273,12 @@ exports.checkStatus = async (req, res) => {
     const statusData = statusResponse.data;
     
  
-    // Step 3: Find the Pidata entry using the LeadId in leadWithDetails to match CustomerId
-    const pidata = await PiData.findOne({ quotePaymentId: CustomerId });
+    // Step 3: Find the VzatRecurringDataModel entry using the LeadId in leadWithDetails to match CustomerId
+    const pidata = await VzatRecurringDataModel.findOne({ afs_checkout_id: CustomerId });
 
  
     if (!pidata) {
-      return res.status(404).json({ error: 'Pidata not found' });
+      return res.status(404).json({ error: 'VzatRecurringDataModel not found' });
     }
  
     // Update the kycStatus field with the value from the API response
@@ -322,10 +305,10 @@ if (statusData.CustomerStatus ***REMOVED***= 'Auto Approved') {
 
   // 2. Prepare request data
   const requestBodySalesforce = {
-    opp_id: pidata.oppurtunityId,               // From your `pidata` record
+    opp_id: pidata.OpportunityId,               // From your `pidata` record
     compliance_status: pidata.compliance_clear,
     prepayment_status: pidata.prepayment_screening,
-    qp_id: pidata.quotePaymentId,
+    qp_id: pidata.quotepaymentId,
   };
 
   console.log("requestBodySalesforce",requestBodySalesforce)
@@ -351,7 +334,7 @@ if (statusData.CustomerStatus ***REMOVED***= 'Auto Approved') {
   await pidata.save();
 }else {
 
-   if (!pidata.userEmailId) {
+   if (!pidata.opp_email) {
     return res
       .status(400)
       .json({ message: "Email is required"});
@@ -359,7 +342,7 @@ if (statusData.CustomerStatus ***REMOVED***= 'Auto Approved') {
 
   const data = {
     from: process.env.GMAIL_USER || process.env.SMTP_USER,
-    to: pidata.userEmailId,
+    to: pidata.opp_email,
     subject: "Your account is waiting for approval",
     html: `<!DOCTYPE html>
       <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
@@ -551,7 +534,7 @@ if (statusData.CustomerStatus ***REMOVED***= 'Auto Approved') {
 
  
     res.status(200).json({
-      message: 'Status retrieved and Pidata updated successfully',
+      message: 'Status retrieved and VzatRecurringDataModel updated successfully',
       data: statusData,
     });
  
@@ -692,7 +675,7 @@ const convertCurrency = async (req, res) => {
 
 
 
-exports.getAllCountryRisks = async (_, res) => {
+export const getAllCountryRisks = async (_, res) => {
   const countries = await CountryRisk.find();
   res.json(countries);
 };
@@ -869,9 +852,9 @@ async function sendProformaEmails(req, res) {
 
     for (const quotePaymentId of quotePaymentIds) {
       try {
-        const pi = await PiData.findOne({ quotePaymentId }).lean();
+        const pi = await VzatRecurringDataModel.findOne({ quotePaymentId }).lean();
         if (!pi) {
-          results.push({ quotePaymentId, status: "skipped", reason: "PiData not found" });
+          results.push({ quotePaymentId, status: "skipped", reason: "VzatRecurringDataModel not found" });
           continue;
         }
 
@@ -919,7 +902,7 @@ async function sendProformaEmails(req, res) {
   }
 }
 
-exports.getPaymentStatus = async (req, res) => {
+export const getPaymentStatus = async (req, res) => {
   try {
     const { resourcePath } = req.query; // comes encoded in URL
 
@@ -944,15 +927,13 @@ exports.getPaymentStatus = async (req, res) => {
   }
 };
 
-exports.payNow = payNow;
-exports.checkQuoteIdExists = checkQuoteIdExists;
-exports.sendProformaEmails = sendProformaEmails;
-exports.AddCashCounter = AddCashCounter;
-exports.AddBankTransfer = AddBankTransfer;
-exports.convertCurrency = convertCurrency;
-exports.AddCashMachin = AddCashMachin;
-exports.AddCashDeposit = AddCashDeposit;
-exports.AddChequeDeposit = AddChequeDeposit;
-exports.getSidebarData = getSidebarData;
-exports.payNowSaleforce = payNowSaleforce;
-exports.payNowByStripe = payNowByStripe;
+
+export { checkQuoteIdExists };
+export { sendProformaEmails };
+// export { AddCashCounter };
+// export { AddBankTransfer };
+// export { convertCurrency };
+// export { AddCashMachin };
+// export { AddCashDeposit };
+// export { AddChequeDeposit };
+// export { getSidebarData };

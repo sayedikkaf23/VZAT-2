@@ -1,0 +1,12 @@
+2ad63798424c4352ad05cd0d8a4a5a1af0111710 commit	refs/heads/Sandbox
+9f6986884a442ecaa8adfd9c77127255e9724120 commit	refs/heads/fix/default-card-ui-update
+fb4d963938b9c86ab4a6f908bd7d701494a0642b commit	refs/heads/main
+dd6368b25fe587cbc1cee5c92f3040eb41d590b2 commit	refs/heads/prepayment-recurring
+cb844e22a9e1167caba7c33bb353d347e5eabe98 commit	refs/heads/ui-clean-branch
+485373f92c1833478955c17d9cf12cae2bc30acb commit	refs/original/refs/heads/prepayment-recurring
+fb4d963938b9c86ab4a6f908bd7d701494a0642b commit	refs/remotes/origin/HEAD
+2ad63798424c4352ad05cd0d8a4a5a1af0111710 commit	refs/remotes/origin/Sandbox
+9f6986884a442ecaa8adfd9c77127255e9724120 commit	refs/remotes/origin/fix/default-card-ui-update
+fb4d963938b9c86ab4a6f908bd7d701494a0642b commit	refs/remotes/origin/main
+5b29517d69b8033b5b8f1902d7026b32e0ba5219 commit	refs/remotes/origin/ui-clean-branch
+37fd4f66baa6229c0065f2ce867d81b8c4ab3388 commit	refs/stash

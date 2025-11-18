@@ -434,15 +434,21 @@ export class PaymentCompanyComponent implements OnInit {
 
       const digiPayload = {
         firstName: formValue.companyName,
+        lastName: '', // Empty for corporate customers
         nationality: formValue.companyLocation,
+        dob: '', // Empty for corporate customers
         CustomerType: 'C',
         quotePaymentId: this.orderId
       };
 
       this.userService.digicomplice(digiPayload).pipe(
         map(digiRes => {
-          const leadId = digiRes?.screeningmatchScore?.customerId || null;
-          if (!leadId) throw new Error('Missing LeadId from digicomplice response');
+          // For corporate customers, use quotePaymentId as CustomerId since that's what backend uses
+          // Try to get customerId from response, otherwise fallback to quotePaymentId
+          const leadId = digiRes?.screeningmatchScore?.customerId || 
+                        digiRes?.screeningmatchScore?.CustomerId || 
+                        this.orderId; // Fallback to quotePaymentId
+          if (!leadId) throw new Error('Missing CustomerId from digicomplice response');
           return { quotePaymentId: this.orderId, leadId };
         }),
         switchMap(({ quotePaymentId, leadId }) => {
@@ -455,10 +461,10 @@ export class PaymentCompanyComponent implements OnInit {
               const status = checkStatusResponse.data.CustomerStatus;
               if (status ***REMOVED***= 'Auto Approved') {
                 sessionStorage.setItem("quotePaymentId", quotePaymentId);
-                this.router.navigate([`/onlinepayment/${this.orderId}`]);
+                this.router.navigate([`/payment/${this.orderId}`]);
               } else {
                 window.alert('Your request has been submitted successfully. You will receive an email when your application is approved.');
-                this.router.navigate([`/payment-pending/${quotePaymentId}`]);
+                this.router.navigate([`/payment-pending/${this.orderId}`]);
               }
             })
           );
