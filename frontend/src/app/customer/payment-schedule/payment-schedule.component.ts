@@ -371,6 +371,15 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
                            data.quote_payment_id ||
                            data.id;
 
+      // Check if prepayment_screening and compliance_clear are both false
+      // If so, redirect to payment-select page
+      if (data.prepayment_screening ***REMOVED***= false && data.compliance_clear ***REMOVED***= false) {
+        if (this.quotepaymentId) {
+          this.router.navigate([`/payment-select/${this.currentCheckoutId}`]);
+          return; // Exit early to prevent further processing
+        }
+      }
+
       // Extract customer email for card management
       this.customerEmail = data.opp_email || 
                           data.customer_email || 
