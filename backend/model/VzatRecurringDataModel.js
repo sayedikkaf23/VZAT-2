@@ -175,6 +175,15 @@ const vzatRecurringDataSchema = new Schema({
         type: Date,
         default: Date.now
     },
+    // Compliance and prepayment screening status from Salesforce
+    compliance_clear: {
+        type: Boolean,
+     
+    },
+    prepayment_screening: {
+        type: Boolean,
+     
+    },
     // Payment schedule array - structured payment plan
     payment_schedule: [{
         installment_number: {
