@@ -129,12 +129,16 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     let compliance_clear, prepayment_screening;
     const quoteId = paymentData.quotepaymentId;
     
+    console.log('🔍 Checking for quoteId to call Salesforce API:', { quoteId, checkoutId: req.params.checkoutId });
+    
     if (quoteId) {
+      console.log('📞 Starting Salesforce API call process...');
       try {
         // Dynamically import axios
         const axios = (await import('axios')).default;
         
         // Step 1: Get Salesforce OAuth token
+        console.log('🔐 Step 1: Requesting Salesforce OAuth token...');
         const TokenResponse = await axios.post(
           `https://test.salesforce.com/services/oauth2/token`,
           null,
@@ -152,7 +156,17 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
         const accessToken = TokenResponse.data.access_token;
         const saleforcUrl = TokenResponse.data.instance_url;
         
+        console.log('✅ Step 1: Salesforce OAuth token received successfully', {
+          hasAccessToken: !!accessToken,
+          instanceUrl: saleforcUrl
+        });
+        
         // Step 2: Call Salesforce API to get AR Clearance data
+        console.log('📡 Step 2: Calling Salesforce getARClearnce API...', {
+          url: `${saleforcUrl}/services/apexrest/getARClearnce`,
+          paymentId: quoteId
+        });
+        
         const config = {
           method: 'get',
           url: `${saleforcUrl}/services/apexrest/getARClearnce`,
@@ -167,14 +181,23 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
         
         const salesforceResponse = await axios.request(config);
         
+        console.log('✅ Step 2: Salesforce API response received', {
+          status: salesforceResponse.status,
+          statusText: salesforceResponse.statusText,
+          hasData: !!salesforceResponse.data,
+          responseData: salesforceResponse.data
+        });
+        
         // Extract compliance_clear and prepayment_screening from Salesforce response
         if (salesforceResponse.data) {
           compliance_clear = salesforceResponse.data.compliance_clear;
           prepayment_screening = salesforceResponse.data.prepayment_screening;
           
-          console.log('✅ Salesforce AR Clearance data:', {
+          console.log('✅ Salesforce AR Clearance data extracted:', {
             compliance_clear,
-            prepayment_screening
+            prepayment_screening,
+            compliance_clearType: typeof compliance_clear,
+            prepayment_screeningType: typeof prepayment_screening
           });
           
           // Update the database with the new values from Salesforce
@@ -187,34 +210,65 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
               updateData.prepayment_screening = prepayment_screening;
             }
             
+            console.log('💾 Updating database with Salesforce data...', {
+              updateData,
+              checkoutId: req.params.checkoutId
+            });
+            
             await Vzat_Recurring_Data.updateOne(
               { afs_checkout_id: req.params.checkoutId },
               { $set: updateData }
             );
             
-            console.log('✅ Updated database with compliance_clear and prepayment_screening');
+            console.log('✅ Database updated successfully with compliance_clear and prepayment_screening');
             
             // Update the paymentData object with new values
             paymentData.compliance_clear = compliance_clear !== undefined ? compliance_clear : paymentData.compliance_clear;
             paymentData.prepayment_screening = prepayment_screening !== undefined ? prepayment_screening : paymentData.prepayment_screening;
+            
+            console.log('✅ PaymentData object updated:', {
+              compliance_clear: paymentData.compliance_clear,
+              prepayment_screening: paymentData.prepayment_screening
+            });
+          } else {
+            console.log('⚠️ No compliance_clear or prepayment_screening values found in Salesforce response');
           }
+        } else {
+          console.log('⚠️ Salesforce response data is empty or null');
         }
       } catch (salesforceError) {
-        console.error('⚠️ Error calling Salesforce API:', {
+        console.error('❌ Error calling Salesforce API:', {
           message: salesforceError.message,
           status: salesforceError.response?.status,
-          data: salesforceError.response?.data
+          statusText: salesforceError.response?.statusText,
+          data: salesforceError.response?.data,
+          stack: salesforceError.stack
         });
         // Continue without Salesforce data - don't fail the request
       }
+    } else {
+      console.log('⚠️ No quoteId found, skipping Salesforce API call');
     }
     
     // Add compliance_clear and prepayment_screening to paymentData
+    console.log('📦 Building final responseData...', {
+      hasComplianceClear: paymentData.compliance_clear !== undefined,
+      hasPrepaymentScreening: paymentData.prepayment_screening !== undefined,
+      compliance_clear: paymentData.compliance_clear,
+      prepayment_screening: paymentData.prepayment_screening
+    });
+    
     const responseData = {
       ...paymentData.toObject ? paymentData.toObject() : paymentData,
       compliance_clear: paymentData.compliance_clear !== undefined ? paymentData.compliance_clear : false,
       prepayment_screening: paymentData.prepayment_screening !== undefined ? paymentData.prepayment_screening : false
     };
+    
+    console.log('✅ Final responseData prepared:', {
+      compliance_clear: responseData.compliance_clear,
+      prepayment_screening: responseData.prepayment_screening,
+      quotepaymentId: responseData.quotepaymentId
+    });
     
     // Log successful response to database
     Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, {
