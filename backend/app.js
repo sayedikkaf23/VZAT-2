@@ -189,15 +189,24 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
         });
         
         // Extract compliance_clear and prepayment_screening from Salesforce response
+        // Handle different field name variations from Salesforce API
         if (salesforceResponse.data) {
-          compliance_clear = salesforceResponse.data.compliance_clear;
-          prepayment_screening = salesforceResponse.data.prepayment_screening;
+          // Check for compliance_clear or compliance_cleared (Salesforce returns compliance_cleared)
+          compliance_clear = salesforceResponse.data.compliance_clear !== undefined 
+            ? salesforceResponse.data.compliance_clear 
+            : salesforceResponse.data.compliance_cleared;
+          
+          // Check for prepayment_screening or Prepayment_screening (Salesforce returns Prepayment_screening with capital P)
+          prepayment_screening = salesforceResponse.data.prepayment_screening !== undefined
+            ? salesforceResponse.data.prepayment_screening
+            : salesforceResponse.data.Prepayment_screening;
           
           console.log('✅ Salesforce AR Clearance data extracted:', {
             compliance_clear,
             prepayment_screening,
             compliance_clearType: typeof compliance_clear,
-            prepayment_screeningType: typeof prepayment_screening
+            prepayment_screeningType: typeof prepayment_screening,
+            rawResponseKeys: Object.keys(salesforceResponse.data)
           });
           
           // Update the database with the new values from Salesforce
