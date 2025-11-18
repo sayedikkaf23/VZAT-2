@@ -17,7 +17,7 @@ const crypto = require("crypto");
 const { request } = require("http");
 require("dotenv").config();
 const stripe = require("stripe")(
-  "***REMOVED***"
+  ***REMOVED***
 );
 
 // Load AWS credentials and S3 bucket name from environment variables
@@ -32,9 +32,12 @@ const s3 = new AWS.S3({
   region: awsRegion,
 });
 
-const DOMAIN = "vz.ae";
+const DOMAIN = process.env.MAILGUN_DOMAIN || "vz.ae";
 
-const mg = mailgun({ apiKey: "***REMOVED***", domain: DOMAIN });
+const mg = mailgun({ 
+  apiKey: ***REMOVED***, 
+  domain: DOMAIN 
+});
 
 // const mg = nodemailer.createTransport({
 //   host: process.env.SMTP_HOST,
@@ -52,8 +55,8 @@ const mg = mailgun({ apiKey: "***REMOVED***", domain: DOMAIN });
 const mailTransporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "mishalnunu@gmail.com",
-    pass: "qgwlzriynfzukuwy",
+    user: process.env.GMAIL_USER || process.env.SMTP_USER,
+    pass: process.env.GMAIL_PASSWORD || process.env.SMTP_PASS,
   },
 });
 
@@ -355,7 +358,7 @@ if (statusData.CustomerStatus ***REMOVED***= 'Auto Approved') {
   }
 
   const data = {
-    from: "mishalnunu@gmail.com",
+    from: process.env.GMAIL_USER || process.env.SMTP_USER,
     to: pidata.userEmailId,
     subject: "Your account is waiting for approval",
     html: `<!DOCTYPE html>
@@ -708,8 +711,8 @@ function createTransporter() {
   return nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: "mishalnunu@gmail.com", // your Gmail address
-      pass: "qgwlzriynfzukuwy",     // your Gmail app password
+      user: process.env.GMAIL_USER || process.env.SMTP_USER,
+      pass: process.env.GMAIL_PASSWORD || process.env.SMTP_PASS,
     },
   });
 }
