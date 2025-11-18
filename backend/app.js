@@ -125,14 +125,105 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     
     console.log('✅ Payment data found and link is still valid:', paymentData);
     
+    // Get Salesforce OAuth token and fetch compliance_clear and prepayment_screening
+    let compliance_clear, prepayment_screening;
+    const quoteId = paymentData.quotepaymentId;
+    
+    if (quoteId) {
+      try {
+        // Dynamically import axios
+        const axios = (await import('axios')).default;
+        
+        // Step 1: Get Salesforce OAuth token
+        const TokenResponse = await axios.post(
+          `https://test.salesforce.com/services/oauth2/token`,
+          null,
+          {
+            params: {
+              client_id: process.env.SALESFORCE_CLIENT_ID,
+              client_secret: process.env.SALESFORCE_CLIENT_SECRET,
+              grant_type: "password",
+              username: process.env.SALESFORCE_USERNAME,
+              password: process.env.SALESFORCE_PASSWORD,
+            },
+          }
+        );
+        
+        const accessToken = TokenResponse.data.access_token;
+        const saleforcUrl = TokenResponse.data.instance_url;
+        
+        // Step 2: Call Salesforce API to get AR Clearance data
+        const config = {
+          method: 'get',
+          url: `${saleforcUrl}/services/apexrest/getARClearnce`,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`
+          },
+          data: {
+            paymentId: quoteId
+          }
+        };
+        
+        const salesforceResponse = await axios.request(config);
+        
+        // Extract compliance_clear and prepayment_screening from Salesforce response
+        if (salesforceResponse.data) {
+          compliance_clear = salesforceResponse.data.compliance_clear;
+          prepayment_screening = salesforceResponse.data.prepayment_screening;
+          
+          console.log('✅ Salesforce AR Clearance data:', {
+            compliance_clear,
+            prepayment_screening
+          });
+          
+          // Update the database with the new values from Salesforce
+          if (compliance_clear !== undefined || prepayment_screening !== undefined) {
+            const updateData = {};
+            if (compliance_clear !== undefined) {
+              updateData.compliance_clear = compliance_clear;
+            }
+            if (prepayment_screening !== undefined) {
+              updateData.prepayment_screening = prepayment_screening;
+            }
+            
+            await Vzat_Recurring_Data.updateOne(
+              { afs_checkout_id: req.params.checkoutId },
+              { $set: updateData }
+            );
+            
+            console.log('✅ Updated database with compliance_clear and prepayment_screening');
+            
+            // Update the paymentData object with new values
+            paymentData.compliance_clear = compliance_clear !== undefined ? compliance_clear : paymentData.compliance_clear;
+            paymentData.prepayment_screening = prepayment_screening !== undefined ? prepayment_screening : paymentData.prepayment_screening;
+          }
+        }
+      } catch (salesforceError) {
+        console.error('⚠️ Error calling Salesforce API:', {
+          message: salesforceError.message,
+          status: salesforceError.response?.status,
+          data: salesforceError.response?.data
+        });
+        // Continue without Salesforce data - don't fail the request
+      }
+    }
+    
+    // Add compliance_clear and prepayment_screening to paymentData
+    const responseData = {
+      ...paymentData.toObject ? paymentData.toObject() : paymentData,
+      compliance_clear: paymentData.compliance_clear !== undefined ? paymentData.compliance_clear : false,
+      prepayment_screening: paymentData.prepayment_screening !== undefined ? paymentData.prepayment_screening : false
+    };
+    
     // Log successful response to database
     Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, {
       success: true,
-      paymentData: paymentData
+      paymentData: responseData
     });
     
     // Return the data in the format expected by Angular component
-    res.json(paymentData);
+    res.json(responseData);
     
   } catch (error) {
   
