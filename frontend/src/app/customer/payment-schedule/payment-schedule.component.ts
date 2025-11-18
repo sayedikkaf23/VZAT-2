@@ -286,6 +286,16 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       // Store API data for reference
       this.apiData = data;
       
+      // Check if prepayment_screening and compliance_clear are both false, then redirect
+      if (data.prepayment_screening === false && data.compliance_clear === false) {
+       
+       
+          this.isLoading = false;
+          this.router.navigate([`/payment-select/${this.currentCheckoutId}`]);
+          return; // Exit early to prevent further processing
+        
+      }
+      
       // Extract Quote_payment_number
       this.Quote_payment_number = data.Quote_payment_number || 
                                  data.quote_payment_number ||

@@ -1,0 +1,528 @@
+@import '../../assets/css/payment-schedual.css';
+
+/* Remove bottom gap from sidebar */
+.payment-schedule .detils-sidebar {
+  height: 100vh !important;
+  min-height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden;
+}
+
+.payment-schedule .sidebar-row {
+  min-height: 100vh !important;
+  height: 100vh !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.payment-schedule .sidebar-row .col-auto:last-child {
+  margin-top: auto;
+  padding-bottom: 20px;
+}
+
+.payment-schedule .detils-sidebar .row {
+  margin: 0 !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child > * {
+  margin-bottom: 0;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child .price {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child p {
+  margin-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child hr {
+  margin-bottom: 15px !important;
+  margin-top: 15px !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child::after {
+  display: none !important;
+  content: none !important;
+}
+
+.payment-schedule .sidebar-row {
+  padding-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:last-child {
+  margin-top: auto;
+}
+
+/* Fix details-content layout */
+.payment-schedule .details-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 40px 20px;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #fff;
+}
+
+.payment-schedule .details-content .container {
+  max-width: 100%;
+  width: 100%;
+  padding: 0;
+}
+
+.pm-submit-info {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.pm-submit-info .icon {
+  margin-bottom: 30px;
+}
+
+.pm-submit-info .icon img {
+  max-width: 150px;
+  height: auto;
+}
+
+.pm-submit-info h3 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 20px;
+}
+
+.pm-submit-info h5 {
+  font-size: 16px;
+  font-weight: 400;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* Footer styling - match payment-form */
+.payment-schedule .details-content .details-footer {
+  position: relative !important;
+  bottom: auto !important;
+  padding: 0px 15px 0px !important;
+  width: 100%;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.payment-schedule .details-footer {
+  position: relative !important;
+  bottom: auto !important;
+  background: var(--light-primary, #F8E8E9);
+  width: 100%;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.payment-schedule .details-footer hr {
+  border-top: 1px solid var(--primary, #FA2E52);
+  margin: 5px 0 8px !important;
+  opacity: 1;
+}
+
+.payment-schedule .details-footer h2 {
+  text-align: center;
+  margin-bottom: 2px !important;
+}
+
+.payment-schedule .details-footer h3 {
+  text-align: center;
+  margin-bottom: 5px !important;
+}
+
+/* Remove bottom spacing from footer rows */
+.payment-schedule .details-footer .row.align-items-center.gx-1:last-child {
+  margin-bottom: 0 !important;
+}
+
+.payment-schedule .details-footer p {
+  margin: 0;
+}
+
+.payment-schedule .details-footer h6 {
+  margin: 0;
+}
+
+.payment-schedule .details-footer h6 a {
+  color: inherit;
+}
+
+.payment-schedule .details-footer h6 a:hover {
+  color: var(--dark, #000);
+}
+
+.payment-schedule .details-footer .col {
+  text-align: right;
+}
+
+.payment-schedule .details-footer .col-auto {
+  width: 50%;
+}
+
+/* Footer typography to match payment-form */
+.payment-schedule .details-footer h2,
+.payment-schedule .details-footer h3,
+.payment-schedule .details-footer p,
+.payment-schedule .details-footer h6,
+.payment-schedule .details-footer a,
+.payment-schedule .details-footer b {
+  font-family: 'Inter', sans-serif !important;
+  color: #121212 !important;
+}
+
+.payment-schedule .details-footer h6,
+.payment-schedule .details-footer a,
+.payment-schedule .details-footer p {
+  font-size: 10px !important;
+}
+
+.payment-schedule .details-footer h3 {
+  font-size: 12px !important;
+}
+
+.payment-schedule .details-footer h2 {
+  font-size: 10px !important;
+}
+
+/* Contact rows (fax, phone, email) — match payment-form on mobile */
+.payment-schedule .details-footer .row.align-items-center a,
+.payment-schedule .details-footer .row.align-items-center h6 {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 10px !important;
+  color: #121212 !important;
+  font-weight: 400 !important;
+  line-height: 12px !important;
+  text-decoration: none !important;
+}
+
+.payment-schedule .details-footer .row.align-items-center .col h6 {
+  margin: 0 !important;
+}
+
+.payment-schedule .details-footer .row.align-items-center svg {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.payment-schedule .details-footer .row.align-items-center .col-auto svg {
+  margin-right: 4px !important;
+}
+
+/* Fix mobile contact information layout */
+.payment-schedule .details-footer .row.align-items-center.gx-1 {
+  --bs-gutter-x: 0 !important;
+  margin-bottom: 4px !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  padding: 1px 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.payment-schedule .details-footer .row.align-items-center.gx-1 .col-auto {
+  width: 14px !important;
+  min-width: 14px !important;
+  max-width: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+
+.payment-schedule .details-footer .row.align-items-center.gx-1 .col {
+  flex: 1 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  text-align: left !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+.payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 a {
+  color: #333 !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+  display: inline-block !important;
+  white-space: nowrap !important;
+  font-size: 10px !important;
+}
+
+.payment-schedule .details-footer .row.align-items-center.gx-1 .col-auto svg {
+  width: 10px !important;
+  height: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Specific fix for email link to prevent wrapping */
+.payment-schedule .details-footer .row.align-items-center.gx-1 .col h6.mb-0 a[href^="mailto:"] {
+  font-size: 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 140px !important;
+  display: inline-block !important;
+}
+
+/* Ensure body/html don't add extra space */
+body .payment-schedule,
+html .payment-schedule {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+@media (max-width: 991px) {
+  .payment-schedule .details-content {
+    padding: 35px 20px 60px;
+  }
+  
+  .pm-submit-info {
+    padding: 30px 15px;
+  }
+  
+  .pm-submit-info h3 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Mobile layout - match payment-schedule responsive styling */
+  .payment-schedule {
+    background-color: var(--light-primary, #F8E8E9);
+    display: flex;
+    flex-direction: column;
+    background-image: none;
+    min-height: unset !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Override all desktop sidebar styles */
+  .payment-schedule .detils-sidebar {
+    position: static !important;
+    width: 100% !important;
+    text-align: center;
+    min-height: unset !important;
+    height: auto !important;
+    max-height: none !important;
+    padding-bottom: 3px !important;
+    margin-bottom: 0 !important;
+    overflow: visible !important;
+  }
+  
+  .payment-schedule .detils-sidebar .price {
+    font-size: 14px;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Override inline style for username - make it smaller on mobile */
+  .payment-schedule .detils-sidebar h2 {
+    font-size: 14px !important;
+    font-weight: 700;
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+  }
+  
+  .payment-schedule .detils-sidebar h2[style*="font-size:30px"] {
+    font-size: 14px !important;
+  }
+  
+  /* Override desktop sidebar-row styles */
+  .payment-schedule .sidebar-row {
+    min-height: unset !important;
+    height: auto !important;
+    padding: 3px 30px 2px !important;
+    flex-direction: column;
+    margin-bottom: 0 !important;
+    justify-content: flex-start !important;
+  }
+  
+  .payment-schedule .detils-sidebar .row {
+    margin: 0 !important;
+    height: auto !important;
+  }
+  
+  .payment-schedule .detils-sidebar .col-auto:first-child {
+    flex: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .payment-schedule .detils-sidebar .col-auto:first-child > * {
+    margin-bottom: 0 !important;
+  }
+  
+  .payment-schedule .detils-sidebar .col-auto:first-child hr {
+    margin-bottom: 2px !important;
+    margin-top: 2px !important;
+  }
+  
+  /* Reduce logo spacing */
+  .payment-schedule .sidebar-row .logo {
+    padding-bottom: 3px !important;
+    padding-top: 0 !important;
+  }
+  
+  /* Reduce spacing between elements */
+  .payment-schedule .detils-sidebar h3 {
+    margin-bottom: 1px !important;
+    margin-top: 0 !important;
+    font-size: 14px !important;
+  }
+  
+  .payment-schedule .detils-sidebar hr {
+    margin: 2px 0 !important;
+  }
+  
+  .payment-schedule .detils-sidebar p {
+    margin-bottom: 1px !important;
+    font-size: 14px !important;
+  }
+  
+  /* Override all desktop details-content styles */
+  .payment-schedule .details-content {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0px 10px 0 !important;
+    padding-bottom: 0 !important;
+    min-height: unset !important;
+    height: auto !important;
+    width: 100% !important;
+    background: var(--light-primary, #F8E8E9) !important;
+    overflow: visible !important;
+    margin-top: -10px !important;
+    margin-bottom: 0 !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+  }
+  
+  .payment-schedule .details-content .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 8px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Remove any gap between sidebar and content */
+  .payment-schedule > .detils-sidebar + .details-content {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  
+  /* Payment submit info styling */
+  .pm-submit-info {
+    padding: 20px 15px 15px !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .pm-submit-info .icon {
+    margin-bottom: 20px !important;
+  }
+  
+  .pm-submit-info .icon img {
+    max-width: 100px !important;
+  }
+  
+  .pm-submit-info h3 {
+    font-size: 18px !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .pm-submit-info h5 {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Footer styling - match payment-schedule */
+  .payment-schedule .details-content .details-footer {
+    position: relative !important;
+    bottom: auto !important;
+    padding: 0px 15px 0px !important;
+    width: 100%;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .payment-schedule .details-footer {
+    position: relative !important;
+    bottom: auto !important;
+    background: var(--light-primary, #F8E8E9);
+    width: 100%;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .payment-schedule .details-footer hr {
+    border-top: 1px solid var(--primary, #FA2E52);
+    margin: 5px 0 8px !important;
+    opacity: 1;
+  }
+  
+  .payment-schedule .details-footer h2 {
+    text-align: center;
+    margin-bottom: 2px !important;
+  }
+  
+  .payment-schedule .details-footer h3 {
+    text-align: center;
+    margin-bottom: 5px !important;
+  }
+  
+  /* Remove bottom spacing from footer rows */
+  .payment-schedule .details-footer .row.align-items-center.gx-1:last-child {
+    margin-bottom: 0 !important;
+  }
+  
+  /* Ensure body/html don't add extra space */
+  body .payment-schedule,
+  html .payment-schedule {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  
+  app-footer {
+    position: relative;
+    bottom: 0;
+    width: 96%;
+  }
+}
+
+
