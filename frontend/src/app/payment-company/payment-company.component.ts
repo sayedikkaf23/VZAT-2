@@ -122,9 +122,31 @@ export class PaymentCompanyComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.userService.getCountryRisks().subscribe((data) => {
-      this.nationalities = data.sort((a, b) => a.country.localeCompare(b.country));
-      this.cdRef.detectChanges();
+    console.log('Payment company ngOnInit - calling getCountryRisks');
+    this.userService.getCountryRisks().subscribe({
+      next: (data) => {
+        console.log('Country risks loaded successfully:', data);
+        if (data && Array.isArray(data)) {
+          this.nationalities = data.sort((a, b) => a.country.localeCompare(b.country));
+          console.log('Nationalities sorted and set:', this.nationalities.length, 'items');
+        } else {
+          console.warn('Country risks data is not an array:', data);
+          this.nationalities = [];
+        }
+        this.cdRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading country risks:', error);
+        console.error('Error details:', {
+          status: error?.status,
+          statusText: error?.statusText,
+          message: error?.message,
+          error: error?.error
+        });
+        // Set empty array on error to prevent UI issues
+        this.nationalities = [];
+        this.cdRef.detectChanges();
+      }
     });
 
     const today = new Date();

@@ -93,6 +93,17 @@ export class User {
   }
 
   getCountryRisks() {
-    return this.http.get<any[]>(`${this.url}/user/country-risk/all`);
+    // Call the API directly - if CORS is configured on the backend
+    const url = 'https://virtuzone.yeepeey.com/api/user/country-risk/all';
+    console.log('Calling getCountryRisks API:', url);
+    
+    // Try with credentials and proper headers
+    return this.http.get<any[]>(url, {
+      headers: {
+        'Accept': 'application/json'
+      },
+      // Don't send credentials for cross-origin if CORS doesn't allow it
+      // withCredentials: false
+    });
   }
 }

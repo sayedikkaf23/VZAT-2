@@ -352,6 +352,67 @@ input[type="date"]::-moz-focus-inner {
   padding-top: 0;
 }
 
+/* Remove bottom gap from sidebar */
+.payment-schedule .detils-sidebar {
+  height: 100vh !important;
+  min-height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden;
+}
+
+.payment-schedule .sidebar-row {
+  min-height: 100vh !important;
+  height: 100vh !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.payment-schedule .sidebar-row .col-auto:last-child {
+  margin-top: auto;
+  padding-bottom: 20px;
+}
+
+.payment-schedule .detils-sidebar .row {
+  margin: 0 !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child > * {
+  margin-bottom: 0;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child .price {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child p {
+  margin-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child hr {
+  margin-bottom: 15px !important;
+  margin-top: 15px !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child::after {
+  display: none !important;
+  content: none !important;
+}
+
 /* Fix details-content layout */
 .payment-schedule .details-content {
   display: flex;
