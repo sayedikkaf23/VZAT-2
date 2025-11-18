@@ -1,0 +1,82 @@
+<div class="payment-schedule">
+  <div class="detils-sidebar">
+    <div class="row justify-content-between sidebar-row gx-0">
+      <div class="col-auto">
+        <div class="logo">
+          <a href="#">
+            <img src="assets/images/main-logo.svg" alt="" class="d-block" />
+          </a>
+        </div>
+        <h3>Hey,</h3>
+        <h2 style="font-size:30px; font-family:Inter, sans-serif">
+          {{ customerData.name }}!
+        </h2>
+        <hr />
+        <p class="mb-2">Your payment against Proforma Invoice <br /><b class="fw-semibold">No - {{ Quote_payment_number || customerData.invoiceNumber || 'Not available' }} is </b></p>
+        <h2 class="price">AED {{ customerData.totalAmount | number:'1.2-2' }}</h2>
+      </div>
+      
+      <div class="col-auto d-none d-md-block">
+        <app-sales-agent-sidebar 
+          [salesAgent]="salesAgent"
+          title="Need Assistance?"
+          subtitle="Contact your sales agent:">
+        </app-sales-agent-sidebar>
+      </div>
+    </div>
+  </div>
+         
+  <div class="details-content">
+    <div class="container">
+      <div class="payment-detail-list-box">
+        <div class="payment-detail-head text-center">
+          <h5>COMPANY PAYMENT</h5>
+          <h3 class="m-0">Please enter a few basic details</h3>
+        </div>
+        <div class="payment-detail-list">
+          <div class="wrp">
+            <form [formGroup]="basicDetailsForm" (ngSubmit)="onSubmit()" class="mb-0">
+              <div class="form-row-wrapper">
+                <div class="form-row">
+                  <div class="form-col-full">
+                    <div class="form-field">
+                      <label for="companyName" class="form-label">Company Name</label>
+                      <input type="text" class="form-control" id="companyName" name="companyName" formControlName="companyName" placeholder="Enter Company name" required>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-col-full">
+                    <div class="form-field">
+                      <label for="companyLocation" class="form-label">Company Location</label>
+                      <select id="companyLocation" formControlName="companyLocation" name="companyLocation" class="form-select">
+                        <option value="">Select Country</option>
+                        <option *ngFor="let item of nationalities" [value]="item.country">
+                          {{ item.country }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-col-full">
+                    <div class="form-field">
+                      <div class="form-check mb-0">
+                        <input type="checkbox" class="form-check-input" formControlName="agreeTerms" id="keeplogged">
+                        <label class="form-check-label" for="keeplogged">I, the undersigned hereby undertake full responsibility to advise Virtuzone UAE FZ LLC of any change in the above information and accept that any misrepresentation or inaccurate information is a violation of applicable laws to Virtuzone UAE FZ LLC and take full responsibility for any legal consequences.</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <button type="submit" class="btn w-100">Verify</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- <app-footer></app-footer> -->
+  </div>
+</div>
+

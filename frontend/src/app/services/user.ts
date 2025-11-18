@@ -83,4 +83,16 @@ export class User {
   updatemailbody(payload: any): Observable<any> {
     return this.http.put(`${this.url}/admin/updateMail`, payload);
   }
+
+  digicomplice(payload: any): Observable<any> {
+    return this.http.post(`${this.url}/user/digicomplice`, payload);
+  }
+
+  checkStatus(data: { CustomerId: string; CompanyName: string }): Observable<any> {
+    return this.http.post(`${this.url}/user/checkStatus`, data);
+  }
+
+  getCountryRisks() {
+    return this.http.get<any[]>(`${this.url}/user/country-risk/all`);
+  }
 }

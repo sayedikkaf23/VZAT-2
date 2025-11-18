@@ -1,0 +1,43 @@
+<div class="payment-schedule">
+  <div class="detils-sidebar">
+    <div class="row justify-content-between sidebar-row gx-0">
+      <div class="col-auto">
+        <div class="logo">
+          <a href="#">
+            <img src="assets/images/main-logo.svg" alt="" class="d-block" />
+          </a>
+        </div>
+        <h3>Hey,</h3>
+        <h2 style="font-size:30px; font-family:Inter, sans-serif">
+          {{ customerData.name }}!
+        </h2>
+        <hr />
+        <p class="mb-2">Your payment against Proforma Invoice <br /><b class="fw-semibold">No - {{ Quote_payment_number || customerData.invoiceNumber || 'Not available' }} is </b></p>
+        <h2 class="price">AED {{ customerData.totalAmount | number:'1.2-2' }}</h2>
+      </div>
+      
+      <div class="col-auto d-none d-md-block">
+        <app-sales-agent-sidebar 
+          [salesAgent]="salesAgent"
+          title="Need Assistance?"
+          subtitle="Contact your sales agent:">
+        </app-sales-agent-sidebar>
+      </div>
+    </div>
+  </div>
+         
+  <div class="details-content">
+    <div class="container">
+      <div class="pm-submit-info text-center">
+        <div class="icon">
+          <img src="assets/payment_assets/images/processing.png" class="d-block mx-auto"/>
+        </div>
+        <h3>Your application has been submitted!</h3>
+        <h5>Thank you for submitting your details.  <br/> <br/> We have forwarded your information to our sales team, and they will be in touch with you shortly.
+        </h5>
+      </div>
+    </div>
+    <!-- <app-footer></app-footer> -->
+  </div>
+</div>
+

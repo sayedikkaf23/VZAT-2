@@ -1,0 +1,537 @@
+@import '../../assets/css/payment-schedual.css';
+
+.form-field {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+input[type="date"]::-moz-focus-inner {
+  border: 0;
+}
+
+/* Payment Detail Form Styles */
+.payment-detail-list-box {
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.payment-detail-head {
+  padding-bottom: 30px;
+  text-align: center;
+}
+
+.payment-detail-head h5 {
+  color: var(--primary, #FA2E52);
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.payment-detail-head h3 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #000;
+  margin: 0;
+}
+
+.payment-detail-list {
+  background-color: var(--light-primary, #F8E8E9);
+  border-radius: 16px;
+  padding: 40px 50px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: none;
+}
+
+.payment-detail-list .wrp {
+  width: 100%;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.payment-detail-list .wrp::after,
+.payment-detail-list .wrp::before {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Override any styles from imported CSS - specifically the vertical line from payment-schedual.css */
+.payment-detail-list .wrp::after {
+  display: none !important;
+  content: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: none !important;
+  background: none !important;
+  position: static !important;
+  transform: none !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+
+/* Also override the payment-schedule .wrp:after rule specifically */
+.payment-schedule .payment-detail-list .wrp::after,
+.payment-schedule .wrp::after {
+  display: none !important;
+  content: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: none !important;
+  background: none !important;
+  position: static !important;
+  transform: none !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: auto !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Custom form row layout without Bootstrap grid lines */
+.form-row-wrapper {
+  width: 100%;
+  border: none !important;
+  outline: none !important;
+}
+
+.form-row-wrapper::after,
+.form-row-wrapper::before {
+  display: none !important;
+  content: none !important;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  margin: 0;
+  gap: 0;
+  border: none !important;
+  outline: none !important;
+}
+
+.form-row::after,
+.form-row::before {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
+.form-col-half {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding: 0 15px 0 0;
+  box-sizing: border-box;
+}
+
+.form-col-half:last-child {
+  padding: 0 0 0 15px;
+}
+
+.form-col-full {
+  flex: 0 0 100%;
+  max-width: 100%;
+  padding: 0;
+  border: none !important;
+  outline: none !important;
+}
+
+.form-col-full::after,
+.form-col-full::before {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
+/* Remove any borders or dividers */
+.form-row-wrapper .form-row,
+.form-row-wrapper .form-col-half,
+.form-row-wrapper .form-col-full {
+  border: none;
+  position: relative;
+}
+
+.form-row-wrapper .form-col-half::after,
+.form-row-wrapper .form-col-half::before,
+.form-row-wrapper .form-col-full::after,
+.form-row-wrapper .form-col-full::before,
+.form-row-wrapper .form-row::after,
+.form-row-wrapper .form-row::before {
+  display: none;
+  content: none;
+}
+
+.form-row-wrapper .form-field {
+  border: none;
+}
+
+.form-row-wrapper .form-field::after,
+.form-row-wrapper .form-field::before {
+  display: none;
+  content: none;
+}
+
+.payment-detail-list .form-field {
+  margin-bottom: 25px;
+  border: none !important;
+  outline: none !important;
+}
+
+.payment-detail-list .form-field::after,
+.payment-detail-list .form-field::before {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
+.payment-detail-list form {
+  border: none !important;
+  outline: none !important;
+}
+
+.payment-detail-list form::after,
+.payment-detail-list form::before {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
+/* Remove all borders from form elements (but keep container shadow) */
+.payment-detail-list .form-row-wrapper,
+.payment-detail-list .form-row-wrapper *,
+.payment-detail-list .form-row-wrapper *::after,
+.payment-detail-list .form-row-wrapper *::before {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.payment-detail-list .form-row-wrapper * {
+  box-shadow: none !important;
+}
+
+/* Specifically target any potential divider lines */
+.payment-detail-list .form-row-wrapper .form-row + .form-row::before {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
+.payment-detail-list .form-row-wrapper .form-col-full + .form-col-full::before {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
+.payment-detail-list .form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.payment-detail-list .form-control,
+.payment-detail-list .form-select {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff;
+  transition: all 0.3s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.payment-detail-list .form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 12px;
+  padding-right: 40px;
+}
+
+.payment-detail-list .form-control:focus,
+.payment-detail-list .form-select:focus {
+  border-color: var(--primary, #FA2E52);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(250, 46, 82, 0.1);
+}
+
+.payment-detail-list .form-check {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0;
+  gap: 0;
+}
+
+.payment-detail-list .form-check-input {
+  width: 18px;
+  height: 18px;
+  margin-right: 12px;
+  margin-top: 2px;
+  cursor: pointer;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #fff;
+  position: relative;
+}
+
+.payment-detail-list .form-check-input[type="checkbox"]:checked {
+  background-color: var(--primary, #FA2E52);
+  border-color: var(--primary, #FA2E52);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px;
+}
+
+.payment-detail-list .form-check-input:focus {
+  box-shadow: 0 0 0 3px rgba(250, 46, 82, 0.1);
+  outline: none;
+}
+
+.payment-detail-list .form-check-label {
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  margin-bottom: 0;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.payment-detail-list .form-check .form-label {
+  margin-bottom: 0;
+  display: block;
+}
+
+.payment-detail-list .btn {
+  background-color: var(--primary, #FA2E52);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 30px;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 20px;
+  width: 100%;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: block;
+}
+
+.payment-detail-list .btn:hover {
+  background-color: #d72848;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(250, 46, 82, 0.3);
+}
+
+.payment-detail-list .btn:active {
+  transform: translateY(0);
+}
+
+.payment-detail-list .form-check.mb-0 {
+  margin-bottom: 0;
+  align-items: flex-start;
+}
+
+.payment-detail-list .form-check.mb-0 .form-check-input {
+  margin-top: 2px;
+}
+
+.payment-detail-list .form-check.mb-0 .form-check-label {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #555;
+  font-weight: 400;
+  padding-top: 0;
+}
+
+/* Fix details-content layout */
+.payment-schedule .details-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 40px 20px;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #fff;
+}
+
+.payment-schedule .details-content .container {
+  max-width: 100%;
+  width: 100%;
+  padding: 0;
+}
+
+@media (max-width: 991px) {
+  .payment-schedule .details-content {
+    padding: 35px 20px 60px;
+  }
+  
+  .payment-detail-list {
+    padding: 30px 25px;
+  }
+  
+  .payment-detail-head h3 {
+    font-size: 24px;
+  }
+  
+  .payment-detail-list-box {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .payment-schedule .details-content {
+    padding: 25px 0 0;
+    min-height: 0;
+  }
+  
+  app-footer {
+    position: relative;
+    bottom: 0;
+    width: 96%;
+  }
+  
+  .payment-schedule {
+    background-image: none;
+  }
+  
+  .payment-detail-list-box {
+    max-width: 100%;
+    padding: 0 15px;
+  }
+  
+  .payment-detail-list {
+    padding: 25px 20px;
+  }
+  
+  .payment-detail-head {
+    padding-bottom: 20px;
+  }
+  
+  .payment-detail-head h5 {
+    font-size: 14px;
+  }
+  
+  .payment-detail-head h3 {
+    font-size: 20px;
+  }
+  
+  .payment-detail-list .form-field {
+    margin-bottom: 20px;
+  }
+  
+  .form-col-half {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding: 0 !important;
+  }
+  
+  .form-col-half:last-child {
+    padding: 0 !important;
+  }
+}
+
+.data-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  margin-left: -100px;
+  margin-top: -26px;
+  text-align: center;
+  padding: 2px;
+}
+
+.data-loader > div:last-child {
+  position: relative;
+  width: 80px;
+  height: 15px;
+  margin: 1em auto;
+}
+
+.data-loader > div:last-child > div {
+  position: absolute;
+  top: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #000;
+  animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+
+.data-loader > div:last-child > div:nth-child(1) {
+  left: 8px;
+  animation: data-loader-1 0.6s infinite;
+}
+
+.data-loader > div:last-child > div:nth-child(2) {
+  left: 8px;
+  animation: data-loader-2 0.6s infinite;
+}
+
+.data-loader > div:last-child > div:nth-child(3) {
+  left: 32px;
+  animation: data-loader-2 0.6s infinite;
+}
+
+.data-loader > div:last-child > div:nth-child(4) {
+  left: 56px;
+  animation: data-loader-3 0.6s infinite;
+}
+
+@keyframes data-loader-1 {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes data-loader-2 {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(24px, 0);
+  }
+}
+
+@keyframes data-loader-3 {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(0);
+  }
+}
+
+
