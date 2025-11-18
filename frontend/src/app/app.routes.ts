@@ -23,6 +23,10 @@ import { PaymentMethods } from './admin/payment-methods/payment-methods';
 import { PaymentWidgetComponent } from './payment-widget/payment-widget.component';
 import { ForgotPasswordComponent } from './CustomerPortal/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './CustomerPortal/reset-password/reset-password.component';
+import { PaymentFormComponent } from './payment-form/payment-form.component';
+import { PaymentSelectComponent } from './payment-select/payment-select.component';
+import { PaymentPendingComponent } from './payment-pending/payment-pending.component';
+import { PaymentCompanyComponent } from './payment-company/payment-company.component';
 
 export const routes: Routes = [
   // Default route - redirect to customer login
@@ -33,6 +37,10 @@ export const routes: Routes = [
   { path: 'payment-widget', component: PaymentWidgetComponent },
   { path: 'payment/result', component: PaymentResultComponent }, // Moved before parameterized route
   { path: 'payment/:checkoutId', component: PaymentScheduleComponent }, // Updated to use payment schedule
+  { path: 'payment-form/:id', component: PaymentFormComponent },
+  { path: 'payment-select/:id', component: PaymentSelectComponent },
+  { path: 'payment-pending/:id', component: PaymentPendingComponent },
+  { path: 'payment-company/:id', component: PaymentCompanyComponent },
   { path: 'adminLogin', component: AdminLogin},
 
   // { path: 'dashboard', component: Dashboard , 

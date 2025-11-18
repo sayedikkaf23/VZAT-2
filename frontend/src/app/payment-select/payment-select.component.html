@@ -1,0 +1,65 @@
+<div class="payment-schedule">
+  <div class="detils-sidebar">
+    <div class="row justify-content-between sidebar-row gx-0">
+      <div class="col-auto">
+        <div class="logo">
+          <a href="#">
+            <img src="assets/images/main-logo.svg" alt="" class="d-block" />
+          </a>
+        </div>
+        <h3>Hey,</h3>
+        <h2 style="font-size:30px; font-family:Inter, sans-serif">
+          {{ customerData.name }}!
+        </h2>
+        <hr />
+        <p class="mb-2">Your payment against Proforma Invoice <br /><b class="fw-semibold">No - {{ Quote_payment_number || customerData.invoiceNumber || 'Not available' }} is </b></p>
+        <h2 class="price">AED {{ customerData.totalAmount | number:'1.2-2' }}</h2>
+      </div>
+      
+      <div class="col-auto d-none d-md-block">
+        <app-sales-agent-sidebar 
+          [salesAgent]="salesAgent"
+          title="Need Assistance?"
+          subtitle="Contact your sales agent:">
+        </app-sales-agent-sidebar>
+      </div>
+    </div>
+  </div>
+         
+  <div class="details-content">
+    <div class="container">
+      <div class="payment-option-list-box">
+        <div class="payment-option-head d-flex justify-content-center align-items-center">
+          <h3 class="m-0">Before you proceed with the payment, we need a few more details from you. <br><br> Will the payment be done by</h3>
+        </div>
+        <div class="payment-option-list">
+          <div class="wrp">
+            <div class="p-option-box">
+              <div class="image">
+                <img src="assets/payment_assets/images/individual-payment.png" alt="">
+              </div>
+              <div class="content">
+                <h3>Individual<br><span style="font-size: 0.7em;">(Personal Account)</span></h3>
+                <p>Paying for yourself or as a private person.</p>
+                <a [routerLink]="['/payment-form', orderId]" class="btn w-100">Next</a>
+              </div>
+            </div>
+
+            <div class="p-option-box">
+              <div class="image">
+                <img src="assets/payment_assets/images/company-payment.png" alt="">
+              </div>
+              <div class="content">
+                <h3>Company<br><span style="font-size: 0.7em;">(Business Account)</span></h3>
+                <p>Paying on behalf of a business or organization.</p>
+                <a [routerLink]="['/payment-company', orderId]" class="btn w-100">Next</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- <app-footer></app-footer> -->
+  </div>
+</div>
+

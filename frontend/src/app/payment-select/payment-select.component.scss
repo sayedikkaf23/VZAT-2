@@ -1,0 +1,237 @@
+@import '../../assets/css/payment-schedual.css';
+
+/* Remove bottom gap from sidebar */
+.payment-schedule .detils-sidebar {
+  height: 100vh !important;
+  min-height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden;
+}
+
+.payment-schedule .sidebar-row {
+  min-height: 100vh !important;
+  height: 100vh !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.payment-schedule .sidebar-row .col-auto:last-child {
+  margin-top: auto;
+  padding-bottom: 20px;
+}
+
+.payment-schedule .detils-sidebar .row {
+  margin: 0 !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child > * {
+  margin-bottom: 0;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child .price {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child p {
+  margin-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:first-child hr {
+  margin-bottom: 15px !important;
+  margin-top: 15px !important;
+}
+
+/* Ensure no white space at bottom */
+.payment-schedule .detils-sidebar .col-auto:first-child::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Remove any bottom spacing */
+.payment-schedule .detils-sidebar,
+.payment-schedule .detils-sidebar * {
+  box-sizing: border-box;
+}
+
+.payment-schedule .sidebar-row {
+  padding-bottom: 0 !important;
+}
+
+.payment-schedule .detils-sidebar .col-auto:last-child {
+  margin-top: auto;
+}
+
+.payment-schedule .payment-option-list-box {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.payment-option-head {
+  padding-bottom: 45px;
+}
+
+.payment-option-head h3 {
+  font-size: 28px;
+  font-weight: 600;
+  text-align: center;
+  max-width: 650px;
+  width: 100%;
+}
+
+.payment-option-list .wrp {
+  max-width: 590px;
+  width: 100%;
+  margin: 0px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+}
+
+.payment-option-list .wrp:after {
+  display: none;
+}
+
+.payment-option-list .p-option-box {
+  padding: 30px;
+  border-radius: 16px;
+  border: 1px solid #FA2E52;
+  background-color: #FFF4F4;
+  width: 100%;
+  transition: all 0.5s;
+}
+
+.payment-option-list .p-option-box:hover {
+  border: 1px solid #593244;
+  box-shadow: 0px 6px 0px 0px #593244;
+}
+
+.p-option-box .image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.p-option-box .image img {
+  max-width: 100%;
+  height: auto;
+}
+
+.p-option-box .content {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.p-option-box h3 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+
+.p-option-box p {
+  font-size: 13px;
+  margin-bottom: 0px;
+}
+
+.p-option-box .btn {
+  margin-top: 20px;
+  border-radius: 6px;
+  line-height: 40px;
+  height: 40px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #FA2E52 !important;
+  color: #fff !important;
+  border: none !important;
+  text-align: center !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.p-option-box .btn:hover {
+  background: #000 !important;
+}
+
+@media (max-width:991px) {
+  .payment-schedule .details-content {
+    padding: 35px 20px 60px;
+  }
+  
+  .payment-option-head h3 {
+    font-size: 24px;
+  }
+  
+  .payment-option-head {
+    padding-bottom: 30px;
+  }
+  
+  .payment-option-list .wrp {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .payment-option-list .p-option-box {
+    max-width: 100%;
+  }
+}
+
+@media(max-width: 767px) {
+  app-footer {
+    position: relative;
+    bottom: 0;
+    width: 96%;
+  }
+
+  .payment-schedule .details-content {
+    padding: 25px 0 0;
+    min-height: 0;
+  }
+
+  .payment-schedule {
+    background-image: none;
+  }
+  
+  .payment-option-head h3 {
+    font-size: 20px;
+  }
+  
+  .payment-option-head {
+    padding-bottom: 20px;
+  }
+  
+  .p-option-box .image img {
+    max-width: 80%;
+  }
+  
+  .p-option-box h3 {
+    font-size: 18px;
+  }
+  
+  .p-option-box p {
+    font-size: 12px;
+  }
+  
+  .p-option-box .btn {
+    font-size: 14px;
+    height: 38px;
+    line-height: 38px;
+  }
+}
+
+
