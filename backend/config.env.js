@@ -18,6 +18,18 @@ const config = {
     SCREENING_USERNAME: 'VirtuUAT',
     SCREENING_PASSWORD: 'VirtuApiuat@123',
     SCREENING_COMPANYNAME: 'Virtuzone',
+    
+    // Stripe Configuration (set via .env file or environment variables)
+    STRIPE_SECRET_KEY: '',
+    STRIPE_API_KEY: '',
+    
+    // Mailgun Configuration (set via .env file or environment variables)
+    MAILGUN_API_KEY: '',
+    MAILGUN_DOMAIN: 'vz.ae',
+    
+    // Gmail Configuration (set via .env file or environment variables)
+    GMAIL_USER: '',
+    GMAIL_PASSWORD: '',
   },
   
   production: {
@@ -38,6 +50,18 @@ const config = {
     SCREENING_USERNAME: process.env.SCREENING_USERNAME || 'VirtuUAT',
     SCREENING_PASSWORD: process.env.SCREENING_PASSWORD || 'VirtuApiuat@123',
     SCREENING_COMPANYNAME: process.env.SCREENING_COMPANYNAME || 'Virtuzone',
+    
+    // Stripe Configuration (should be set via environment variables)
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
+    STRIPE_API_KEY: process.env.STRIPE_API_KEY || '',
+    
+    // Mailgun Configuration (should be set via environment variables)
+    MAILGUN_API_KEY: ***REMOVED*** || '',
+    MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN || 'vz.ae',
+    
+    // Gmail Configuration (should be set via environment variables)
+    GMAIL_USER: process.env.GMAIL_USER || '',
+    GMAIL_PASSWORD: process.env.GMAIL_PASSWORD || '',
   }
 };
 
