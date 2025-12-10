@@ -424,7 +424,9 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
               return {
                 ...scheduleItem, // Keep all existing fields
                 q_payment_id: salesforceItem ? salesforceItem.Qp_number || null : null, // Add QP number from Salesforce
-                salesforce_status: salesforceItem ? salesforceItem.status : null // Keep original Salesforce status for reference
+                salesforce_status: salesforceItem ? salesforceItem.status : null, // Keep original Salesforce status for reference
+                Prepayment_clearance: salesforceItem ? salesforceItem.Prepayment_clearance || false : false, // Add Prepayment_clearance from Salesforce
+                compliance_cleared: salesforceItem ? salesforceItem.compliance_cleared || false : false // Add compliance_cleared from Salesforce
               };
             });
 
