@@ -430,12 +430,26 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
               };
             });
 
-            // Update the record with the enhanced payment schedule
+            // Extract document-level compliance and prepayment fields from first Salesforce item
+            const firstSalesforceItem = salesforceStatusResult.paymentSchedule[0];
+            const updateData = { 
+              payment_schedule: updatedPaymentSchedule
+            };
+
+            // Update document-level fields from Salesforce
+            if (firstSalesforceItem) {
+              if (firstSalesforceItem.Prepayment_clearance !== undefined) {
+                updateData.prepayment_screening = firstSalesforceItem.Prepayment_clearance;
+              }
+              if (firstSalesforceItem.compliance_cleared !== undefined) {
+                updateData.compliance_clear = firstSalesforceItem.compliance_cleared;
+              }
+            }
+
+            // Update the record with the enhanced payment schedule and document-level fields
             await Vzat_Recurring_Data.findByIdAndUpdate(
               result._id,
-              { 
-                payment_schedule: updatedPaymentSchedule
-              },
+              updateData,
               { new: true }
             );
 
