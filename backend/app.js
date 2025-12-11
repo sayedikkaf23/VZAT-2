@@ -212,22 +212,22 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
           // Update the database with the new values from Salesforce
           if (compliance_clear !== undefined || prepayment_screening !== undefined) {
             const updateData = {};
-            if (compliance_clear !== undefined) {
-              updateData.compliance_clear = compliance_clear;
-            }
-            if (prepayment_screening !== undefined) {
-              updateData.prepayment_screening = prepayment_screening;
-            }
+            // if (compliance_clear !== undefined) {
+            //   updateData.compliance_clear = compliance_clear;
+            // }
+            // if (prepayment_screening !== undefined) {
+            //   updateData.prepayment_screening = prepayment_screening;
+            // }
             
             console.log('💾 Updating database with Salesforce data...', {
               updateData,
               checkoutId: req.params.checkoutId
             });
             
-            await Vzat_Recurring_Data.updateOne(
-              { afs_checkout_id: req.params.checkoutId },
-              { $set: updateData }
-            );
+            // await Vzat_Recurring_Data.updateOne(
+            //   { afs_checkout_id: req.params.checkoutId },
+            //   { $set: updateData }
+            // );
             
             console.log('✅ Database updated successfully with compliance_clear and prepayment_screening');
             
