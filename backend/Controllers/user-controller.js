@@ -97,7 +97,7 @@ export const callSalesforceEndpoint = async (req, res) => {
       screeningResponse = await axios.post(
           `${process.env.EXTERNAL_API_SCREENING_URL}/api/customer/Screening`,
         {
-          UserId: 'ComplianceUAT',
+          UserId: 'ComplianceVZUAE',
           CompanyName: 'Virtuzone',
           CustomerId:quotePaymentId,
           CustomerType: CustomerType,
@@ -167,7 +167,7 @@ export const callSalesforceEndpoint = async (req, res) => {
       screeningResponse = await axios.post(
         `${process.env.EXTERNAL_API_SCREENING_URL}/api/customer/Screening`,
         {
-          UserId: 'ComplianceUAT',
+          UserId: 'ComplianceVZUAE',
           CompanyName: 'Virtuzone',
           CustomerId: quotePaymentId,
           CustomerType: CustomerType,
