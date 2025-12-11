@@ -232,8 +232,8 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
             console.log('✅ Database updated successfully with compliance_clear and prepayment_screening');
             
             // Update the paymentData object with new values
-            paymentData.compliance_clear = compliance_clear !== undefined ? compliance_clear : paymentData.compliance_clear;
-            paymentData.prepayment_screening = prepayment_screening !== undefined ? prepayment_screening : paymentData.prepayment_screening;
+            // paymentData.compliance_clear = compliance_clear !== undefined ? compliance_clear : paymentData.compliance_clear;
+            // paymentData.prepayment_screening = prepayment_screening !== undefined ? prepayment_screening : paymentData.prepayment_screening;
             
             console.log('✅ PaymentData object updated:', {
               compliance_clear: paymentData.compliance_clear,
