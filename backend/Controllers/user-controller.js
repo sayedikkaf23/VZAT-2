@@ -255,8 +255,8 @@ export const checkStatus = async (req, res) => {
       authResponse = await axios.post(
         `${process.env.EXTERNAL_API_SCREENING_URL}/api/customer/authenticate`,
         {
-          username: 'VirtuUAT',
-          password: 'VirtuApiuat@123',
+          username: 'VirtuLiveAPI',
+          password: 'dkl890shscnzksj43ks',
           CompanyName: 'Virtuzone',
         },
         {
