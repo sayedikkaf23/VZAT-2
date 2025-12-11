@@ -139,8 +139,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
 
       // Next installment due date logic
       if (isDecemberSpecialCase) {
-        // December special case: second installment at the end of December
-        nextInstallmentDate = new Date(Date.UTC(year, 11, 31, 0, 0, 0, 0));
+        // December special case: second installment on January 10th of following year
+        nextInstallmentDate = new Date(Date.UTC(year + 1, 0, 10, 0, 0, 0, 0));
       } else {
         let chargeDay = day <= 15 ? 10 : 25;
         let chargeMonth = month + 1;
@@ -205,8 +205,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
           // FIRST payment: ALWAYS use the CreatedDate itself (not modified)
           dueDate = new Date(createdDateObj.getTime()); // Use exact CreatedDate
         } else if (isDecemberSpecialCase && i === 1) {
-          // December special case: second installment on December 31st of the same year
-          dueDate = new Date(year, 11, 31);
+          // December special case: second installment on January 10th of following year
+          dueDate = new Date(year + 1, 0, 10);
         } else {
           // Subsequent payments: 10th or 25th of each month based on original creation date
           const paymentDay = getPaymentDay(createdDateObj);
