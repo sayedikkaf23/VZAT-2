@@ -99,10 +99,10 @@ export class PaymentSelectComponent implements OnInit {
   
   // Normalize optional text fields like fax/email/phone coming from API
   private sanitizeField(val: any): string {
-    if (val === null) return '';
+    if (val === null || val === undefined) return '';
     const s = String(val).trim();
     const up = s.toUpperCase();
-    if (!s || up === 'NA' || up === 'N/A') return '';
+    if (!s || up === 'NA' || up === 'N/A' || up === 'UNDEFINED') return '';
     return s;
   }
   

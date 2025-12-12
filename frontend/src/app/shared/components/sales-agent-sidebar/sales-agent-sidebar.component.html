@@ -9,11 +9,11 @@
   </div>
 
   <p><b>{{ salesAgent.name }}</b></p>
-  <h6 class="fw-normal mb-2">{{ salesAgent.position }}</h6>
+  <h6 class="fw-normal mb-2" *ngIf="salesAgent.position && salesAgent.position !== 'NA' && salesAgent.position !== 'undefined'">{{ salesAgent.position }}</h6>
   
   <div class="mb-3">
     <!-- Fax Number -->
-    <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.faxNumber && salesAgent.faxNumber !== 'NA'">
+    <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.faxNumber && salesAgent.faxNumber !== 'NA' && salesAgent.faxNumber !== 'undefined'">
       <div class="col-auto">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -27,7 +27,7 @@
     </div>
     
     <!-- Phone Number -->
-    <div class="row align-items-center gx-1" *ngIf="salesAgent.phoneNumber && salesAgent.phoneNumber !== 'NA'">
+    <div class="row align-items-center gx-1" *ngIf="salesAgent.phoneNumber && salesAgent.phoneNumber !== 'NA' && salesAgent.phoneNumber !== 'undefined'">
       <div class="col-auto">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -47,7 +47,7 @@
     </div>
     
     <!-- Mobile Number (if available) -->
-    <div class="row align-items-center gx-1" *ngIf="salesAgent.mobNo1 && salesAgent.mobNo1 !== 'NA' && salesAgent.mobNo1 !== salesAgent.phoneNumber">
+    <div class="row align-items-center gx-1" *ngIf="salesAgent.mobNo1 && salesAgent.mobNo1 !== 'NA' && salesAgent.mobNo1 !== 'undefined' && salesAgent.mobNo1 !== salesAgent.phoneNumber">
       <div class="col-auto">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -68,7 +68,7 @@
   </div>
   
   <!-- Email -->
-  <div class="row align-items-center gx-1" *ngIf="salesAgent.email && salesAgent.email !== 'NA'">
+  <div class="row align-items-center gx-1" *ngIf="salesAgent.email && salesAgent.email !== 'NA' && salesAgent.email !== 'undefined'">
     <div class="col-auto">
       <svg width="12" height="10" viewBox="0 0 12 10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
