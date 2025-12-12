@@ -56,6 +56,23 @@
   margin-top: 15px !important;
 }
 
+.payment-schedule .detils-sidebar h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 5px;
+}
+
+/* Desktop: match payment-schedule styling */
+@media (min-width: 768px) {
+  .payment-schedule .detils-sidebar h2 {
+    font-size: 30px;
+    font-weight: 700;
+    margin: 0 0 5px;
+    line-height: 1.3;
+    font-family: "Inter", sans-serif;
+  }
+}
+
 /* Ensure no white space at bottom */
 .payment-schedule .detils-sidebar .col-auto:first-child::after {
   display: none !important;
@@ -81,11 +98,11 @@
   margin: 0 auto;
 }
 
-.payment-option-head {
-  padding-bottom: 45px;
+.payment-schedule-head {
+  padding-bottom: 20px;
 }
 
-.payment-option-head h3 {
+.payment-schedule-head h3 {
   font-size: 28px;
   font-weight: 600;
   text-align: center;
@@ -173,12 +190,12 @@
     padding: 35px 20px 60px;
   }
   
-  .payment-option-head h3 {
+  .payment-schedule-head h3 {
     font-size: 24px;
   }
   
-  .payment-option-head {
-    padding-bottom: 30px;
+  .payment-schedule-head {
+    padding-bottom: 20px;
   }
   
   .payment-option-list .wrp {
@@ -207,11 +224,17 @@
     background-image: none;
   }
   
-  .payment-option-head h3 {
+  .payment-schedule .detils-sidebar h2 {
+    font-size: 18px !important;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  
+  .payment-schedule-head h3 {
     font-size: 20px;
   }
   
-  .payment-option-head {
+  .payment-schedule-head {
     padding-bottom: 20px;
   }
   
