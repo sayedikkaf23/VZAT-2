@@ -31,7 +31,7 @@ export interface RefundResponse {
 })
 export class AddCardPaymentService {
   private apiUrl = environment.apiUrl;
-  private oppwaUrl = 'https://eu-test.oppwa.com/v1';
+  private oppwaUrl = 'https://eu-prod.oppwa.com/v1';
   // Note: entityId and authorization are now handled by the backend using environment variables
 
   constructor(private http: HttpClient) {}
