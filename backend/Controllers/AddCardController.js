@@ -80,7 +80,9 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
         headers: {
           'Authorization': `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
          "Content-Type": "application/x-www-form-urlencoded",
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 
@@ -210,7 +212,9 @@ export const prepareCardRegistration = async (req, res) => {
         headers: {
           'Authorization': AFS_CONFIG.authorization,
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 
@@ -325,7 +329,9 @@ export const handleCardPaymentCallback = async (req, res) => {
       {
         headers: {
           'Authorization': AFS_CONFIG.authorization
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 
@@ -534,7 +540,9 @@ export const handleCardRegistrationCallback = async (req, res) => {
           params: requestParams,
           headers: {
             'Authorization': AFS_CONFIG.authorization
-          }
+          },
+          proxy: false,
+          timeout: 30000
         });
 
         registrationData = registrationResponse.data;
@@ -1079,7 +1087,8 @@ export const getPaymentStatus = async (req, res) => {
     const { data: payment } = await axios.get(url, {
       params: { entityId: '8ac7a4c797e1beca0197e482a8200127' },
       headers: { Authorization: `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}` },
-      timeout: 10000,
+      proxy: false,
+      timeout: 30000,
     });
 
     // 2️⃣ If debit succeeded, issue refund and save card details
@@ -1102,7 +1111,8 @@ export const getPaymentStatus = async (req, res) => {
           Authorization: `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        timeout: 10000,
+        proxy: false,
+        timeout: 30000,
       });
 
       refund = refundData;

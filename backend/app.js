@@ -150,6 +150,8 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
               username: process.env.SALESFORCE_USERNAME,
               password: process.env.SALESFORCE_PASSWORD,
             },
+            proxy: false,
+            timeout: 30000
           }
         );
         
@@ -176,7 +178,9 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
           },
           data: {
             paymentId: quoteId
-          }
+          },
+          proxy: false,
+          timeout: 30000
         };
         
         const salesforceResponse = await axios.request(config);
@@ -366,7 +370,9 @@ app.post('/payment-result', async (req, res) => {
                   },
                   params: {
                     entityId: AFS_CONFIG.entityId
-                  }
+                  },
+                  proxy: false,
+                  timeout: 30000
                 }
               );
               

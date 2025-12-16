@@ -56,6 +56,7 @@ const getSalesforceAccessToken = async () => {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
+        proxy: false,
         timeout: 30000
       }
     );
@@ -182,6 +183,7 @@ export const updateQuotePaymentStatus = async (paymentData) => {
           'Accept': 'application/json',
           'Authorization': `Bearer ${access_token}`
         },
+        proxy: false,
         timeout: 30000 // 30 seconds timeout
       }
     );
@@ -351,6 +353,7 @@ export const testSalesforceConnection = async () => {
           'Accept': 'application/json',
           'Authorization': `Bearer ${accessToken}`
         },
+        proxy: false,
         timeout: 15000 // 15 seconds timeout for test
       }
     );
@@ -463,7 +466,9 @@ export const updateQuotePaymentNumber = async (paymentData) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
       },
-      data: requestBody
+      data: requestBody,
+      proxy: false,
+      timeout: 30000
     };
 
     // Make the API call to Salesforce
@@ -636,7 +641,9 @@ export const getPaymentStatusAndUpdateSchedule = async (paymentData) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
       },
-      data: requestBody
+      data: requestBody,
+      proxy: false,
+      timeout: 30000
     };
 
     // Make the API call to Salesforce

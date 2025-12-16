@@ -1467,7 +1467,11 @@ async function processServerToServerPayment(subscription, savedCard) {
     console.log(`   - Merchant Transaction ID: ${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
     console.log(`   - Timestamp: ${new Date().toISOString()}`);
     
-    const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
+    const response = await axios.post(afsUrl, afsData, { 
+      headers: afsHeaders,
+      proxy: false,
+      timeout: 30000
+    });
     
     console.log('📡 AFS DEBIT FUND RESPONSE RECEIVED:');
     console.log('- Status Code:', response.status);

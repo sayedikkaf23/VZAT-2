@@ -55,7 +55,7 @@ export const callSalesforceEndpoint = async (req, res) => {
     // Get Salesforce access token
     const salesforceLoginUrl = process.env.SALESFORCE_LOGIN_URL || 
                                 process.env.SALESFORCE_URL?.replace(/\/$/, '') || 
-                                'https://test.salesforce.com';
+                                // 'https://test.salesforce.com';
     
     console.log('🔄 Getting Salesforce access token for digicomplice...');
     
@@ -73,7 +73,9 @@ export const callSalesforceEndpoint = async (req, res) => {
         },
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 
@@ -103,7 +105,9 @@ export const callSalesforceEndpoint = async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${access_token}`
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 
@@ -152,7 +156,7 @@ export const checkStatus = async (req, res) => {
     // Get Salesforce access token
     const salesforceLoginUrl = process.env.SALESFORCE_LOGIN_URL || 
                                 process.env.SALESFORCE_URL?.replace(/\/$/, '') || 
-                                'https://test.salesforce.com';
+                                // 'https://test.salesforce.com';
     
     console.log('🔄 Getting Salesforce access token for checkStatus...');
     
@@ -170,7 +174,9 @@ export const checkStatus = async (req, res) => {
         },
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 
@@ -196,7 +202,9 @@ export const checkStatus = async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${access_token}`
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 

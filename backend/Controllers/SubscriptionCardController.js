@@ -76,7 +76,11 @@ export const createCardChangePaymentForm = async (req, res) => {
       "Content-Type": "application/x-www-form-urlencoded"
     };
 
-    const afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
+    const afsResponse = await axios.post(afsUrl, afsData, { 
+      headers: afsHeaders,
+      proxy: false,
+      timeout: 30000
+    });
 
     if (afsResponse.data && afsResponse.data.id) {
       const checkoutId = afsResponse.data.id;

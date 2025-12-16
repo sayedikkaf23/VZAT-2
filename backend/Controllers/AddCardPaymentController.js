@@ -70,7 +70,9 @@ export const initializeCardPayment = async (req, res) => {
         headers: {
           'Authorization': AFS_CONFIG.authorization,
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 
@@ -147,7 +149,9 @@ export const processCardPayment = async (req, res) => {
         headers: {
           'Authorization': AFS_CONFIG.authorization,
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 
@@ -284,7 +288,9 @@ export const refundCardPayment = async (req, res) => {
         headers: {
           'Authorization': AFS_CONFIG.authorization,
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 
@@ -426,7 +432,9 @@ export const testOppwaConfig = async (req, res) => {
     const statusResponse = await axios.get(`${AFS_CONFIG.baseUrl}/v1/status`, {
       headers: {
         'Authorization': AFS_CONFIG.authorization
-      }
+      },
+      proxy: false,
+      timeout: 30000
     });
     
     console.log('🔧 AFS Status Response:', statusResponse.data);
@@ -480,7 +488,9 @@ export const handlePaymentResult = async (req, res) => {
       },
       params: {
         entityId: AFS_CONFIG.entityId
-      }
+      },
+      proxy: false,
+      timeout: 30000
     });
     
     console.log('🔧 Payment status response:', statusResponse.data);
@@ -561,7 +571,9 @@ export const paymentResult = async (req, res) => {
       {
         headers: {
           'Authorization': AFS_CONFIG.authorization
-        }
+        },
+        proxy: false,
+        timeout: 30000
       }
     );
 

@@ -319,7 +319,11 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       };
       
       console.log("afsResponse called");
-      afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
+      afsResponse = await axios.post(afsUrl, afsData, { 
+        headers: afsHeaders,
+        proxy: false,
+        timeout: 30000
+      });
       console.log("afsResponse 1", afsResponse);
       if (afsResponse.data && afsResponse.data.id) {
         // Generate payment link with checkout ID
@@ -508,7 +512,9 @@ export const getAFSPaymentResult = async (req, res) => {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/json'
-        }
+        },
+        proxy: false,
+        timeout: 30000
       });
       
     } catch (getError) {
@@ -518,7 +524,9 @@ export const getAFSPaymentResult = async (req, res) => {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Accept': 'application/json'
-          }
+          },
+          proxy: false,
+          timeout: 30000
         });
       } catch (getWithEntityError) {
         
@@ -531,7 +539,9 @@ export const getAFSPaymentResult = async (req, res) => {
               'Authorization': `Bearer ${accessToken}`,
               'Content-Type': 'application/x-www-form-urlencoded',
               'Accept': 'application/json'
-            }
+            },
+            proxy: false,
+            timeout: 30000
           });
        
         } catch (postError) {
@@ -543,7 +553,9 @@ export const getAFSPaymentResult = async (req, res) => {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
               'Accept': 'application/json'
-            }
+            },
+            proxy: false,
+            timeout: 30000
           });
           
         }
