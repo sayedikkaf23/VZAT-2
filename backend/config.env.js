@@ -7,7 +7,7 @@ const config = {
     MONGODB_URI: process.env.MONGODB_URI || 'mongodb+srv://annapahlevanyan_db_user:bT8gSpitN1AS6bLK@installments.3cbh6rx.mongodb.net/',
     
     // Frontend URL for redirects - using production URL for testing
-    FRONTEND_URL: 'https://vzatnew.yeepeey.com',
+    FRONTEND_URL: 'https://installment.virtuzone.com',
     
     // AFS Payment Gateway Configuration (Production Environment)
     AFS_BASE_URL: 'https://eu-prod.oppwa.com',
@@ -34,7 +34,7 @@ const config = {
     MONGODB_URI: process.env.MONGODB_URI || 'mongodb+srv://annapahlevanyan_db_user:bT8gSpitN1AS6bLK@installments.3cbh6rx.mongodb.net/',
     
     // Frontend URL for redirects
-    FRONTEND_URL: process.env.FRONTEND_URL || 'https://vzatnew.yeepeey.com',
+    FRONTEND_URL: process.env.FRONTEND_URL || 'https://installment.virtuzone.com',
     
     // AFS Payment Gateway Configuration (Production Environment)
     AFS_BASE_URL: process.env.AFS_BASE_URL || 'https://eu-prod.oppwa.com',

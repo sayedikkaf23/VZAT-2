@@ -220,7 +220,7 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
     // Redirect to the shopper result URL if available
     if (this.paymentDetails?.checkoutId) {
       // Use the actual result URL pattern from your API
-      const resultUrl = `https://vzatnew.yeepeey.com/payment-result?id=${this.paymentDetails.checkoutId}&quotepaymentId=${this.paymentDetails.quotepaymentId}`;
+      const resultUrl = `https://installment.virtuzone.com/payment-result?id=${this.paymentDetails.checkoutId}&quotepaymentId=${this.paymentDetails.quotepaymentId}`;
       window.location.href = resultUrl;
     } else {
       // Fallback to local result page
