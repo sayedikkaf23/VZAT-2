@@ -65,6 +65,20 @@ app.use(cors({
 app.use('/api/salesForce', SalesForce);
 app.use('/api/adminLogin', AdminLogin);
 app.use('/api/customer', Customer);
+// Log requests to vzat_recurring_create_payment_link endpoint
+app.use('/api/vzat_recurring_create_payment_link', (req, res, next) => {
+  console.log('🔔 API Hit: /api/vzat_recurring_create_payment_link');
+  console.log('📋 Method:', req.method);
+  console.log('📋 Timestamp:', new Date().toISOString());
+  console.log('📋 IP:', req.ip || req.connection.remoteAddress);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📋 Request Body Keys:', Object.keys(req.body));
+    if (req.body.quotepaymentId) {
+      console.log('📋 Quote Payment ID:', req.body.quotepaymentId);
+    }
+  }
+  next();
+});
 app.use('/api/vzat_recurring_create_payment_link', VzatRecurring);
 app.use('/api/subscription', Subscription);
 app.use('/api/subscription-card', SubscriptionCard);
