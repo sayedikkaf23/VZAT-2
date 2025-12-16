@@ -1,5 +1,5 @@
 import express from "express";
-import Post_Vzat_Recurring_Data, { getAFSPaymentResult } from "../Controllers/PostVzatRecurringData.js";
+import Post_Vzat_Recurring_Data, { getAFSPaymentResult, generateCheckoutId } from "../Controllers/PostVzatRecurringData.js";
 import { Get_All_Vzat_Recurring_Data , Get_Searched_Vzat_Recurring_Data } from "../Controllers/GetVzatRecurringData.js";
 import { Get_Vzat_Recurring_Data_By_Id } from "../Controllers/GetVzatRecurringDataById.js";
 const router = express.Router();
@@ -8,6 +8,9 @@ const router = express.Router();
 router.route("/").post(Post_Vzat_Recurring_Data);
 router.route("/").get(Get_All_Vzat_Recurring_Data);
 router.route("/search").get(Get_Searched_Vzat_Recurring_Data);
+
+// Generate checkout ID on demand (when user clicks "Pay" button)
+router.post("/generate_checkout/:quotepaymentId", generateCheckoutId);
 
 // GET single record by quotepaymentId
 router.route("/:quotepaymentId").get(Get_Vzat_Recurring_Data_By_Id);

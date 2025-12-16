@@ -258,114 +258,13 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       );
     }
 
-    // Generate AFS payment link or subscription
-    let paymentLink = null;
-    let afsError = null;
-    let afsResponse = null;
-    
-    try {
-      const afsUrl = `${process.env.AFS_DOMAIN}/v1/checkouts`;
-      const entityId = process.env.AFS_ENTITY_ID;
-      const accessToken = process.env.AFS_ACCESS_TOKEN;
-      const backendUrl = process.env.BACKEND_URL;
-      const frontendUrl = process.env.FRONTEND_URL;
-     
-      // Use backend URL for shopperResultUrl since that's where the payment-result endpoint is
-      const shopperResultUrl = `${backendUrl}/payment-result`;
-    
-      
-      // Debug: Check if environment variables are loaded
-      if (!process.env.AFS_DOMAIN || !process.env.AFS_ENTITY_ID || !process.env.AFS_ACCESS_TOKEN) {
-        throw new Error(`Missing AFS environment variables: AFS_DOMAIN=${!!process.env.AFS_DOMAIN}, AFS_ENTITY_ID=${!!process.env.AFS_ENTITY_ID}, AFS_ACCESS_TOKEN=${!!process.env.AFS_ACCESS_TOKEN}`);
-      }
-      
-      const afsData = new URLSearchParams();
-      afsData.append('entityId', entityId);
-      afsData.append('amount', installmentAmount.toFixed(2)); // Ensure 2 decimal places
-      afsData.append('currency', 'AED');
-      afsData.append('merchantTransactionId', quotepaymentId);
-      afsData.append('shopperResultUrl', shopperResultUrl);
-      
-      // Add webhook notification URL for automatic payment status updates
-      const notificationUrl = `${backendUrl}/api/subscription/webhook/afs`;
-      afsData.append('notificationUrl', notificationUrl);
-      
-      if (isSubscription) {
-        
-        // For subscriptions, we use 'DB' (Direct Debit) for immediate charge of first payment
-        // This ensures the first payment is actually debited, not just pre-authorized
-        afsData.append('paymentType', 'DB');
-        
-        // CRITICAL: Add createRegistration=true for subscriptions to enable recurring payments
-        afsData.append('createRegistration', 'true');
-        
-        // Add subscription-specific parameters
-        afsData.append('recurringType', 'INITIAL');
-        
-        // Calculate next charge date based on creation date logic
-        const nextChargeDate = nextInstallmentDate.toISOString().slice(0, 10);
-        
-        // Add subscription metadata (for tracking)
-        afsData.append('merchantMemo', `Subscription:${quotepaymentId}:${InstallmentLeft}:${nextChargeDate}`);
-        
-      } else {
-        // For one-time payments, use 'DB' (Direct Debit)
-        afsData.append('paymentType', 'DB');
-      }
-      
-      const afsHeaders = {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/x-www-form-urlencoded"
-      };
-      
-      console.log("afsResponse called");
-      afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
-      console.log("afsResponse 1", afsResponse);
-      if (afsResponse.data && afsResponse.data.id) {
-        // Generate payment link with checkout ID
-        paymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${afsResponse.data.id}`;
-        
-        // Store the checkout ID and subscription info in the database
-        try {
-          const updateData = { 
-            afs_checkout_id: afsResponse.data.id,
-            is_subscription: isSubscription,
-            subscription_status: isSubscription ? 'pending' : 'one-time',
-            next_charge_date: isSubscription ? nextInstallmentDate : null
-          };
-          
-          await Vzat_Recurring_Data.findByIdAndUpdate(
-            result._id,
-            updateData,
-            { new: true }
-          );
-          
-          
-        } catch (updateErr) {
-          // Error storing checkout/subscription data handled silently
-        }
-      } else {
-        afsError = afsResponse.data;
-      }
-    } catch (err) {
-      afsError = err.response ? err.response.data : err.message;
-    }
-
-    // Final response including payment link
-    // Generate final URLs for response
-    let finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result`;
-    let paymentPageUrl = null;
-    if (afsResponse && afsResponse.data && afsResponse.data.id) {
-      const id = encodeURIComponent(afsResponse.data.id);
-      const resourcePath = encodeURIComponent(`/v1/checkouts/${afsResponse.data.id}/payment`);
-      finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
-      paymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(afsResponse.data.id)}`;
-    }
+    // Note: Checkout ID generation moved to on-demand endpoint (when user clicks "Pay" button)
+    // This allows the record to be created without generating payment link immediately
     
     const brands = "VISA MASTER AMEX";
     const data = {
       status: true,
-      message: isSubscription ? "Subscription payment link created successfully" : "One-time payment link created successfully",
+      message: isSubscription ? "Subscription record created successfully. Click 'Pay' to generate payment link." : "One-time payment record created successfully. Click 'Pay' to generate payment link.",
       quotepaymentId,
       payment_type: isSubscription ? "subscription" : "one-time",
       first_payment_due_date: firstPaymentDueDate.toISOString().slice(0, 10),
@@ -373,10 +272,10 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       payment_amount: installmentAmount,
       installments_left: InstallmentLeft,
       installment_type: finalInstallmentType,
-      payment_link: paymentLink,
-      payment_page_url: paymentPageUrl,
-      afs_checkout_id: afsResponse && afsResponse.data && afsResponse.data.id ? afsResponse.data.id : null,
-      shopper_result_url: finalShopperResultUrl,
+      payment_link: null, // Will be generated on demand
+      payment_page_url: null, // Will be generated on demand
+      afs_checkout_id: null, // Will be generated on demand
+      shopper_result_url: null, // Will be generated on demand
       data_brands: brands,
       payment_schedule: paymentSchedule, // Add the structured payment schedule
       subscription_info: isSubscription ? {
@@ -386,7 +285,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         installment_amount: installmentAmount,
         total_amount: Total_After_VAT_Currency
       } : null,
-      afs_error: afsError
+      afs_error: null
     };
 
     Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link", req.body, data);
@@ -471,6 +370,192 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     return res.status(500).json(data);
   } finally {
     
+  }
+};
+
+// Generate checkout ID on demand (when user clicks "Pay" button)
+export const generateCheckoutId = async (req, res) => {
+  await connectDB();
+
+  try {
+    const { quotepaymentId } = req.params;
+
+    if (!quotepaymentId) {
+      const data = { message: "quotepaymentId is required" };
+      Post_Common_DB_Log_Data("/api/generate_checkout_id/:quotepaymentId", req.params, data);
+      return res.status(400).json(data);
+    }
+
+    // Find the existing record
+    const existingRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
+
+    if (!existingRecord) {
+      const data = { message: "Payment record not found for this quotepaymentId" };
+      Post_Common_DB_Log_Data("/api/generate_checkout_id/:quotepaymentId", req.params, data);
+      return res.status(404).json(data);
+    }
+
+    // Check if checkout ID already exists
+    if (existingRecord.afs_checkout_id) {
+      const existingPaymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(existingRecord.afs_checkout_id)}`;
+      const existingPaymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${existingRecord.afs_checkout_id}`;
+      
+      const data = {
+        status: true,
+        message: "Checkout ID already exists",
+        quotepaymentId,
+        afs_checkout_id: existingRecord.afs_checkout_id,
+        payment_link: existingPaymentLink,
+        payment_page_url: existingPaymentPageUrl
+      };
+      
+      Post_Common_DB_Log_Data("/api/generate_checkout_id/:quotepaymentId", req.params, data);
+      return res.status(200).json(data);
+    }
+
+    // Calculate installment amount and dates from existing record
+    const isSubscription = existingRecord.is_subscription || false;
+    const installmentAmount = existingRecord.InstallmentLeft > 0 
+      ? parseFloat((existingRecord.Total_After_VAT_Currency / existingRecord.InstallmentLeft).toFixed(2))
+      : parseFloat(existingRecord.Total_After_VAT_Currency);
+    const nextInstallmentDate = existingRecord.next_charge_date || null;
+
+    // Generate AFS payment link or subscription
+    let paymentLink = null;
+    let afsError = null;
+    let afsResponse = null;
+    
+    try {
+      const afsUrl = `${process.env.AFS_DOMAIN}/v1/checkouts`;
+      const entityId = process.env.AFS_ENTITY_ID;
+      const accessToken = process.env.AFS_ACCESS_TOKEN;
+      const backendUrl = process.env.BACKEND_URL;
+      const frontendUrl = process.env.FRONTEND_URL;
+     
+      // Use backend URL for shopperResultUrl since that's where the payment-result endpoint is
+      const shopperResultUrl = `${backendUrl}/payment-result`;
+    
+      // Debug: Check if environment variables are loaded
+      if (!process.env.AFS_DOMAIN || !process.env.AFS_ENTITY_ID || !process.env.AFS_ACCESS_TOKEN) {
+        throw new Error(`Missing AFS environment variables: AFS_DOMAIN=${!!process.env.AFS_DOMAIN}, AFS_ENTITY_ID=${!!process.env.AFS_ENTITY_ID}, AFS_ACCESS_TOKEN=${!!process.env.AFS_ACCESS_TOKEN}`);
+      }
+      
+      const afsData = new URLSearchParams();
+      afsData.append('entityId', entityId);
+      afsData.append('amount', installmentAmount.toFixed(2)); // Ensure 2 decimal places
+      afsData.append('currency', 'AED');
+      afsData.append('merchantTransactionId', quotepaymentId);
+      afsData.append('shopperResultUrl', shopperResultUrl);
+      
+      // Add webhook notification URL for automatic payment status updates
+      const notificationUrl = `${backendUrl}/api/subscription/webhook/afs`;
+      afsData.append('notificationUrl', notificationUrl);
+      
+      if (isSubscription) {
+        // For subscriptions, we use 'DB' (Direct Debit) for immediate charge of first payment
+        afsData.append('paymentType', 'DB');
+        
+        // CRITICAL: Add createRegistration=true for subscriptions to enable recurring payments
+        afsData.append('createRegistration', 'true');
+        
+        // Add subscription-specific parameters
+        afsData.append('recurringType', 'INITIAL');
+        
+        // Calculate next charge date based on creation date logic
+        const nextChargeDate = nextInstallmentDate ? new Date(nextInstallmentDate).toISOString().slice(0, 10) : null;
+        
+        // Add subscription metadata (for tracking)
+        if (nextChargeDate) {
+          afsData.append('merchantMemo', `Subscription:${quotepaymentId}:${existingRecord.InstallmentLeft}:${nextChargeDate}`);
+        }
+      } else {
+        // For one-time payments, use 'DB' (Direct Debit)
+        afsData.append('paymentType', 'DB');
+      }
+      
+      const afsHeaders = {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/x-www-form-urlencoded"
+      };
+      
+      console.log("🔄 Generating checkout ID for quotepaymentId:", quotepaymentId);
+      afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
+      console.log("✅ Checkout ID generated:", afsResponse.data);
+      
+      if (afsResponse.data && afsResponse.data.id) {
+        // Generate payment link with checkout ID
+        paymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${afsResponse.data.id}`;
+        
+        // Store the checkout ID and subscription info in the database
+        try {
+          const updateData = { 
+            afs_checkout_id: afsResponse.data.id,
+            is_subscription: isSubscription,
+            subscription_status: isSubscription ? 'pending' : 'one-time',
+            next_charge_date: isSubscription ? nextInstallmentDate : null
+          };
+          
+          await Vzat_Recurring_Data.findByIdAndUpdate(
+            existingRecord._id,
+            updateData,
+            { new: true }
+          );
+          
+          console.log('✅ Checkout ID saved to database');
+        } catch (updateErr) {
+          console.error('❌ Error storing checkout ID:', updateErr);
+        }
+      } else {
+        afsError = afsResponse.data;
+      }
+    } catch (err) {
+      console.error('❌ Error generating checkout ID:', err);
+      afsError = err.response ? err.response.data : err.message;
+    }
+
+    // Generate final URLs for response
+    let finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result`;
+    let paymentPageUrl = null;
+    if (afsResponse && afsResponse.data && afsResponse.data.id) {
+      const id = encodeURIComponent(afsResponse.data.id);
+      const resourcePath = encodeURIComponent(`/v1/checkouts/${afsResponse.data.id}/payment`);
+      finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
+      paymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(afsResponse.data.id)}`;
+    }
+    
+    const responseData = {
+      status: afsResponse && afsResponse.data && afsResponse.data.id ? true : false,
+      message: afsResponse && afsResponse.data && afsResponse.data.id 
+        ? "Checkout ID generated successfully" 
+        : "Failed to generate checkout ID",
+      quotepaymentId,
+      payment_type: isSubscription ? "subscription" : "one-time",
+      payment_amount: installmentAmount,
+      installments_left: existingRecord.InstallmentLeft,
+      payment_link: paymentLink,
+      payment_page_url: paymentPageUrl,
+      afs_checkout_id: afsResponse && afsResponse.data && afsResponse.data.id ? afsResponse.data.id : null,
+      shopper_result_url: finalShopperResultUrl,
+      afs_error: afsError
+    };
+
+    Post_Common_DB_Log_Data("/api/generate_checkout_id/:quotepaymentId", req.params, responseData);
+    
+    if (afsResponse && afsResponse.data && afsResponse.data.id) {
+      res.status(200).json(responseData);
+    } else {
+      res.status(500).json(responseData);
+    }
+
+  } catch (error) {
+    console.error('❌ Error in generateCheckoutId:', error);
+    const data = { 
+      status: false,
+      message: error.message || "Internal server error",
+      afs_error: error.message
+    };
+    Post_Common_DB_Log_Data("/api/generate_checkout_id/:quotepaymentId", req.params, data);
+    return res.status(500).json(data);
   }
 };
 

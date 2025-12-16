@@ -139,6 +139,21 @@ export class PaymentScheduleService {
   }
 
   /**
+   * Generate checkout ID on demand (when user clicks "Pay" button)
+   */
+  generateCheckoutId(quotepaymentId: string): Observable<any> {
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+
+    return this.http.post<any>(
+      `${this.apiUrl}/vzat_recurring_create_payment_link/generate_checkout/${quotepaymentId}`,
+      {},
+      { headers }
+    );
+  }
+
+  /**
    * Process payment for a specific installment
    */
   processPayment(checkoutId: string, paymentData: any): Observable<any> {

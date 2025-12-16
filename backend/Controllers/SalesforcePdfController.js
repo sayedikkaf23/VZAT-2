@@ -188,13 +188,18 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             console.log(`✅ Calculated installment amount: ${calculatedInstallmentAmount} (${Total_After_VAT_Currency} / ${Total_Installments})`);
         }
 
+        // Construct payment link using quotepaymentId instead of checkoutId
+        // Frontend will handle loading data by quotepaymentId
+        const frontendUrl = process.env.FRONTEND_URL || 'https://installment.virtuzone.com';
+        const paymentLinkWithQuoteId = `${frontendUrl}/payment-schedule/${encodeURIComponent(quotepaymentId)}`;
+        
         // Prepare email data
         const emailData = {
             Quote_payment_number: quote_payment_number,
             Total_After_VAT_Currency,
             quote_email,
             quotepaymentId,
-            paymentLink,
+            paymentLink: paymentLinkWithQuoteId, // Use quotepaymentId-based URL instead of checkoutId
             Installment_amount: calculatedInstallmentAmount, // Use calculated amount
             Total_Installments,
             quotePdf,

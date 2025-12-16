@@ -21,6 +21,7 @@ const config = {
     AFS_CURRENCY: "AED",
 
     // Salesforce Configuration - Must be set via environment variables
+    SALESFORCE_URL: process.env.SALESFORCE_URL,
     SALESFORCE_USERNAME: process.env.SALESFORCE_USERNAME,
     SALESFORCE_PASSWORD: process.env.SALESFORCE_PASSWORD,
     SALESFORCE_CLIENT_ID: process.env.SALESFORCE_CLIENT_ID,
@@ -53,6 +54,7 @@ const config = {
     AFS_CURRENCY: process.env.AFS_CURRENCY || "AED",
 
     // Salesforce Configuration - Must be set via environment variables
+    SALESFORCE_URL: process.env.SALESFORCE_URL,
     SALESFORCE_USERNAME: process.env.SALESFORCE_USERNAME,
     SALESFORCE_PASSWORD: process.env.SALESFORCE_PASSWORD,
     SALESFORCE_CLIENT_ID: process.env.SALESFORCE_CLIENT_ID,

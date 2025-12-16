@@ -50,6 +50,10 @@ interface ApiResponseData {
   InstallmentType: string;
   Status: string;
   CreatedDate: string;
+  afs_checkout_id?: string;
+  checkoutId?: string;
+  checkout_id?: string;
+  checkout_token?: string;
 }
 
 @Component({
@@ -142,14 +146,15 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    // Get route parameters
+    // Get route parameters - prioritize quotepaymentId over checkoutId
     this.route.params.subscribe((params: any) => {
-      if (params['checkoutId']) {
-        this.currentCheckoutId = params['checkoutId'];
-        this.loadPaymentScheduleByCheckoutId(this.currentCheckoutId);
-      } else if (params['quotepaymentId']) {
+      if (params['quotepaymentId']) {
         this.quotepaymentId = params['quotepaymentId'];
         this.loadPaymentScheduleByQuoteId(this.quotepaymentId);
+      } else if (params['checkoutId']) {
+        // Fallback to checkoutId for backward compatibility
+        this.currentCheckoutId = params['checkoutId'];
+        this.loadPaymentScheduleByCheckoutId(this.currentCheckoutId);
       } else {
         // Load default/demo data
         this.loadDemoData();
@@ -158,8 +163,9 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
 
     // Also check for query parameters
     this.route.queryParams.subscribe((params: any) => {
-      if (params['quotepaymentId']) {
+      if (params['quotepaymentId'] && !this.quotepaymentId) {
         this.quotepaymentId = params['quotepaymentId'];
+        this.loadPaymentScheduleByQuoteId(this.quotepaymentId);
       }
     });
 
@@ -396,7 +402,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       
       // If we have a checkout ID, build the AFS payment link
       if (this.currentCheckoutId) {
-        this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.currentCheckoutId}`;
+        this.afsPaymentLink = `https://eu-prod.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.currentCheckoutId}`;
       } else {
         console.log('� Available fields in API response:', Object.keys(data));
       }
@@ -678,14 +684,61 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const nextPayment = this.paymentSchedule.find(payment => 
-      payment.status === 'due' && payment.isNextPayment
-    );
+    if (!this.quotepaymentId) {
+      alert('Quote Payment ID is missing. Cannot proceed with payment.');
+      return;
+    }
 
-    if (nextPayment) {
-      this.initiatePayment(nextPayment);
+    // Check if checkout ID already exists
+    if (this.currentCheckoutId) {
+      // Checkout ID exists, proceed with payment
+      const nextPayment = this.paymentSchedule.find(payment => 
+        payment.status === 'due' && payment.isNextPayment
+      );
+
+      if (nextPayment) {
+        this.initiatePayment(nextPayment);
+      } else {
+        alert('No payment is currently due.');
+      }
     } else {
-      alert('No payment is currently due.');
+      // Generate checkout ID first
+      this.isLoading = true;
+      this.paymentScheduleService.generateCheckoutId(this.quotepaymentId).subscribe({
+        next: (response: any) => {
+          this.isLoading = false;
+          if (response.status && response.afs_checkout_id) {
+            // Update the checkout ID and payment link
+            this.currentCheckoutId = response.afs_checkout_id;
+            this.afsPaymentLink = response.payment_link || 
+              `https://eu-prod.oppwa.com/v1/paymentWidgets.js?checkoutId=${response.afs_checkout_id}`;
+            
+            // Update the component data with new checkout ID
+            if (this.apiData) {
+              this.apiData.afs_checkout_id = response.afs_checkout_id;
+            }
+            
+            // Now proceed with payment
+            const nextPayment = this.paymentSchedule.find(payment => 
+              payment.status === 'due' && payment.isNextPayment
+            );
+
+            if (nextPayment) {
+              this.initiatePayment(nextPayment);
+            } else {
+              alert('No payment is currently due.');
+            }
+          } else {
+            alert('Failed to generate payment link. Please try again or contact support.');
+            console.error('Checkout ID generation failed:', response);
+          }
+        },
+        error: (error: any) => {
+          this.isLoading = false;
+          console.error('Error generating checkout ID:', error);
+          alert('Failed to generate payment link. Please try again or contact support.');
+        }
+      });
     }
   }
 
