@@ -1094,7 +1094,7 @@ export const sendPasswordResetEmail = async (customerData) => {
       subject: 'Reset Your Recurring Account Password',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-          <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <div style="background-color: #ee5a52; background-image: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: #ffffff; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 28px;">Password Reset</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px;">Reset Your Recurring Account Password</p>
           </div>
@@ -1110,9 +1110,15 @@ export const sendPasswordResetEmail = async (customerData) => {
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetUrl}" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px;">
-                Reset My Password
-              </a>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 0 auto;">
+                <tr>
+                  <td bgcolor="#ee5a52" style="background-color: #ee5a52; border-radius: 25px; text-align: center;">
+                    <a href="${resetUrl}" target="_blank" style="display: inline-block; padding: 15px 30px; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none; border-radius: 25px; background-color: #ee5a52;">
+                      Reset My Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </div>
             
             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
