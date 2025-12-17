@@ -693,18 +693,26 @@ export const sendPdfEmail = async (emailData) => {
     // Construct payment link with proper base URL
     const fullPaymentLink = paymentLink.startsWith('http') ? paymentLink : `${baseUrl}${paymentLink.startsWith('/') ? '' : '/'}${paymentLink}`;
 
-    // Process PDF attachments for Mailgun
-    const attachments = [];
-    if (quotePdf && Array.isArray(quotePdf)) {
-      for (const pdf of quotePdf) {
-        if (pdf.pdfContent && pdf.name) {
-          attachments.push({
-            filename: `${pdf.name}.pdf`,
-            data: Buffer.from(pdf.pdfContent, 'base64')
-          });
-        }
-      }
+  // Process PDF attachments for Mailgun (CORRECT)
+const attachments = [];
+
+if (quotePdf && Array.isArray(quotePdf)) {
+  for (const pdf of quotePdf) {
+    if (pdf.pdfContent && pdf.name) {
+      const cleanBase64 = pdf.pdfContent
+        .replace(/^data:application\/pdf;base64,/, '')
+        .replace(/\s/g, '');
+
+      attachments.push(
+        new mailgun.Attachment({
+          data: Buffer.from(cleanBase64, 'base64'),
+          filename: `${pdf.name}.pdf`,
+          contentType: 'application/pdf'
+        })
+      );
     }
+  }
+}
 
     // Generate payment schedule table rows
     let paymentScheduleRows = '';
