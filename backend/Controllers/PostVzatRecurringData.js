@@ -5,6 +5,8 @@ import { updateQuotePaymentStatus, getPaymentStatusAndUpdateSchedule } from "../
 import { createCustomerAccount, saveCustomerCard } from "./CustomerRegistration.js";
 import axios from "axios";
 import dotenv from "dotenv";
+// import dotenv from "dotenv";
+dotenv.config({ path: "/home/ubuntu/VZAT-2/backend/.env" });
 
 // Load environment variables
 dotenv.config();

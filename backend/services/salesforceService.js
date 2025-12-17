@@ -1,6 +1,7 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
 import { logSalesforceApiCall } from './salesforceApiLogService.js';
+dotenv.config({ path: "/home/ubuntu/VZAT-2/backend/.env" });
 
 dotenv.config();
 
