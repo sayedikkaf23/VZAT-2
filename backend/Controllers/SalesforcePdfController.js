@@ -1,6 +1,140 @@
-import { sendPdfEmail } from '../services/emailService.js';
+import mailgun from 'mailgun-js';
+import dotenv from 'dotenv';
 import Post_Common_DB_Log_Data from './PostCommonDBLogData.js';
 import VzatRecurringData from '../model/VzatRecurringDataModel.js';
+
+dotenv.config();
+
+// Initialize Mailgun
+const mailgunConfig = {
+  apiKey: process.env.MAILGUN_API_KEY,
+  domain: process.env.MAILGUN_DOMAIN || 'vz.ae',
+  fromEmail: process.env.SMTP_USER || 'payment@vz.ae'
+};
+
+let mailgunClient = null;
+if (mailgunConfig.apiKey && mailgunConfig.domain) {
+  try {
+    mailgunClient = mailgun(mailgunConfig);
+    console.log('✅ Mailgun client initialized successfully');
+  } catch (error) {
+    console.error('❌ Error initializing Mailgun client:', error);
+  }
+} else {
+  console.warn('⚠️ Mailgun API key or domain not configured. Email functionality will be limited.');
+}
+
+/**
+ * Send PDF email with payment link using Mailgun
+ */
+const sendPdfEmail = async (emailData) => {
+  console.log('📧 sendPdfEmail called');
+  console.log('📧 Email data received:', {
+    Quote_payment_number: emailData.Quote_payment_number,
+    quote_email: emailData.quote_email,
+    quotepaymentId: emailData.quotepaymentId,
+    Customer_name: emailData.Customer_name,
+    hasPdf: !!emailData.quotePdf,
+    pdfCount: emailData.quotePdf ? emailData.quotePdf.length : 0
+  });
+
+  if (!mailgunClient) {
+    console.error('❌ Mailgun client not initialized');
+    return {
+      success: false,
+      error: 'Email service not configured'
+    };
+  }
+
+  const {
+    Quote_payment_number,
+    Total_After_VAT_Currency,
+    quote_email,
+    quotepaymentId,
+    paymentLink,
+    Installment_amount,
+    Total_Installments,
+    quotePdf,
+    Customer_name,
+    opp_owner,
+    salesPersonDetails,
+    installmentSchedule
+  } = emailData;
+
+  // Construct payment link using quotepaymentId (always use quotepaymentId, not checkoutId)
+  const frontendUrl = process.env.FRONTEND_URL || 'https://installment.virtuzone.com';
+  const paymentLinkWithQuoteId = `${frontendUrl}/payment-schedule/${encodeURIComponent(quotepaymentId)}`;
+  console.log('📧 Payment link generated:', paymentLinkWithQuoteId);
+
+  const emailContent = `
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #2c3e50;">Payment Invoice</h2>
+          <p>Dear ${Customer_name || 'Valued Customer'},</p>
+          <p>Please find attached your payment invoice.</p>
+          <p><strong>Quote Payment Number:</strong> ${Quote_payment_number}</p>
+          <p><strong>Total Amount:</strong> AED ${Total_After_VAT_Currency}</p>
+          <p><strong>Installment Amount:</strong> AED ${Installment_amount}</p>
+          <p><strong>Total Installments:</strong> ${Total_Installments}</p>
+          <p style="margin-top: 30px;">
+            <a href="${paymentLinkWithQuoteId}" 
+               style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              Click here to Pay
+            </a>
+          </p>
+          <p style="margin-top: 20px; font-size: 12px; color: #666;">
+            If you have any questions, please contact your sales representative.
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  // Convert PDF attachments for Mailgun
+  const attachments = quotePdf.map((pdf, index) => ({
+    filename: pdf.name || `invoice_${index + 1}.pdf`,
+    data: Buffer.from(pdf.pdfContent, 'base64')
+  }));
+
+  const mailData = {
+    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
+    to: quote_email,
+    subject: `Payment Invoice - ${Quote_payment_number}`,
+    html: emailContent,
+    attachment: attachments
+  };
+
+  console.log('📧 Prepared mail data for sendPdfEmail:', {
+    from: mailData.from,
+    to: mailData.to,
+    subject: mailData.subject,
+    attachmentCount: attachments.length
+  });
+
+  try {
+    console.log('📤 Attempting to send email via Mailgun...');
+    const result = await mailgunClient.messages().send(mailData);
+    
+    console.log('✅ Email sent successfully!', {
+      messageId: result.id,
+      message: result.message
+    });
+
+    return {
+      success: true,
+      messageId: result.id,
+      message: result.message
+    };
+  } catch (error) {
+    console.error('❌ Error sending email:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to send email',
+      errorDetails: error.response?.data || error
+    };
+  }
+};
 
 /**
  * Handle Salesforce PDF webhook

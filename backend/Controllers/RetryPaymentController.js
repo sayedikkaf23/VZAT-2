@@ -553,7 +553,7 @@ async function sendRetryFailureEmail(subscription, payment, error) {
       payment_amount: installmentAmount,
       due_date: payment.due_date,
       failure_reason: cleanErrorMessage,
-      payment_link: 'https://vzatnew.yeepeey.com/login',
+      payment_link: 'https://installment.virtuzone.com/login',
       salesPersonDetails: subscription.salesPersonDetails
     };
     
