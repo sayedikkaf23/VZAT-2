@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+// import dotenv from "dotenv";
+dotenv.config({ path: "/home/ubuntu/VZAT-2/backend/.env" });
 import SalesForce from "./routes/SalesForce.js";
 import AdminLogin from "./routes/AdminLoginRoute.js";
 import Customer from "./routes/CustomerRoute.js";
@@ -156,6 +158,9 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
         const salesforceLoginUrl = process.env.SALESFORCE_LOGIN_URL || 
                                     process.env.SALESFORCE_URL?.replace(/\/$/, '') || 
                                     'https://login.salesforce.com';
+
+
+                                    console.log( process.env.SALESFORCE_CLIENT_ID,"salesforce client id",salesforceLoginUrl,"login url",process.env.SALESFORCE_CLIENT_SECRET,"salesforce");
         const TokenResponse = await axios.post(
           `${salesforceLoginUrl}/services/oauth2/token`,
           null,
