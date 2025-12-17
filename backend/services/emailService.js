@@ -704,12 +704,12 @@ if (quotePdf && Array.isArray(quotePdf)) {
         .replace(/\s/g, '');
 
       attachments.push(
-        new mailgun.Attachment({
-          data: Buffer.from(cleanBase64, 'base64'),
-          filename: `${pdf.name}.pdf`,
-          contentType: 'application/pdf'
-        })
-      );
+  new mailgunClient.Attachment({
+    data: Buffer.from(cleanBase64, 'base64'),
+    filename: `${pdf.name}.pdf`,
+    contentType: 'application/pdf'
+  })
+);
     }
   }
 }
