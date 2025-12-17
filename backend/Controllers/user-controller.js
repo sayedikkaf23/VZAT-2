@@ -547,9 +547,9 @@ if (statusData.CustomerStatus == 'Auto Approved') {
                                      <br>
                                        <p style="margin: 0; margin-top: 24px; font-weight: bold;">Your Details:</p>
                                   <ul style="margin: 0; padding-left: 18px; margin-bottom: 16px;">
-                                    <li>Quote Payment ID: <strong>${pidata.quotePaymentId}</strong></li>
-                                    <li>Opportunity ID: <strong>${pidata.oppurtunityId}</strong></li>
-                                    <li>Email: <strong>${pidata.email}</strong></li>
+                                  <li>Quote Payment ID: <strong>${pidata.quotepaymentId}</strong></li>
+                                    <li>Opportunity ID: <strong>${pidata.OpportunityId}</strong></li>
+                                    <li>Email: <strong>${pidata.opp_email}</strong></li>
                                   </ul>
                                   <br>
                                       <p style="margin: 0;">Regards,</p>

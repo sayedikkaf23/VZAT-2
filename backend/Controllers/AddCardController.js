@@ -8,11 +8,11 @@ import Post_Common_DB_Log_Data from './PostCommonDBLogData.js';
 import qs from 'qs';   // CommonJS
 // AFS Configuration - Registration specific credentials
 const AFS_CONFIG = {
-  baseUrl: process.env.AFS_BASE_URL || config.AFS_BASE_URL,
-  entityId: process.env.AFS_ENTITY_ID || config.AFS_ENTITY_ID,
-  authorization: `Bearer ${(
-    (process.env.AFS_AUTHORIZATION || config.AFS_AUTHORIZATION) || ''
-  ).replace(/^Bearer\s+/i, '')}`,
+  baseUrl: process.env.AFS_BASE_URL ||  'https://eu-prod.oppwa.com',
+  entityId: process.env.AFS_ENTITY_ID,
+  accessToken: process.env.AFS_ACCESS_TOKEN ,
+  authorization: process.env.AFS_AUTHORIZATION ,
+  currency: process.env.AFS_CURRENCY || 'AED',
   testMode: 'EXTERNAL'
 };
 
@@ -54,9 +54,9 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
     // Configure AFS checkout for registration with payment
     const checkoutData = {
       merchantTransactionId:`${Date.now()}`, // ← usually the same as Pay-by-Link quote ID
-      entityId: '8ac7a4c797e1beca0197e482a8200127',        // ← usually DIFFERENT from Pay-by-Link entity
+      entityId: AFS_CONFIG.entityId,        // ← usually DIFFERENT from Pay-by-Link entity
       amount:  1.00,
-      currency: "AED",
+      currency: AFS_CONFIG.currency,
       paymentType: "DB",
       integrity: "true",
       createRegistration: true  // ← ADDED: Create registration for new cards
@@ -74,11 +74,11 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
     console.log('💰 Amount:', amount, currency);
 
     const response = await axios.post(
-      `https://eu-prod.oppwa.com/v1/checkouts`,
+      `${AFS_CONFIG.baseUrl}/v1/checkouts`,
       qs.stringify(checkoutData),
       {
         headers: {
-          'Authorization': `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
+          'Authorization': AFS_CONFIG.authorization,
          "Content-Type": "application/x-www-form-urlencoded",
         }
       }
