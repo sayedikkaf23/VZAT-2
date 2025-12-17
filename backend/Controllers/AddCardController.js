@@ -74,7 +74,7 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
     console.log('💰 Amount:', amount, currency);
 
     const response = await axios.post(
-      `https://eu-test.oppwa.com/v1/checkouts`,
+      `https://eu-https://eu-prod.oppwa.com.com/v1/checkouts`,
       qs.stringify(checkoutData),
       {
         headers: {
@@ -1010,7 +1010,7 @@ export const migrateSubscriptionTokens = async (customerEmail, newRegistrationId
 //     }
 
 //     // Ensure baseUrl ends with /
-//     const baseUrl = "https://eu-test.oppwa.com"
+//     const baseUrl = "https://eu-https://eu-prod.oppwa.com.com"
 
 //     const decodedResourcePath = decodeURIComponent(resourcePath);
 //     const url = `${baseUrl}/${decodedResourcePath.replace(/^\//, "")}`; // avoid double //
@@ -1079,7 +1079,7 @@ export const getPaymentStatus = async (req, res) => {
     }
 
     const decodedResourcePath = decodeURIComponent(resourcePath);
-    const url = `https://eu-test.oppwa.com/${decodedResourcePath.replace(/^\//, "")}`;
+    const url = `https://eu-https://eu-prod.oppwa.com.com/${decodedResourcePath.replace(/^\//, "")}`;
 
     console.log("🌍 Requesting payment status:", url);
 
@@ -1098,7 +1098,7 @@ export const getPaymentStatus = async (req, res) => {
     if (payment?.result?.code === "000.100.110" && payment?.id) {
       console.log("✅ Debit successful → Initiating refund...");
 
-      const refundUrl = `https://eu-test.oppwa.com/v1/payments/${payment.id}`;
+      const refundUrl = `https://eu-https://eu-prod.oppwa.com.com/v1/payments/${payment.id}`;
       const refundPayload = new URLSearchParams({
         entityId: '8ac7a4c797e1beca0197e482a8200127',
         amount: payment.amount,

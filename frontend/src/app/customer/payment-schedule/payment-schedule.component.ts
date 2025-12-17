@@ -396,7 +396,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       
       // If we have a checkout ID, build the AFS payment link
       if (this.currentCheckoutId) {
-        this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.currentCheckoutId}`;
+        this.afsPaymentLink = `https://eu-https://eu-prod.oppwa.com.com/v1/paymentWidgets.js?checkoutId=${this.currentCheckoutId}`;
       } else {
         console.log('� Available fields in API response:', Object.keys(data));
       }

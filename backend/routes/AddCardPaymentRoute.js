@@ -17,8 +17,8 @@ router.get('/test', (req, res) => {
   res.json({ success: true, message: 'AddCardPaymentRoute is working!' });
 });
 
-// Test OPPWA configuration
-router.get('/test-oppwa', testOppwaConfig);
+// https://eu-prod.oppwa.com configuration
+router.get('/https://eu-prod.oppwa.com', testOppwaConfig);
 
 // Test configuration values
 router.get('/test-config', (req, res) => {
