@@ -17,9 +17,9 @@
 }
 
 .payment-schedule .sidebar-row {
-  min-height: 100vh !important;
-  height: 100vh !important;
-  padding-bottom: 0 !important;
+  min-height: 100vh;
+  /* Remove fixed height to allow content to expand when zoomed */
+  padding-bottom: 20px; /* Add bottom padding for better scrolling experience */
   margin-bottom: 0 !important;
   display: flex;
   flex-direction: column;
@@ -28,18 +28,21 @@
 
 .payment-schedule .sidebar-row .col-auto:last-child {
   margin-top: auto;
-  padding-bottom: 20px;
+  padding-bottom: 30px; /* Extra padding to ensure visibility when scrolling */
+  flex-shrink: 0; /* Prevent shrinking when content is large */
 }
 
 .payment-schedule .detils-sidebar .row {
   margin: 0 !important;
-  height: 100%;
+  /* Remove fixed height to allow natural expansion */
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 .payment-schedule .detils-sidebar .col-auto:first-child {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0; /* Allow flex item to shrink if needed */
   display: flex;
   flex-direction: column;
   padding-bottom: 0 !important;
@@ -69,12 +72,11 @@
   content: none !important;
 }
 
-.payment-schedule .sidebar-row {
-  padding-bottom: 0 !important;
-}
+/* Removed duplicate rule - padding is now set in the main .sidebar-row rule above */
 
 .payment-schedule .detils-sidebar .col-auto:last-child {
   margin-top: auto;
+  flex-shrink: 0; /* Prevent shrinking when content is large */
 }
 
 /* Fix details-content layout */
