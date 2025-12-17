@@ -32,7 +32,7 @@ import { fileURLToPath } from 'url';
 // Load environment variables
 dotenv.config();
 // Load environment configuration
-import envConfig from './config.env.js';
+// import envConfig from './config.env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

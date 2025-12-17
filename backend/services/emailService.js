@@ -1,6 +1,6 @@
 import mailgun from 'mailgun-js';
 import dotenv from 'dotenv';
-import envConfig from '../config.env.js';
+// import envConfig from '../config.env.js';
 
 dotenv.config();
 

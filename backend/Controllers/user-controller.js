@@ -2,7 +2,7 @@ import { connectDB } from '../config/db.js';
 import CountryRisk from '../model/CountryRisk.js';
 import axios from 'axios';
 import dotenv from 'dotenv';
-import envConfig from '../config.env.js';
+// import envConfig from '../config.env.js';
 
 dotenv.config();
 
