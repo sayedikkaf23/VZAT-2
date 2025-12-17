@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
 const CountryRiskSchema = new mongoose.Schema({
-  country: { type: String, required: true, unique: true },
-  RiskRating: { type: Number, required: true },
-  Code: { type: String,  unique: true },
-  iscode3digit: { type: String, unique: true },
+  country: { type: String, },
+  RiskRating: { type: Number,  },
+  Code: { type: String,   },
+  iscode3digit: { type: String, },
   Override: { type: Number},
    createdBy: {
       type: mongoose.Schema.Types.ObjectId,
