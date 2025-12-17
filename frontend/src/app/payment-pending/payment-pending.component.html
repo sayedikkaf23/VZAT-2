@@ -1,4 +1,17 @@
-<div class="payment-schedule">
+<!-- Loading Animation -->
+<div *ngIf="loading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center;">
+  <div class="data-loader">
+    <div></div>
+    <div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
+</div>
+
+<div class="payment-schedule" *ngIf="!loading">
   <div class="detils-sidebar">
     <div class="row justify-content-between sidebar-row gx-0">
       <div class="col-auto">
@@ -45,10 +58,10 @@
           <div class="row gx-0 justify-content-between">
             <div class="col-auto">
               <p><b>{{ salesAgent.name }}</b></p>
-              <h6>{{ salesAgent.position }}</h6>
+              <h6 *ngIf="salesAgent.position && salesAgent.position !== 'NA' && salesAgent.position !== 'undefined' && salesAgent.position !== undefined">{{ salesAgent.position }}</h6>
             </div>
             <div class="col-auto">
-              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.faxNumber && salesAgent.faxNumber.trim() != '' && salesAgent.faxNumber != 'NA'">
+              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.faxNumber && salesAgent.faxNumber.trim() != '' && salesAgent.faxNumber != 'NA' && salesAgent.faxNumber !== 'undefined' && salesAgent.faxNumber !== undefined">
                 <div class="col-auto">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -60,7 +73,7 @@
                   <h6 class="mb-0"><a [href]="'fax:' + salesAgent.faxNumber">{{ salesAgent.faxNumber }}</a></h6>
                 </div>
               </div>
-              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.phoneNumber && salesAgent.phoneNumber != 'NA'">
+              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.phoneNumber && salesAgent.phoneNumber != 'NA' && salesAgent.phoneNumber !== 'undefined' && salesAgent.phoneNumber !== undefined">
                 <div class="col-auto">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -78,7 +91,7 @@
                   <h6 class="mb-0"><a [href]="'tel:' + salesAgent.phoneNumber">{{ salesAgent.phoneNumber }}</a></h6>
                 </div>
               </div>
-              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.mobNo1 && salesAgent.mobNo1 != 'NA' && salesAgent.mobNo1 != salesAgent.phoneNumber">
+              <div class="row align-items-center gx-1 mb-1" *ngIf="salesAgent.mobNo1 && salesAgent.mobNo1 != 'NA' && salesAgent.mobNo1 !== 'undefined' && salesAgent.mobNo1 !== undefined && salesAgent.mobNo1 != salesAgent.phoneNumber">
                 <div class="col-auto">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -96,7 +109,7 @@
                   <h6 class="mb-0"><a [href]="'tel:' + salesAgent.mobNo1">{{ salesAgent.mobNo1 }}</a></h6>
                 </div>
               </div>
-              <div class="row align-items-center gx-1">
+              <div class="row align-items-center gx-1" *ngIf="salesAgent.email && salesAgent.email !== 'NA' && salesAgent.email !== 'undefined' && salesAgent.email !== undefined">
                 <div class="col-auto">
                   <svg width="12" height="10" viewBox="0 0 12 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
