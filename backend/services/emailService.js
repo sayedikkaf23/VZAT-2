@@ -954,7 +954,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
               <p style="font-size: 14px; color: #888; margin: 0;">
                 Best regards,<br>
-                <strong>TaxReady Team</strong>
+                <strong>Virtuzone Team</strong>
               </p>
             </div>
           </div>
@@ -1057,7 +1057,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
             <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">If you have any questions or need assistance accessing your account, please don't hesitate to contact our support team.</p>
             
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-              <p style="font-size: 14px; color: #888; margin: 0;">Best regards,<br><strong>TaxReady Team</strong></p>
+              <p style="font-size: 14px; color: #888; margin: 0;">Best regards,<br><strong>Virtuzone Team</strong></p>
             </div>
           </div>
         </div>
@@ -1150,7 +1150,7 @@ export const sendPasswordResetEmail = async (customerData) => {
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
               <p style="font-size: 14px; color: #888; margin: 0;">
                 Best regards,<br>
-                <strong>TaxReady Team</strong>
+                <strong>Virtuzone Team</strong>
               </p>
             </div>
           </div>
