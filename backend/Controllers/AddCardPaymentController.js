@@ -1,6 +1,6 @@
 import axios from 'axios';
 import SavedCard from '../model/SavedCardModel.js';
-import config from '../config.env.js';
+// import config from '../config.env.js';
 
 // AFS Configuration - Using the same config as the working AddCardController
 const AFS_CONFIG = {

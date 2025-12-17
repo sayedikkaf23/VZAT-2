@@ -2,7 +2,7 @@ import axios from 'axios';
 import SavedCard from '../model/SavedCardModel.js';
 import VzatRecurringData from '../model/VzatRecurringDataModel.js';
 import CustomerLogin from '../model/CustomerLoginModel.js';
-import config from '../config.env.js';
+// import config from '../config.env.js';
 import { connectDB } from '../config/db.js';
 import Post_Common_DB_Log_Data from './PostCommonDBLogData.js';
 import qs from 'qs';   // CommonJS
