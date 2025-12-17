@@ -372,16 +372,24 @@ input[type="date"]::-moz-focus-inner {
 
 /* Remove bottom gap from sidebar */
 .payment-schedule .detils-sidebar {
-  height: 100vh !important;
-  min-height: 100vh !important;
-  max-height: 100vh !important;
-  overflow: hidden;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Hide scrollbar for cleaner look but keep functionality */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.payment-schedule .detils-sidebar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .payment-schedule .sidebar-row {
-  min-height: 100vh !important;
-  height: 100vh !important;
-  padding-bottom: 0 !important;
+  min-height: 100vh;
+  /* Remove fixed height to allow content to expand when zoomed */
+  padding-bottom: 20px; /* Add bottom padding for better scrolling experience */
   margin-bottom: 0 !important;
   display: flex;
   flex-direction: column;
@@ -390,18 +398,21 @@ input[type="date"]::-moz-focus-inner {
 
 .payment-schedule .sidebar-row .col-auto:last-child {
   margin-top: auto;
-  padding-bottom: 20px;
+  padding-bottom: 30px; /* Extra padding to ensure visibility when scrolling */
+  flex-shrink: 0; /* Prevent shrinking when content is large */
 }
 
 .payment-schedule .detils-sidebar .row {
   margin: 0 !important;
-  height: 100%;
+  /* Remove fixed height to allow natural expansion */
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 .payment-schedule .detils-sidebar .col-auto:first-child {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0; /* Allow flex item to shrink if needed */
   display: flex;
   flex-direction: column;
   padding-bottom: 0 !important;
@@ -452,7 +463,7 @@ input[type="date"]::-moz-focus-inner {
 
 @media (max-width: 991px) {
   .payment-schedule .details-content {
-    padding: 35px 20px 20px;
+    padding: 35px 20px 60px;
   }
   
   .payment-detail-list {
@@ -575,38 +586,6 @@ input[type="date"]::-moz-focus-inner {
     margin-bottom: 0 !important;
     align-items: flex-start !important;
     justify-content: flex-start !important;
-    gap: 0 !important;
-  }
-  
-  /* Remove gap from container */
-  .payment-schedule .details-content .container {
-    gap: 0 !important;
-    row-gap: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  
-  /* Remove any spacing between container children */
-  .payment-schedule .details-content .container > * + * {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-  
-  /* Remove all bottom spacing from details-footer */
-  .payment-schedule .details-footer {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .d-block.d-md-none {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  
-  /* Remove bottom spacing from last contact row */
-  .payment-schedule .details-footer .row.align-items-center.gx-1:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
   }
   
   .payment-schedule .details-content .container {
@@ -626,48 +605,7 @@ input[type="date"]::-moz-focus-inner {
     margin: 0 auto !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
     background-color: transparent;
-  }
-  
-  /* Remove gap between form box and footer */
-  .payment-detail-list-box + .details-footer {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-  
-  .payment-detail-list-box.mobile-card + .details-footer {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-  
-  /* Remove spacing from container between form and footer */
-  .payment-schedule .details-content .container > .payment-detail-list-box + .details-footer {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-  
-  /* Remove any margin from payment-detail-list-box that creates gap */
-  .payment-detail-list-box {
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-detail-list-box.mobile-card {
-    margin-bottom: 0 !important;
-  }
-  
-  /* Remove spacing from container children */
-  .payment-schedule .details-content .container > * {
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-content .container > .payment-detail-list-box {
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-content .container > .details-footer {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
   }
   
   /* Reduce spacing above Payment Schedule heading */
@@ -680,29 +618,8 @@ input[type="date"]::-moz-focus-inner {
   
   /* Reduce form list padding */
   .payment-detail-list {
-    padding: 20px 20px 8px !important;
+    padding: 20px 20px 12px !important;
     margin-bottom: 0 !important;
-    padding-bottom: 8px !important;
-  }
-  
-  /* Remove bottom spacing from payment-detail-list-box */
-  .payment-detail-list-box {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Remove any spacing after the form button */
-  .payment-detail-list .btn {
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-detail-list form {
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-detail-list .wrp {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
   }
   
   /* Reduce form field spacing */
@@ -714,23 +631,6 @@ input[type="date"]::-moz-focus-inner {
   .payment-detail-list .btn {
     margin-top: 15px !important;
     margin-bottom: 0 !important;
-  }
-  
-  /* Remove any spacing after button */
-  .payment-detail-list .btn:last-child {
-    margin-bottom: 0 !important;
-  }
-  
-  /* Ensure form has no bottom spacing */
-  .payment-detail-list form:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Remove spacing from payment-detail-list itself */
-  .payment-detail-list:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
   }
   
   /* Remove bottom padding from form wrapper */
@@ -827,107 +727,10 @@ input[type="date"]::-moz-focus-inner {
     padding-bottom: 0 !important;
   }
   
-  /* Remove bottom spacing from container */
-  .payment-schedule .details-content .container {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  
-  /* Ensure no spacing after footer */
-  .payment-schedule .details-content .details-footer:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Remove any gap between form and footer */
-  .payment-detail-list-box + .details-footer {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-  
-  /* Remove all bottom spacing from last elements */
-  .payment-schedule .details-footer .row.gx-0:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .row.align-items-center.gx-1:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .col-auto:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Remove spacing from last row in footer */
-  .payment-schedule .details-footer .row:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Ensure no spacing after the last contact info */
-  .payment-schedule .details-footer .row.align-items-center.gx-1:last-of-type {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Remove any pseudo-element spacing */
-  .payment-schedule .details-footer::after,
-  .payment-schedule .details-content::after,
-  .payment-schedule .container::after {
-    display: none !important;
-    content: none !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  /* Force remove all bottom spacing from the entire page structure */
-  .payment-schedule .details-content > .container > *:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-content > .container > .details-footer {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer > .d-block.d-md-none {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer > .d-block.d-md-none > *:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Remove spacing from the last contact row */
-  .payment-schedule .details-footer .row.gx-0 .col-auto:last-child .row.align-items-center.gx-1:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
   .payment-schedule .details-footer hr {
     border-top: 1px solid var(--primary, #FA2E52);
-    margin: 0 0 5px !important;
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+    margin: 5px 0 8px !important;
     opacity: 1;
-  }
-  
-  /* Remove top margin from footer content */
-  .payment-schedule .details-footer .d-block.d-md-none {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .d-block.d-md-none > hr:first-child {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
   }
   
   .payment-schedule .details-footer h2 {
@@ -1089,26 +892,22 @@ input[type="date"]::-moz-focus-inner {
   
   .payment-detail-list-box.mobile-card .payment-detail-head {
     background-color: transparent;
-    padding: 0 0 0 !important;
+    padding: 0 0 20px;
     border-bottom: none;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
+    margin-bottom: 0;
   }
   
   .payment-detail-list-box.mobile-card .payment-detail-list {
     background-color: #fff;
-    padding: 24px 20px 10px !important;
+    padding: 24px 20px 28px;
     border-radius: 16px;
     box-shadow: none;
     margin: 0;
-    margin-bottom: 0 !important;
-    padding-bottom: 10px !important;
     border: 1px solid #F4E9E9;
   }
   
   .payment-detail-head {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
+    padding-bottom: 20px;
   }
   
   .payment-detail-head h5 {
@@ -1137,135 +936,6 @@ input[type="date"]::-moz-focus-inner {
     position: relative;
     bottom: 0;
     width: 96%;
-  }
-  
-  /* Aggressive removal of all bottom spacing in mobile */
-  .payment-schedule {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-content {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-content .container {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-content .container > *:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer > * {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .d-block.d-md-none {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .d-block.d-md-none > *:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .row.gx-0 {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .row.gx-0 > *:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .row.align-items-center.gx-1:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .row.align-items-center.gx-1 .col:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-footer .row.align-items-center.gx-1 .col h6:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Remove any spacing from the very last element */
-  .payment-schedule .details-content .container .details-footer .d-block.d-md-none .row.gx-0 .col-auto:last-child .row.align-items-center.gx-1:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Ensure body and html don't add space */
-  body .payment-schedule,
-  html .payment-schedule {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  
-  /* Final aggressive removal of gap between form and footer */
-  .payment-schedule .container > .payment-detail-list-box {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-schedule .container > .details-footer {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Remove any gap created by sibling selectors */
-  .payment-schedule .container .payment-detail-list-box ~ .details-footer {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-  
-  /* Force remove gap using negative margin if needed */
-  .payment-schedule .details-content .container > .details-footer {
-    margin-top: -10px !important;
-  }
-  
-  /* Also target the direct child relationship */
-  .payment-schedule .details-content .container .payment-detail-list-box.mobile-card + .details-footer {
-    margin-top: -10px !important;
-    padding-top: 0 !important;
-  }
-  
-  /* Remove any default spacing from Bootstrap row/col */
-  .payment-schedule .details-content .container .payment-detail-list-box {
-    margin-bottom: 0 !important;
-  }
-  
-  .payment-schedule .details-content .container .details-footer {
-    margin-top: 0 !important;
-  }
-  
-  /* Ensure no spacing on the wrapper divs */
-  .payment-detail-list-box .payment-detail-list .wrp {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  .payment-detail-list-box .payment-detail-list form {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
   }
 }
 

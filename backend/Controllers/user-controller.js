@@ -578,7 +578,7 @@ if (statusData.CustomerStatus == 'Auto Approved') {
                                 <tr>
                                   <td class="pad" style="padding-bottom:20px;width:100%;padding-right:0px;padding-left:0px;">
                                     <div class="alignment" align="center" style="line-height:10px">
-                                      <div style="max-width: 183px;"><a href="https://www.vz.ae" target="_blank" style="outline:none" tabindex="-1"><img src="assets/images/vz_logo.png" style="display: block; height: auto; border: 0; width: 100%;" width="183"></a></div>
+                                      <div style="max-width: 183px;"><a href="https://www.vz.ae" target="_blank" style="outline:none" tabindex="-1"><img src="https://res.cloudinary.com/dotkngkpl/image/upload/v1739944226/thumbnail_vz-ascentium_1_yrtbkn.png" style="display: block; height: auto; border: 0; width: 100%;" width="183"></a></div>
                                     </div>
                                   </td>
                                 </tr>
