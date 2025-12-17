@@ -692,7 +692,7 @@ export const getPaymentStatusAndUpdateSchedule = async (paymentData) => {
       quotepaymentId: QuotePaymentId
     });
     
-    // const salesforceMessage = `Salesforce payment status retrieved successfully for ${QuotePaymentId}`;
+    const salesforceMessage = `Salesforce payment status retrieved successfully for ${QuotePaymentId}`;
     console.log(`🎉 ${salesforceMessage}`);
 
     return {
