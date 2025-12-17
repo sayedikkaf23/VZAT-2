@@ -32,6 +32,7 @@ const config = {
     // Mailgun Configuration - Must be set via environment variables
     MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN || "vz.ae",
     MAILGUN_API_KEY: process.env.MAILGUN_API_KEY,
+    SMTP_USER: process.env.SMTP_USER || "payments@vz.ae",
   },
 
   production: {
@@ -67,6 +68,7 @@ const config = {
     // Mailgun Configuration - Must be set via environment variables
     MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN || "vz.ae",
     MAILGUN_API_KEY: process.env.MAILGUN_API_KEY,
+    SMTP_USER: process.env.SMTP_USER || "payments@vz.ae",
   },
 };
 

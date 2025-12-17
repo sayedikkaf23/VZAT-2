@@ -7,7 +7,8 @@ dotenv.config();
 // Initialize Mailgun
 const mailgunConfig = {
   apiKey: process.env.MAILGUN_API_KEY,
-  domain: process.env.MAILGUN_DOMAIN || 'vz.ae'
+  domain: process.env.MAILGUN_DOMAIN || 'vz.ae',
+  fromEmail: process.env.SMTP_USER || `noreply@${process.env.MAILGUN_DOMAIN || 'vz.ae'}`
 };
 
 console.log('📧 Mailgun Configuration Check:', {
@@ -15,8 +16,10 @@ console.log('📧 Mailgun Configuration Check:', {
   apiKeyLength: mailgunConfig.apiKey ? mailgunConfig.apiKey.length : 0,
   apiKeyPrefix: mailgunConfig.apiKey ? mailgunConfig.apiKey.substring(0, 10) + '...' : 'NOT SET',
   domain: mailgunConfig.domain,
+  fromEmail: mailgunConfig.fromEmail,
   envApiKey: !!process.env.MAILGUN_API_KEY,
-  envDomain: process.env.MAILGUN_DOMAIN
+  envDomain: process.env.MAILGUN_DOMAIN,
+  envSmtpUser: process.env.SMTP_USER
 });
 
 let mailgunClient = null;
@@ -166,7 +169,7 @@ export const sendPdfEmail = async (emailData) => {
   }));
 
   const mailData = {
-    from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
+    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
     to: quote_email,
     subject: `Payment Invoice - ${Quote_payment_number}`,
     html: emailContent,
@@ -228,7 +231,7 @@ export const sendCustomerWelcomeEmail = async (emailData) => {
   `;
 
   const mailData = {
-    from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
+    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
     to: email,
     subject: 'Welcome to Virtuzone Payment Portal',
     html: emailContent
@@ -280,7 +283,7 @@ export const sendExistingCustomerEmail = async (emailData) => {
   `;
 
   const mailData = {
-    from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
+    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
     to: email,
     subject: 'Payment Portal Access',
     html: emailContent
@@ -337,7 +340,7 @@ export const sendPasswordResetEmail = async (emailData) => {
   `;
 
   const mailData = {
-    from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
+    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
     to: email,
     subject: 'Password Reset Request',
     html: emailContent
@@ -399,7 +402,7 @@ export const sendPaymentSuccessNotificationEmail = async (emailData) => {
   `;
 
   const mailData = {
-    from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
+    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
     to: opp_email,
     subject: `Payment Successful - ${q_payment_id || quotepaymentId}`,
     html: emailContent
@@ -457,7 +460,7 @@ export const sendPaymentFailureNotificationEmail = async (emailData) => {
   `;
 
   const mailData = {
-    from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
+    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
     to: opp_email,
     subject: `Payment Failed - ${quotepaymentId}`,
     html: emailContent
@@ -515,7 +518,7 @@ export const sendFinalRenewalEmail = async (emailData) => {
   `;
 
   const mailData = {
-    from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
+    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
     to: opp_email,
     subject: `All Payments Completed - ${Quote_payment_number || quotepaymentId}`,
     html: emailContent
@@ -569,7 +572,7 @@ export const sendSubscriptionCompletedEmail = async (emailData) => {
   `;
 
   const mailData = {
-    from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
+    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
     to: opp_email,
     subject: `Subscription Completed - ${quotepaymentId}`,
     html: emailContent
@@ -613,7 +616,7 @@ export const testEmailConfiguration = async (req, res) => {
     console.log('📧 Test email address:', testEmail);
     
     const mailData = {
-      from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
+      from: `Virtuzone <${mailgunConfig.fromEmail}>`,
       to: testEmail,
       subject: 'Test Email from Virtuzone',
       html: '<p>This is a test email to verify email configuration.</p>'
