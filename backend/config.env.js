@@ -21,10 +21,13 @@ const config = {
     AFS_CURRENCY: "AED",
 
     // Salesforce Configuration - Must be set via environment variables
+    SALESFORCE_LOGIN_URL: process.env.SALESFORCE_LOGIN_URL || "https://login.salesforce.com",
+    SALESFORCE_URL: process.env.SALESFORCE_URL,
     SALESFORCE_USERNAME: process.env.SALESFORCE_USERNAME,
     SALESFORCE_PASSWORD: process.env.SALESFORCE_PASSWORD,
     SALESFORCE_CLIENT_ID: process.env.SALESFORCE_CLIENT_ID,
     SALESFORCE_CLIENT_SECRET: process.env.SALESFORCE_CLIENT_SECRET,
+    SALESFORCE_SECURITY_TOKEN: process.env.SALESFORCE_SECURITY_TOKEN,
 
     // Mailgun Configuration - Must be set via environment variables
     MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN || "vz.ae",
@@ -53,10 +56,13 @@ const config = {
     AFS_CURRENCY: process.env.AFS_CURRENCY || "AED",
 
     // Salesforce Configuration - Must be set via environment variables
+    SALESFORCE_LOGIN_URL: process.env.SALESFORCE_LOGIN_URL || "https://login.salesforce.com",
+    SALESFORCE_URL: process.env.SALESFORCE_URL,
     SALESFORCE_USERNAME: process.env.SALESFORCE_USERNAME,
     SALESFORCE_PASSWORD: process.env.SALESFORCE_PASSWORD,
     SALESFORCE_CLIENT_ID: process.env.SALESFORCE_CLIENT_ID,
     SALESFORCE_CLIENT_SECRET: process.env.SALESFORCE_CLIENT_SECRET,
+    SALESFORCE_SECURITY_TOKEN: process.env.SALESFORCE_SECURITY_TOKEN,
 
     // Mailgun Configuration - Must be set via environment variables
     MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN || "vz.ae",

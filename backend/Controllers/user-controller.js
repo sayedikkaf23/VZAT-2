@@ -55,7 +55,7 @@ export const callSalesforceEndpoint = async (req, res) => {
     // Get Salesforce access token
     const salesforceLoginUrl = process.env.SALESFORCE_LOGIN_URL || 
                                 process.env.SALESFORCE_URL?.replace(/\/$/, '') || 
-                                // 'https://test.salesforce.com';
+                                'https://login.salesforce.com';
     
     console.log('🔄 Getting Salesforce access token for digicomplice...');
     
@@ -156,7 +156,7 @@ export const checkStatus = async (req, res) => {
     // Get Salesforce access token
     const salesforceLoginUrl = process.env.SALESFORCE_LOGIN_URL || 
                                 process.env.SALESFORCE_URL?.replace(/\/$/, '') || 
-                                // 'https://test.salesforce.com';
+                                'https://login.salesforce.com';
     
     console.log('🔄 Getting Salesforce access token for checkStatus...');
     

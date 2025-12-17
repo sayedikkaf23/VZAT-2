@@ -153,8 +153,11 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
         
         // Step 1: Get Salesforce OAuth token
         console.log('🔐 Step 1: Requesting Salesforce OAuth token...');
+        const salesforceLoginUrl = process.env.SALESFORCE_LOGIN_URL || 
+                                    process.env.SALESFORCE_URL?.replace(/\/$/, '') || 
+                                    'https://login.salesforce.com';
         const TokenResponse = await axios.post(
-          `https://login.salesforce.com/services/oauth2/token`,
+          `${salesforceLoginUrl}/services/oauth2/token`,
           null,
           {
             params: {

@@ -16,6 +16,8 @@ npm run dev            # or npm start
 - `FRONTEND_URL` (e.g., http://localhost:4200)
 - `BACKEND_URL` (e.g., http://localhost:3000)
 - `AFS_BASE_URL`, `AFS_ENTITY_ID`, `AFS_AUTHORIZATION`
+- `SALESFORCE_LOGIN_URL` (defaults to `https://login.salesforce.com` if not set)
+- `SALESFORCE_USERNAME`, `SALESFORCE_PASSWORD`, `SALESFORCE_CLIENT_ID`, `SALESFORCE_CLIENT_SECRET`, `SALESFORCE_SECURITY_TOKEN`
 
 ### CORS
 
