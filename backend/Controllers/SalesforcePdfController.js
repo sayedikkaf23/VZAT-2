@@ -9,7 +9,7 @@ import VzatRecurringData from '../model/VzatRecurringDataModel.js';
 export const handleSalesforcePdfWebhook = async (req, res) => {
     try {
         console.log('📨 Received Salesforce PDF webhook request');
-        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        // console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         // Extract data from request
         const {
@@ -210,8 +210,8 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
         const emailResult = await sendPdfEmail(emailData);
 
         if (emailResult.success) {
-            // console.log(`✅ PDF email sent successfully to ${quote_email}`);
-            // console.log(`📧 Message ID: ${emailResult.messageId}`);
+            console.log(`✅ PDF email sent successfully to ${quote_email}`);
+            console.log(`📧 Message ID: ${emailResult.messageId}`);
 
             const responseData = {
                 success: true,
