@@ -6,23 +6,51 @@ dotenv.config();
 
 // Initialize Mailgun
 const mailgunConfig = {
-  apiKey: process.env.MAILGUN_API_KEY || envConfig.MAILGUN_API_KEY,
-  domain: process.env.MAILGUN_DOMAIN || envConfig.MAILGUN_DOMAIN || 'vz.ae'
+  apiKey: process.env.MAILGUN_API_KEY,
+  domain: process.env.MAILGUN_DOMAIN || 'vz.ae'
 };
+
+console.log('📧 Mailgun Configuration Check:', {
+  hasApiKey: !!mailgunConfig.apiKey,
+  apiKeyLength: mailgunConfig.apiKey ? mailgunConfig.apiKey.length : 0,
+  apiKeyPrefix: mailgunConfig.apiKey ? mailgunConfig.apiKey.substring(0, 10) + '...' : 'NOT SET',
+  domain: mailgunConfig.domain,
+  envApiKey: !!process.env.MAILGUN_API_KEY,
+  envDomain: process.env.MAILGUN_DOMAIN
+});
 
 let mailgunClient = null;
 if (mailgunConfig.apiKey && mailgunConfig.domain) {
-  mailgunClient = mailgun(mailgunConfig);
+  try {
+    mailgunClient = mailgun(mailgunConfig);
+    console.log('✅ Mailgun client initialized successfully');
+  } catch (error) {
+    console.error('❌ Error initializing Mailgun client:', error);
+  }
 } else {
   console.warn('⚠️ Mailgun API key or domain not configured. Email functionality will be limited.');
+  console.warn('⚠️ Missing:', {
+    apiKey: !mailgunConfig.apiKey,
+    domain: !mailgunConfig.domain
+  });
 }
 
 /**
  * Generic email sending function
  */
 const sendEmail = async (emailData) => {
+  console.log('📧 sendEmail called with data:', {
+    to: emailData.to,
+    from: emailData.from,
+    subject: emailData.subject,
+    hasHtml: !!emailData.html,
+    hasAttachments: !!emailData.attachment,
+    attachmentCount: emailData.attachment ? (Array.isArray(emailData.attachment) ? emailData.attachment.length : 1) : 0
+  });
+
   if (!mailgunClient) {
     console.error('❌ Mailgun client not initialized');
+    console.error('❌ Cannot send email - Mailgun client is null');
     return {
       success: false,
       error: 'Email service not configured'
@@ -30,7 +58,22 @@ const sendEmail = async (emailData) => {
   }
 
   try {
+    console.log('📤 Attempting to send email via Mailgun...');
+    console.log('📤 Email payload:', {
+      from: emailData.from,
+      to: emailData.to,
+      subject: emailData.subject,
+      htmlLength: emailData.html ? emailData.html.length : 0
+    });
+
     const result = await mailgunClient.messages().send(emailData);
+    
+    console.log('✅ Email sent successfully!', {
+      messageId: result.id,
+      message: result.message,
+      result: result
+    });
+
     return {
       success: true,
       messageId: result.id,
@@ -38,9 +81,21 @@ const sendEmail = async (emailData) => {
     };
   } catch (error) {
     console.error('❌ Error sending email:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      status: error.status,
+      statusCode: error.statusCode,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      } : 'No response',
+      stack: error.stack
+    });
     return {
       success: false,
-      error: error.message || 'Failed to send email'
+      error: error.message || 'Failed to send email',
+      errorDetails: error.response?.data || error
     };
   }
 };
@@ -49,6 +104,16 @@ const sendEmail = async (emailData) => {
  * Send PDF email with payment link
  */
 export const sendPdfEmail = async (emailData) => {
+  console.log('📧 sendPdfEmail called');
+  console.log('📧 Email data received:', {
+    Quote_payment_number: emailData.Quote_payment_number,
+    quote_email: emailData.quote_email,
+    quotepaymentId: emailData.quotepaymentId,
+    Customer_name: emailData.Customer_name,
+    hasPdf: !!emailData.quotePdf,
+    pdfCount: emailData.quotePdf ? emailData.quotePdf.length : 0
+  });
+
   const {
     Quote_payment_number,
     Total_After_VAT_Currency,
@@ -67,6 +132,7 @@ export const sendPdfEmail = async (emailData) => {
   // Construct payment link using quotepaymentId (always use quotepaymentId, not checkoutId)
   const frontendUrl = process.env.FRONTEND_URL || 'https://installment.virtuzone.com';
   const paymentLinkWithQuoteId = `${frontendUrl}/payment-schedule/${encodeURIComponent(quotepaymentId)}`;
+  console.log('📧 Payment link generated:', paymentLinkWithQuoteId);
 
   const emailContent = `
     <html>
@@ -107,13 +173,29 @@ export const sendPdfEmail = async (emailData) => {
     attachment: attachments
   };
 
-  return await sendEmail(mailData);
+  console.log('📧 Prepared mail data for sendPdfEmail:', {
+    from: mailData.from,
+    to: mailData.to,
+    subject: mailData.subject,
+    attachmentCount: attachments.length
+  });
+
+  const result = await sendEmail(mailData);
+  console.log('📧 sendPdfEmail result:', result);
+  return result;
 };
 
 /**
  * Send customer welcome email
  */
 export const sendCustomerWelcomeEmail = async (emailData) => {
+  console.log('📧 sendCustomerWelcomeEmail called');
+  console.log('📧 Email data:', {
+    customerName: emailData.customerName,
+    email: emailData.email,
+    hasPassword: !!emailData.temporaryPassword
+  });
+
   const {
     customerName,
     email,
@@ -152,13 +234,27 @@ export const sendCustomerWelcomeEmail = async (emailData) => {
     html: emailContent
   };
 
-  return await sendEmail(mailData);
+  console.log('📧 Prepared mail data for sendCustomerWelcomeEmail:', {
+    from: mailData.from,
+    to: mailData.to,
+    subject: mailData.subject
+  });
+
+  const result = await sendEmail(mailData);
+  console.log('📧 sendCustomerWelcomeEmail result:', result);
+  return result;
 };
 
 /**
  * Send email to existing customer
  */
 export const sendExistingCustomerEmail = async (emailData) => {
+  console.log('📧 sendExistingCustomerEmail called');
+  console.log('📧 Email data:', {
+    customerName: emailData.customerName,
+    email: emailData.email
+  });
+
   const {
     customerName,
     email,
@@ -190,13 +286,28 @@ export const sendExistingCustomerEmail = async (emailData) => {
     html: emailContent
   };
 
-  return await sendEmail(mailData);
+  console.log('📧 Prepared mail data for sendExistingCustomerEmail:', {
+    from: mailData.from,
+    to: mailData.to,
+    subject: mailData.subject
+  });
+
+  const result = await sendEmail(mailData);
+  console.log('📧 sendExistingCustomerEmail result:', result);
+  return result;
 };
 
 /**
  * Send password reset email
  */
 export const sendPasswordResetEmail = async (emailData) => {
+  console.log('📧 sendPasswordResetEmail called');
+  console.log('📧 Email data:', {
+    customerName: emailData.customerName,
+    email: emailData.email,
+    hasResetUrl: !!emailData.resetUrl
+  });
+
   const {
     customerName,
     email,
@@ -232,13 +343,28 @@ export const sendPasswordResetEmail = async (emailData) => {
     html: emailContent
   };
 
-  return await sendEmail(mailData);
+  console.log('📧 Prepared mail data for sendPasswordResetEmail:', {
+    from: mailData.from,
+    to: mailData.to,
+    subject: mailData.subject
+  });
+
+  const result = await sendEmail(mailData);
+  console.log('📧 sendPasswordResetEmail result:', result);
+  return result;
 };
 
 /**
  * Send payment success notification email
  */
 export const sendPaymentSuccessNotificationEmail = async (emailData) => {
+  console.log('📧 sendPaymentSuccessNotificationEmail called');
+  console.log('📧 Email data:', {
+    quotepaymentId: emailData.quotepaymentId,
+    opp_email: emailData.opp_email,
+    payment_amount: emailData.payment_amount
+  });
+
   const {
     quotepaymentId,
     q_payment_id,
@@ -279,13 +405,28 @@ export const sendPaymentSuccessNotificationEmail = async (emailData) => {
     html: emailContent
   };
 
-  return await sendEmail(mailData);
+  console.log('📧 Prepared mail data for sendPaymentSuccessNotificationEmail:', {
+    from: mailData.from,
+    to: mailData.to,
+    subject: mailData.subject
+  });
+
+  const result = await sendEmail(mailData);
+  console.log('📧 sendPaymentSuccessNotificationEmail result:', result);
+  return result;
 };
 
 /**
  * Send payment failure notification email
  */
 export const sendPaymentFailureNotificationEmail = async (emailData) => {
+  console.log('📧 sendPaymentFailureNotificationEmail called');
+  console.log('📧 Email data:', {
+    quotepaymentId: emailData.quotepaymentId,
+    opp_email: emailData.opp_email,
+    failure_reason: emailData.failure_reason
+  });
+
   const {
     quotepaymentId,
     Customer_name,
@@ -322,13 +463,28 @@ export const sendPaymentFailureNotificationEmail = async (emailData) => {
     html: emailContent
   };
 
-  return await sendEmail(mailData);
+  console.log('📧 Prepared mail data for sendPaymentFailureNotificationEmail:', {
+    from: mailData.from,
+    to: mailData.to,
+    subject: mailData.subject
+  });
+
+  const result = await sendEmail(mailData);
+  console.log('📧 sendPaymentFailureNotificationEmail result:', result);
+  return result;
 };
 
 /**
  * Send final renewal email
  */
 export const sendFinalRenewalEmail = async (emailData) => {
+  console.log('📧 sendFinalRenewalEmail called');
+  console.log('📧 Email data:', {
+    quotepaymentId: emailData.quotepaymentId,
+    opp_email: emailData.opp_email,
+    payments_completed: emailData.payments_completed
+  });
+
   const {
     quotepaymentId,
     Quote_payment_number,
@@ -365,13 +521,27 @@ export const sendFinalRenewalEmail = async (emailData) => {
     html: emailContent
   };
 
-  return await sendEmail(mailData);
+  console.log('📧 Prepared mail data for sendFinalRenewalEmail:', {
+    from: mailData.from,
+    to: mailData.to,
+    subject: mailData.subject
+  });
+
+  const result = await sendEmail(mailData);
+  console.log('📧 sendFinalRenewalEmail result:', result);
+  return result;
 };
 
 /**
  * Send subscription completed email
  */
 export const sendSubscriptionCompletedEmail = async (emailData) => {
+  console.log('📧 sendSubscriptionCompletedEmail called');
+  console.log('📧 Email data:', {
+    quotepaymentId: emailData.quotepaymentId,
+    opp_email: emailData.opp_email
+  });
+
   const {
     quotepaymentId,
     Customer_name,
@@ -405,15 +575,34 @@ export const sendSubscriptionCompletedEmail = async (emailData) => {
     html: emailContent
   };
 
-  return await sendEmail(mailData);
+  console.log('📧 Prepared mail data for sendSubscriptionCompletedEmail:', {
+    from: mailData.from,
+    to: mailData.to,
+    subject: mailData.subject
+  });
+
+  const result = await sendEmail(mailData);
+  console.log('📧 sendSubscriptionCompletedEmail result:', result);
+  return result;
 };
 
 /**
  * Test email configuration
  */
 export const testEmailConfiguration = async (req, res) => {
+  console.log('📧 testEmailConfiguration called');
   try {
+    console.log('📧 Testing email configuration...');
+    console.log('📧 Mailgun client status:', {
+      isInitialized: !!mailgunClient,
+      config: {
+        hasApiKey: !!mailgunConfig.apiKey,
+        domain: mailgunConfig.domain
+      }
+    });
+
     if (!mailgunClient) {
+      console.error('❌ Mailgun client not initialized');
       return res.status(500).json({
         success: false,
         error: 'Mailgun not configured. Please set MAILGUN_API_KEY and MAILGUN_DOMAIN environment variables.'
@@ -421,6 +610,7 @@ export const testEmailConfiguration = async (req, res) => {
     }
 
     const testEmail = req.body.testEmail || 'test@example.com';
+    console.log('📧 Test email address:', testEmail);
     
     const mailData = {
       from: `Virtuzone <noreply@${mailgunConfig.domain}>`,
@@ -429,7 +619,9 @@ export const testEmailConfiguration = async (req, res) => {
       html: '<p>This is a test email to verify email configuration.</p>'
     };
 
+    console.log('📧 Sending test email...');
     const result = await sendEmail(mailData);
+    console.log('📧 Test email result:', result);
     
     if (result.success) {
       return res.status(200).json({
