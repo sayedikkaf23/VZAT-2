@@ -169,8 +169,8 @@
 
 
                   <div *ngFor="let card of cards; trackBy: trackByCardId"
-             class="col-12 col-sm-6 col-lg-4 col-xl-3">
-          <div class="s-card" [class.border-warning]="card.isDefault">
+             class="col-12 col-sm-6 col-lg-6 col-xl-4">
+          <div class="s-card position-relative" [class.border-warning]="card.isDefault">
             <a *ngIf="!card.isDefault" href="#" (click)="removeCard(card._id); $event.preventDefault()" class="card-remove">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M9 1L1.00054 8.99947M8.99947 9L1 1.00057" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -238,8 +238,8 @@
         </div>
 
         <!-- Add Card tile (same size as others) -->
-        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-          <div class="s-card add_card-box">
+        <div class="col-12 col-sm-6 col-lg-6 col-xl-4">
+          <div class="s-card add_card-box position-relative">
             <a href="#" (click)="addCard(); $event.preventDefault()" class="btn btn-sm">
               <svg width="15" height="16" viewBox="0 0 15 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M7.37519 1.63604L7.3752 14.3631M13.7387 8.00042L1.01168 8.00045"
