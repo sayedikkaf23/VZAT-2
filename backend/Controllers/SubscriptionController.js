@@ -1028,7 +1028,20 @@ export const fixInstallmentLeft = async (req, res) => {
   }
 };
 
-export { checkAndHandleSubscriptionCompletion as checkSubscriptionCompletion };
+// 👇 ADD THIS JUST ABOVE export default OR AT THE VERY END
+
+export { 
+  checkAndHandleSubscriptionCompletion as checkSubscriptionCompletion 
+};
+
+// Temporary stub to satisfy route import (safe no-op)
+export const testPaymentFailureEmail = async (req, res) => {
+  return res.status(410).json({
+    success: false,
+    message: "testPaymentFailureEmail endpoint deprecated"
+  });
+};
+
 
 export default {
   handleAFSWebhook,
@@ -1039,3 +1052,4 @@ export default {
   fixInstallmentLeft,
   testServerToServerPayment
 };
+
