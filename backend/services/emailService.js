@@ -38,7 +38,9 @@ const EMAIL_CONFIG = {
   }
 };
 
-const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'devtech@vz.ae';
+const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'sayed@yeepeey.com';
+
+const getDevTechCcEmails = () => ['devtech@virtuzone.com', 'devtech@vz.ae'];
 
 // Initialize Mailgun
 const mailgunConfig = {
@@ -114,12 +116,15 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
       (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined // Sales person
     ].filter(Boolean);
 
+    const devTechCcEmails = getDevTechCcEmails();
+
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
         address: mailgunConfig.fromEmail
       },
       to: recipientList,
+      cc: devTechCcEmails,
       subject: `Subscription Successfully Completed - ${Quote_payment_number || quotepaymentId}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -224,7 +229,10 @@ export const sendFinalRenewalEmail = async (data) => {
       salesPersonDetails?.salesPersonEmail ||
       (typeof opp_owner === 'string' && opp_owner.includes('@') ? opp_owner : undefined);
 
-    const ccRecipients = oppOwnerEmail ? [oppOwnerEmail] : [];
+    const ccRecipients = [...getDevTechCcEmails()];
+    if (oppOwnerEmail) {
+      ccRecipients.push(oppOwnerEmail);
+    }
 
     const devTechBccEmail = getDevTechBccEmail();
 
@@ -300,6 +308,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
 
     const ccRecipientsSet = new Set(
       [
+        ...getDevTechCcEmails(),
         oppOwnerEmail,
         'maryia.vinahradava1@virtuzone.com',
         'arteam1@vz.ae'
@@ -402,6 +411,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 
     const ccRecipientsSet = new Set(
       [
+        ...getDevTechCcEmails(),
         oppOwnerEmail,
         salesPersonDetails?.salesPersonEmail,
         'maryia.vinahradava1@virtuzone.com',
@@ -756,7 +766,7 @@ if (quotePdf && Array.isArray(quotePdf)) {
     }
 
     const salesPersonEmail = salesPersonDetails?.salesPersonEmail;
-    const ccRecipients = [];
+    const ccRecipients = [...getDevTechCcEmails()];
     if (salesPersonEmail) {
       ccRecipients.push(salesPersonEmail);
     }
@@ -892,6 +902,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
     });
 
     const devTechBccEmail = getDevTechBccEmail();
+    const devTechCcEmails = getDevTechCcEmails();
 
     const mailOptions = {
       from: {
@@ -899,6 +910,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
         address: mailgunConfig.fromEmail
       },
       to: email,
+      cc: devTechCcEmails,
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome to  Customer Portal - Your Account is Ready!',
       html: `
@@ -1016,6 +1028,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
     } = customerData;
 
     const devTechBccEmail = getDevTechBccEmail();
+    const devTechCcEmails = getDevTechCcEmails();
 
     const mailOptions = {
       from: {
@@ -1023,6 +1036,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
         address: mailgunConfig.fromEmail
       },
       to: email,
+      cc: devTechCcEmails,
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome Back! Your Customer Portal account is Ready to Use',
       html: `
@@ -1093,12 +1107,15 @@ export const sendPasswordResetEmail = async (customerData) => {
       resetUrl
     } = customerData;
 
+    const devTechCcEmails = getDevTechCcEmails();
+
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
         address: mailgunConfig.fromEmail
       },
       to: email,
+      cc: devTechCcEmails,
       subject: 'Reset Your Recurring Account Password',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
