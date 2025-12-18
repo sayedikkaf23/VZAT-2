@@ -816,7 +816,7 @@ async function processServerToServerPayment(subscription, savedCard) {
 
   afsData.append("standingInstruction.mode", "REPEATED");
   afsData.append("standingInstruction.type", "UNSCHEDULED");
-  afsData.append("standingInstruction.source", "CIT");
+  afsData.append("standingInstruction.source", "MIT");
 
   const afsHeaders = {
     Authorization: `Bearer ${accessToken}`,
