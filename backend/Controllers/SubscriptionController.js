@@ -17,14 +17,15 @@ dotenv.config();
 
 /**
  * ✅ PRODUCTION FIX:
- * AFS merchantTransactionId must be unique per charge.
+ * AFS merchantTransactionId must be unique per charge AND per retry attempt.
  * Also, your webhook sends back this ID, so we must be able to map it back to the subscription.
  *
  * Strategy:
  * - Always start merchantTransactionId with base quotepaymentId
  * - Add unique suffix per installment:
- *    - Prefer payment_schedule[currentIndex]._id (stable + unique)
- *    - Else fallback to timestamp
+ *    - Use payment_schedule[currentIndex]._id (stable + unique)
+ *    - ALWAYS append timestamp to ensure uniqueness on retries
+ *    - This prevents "duplicate transaction" errors when payment fails and retries
  */
 function buildMerchantTransactionId(subscription) {
   const completed = Number(subscription?.payments_completed || 0); // already completed
@@ -33,20 +34,39 @@ function buildMerchantTransactionId(subscription) {
   const base = subscription?.quotepaymentId;
   if (!base) {
     // Extreme fallback: never break AFS call
+    console.warn("⚠️ No quotepaymentId found for subscription, using UNKNOWN fallback");
     return `UNKNOWN_${Date.now()}`;
   }
 
-  // Best: use payment_schedule item _id as stable unique suffix
+  // Get retry count if available (for logging/debugging)
+  const retryCount = subscription?.payment_retry_count || 0;
+
+  console.log("🔑 =============== BUILDING MERCHANT TRANSACTION ID ===============");
+  console.log(`📋 Base QuotePaymentId: ${base}`);
+  console.log(`📋 Payments Completed: ${completed}`);
+  console.log(`📋 Next Payment Index: ${nextIndex}`);
+  console.log(`📋 Retry Count: ${retryCount}`);
+
+  // Best: use payment_schedule item _id + timestamp for uniqueness
   if (
     Array.isArray(subscription.payment_schedule) &&
     subscription.payment_schedule[nextIndex] &&
     subscription.payment_schedule[nextIndex]._id
   ) {
-    return `${base}_${subscription.payment_schedule[nextIndex]._id}`;
+    const scheduleItemId = subscription.payment_schedule[nextIndex]._id;
+    const timestamp = Date.now();
+    const merchantTxnId = `${base}_${scheduleItemId}_${timestamp}`;
+    console.log(`✅ Generated MerchantTransactionId (with schedule ID): ${merchantTxnId}`);
+    console.log(`🔑 =============== MERCHANT TRANSACTION ID COMPLETE ===============`);
+    return merchantTxnId;
   }
 
-  // Fallback: still unique
-  return `${base}_${completed + 1}_${Date.now()}`;
+  // Fallback: still unique with timestamp
+  const timestamp = Date.now();
+  const merchantTxnId = `${base}_${completed + 1}_${timestamp}`;
+  console.log(`✅ Generated MerchantTransactionId (fallback): ${merchantTxnId}`);
+  console.log(`🔑 =============== MERCHANT TRANSACTION ID COMPLETE ===============`);
+  return merchantTxnId;
 }
 
 /**
@@ -607,13 +627,21 @@ export const processRecurringPayments = async (req, res) => {
         }
       } catch (error) {
         // FAILURE HANDLING (kept as you had)
+        console.error("❌ =============== PAYMENT FAILED ===============");
+        console.error(`📋 QuotePaymentId: ${subscription.quotepaymentId}`);
+        console.error(`📋 Error: ${error.message}`);
+        
         const retryCount = subscription.payment_retry_count || 0;
         const maxRetries = 3;
+        
+        console.log(`🔄 Current Retry Count: ${retryCount}/${maxRetries}`);
 
         // mark processed + retry scheduling
         let nextChargeDate = new Date();
         nextChargeDate.setDate(nextChargeDate.getDate() + 1);
         nextChargeDate.setHours(0, 0, 0, 0);
+        
+        console.log(`🔄 Scheduling retry for: ${nextChargeDate.toISOString()}`);
 
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
           last_processed_date: new Date(),
@@ -765,6 +793,12 @@ async function getCustomerDefaultCard(subscription) {
  * Process recurring payment using AFS Registration API
  */
 async function processServerToServerPayment(subscription, savedCard) {
+  console.log("💳 =============== PROCESSING SERVER-TO-SERVER PAYMENT ===============");
+  console.log(`📋 QuotePaymentId: ${subscription.quotepaymentId}`);
+  console.log(`📋 Customer Email: ${subscription.opp_email}`);
+  console.log(`📋 Payments Completed: ${subscription.payments_completed}`);
+  console.log(`📋 Retry Count: ${subscription.payment_retry_count || 0}`);
+
   // Calculate InstallmentLeft if missing
   let installmentLeft = subscription.InstallmentLeft;
   if (!installmentLeft && subscription.payment_schedule) {
@@ -774,6 +808,7 @@ async function processServerToServerPayment(subscription, savedCard) {
 
   // Calculate installment amount
   const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2));
+  console.log(`💰 Installment Amount: ${installmentAmount} AED`);
 
   // ✅ PRODUCTION FIX: unique merchantTransactionId
   const merchantTransactionId = buildMerchantTransactionId(subscription);
@@ -823,19 +858,49 @@ async function processServerToServerPayment(subscription, savedCard) {
     "Content-Type": "application/x-www-form-urlencoded"
   };
 
+  console.log("📤 Calling AFS Registration Payment API...");
+  console.log(`📋 AFS URL: ${afsUrl}`);
+  console.log(`📋 Amount: ${installmentAmount} AED`);
+  console.log(`📋 MerchantTransactionId: ${merchantTransactionId}`);
+  console.log(`📋 Registration ID: ${savedCard.afs_registration_id}`);
+
   try {
     const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
 
     if (response.data?.result?.code?.startsWith("000.")) {
+      console.log("✅ AFS Payment Successful!");
+      console.log(`📋 Transaction ID: ${response.data.id}`);
+      console.log(`📋 Result Code: ${response.data.result.code}`);
+      console.log(`📋 Result Description: ${response.data.result.description}`);
+      console.log("💳 =============== PAYMENT PROCESSING COMPLETE ===============");
       await SavedCard.findByIdAndUpdate(savedCard._id, { lastUsedDate: new Date() });
       return response.data;
     }
 
     const errorMsg = `AFS Debit Fund failed: ${response.data?.result?.description || "Unknown error"}`;
+    console.error("❌ AFS Payment Failed:", errorMsg);
+    console.error("📋 Response Data:", JSON.stringify(response.data, null, 2));
+    console.log("💳 =============== PAYMENT PROCESSING COMPLETE ===============");
     throw new Error(errorMsg);
   } catch (axiosError) {
     const status = axiosError.response?.status;
     const data = axiosError.response?.data;
+
+    console.error("❌ =============== AFS API ERROR ===============");
+    console.error(`📋 HTTP Status: ${status || "Network Error"}`);
+    console.error(`📋 Error Message: ${axiosError.message}`);
+    console.error(`📋 MerchantTransactionId: ${merchantTransactionId}`);
+    
+    if (data) {
+      console.error(`📋 Response Data:`, JSON.stringify(data, null, 2));
+      // Check for duplicate transaction error specifically
+      if (data.result?.description?.toLowerCase().includes("duplicate")) {
+        console.error("⚠️ DUPLICATE TRANSACTION DETECTED!");
+        console.error("⚠️ This means the same merchantTransactionId was used before.");
+      }
+    }
+    console.error("❌ =============== AFS API ERROR COMPLETE ===============");
+    console.log("💳 =============== PAYMENT PROCESSING COMPLETE ===============");
 
     if (status === 400) throw new Error(`AFS 400: ${JSON.stringify(data)}`);
     if (status === 401) throw new Error(`AFS 401: Unauthorized (check token)`);
