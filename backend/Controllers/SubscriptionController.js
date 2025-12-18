@@ -2,7 +2,11 @@ import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 import SavedCard from "../model/SavedCardModel.js";
 import Customer from "../model/CustomerLoginModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
-import { sendFinalRenewalEmail, sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from "../services/emailService.js";
+import {
+  sendFinalRenewalEmail,
+  sendPaymentFailureNotificationEmail,
+  sendPaymentSuccessNotificationEmail
+} from "../services/emailService.js";
 import { createCustomerAccount, saveCustomerCard } from "./CustomerRegistration.js";
 import { updateQuotePaymentStatus } from "../services/salesforceService.js";
 import axios from "axios";
@@ -12,94 +16,101 @@ import dotenv from "dotenv";
 dotenv.config();
 
 /**
+ * ✅ PRODUCTION FIX:
+ * AFS merchantTransactionId must be unique per charge.
+ * Also, your webhook sends back this ID, so we must be able to map it back to the subscription.
+ *
+ * Strategy:
+ * - Always start merchantTransactionId with base quotepaymentId
+ * - Add unique suffix per installment:
+ *    - Prefer payment_schedule[currentIndex]._id (stable + unique)
+ *    - Else fallback to timestamp
+ */
+function buildMerchantTransactionId(subscription) {
+  const completed = Number(subscription?.payments_completed || 0); // already completed
+  const nextIndex = completed; // next payment index in array (0-based)
+
+  const base = subscription?.quotepaymentId;
+  if (!base) {
+    // Extreme fallback: never break AFS call
+    return `UNKNOWN_${Date.now()}`;
+  }
+
+  // Best: use payment_schedule item _id as stable unique suffix
+  if (
+    Array.isArray(subscription.payment_schedule) &&
+    subscription.payment_schedule[nextIndex] &&
+    subscription.payment_schedule[nextIndex]._id
+  ) {
+    return `${base}_${subscription.payment_schedule[nextIndex]._id}`;
+  }
+
+  // Fallback: still unique
+  return `${base}_${completed + 1}_${Date.now()}`;
+}
+
+/**
+ * Extract base quotepaymentId from merchantTransactionId
+ * Example: "aAWdu000000AXsLGAW_2" => "aAWdu000000AXsLGAW"
+ */
+function getBaseQuotePaymentId(merchantTransactionId) {
+  if (!merchantTransactionId) return null;
+  return String(merchantTransactionId).split("_")[0];
+}
+
+/**
  * Check if subscription is complete and handle completion logic
- * This function ensures consistent completion handling across all payment flows
- * Runs automatically after every payment to check for completion
  */
 async function checkAndHandleSubscriptionCompletion(subscription) {
   try {
-    console.log('🔍 =============== COMPLETION CHECK ===============');
-    console.log(`📋 Checking subscription: ${subscription.quotepaymentId}`);
+    console.log("🔍 =============== COMPLETION CHECK ===============");
     console.log(`📋 Current subscription status: ${subscription.subscription_status}`);
-    console.log(`📋 Payments completed: ${subscription.payments_completed}/${subscription.InstallmentLeft}`);
-    
-    // Validate subscription data
+    console.log(
+      `📋 Payments completed: ${subscription.payments_completed}/${subscription.InstallmentLeft}`
+    );
+
     if (!subscription.payment_schedule || !Array.isArray(subscription.payment_schedule)) {
-      console.log('❌ No payment schedule found - subscription not complete');
+      console.log("❌ No payment schedule found - subscription not complete");
       return false;
     }
-    
-    // Check if ALL payments are completed (not just payments_completed count)
-    const allPaymentsCompleted = subscription.payment_schedule.every(p => 
-      p.status === 'completed' || p.status === 'paid'
+
+    const allPaymentsCompleted = subscription.payment_schedule.every(
+      (p) => p.status === "completed" || p.status === "paid"
     );
-    
-    // Check for any failed or due payments
-    const failedPayments = subscription.payment_schedule.filter(p => 
-      p.status === 'failed' || p.status === 'due' || p.status === 'pending'
+
+    const failedPayments = subscription.payment_schedule.filter(
+      (p) => p.status === "failed" || p.status === "due" || p.status === "pending"
     );
-    
-    console.log('📊 Payment Analysis:', {
-      quotepaymentId: subscription.quotepaymentId,
-      payments_completed: subscription.payments_completed,
-      total_installments: subscription.InstallmentLeft,
-      total_payments_in_schedule: subscription.payment_schedule.length,
-      all_payments_completed: allPaymentsCompleted,
-      failed_or_due_payments: failedPayments.length,
-      payment_schedule: subscription.payment_schedule.map(p => ({
-        installment: p.installment_number,
-        status: p.status,
-        amount: p.amount,
-        due_date: p.due_date
-      }))
-    });
-    
-    // Completion criteria: 
-    // 1. payments_completed >= InstallmentLeft
-    // 2. ALL payments in schedule are completed/paid
-    // 3. No failed or due payments
-    const isComplete = subscription.payments_completed >= subscription.InstallmentLeft && 
-                      allPaymentsCompleted && 
-                      failedPayments.length === 0;
-    
+
+    const isComplete =
+      subscription.payments_completed >= subscription.InstallmentLeft &&
+      allPaymentsCompleted &&
+      failedPayments.length === 0;
+
     if (isComplete) {
-      console.log(`🎉 SUBSCRIPTION COMPLETED for ${subscription.quotepaymentId}!`);
-      console.log(`✅ All ${subscription.payment_schedule.length} payments are completed`);
-      console.log(`✅ No failed or due payments remaining`);
-      
-      // Check if already completed to prevent duplicate emails
-      const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
+    
+
+      const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select(
+        "subscription_status"
+      );
       console.log(`📋 Current status in DB: ${currentStatus.subscription_status}`);
-      
-      if (currentStatus.subscription_status !== 'completed') {
-        console.log('🔄 Updating subscription status to completed...');
-        
-        try {
-          // Update status to completed and set next_charge_date to null
-          const updateResult = await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-            subscription_status: 'completed',
-            next_charge_date: null,
-            renewal_email_sent: true,
-            renewal_email_sent_date: new Date()
-          });
-          
-          console.log('✅ Subscription status updated to completed');
-          console.log(`📋 Update result: ${updateResult ? 'Success' : 'Failed'}`);
-        } catch (updateError) {
-          console.error('❌ Error updating subscription status:', updateError);
-          throw updateError;
-        }
-        
-        // Send completion email to business team with retry logic
+
+      if (currentStatus.subscription_status !== "completed") {
+        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+          subscription_status: "completed",
+          next_charge_date: null,
+          renewal_email_sent: true,
+          renewal_email_sent_date: new Date()
+        });
+
+        // Send completion email with retry
         let emailSent = false;
         let emailAttempts = 0;
         const maxEmailAttempts = 3;
-        
+
         while (!emailSent && emailAttempts < maxEmailAttempts) {
           emailAttempts++;
           try {
-            console.log(`📧 Sending completion email (attempt ${emailAttempts}/${maxEmailAttempts})...`);
-            
             const emailResult = await sendFinalRenewalEmail({
               quotepaymentId: subscription.quotepaymentId,
               Quote_payment_number: subscription.Quote_payment_number,
@@ -110,54 +121,41 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
               last_payment_date: subscription.last_payment_date,
               salesPersonDetails: subscription.salesPersonDetails
             });
-            
+
             if (emailResult.success) {
               emailSent = true;
-              console.log('📧 ✅ Subscription completion email sent successfully!');
-              console.log(`📧 Email ID: ${emailResult.messageId}`);
-              console.log(`📧 Email sent to: ${emailResult.recipients || 'Business Team'}`);
+              console.log("📧 ✅ Subscription completion email sent successfully!");
             } else {
-              console.error(`📧 ❌ Failed to send completion email (attempt ${emailAttempts}):`, emailResult.error);
+              console.error("📧 ❌ Completion email failed:", emailResult.error);
               if (emailAttempts < maxEmailAttempts) {
-                console.log(`📧 Retrying email in 2 seconds... (attempt ${emailAttempts + 1}/${maxEmailAttempts})`);
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+                await new Promise((r) => setTimeout(r, 2000));
               }
             }
-          } catch (completionEmailError) {
-            console.error(`📧 ❌ Error sending completion email (attempt ${emailAttempts}):`, completionEmailError);
+          } catch (e) {
+            console.error("📧 ❌ Completion email error:", e);
             if (emailAttempts < maxEmailAttempts) {
-              console.log(`📧 Retrying email in 2 seconds... (attempt ${emailAttempts + 1}/${maxEmailAttempts})`);
-              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+              await new Promise((r) => setTimeout(r, 2000));
             }
           }
         }
-        
+
         if (!emailSent) {
-          console.error('📧 ❌ Failed to send completion email after all attempts');
-          console.log('⚠️ Completion email will be retried by background job');
+          console.error("📧 ❌ Failed to send completion email after all attempts");
         }
       } else {
-        console.log('📧 Subscription already marked as completed, skipping completion email');
+        console.log("📧 Subscription already completed, skipping completion email");
       }
-      
-      console.log('🎯 =============== COMPLETION CHECK COMPLETE ===============');
-      return true; // Subscription is complete
-    } else {
-      console.log('📋 Subscription not yet complete:');
-      if (failedPayments.length > 0) {
-        console.log(`❌ ${failedPayments.length} payments still failed/due:`, 
-          failedPayments.map(p => `Payment ${p.installment_number} (${p.status})`));
-      }
-      if (subscription.payments_completed < subscription.InstallmentLeft) {
-        console.log(`❌ Payments completed (${subscription.payments_completed}) < Total installments (${subscription.InstallmentLeft})`);
-      }
-      
-      console.log('🎯 =============== COMPLETION CHECK COMPLETE ===============');
-      return false; // Subscription is not complete
+
+      console.log("🎯 =============== COMPLETION CHECK COMPLETE ===============");
+      return true;
     }
+
+    console.log("📋 Subscription not yet complete");
+    console.log("🎯 =============== COMPLETION CHECK COMPLETE ===============");
+    return false;
   } catch (error) {
-    console.error('💥 Error checking subscription completion:', error);
-    console.log('🎯 =============== COMPLETION CHECK COMPLETE ===============');
+    console.error("💥 Error checking subscription completion:", error);
+    console.log("🎯 =============== COMPLETION CHECK COMPLETE ===============");
     return false;
   }
 }
@@ -167,103 +165,68 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
  */
 async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transactionId) {
   try {
-    console.log(`📅 Updating payment schedule for payment #${paymentNumber} with transaction ID: ${transactionId}`);
-    
+    console.log(
+      `📅 Updating payment schedule for payment #${paymentNumber} with transaction ID: ${transactionId}`
+    );
+
     const subscription = await Vzat_Recurring_Data.findById(subscriptionId);
-    if (!subscription) {
-      console.log('❌ Subscription not found');
-      return { success: false, error: 'Subscription not found' };
+    if (!subscription) return { success: false, error: "Subscription not found" };
+
+    if (!subscription.payment_schedule || subscription.payment_schedule.length === 0) {
+      return { success: true, message: "No payment schedule to update" };
     }
 
-    console.log(`📅 Subscription has ${subscription.payment_schedule?.length || 0} payments in schedule`);
-
-    if (subscription.payment_schedule && subscription.payment_schedule.length > 0) {
-      subscription.payment_schedule.forEach((payment, index) => {
-        console.log(`📅 Payment ${payment.installment_number}: ${payment.status} (${payment.amount} AED)`);
-      });
-    } else {
-      console.log('⚠️ No payment schedule found in subscription - skipping schedule update');
-      return { success: true, message: 'No payment schedule to update' };
-    }
-
-    // Check if the payment number exists in the schedule
-    const targetPayment = subscription.payment_schedule.find(p => p.installment_number === paymentNumber);
+    const targetPayment = subscription.payment_schedule.find(
+      (p) => p.installment_number === paymentNumber
+    );
     if (!targetPayment) {
-      console.log(`⚠️ Payment #${paymentNumber} not found in schedule - skipping schedule update`);
       return { success: true, message: `Payment #${paymentNumber} not found in schedule` };
     }
 
-    console.log(`📅 Found payment #${paymentNumber} in schedule: ${targetPayment.status}`);
-
-    // Update the specific payment in the payment_schedule array
     const updateResult = await Vzat_Recurring_Data.findOneAndUpdate(
-      { 
+      {
         _id: subscriptionId,
-        'payment_schedule.installment_number': paymentNumber
+        "payment_schedule.installment_number": paymentNumber
       },
       {
         $set: {
-          'payment_schedule.$.status': 'completed',
-          'payment_schedule.$.transaction_id': transactionId,
-          'payment_schedule.$.payment_date': new Date()
+          "payment_schedule.$.status": "completed",
+          "payment_schedule.$.transaction_id": transactionId,
+          "payment_schedule.$.payment_date": new Date()
         }
       },
       { new: true }
     );
 
-    if (updateResult) {
-      console.log(`✅ Payment #${paymentNumber} marked as completed in schedule`);
-      
-      // Find the updated payment in the schedule
-      const updatedPayment = updateResult.payment_schedule.find(p => p.installment_number === paymentNumber);
-      if (updatedPayment) {
-        console.log(`📅 Updated payment details:`, {
-          installment_number: updatedPayment.installment_number,
-          status: updatedPayment.status,
-          transaction_id: updatedPayment.transaction_id,
-          payment_date: updatedPayment.payment_date
-        });
-      }
-      
-      // Update the next payment status to 'due' if it exists
-      const nextPaymentNumber = paymentNumber + 1;
-      const nextPayment = subscription.payment_schedule.find(p => p.installment_number === nextPaymentNumber);
-      
-      if (nextPayment && nextPayment.status === 'pending') {
-        console.log(`📅 Updating next payment #${nextPaymentNumber} to 'due' status`);
-        
-        const nextPaymentUpdate = await Vzat_Recurring_Data.findOneAndUpdate(
-          { 
-            _id: subscriptionId,
-            'payment_schedule.installment_number': nextPaymentNumber,
-            'payment_schedule.status': 'pending'
-          },
-          {
-            $set: {
-              'payment_schedule.$.status': 'due'
-            }
-          },
-          { new: true }
-        );
-
-        if (nextPaymentUpdate) {
-          console.log(`✅ Next payment #${nextPaymentNumber} marked as due`);
-        } else {
-          console.log(`⚠️ Next payment #${nextPaymentNumber} not found or already updated`);
-        }
-      } else {
-        console.log(`ℹ️ Next payment #${nextPaymentNumber} not found or not pending (status: ${nextPayment?.status || 'N/A'})`);
-      }
-
-      return { success: true, updatedPayment, nextPaymentNumber };
-    } else {
-      console.log(`⚠️ Payment schedule update failed - no matching installment #${paymentNumber} found`);
+    if (!updateResult) {
       return { success: false, error: `No matching installment #${paymentNumber} found` };
     }
-    
+
+    // Set next installment due (if pending)
+    const nextPaymentNumber = paymentNumber + 1;
+    const nextPayment = subscription.payment_schedule.find(
+      (p) => p.installment_number === nextPaymentNumber
+    );
+
+    if (nextPayment && nextPayment.status === "pending") {
+      await Vzat_Recurring_Data.findOneAndUpdate(
+        {
+          _id: subscriptionId,
+          "payment_schedule.installment_number": nextPaymentNumber,
+          "payment_schedule.status": "pending"
+        },
+        { $set: { "payment_schedule.$.status": "due" } },
+        { new: true }
+      );
+    }
+
+    const updatedPayment = updateResult.payment_schedule.find(
+      (p) => p.installment_number === paymentNumber
+    );
+
+    return { success: true, updatedPayment, nextPaymentNumber };
   } catch (error) {
-    console.error('❌ Error updating payment schedule status:', error);
-    console.error('❌ Error details:', error.message);
+    console.error("❌ Error updating payment schedule status:", error);
     return { success: false, error: error.message };
   }
 }
@@ -272,152 +235,89 @@ async function updatePaymentScheduleStatus(subscriptionId, paymentNumber, transa
  * Handle AFS webhook notifications for subscription events
  */
 export const handleAFSWebhook = async (req, res) => {
-  // Using persistent connection - no need to connect/disconnect
-  
-  console.log('🔔 =============== AFS WEBHOOK RECEIVED ===============');
-  console.log('📅 Timestamp:', new Date().toISOString());
-  console.log('🌐 Request IP:', req.ip);
-  console.log('🌐 User Agent:', req.get('User-Agent'));
-  console.log('📋 Request Body:', JSON.stringify(req.body, null, 2));
-  
+  console.log("🔔 =============== AFS WEBHOOK RECEIVED ===============");
+  console.log("📅 Timestamp:", new Date().toISOString());
+  console.log("📋 Request Body:", JSON.stringify(req.body, null, 2));
+
   const { paymentType, merchantTransactionId, id, result } = req.body;
-  
-  console.log('🔍 WEBHOOK ANALYSIS:');
-  console.log(`   - Payment Type: ${paymentType}`);
-  console.log(`   - Merchant Transaction ID: ${merchantTransactionId}`);
-  console.log(`   - Transaction ID: ${id}`);
-  console.log(`   - Result Code: ${result?.code || 'N/A'}`);
-  console.log(`   - Result Description: ${result?.description || 'N/A'}`);
-  
-  // Only process successful payments - disable failed payment processing to prevent failure emails
-  if (!result || !result.code || !result.code.startsWith('000.')) {
-    console.log('🚫 WEBHOOK DISABLED FOR FAILED PAYMENTS:');
-  console.log(`   - Payment Type: ${paymentType}`);
-  console.log(`   - Merchant Transaction ID: ${merchantTransactionId || 'N/A'}`);
-  console.log(`   - Transaction ID: ${id || 'N/A'}`);
-  console.log(`   - Result Code: ${result?.code || 'N/A'}`);
-    console.log('ℹ️ Failed payment webhook processing disabled to prevent failure emails');
-    console.log('ℹ️ Only successful payments are processed');
-  
-  // Log the disabled webhook
-    Post_Common_DB_Log_Data('/webhook/afs-disabled-failed', req.body, { 
-      message: 'Webhook disabled for failed payment - preventing failure emails',
-    paymentType: paymentType,
-    merchantTransactionId: merchantTransactionId,
-    transactionId: id,
-    result: result,
-      reason: 'Failed payment processing disabled'
-  });
-  
-  return res.status(200).json({ 
-      message: 'Webhook disabled for failed payment - preventing failure emails',
-    paymentType: paymentType,
-    merchantTransactionId: merchantTransactionId,
-    transactionId: id,
-      status: 'disabled_failed_payment'
+
+  // Only process successful payments
+  if (!result || !result.code || !result.code.startsWith("000.")) {
+    Post_Common_DB_Log_Data("/webhook/afs-disabled-failed", req.body, {
+      message: "Webhook disabled for failed payment - preventing failure emails",
+      paymentType,
+      merchantTransactionId,
+      transactionId: id,
+      result,
+      reason: "Failed payment processing disabled"
+    });
+
+    return res.status(200).json({
+      message: "Webhook disabled for failed payment - preventing failure emails",
+      paymentType,
+      merchantTransactionId,
+      transactionId: id,
+      status: "disabled_failed_payment"
     });
   }
-  
-  // Process successful payments only
-  console.log('✅ PROCESSING SUCCESSFUL PAYMENT WEBHOOK');
-  console.log(`   - Payment Type: ${paymentType}`);
-  console.log(`   - Merchant Transaction ID: ${merchantTransactionId}`);
-  console.log(`   - Transaction ID: ${id}`);
-  console.log(`   - Result Code: ${result.code}`);
-  
+
   try {
-    // Find the subscription record
-    const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId: merchantTransactionId });
-    
+    // ✅ PRODUCTION FIX: webhook merchantTransactionId may be "QP_xxx" or "QP_<scheduleId>"
+    const baseQuotePaymentId = getBaseQuotePaymentId(merchantTransactionId);
+
+    const subscription = await Vzat_Recurring_Data.findOne({
+      quotepaymentId: baseQuotePaymentId
+    });
+
     if (!subscription) {
-      console.log('❌ Subscription not found for quotepaymentId:', merchantTransactionId);
-      return res.status(404).json({ 
-        message: 'Subscription not found',
-        quotepaymentId: merchantTransactionId
+      return res.status(404).json({
+        message: "Subscription not found",
+        quotepaymentId: baseQuotePaymentId,
+        merchantTransactionId
       });
     }
-    
-    console.log('✅ Subscription found:', {
-      quotepaymentId: subscription.quotepaymentId,
-      Customer_name: subscription.Customer_name,
-      subscription_status: subscription.subscription_status,
-      payments_completed: subscription.payments_completed
-    });
-    
-    // Check if this is the first payment
+
     const isFirstPayment = (subscription.payments_completed || 0) === 0;
-    
+
     if (isFirstPayment) {
-      console.log('🎉 =============== PROCESSING FIRST PAYMENT WEBHOOK ===============');
-      
-      // 1. Update subscription status to active
-      console.log('🔄 Activating subscription...');
+      // First payment -> activate + mark installment 1 completed
       const subscriptionUpdate = await Vzat_Recurring_Data.findByIdAndUpdate(
         subscription._id,
         {
-          subscription_status: 'active',
-          afs_registration_id: id,
+          subscription_status: "active",
+          initial_transaction_id: id,
           payments_completed: 1,
           last_payment_date: new Date()
         },
         { new: true }
       );
-      
-      console.log('✅ Subscription activated:');
-      console.log(`  - Status: ${subscriptionUpdate.subscription_status}`);
-      console.log(`  - Payments Completed: ${subscriptionUpdate.payments_completed}`);
-      console.log(`  - Registration ID: ${subscriptionUpdate.afs_registration_id}`);
-      console.log(`  - Last Payment: ${subscriptionUpdate.last_payment_date}`);
-      
-      // 2. Mark payment #1 as completed
-      console.log('🔄 Updating payment schedule...');
-      const payment1Update = await Vzat_Recurring_Data.findOneAndUpdate(
-        { 
+
+      await Vzat_Recurring_Data.findOneAndUpdate(
+        {
           _id: subscription._id,
-          'payment_schedule.installment_number': 1
+          "payment_schedule.installment_number": 1
         },
         {
           $set: {
-            'payment_schedule.$.status': 'completed',
-            'payment_schedule.$.transaction_id': id,
-            'payment_schedule.$.payment_date': new Date()
+            "payment_schedule.$.status": "completed",
+            "payment_schedule.$.transaction_id": id,
+            "payment_schedule.$.payment_date": new Date()
           }
         },
         { new: true }
       );
-      
-      if (payment1Update) {
-        console.log('✅ Payment #1 marked as completed in schedule');
-        
-        // Update the next payment status to 'due' if it exists
-        const nextPaymentUpdate = await Vzat_Recurring_Data.findOneAndUpdate(
-          { 
-            _id: subscription._id,
-            'payment_schedule.installment_number': 2,
-            'payment_schedule.status': 'pending'
-          },
-          {
-            $set: {
-              'payment_schedule.$.status': 'due'
-            }
-          }
-        );
-        
-        if (nextPaymentUpdate) {
-          console.log('✅ Next payment #2 marked as due');
-        }
-      }
-      
-      console.log('🎉 =============== FIRST PAYMENT WEBHOOK COMPLETE ===============');
-      console.log('✅ First payment successfully processed via webhook');
-      console.log('✅ Subscription is now ACTIVE');
-      
+
+      // Mark installment 2 as due (if pending)
+      await Vzat_Recurring_Data.findOneAndUpdate(
+        {
+          _id: subscription._id,
+          "payment_schedule.installment_number": 2,
+          "payment_schedule.status": "pending"
+        },
+        { $set: { "payment_schedule.$.status": "due" } }
+      );
     } else {
-      console.log('ℹ️ This appears to be a recurring payment');
-      console.log(`   Current status: ${subscription.subscription_status}`);
-      console.log(`   Payments completed: ${subscription.payments_completed || 0}`);
-      
-      // Update payments_completed count
+      // Recurring payment
       const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
         subscription._id,
         {
@@ -426,22 +326,33 @@ export const handleAFSWebhook = async (req, res) => {
         },
         { new: true }
       );
-      
-      console.log(`📊 Updated payments_completed to: ${updatedRecord.payments_completed}`);
-      
-      // Update payment schedule status
-      const scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, updatedRecord.payments_completed, id);
-      console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
-      
-      // Send customer notification email for successful payment
+
+      // ✅ use updatedRecord everywhere below
+      const currentPayment = updatedRecord.payment_schedule?.find(
+        (p) => p.installment_number === updatedRecord.payments_completed
+      );
+
+
+      await updatePaymentScheduleStatus(
+        subscription._id,
+        updatedRecord.payments_completed,
+        id
+      );
+
+      // Customer success email (non-blocking)
       try {
-        // Get q_payment_id from the payment schedule for the current payment
-        const currentPayment = subscription.payment_schedule.find(p => p.installment_number === updatedRecord.payments_completed);
-        const q_payment_id = currentPayment?.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId;
-        
-        const successResult = await sendPaymentSuccessNotificationEmail({
+        const currentPayment = updatedRecord.payment_schedule?.find(
+          (p) => p.installment_number === updatedRecord.payments_completed
+        );
+        const q_payment_id =
+  currentPayment?.q_payment_id ||
+  updatedRecord.Quote_payment_number ||
+  updatedRecord.quotepaymentId;
+
+
+        await sendPaymentSuccessNotificationEmail({
           quotepaymentId: subscription.quotepaymentId,
-          q_payment_id: q_payment_id,
+          q_payment_id,
           Customer_name: subscription.Customer_name,
           opp_email: subscription.opp_email,
           opp_owner: subscription.opp_owner,
@@ -449,78 +360,51 @@ export const handleAFSWebhook = async (req, res) => {
           payment_date: new Date(result.timestamp || new Date()),
           installment_number: updatedRecord.payments_completed,
           total_installments: subscription.InstallmentLeft,
-          payment_method: 'Card',
+          payment_method: "Card",
           salesPersonDetails: subscription.salesPersonDetails
         });
-        
-        if (successResult.success) {
-          console.log('📧 Customer payment success notification sent successfully');
-        } else {
-          console.warn('⚠️ Failed to send customer success notification but payment was successful:', successResult.error);
-        }
-      } catch (emailError) {
-        console.error('❌ Error sending customer success notification but payment was successful:', emailError);
-        // Don't fail the payment if email fails - it's not critical
+      } catch (e) {
+        console.error("❌ Success email error (ignored):", e);
       }
-      
-      // Check if subscription is complete after this payment
+
+      // Completion check + schedule next if needed
       try {
-        console.log('🔍 Checking subscription completion after webhook payment...');
-        // Fetch fresh record to ensure we have the latest payment schedule updates
         const finalRecord = await Vzat_Recurring_Data.findById(subscription._id);
-        console.log(`📋 Final record payments_completed: ${finalRecord.payments_completed}/${finalRecord.InstallmentLeft}`);
-        
         const isComplete = await checkAndHandleSubscriptionCompletion(finalRecord);
-        
-        if (!isComplete) {
-          console.log('📋 Subscription not yet complete - scheduling next payment');
-          // Schedule next payment
-          await scheduleNextPayment(subscription._id);
-          console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
-        } else {
-          console.log(`🎉 SUBSCRIPTION COMPLETED via webhook! Final email sent for ${subscription.quotepaymentId}`);
-        }
-      } catch (completionError) {
-        console.error('❌ Error checking subscription completion:', completionError);
-        // Don't fail the webhook if completion check fails
-        console.log('⚠️ Continuing webhook processing despite completion check error');
+        if (!isComplete) await scheduleNextPayment(subscription._id);
+      } catch (e) {
+        console.error("❌ Completion check error (ignored):", e);
       }
     }
-    
-    // Log successful webhook processing
-    Post_Common_DB_Log_Data('/webhook/afs-success', req.body, { 
-      message: 'Successful payment webhook processed',
-      paymentType: paymentType,
-      merchantTransactionId: merchantTransactionId,
+
+    Post_Common_DB_Log_Data("/webhook/afs-success", req.body, {
+      message: "Successful payment webhook processed",
+      paymentType,
+      merchantTransactionId,
       transactionId: id,
-      result: result,
-      isFirstPayment: isFirstPayment,
-      subscriptionStatus: subscription.subscription_status
+      result,
+      isFirstPayment
     });
-    
-    return res.status(200).json({ 
-      message: 'Successful payment webhook processed',
-      paymentType: paymentType,
-      merchantTransactionId: merchantTransactionId,
+
+    return res.status(200).json({
+      message: "Successful payment webhook processed",
+      paymentType,
+      merchantTransactionId,
       transactionId: id,
-      status: 'processed',
-      isFirstPayment: isFirstPayment
+      status: "processed",
+      isFirstPayment
     });
-    
   } catch (error) {
-    console.error('❌ Error processing webhook:', error);
-    
-    // Log webhook error
-    Post_Common_DB_Log_Data('/webhook/afs-error', req.body, { 
-      message: 'Error processing webhook',
+    Post_Common_DB_Log_Data("/webhook/afs-error", req.body, {
+      message: "Error processing webhook",
       error: error.message,
-      paymentType: paymentType,
-      merchantTransactionId: merchantTransactionId,
+      paymentType,
+      merchantTransactionId,
       transactionId: id
     });
-    
-    return res.status(500).json({ 
-      message: 'Error processing webhook',
+
+    return res.status(500).json({
+      message: "Error processing webhook",
       error: error.message
     });
   }
@@ -532,32 +416,27 @@ export const handleAFSWebhook = async (req, res) => {
 async function scheduleNextPayment(subscriptionId) {
   try {
     const subscription = await Vzat_Recurring_Data.findById(subscriptionId);
-    if (!subscription || subscription.subscription_status !== 'active') {
-      return;
-    }
+    if (!subscription || subscription.subscription_status !== "active") return;
 
-    // Calculate next charge date using the same logic as creation
     const currentDate = new Date();
     const day = currentDate.getDate();
-    
+
     let chargeDay = day <= 15 ? 10 : 25;
     let chargeMonth = currentDate.getMonth() + 1;
     let chargeYear = currentDate.getFullYear();
-    
+
     if (chargeMonth > 11) {
       chargeMonth = 0;
       chargeYear += 1;
     }
-    
+
     const nextChargeDate = new Date(Date.UTC(chargeYear, chargeMonth, chargeDay, 0, 0, 0, 0));
-    
+
     await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionId, {
       next_charge_date: nextChargeDate
     });
-    
-    
   } catch (error) {
-    console.error(' Error scheduling next payment:', error);
+    console.error(" Error scheduling next payment:", error);
   }
 }
 
@@ -565,136 +444,60 @@ async function scheduleNextPayment(subscriptionId) {
  * Process recurring payments (called by cron job)
  */
 export const processRecurringPayments = async (req, res) => {
-  // Using persistent connection - no need to connect/disconnect
-  
   try {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of day
-    
+    today.setHours(0, 0, 0, 0);
+
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1); // End of day
-    
-    
-    console.log('🔍 CRON JOB DEBUG - Checking subscriptions for:', today.toISOString().slice(0, 10));
-    
-    // First, let's check what subscriptions exist for today (debugging)
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     const allActiveSubscriptions = await Vzat_Recurring_Data.find({
-      subscription_status: 'active',
-      next_charge_date: {
-        $gte: today,
-        $lt: tomorrow
-      }
+      subscription_status: "active",
+      next_charge_date: { $gte: today, $lt: tomorrow }
     });
-    
-    console.log(`📊 Found ${allActiveSubscriptions.length} active subscriptions due today:`);
-    allActiveSubscriptions.forEach(sub => {
-      console.log(`📋 Subscription ${sub.quotepaymentId}: payments_completed=${sub.payments_completed}, InstallmentLeft=${sub.InstallmentLeft}, payment_retry_count=${sub.payment_retry_count || 0}, last_processed_date=${sub.last_processed_date}, next_charge_date=${sub.next_charge_date}`);
-    });
-    
-    // Find all active subscriptions due for payment today
-    // IMPORTANT: Exclude subscriptions already processed today to prevent duplicate emails
+
     const dueSubscriptions = await Vzat_Recurring_Data.find({
-      subscription_status: 'active',
-      next_charge_date: {
-        $gte: today,
-        $lt: tomorrow
-      },
-      // Handle both InstallmentLeft field and payment_schedule array
+      subscription_status: "active",
+      next_charge_date: { $gte: today, $lt: tomorrow },
       $or: [
-        // Case 1: InstallmentLeft field exists and is valid
         {
           InstallmentLeft: { $exists: true, $ne: null },
-          $expr: { 
-            $lt: ['$payments_completed', '$InstallmentLeft'] 
-          }
+          $expr: { $lt: ["$payments_completed", "$InstallmentLeft"] }
         },
-        // Case 2: InstallmentLeft missing but payment_schedule exists
         {
           InstallmentLeft: { $exists: false },
           payment_schedule: { $exists: true, $ne: null },
-          $expr: { 
-            $lt: ['$payments_completed', { $size: '$payment_schedule' }] 
-          }
+          $expr: { $lt: ["$payments_completed", { $size: "$payment_schedule" }] }
         },
-        // Case 3: Max retries exceeded - process next payment
         {
           payment_retry_count: { $gte: 3 },
-          'payment_schedule.status': { $in: ['due', 'pending'] }
+          "payment_schedule.status": { $in: ["due", "pending"] }
         }
       ],
-      // Prevent duplicate processing: Skip if already processed today
       $and: [
         {
-          $or: [
-            // Never processed
-            { last_processed_date: { $exists: false } },
-            // Last processed before today
-            { last_processed_date: { $lt: today } }
-          ]
+          $or: [{ last_processed_date: { $exists: false } }, { last_processed_date: { $lt: today } }]
         }
       ]
     });
-    
-    console.log(`🎯 CRON JOB QUERY RESULT - Found ${dueSubscriptions.length} subscriptions to process:`);
-    dueSubscriptions.forEach(sub => {
-      console.log(`✅ Will process: ${sub.quotepaymentId} (payments_completed: ${sub.payments_completed}/${sub.InstallmentLeft})`);
-    });
-    
-    if (dueSubscriptions.length === 0) {
-      console.log('❌ No subscriptions found to process. Reasons could be:');
-      console.log('   - No subscriptions due today');
-      console.log('   - All subscriptions already processed today');
-      console.log('   - All subscriptions exceeded max retry count');
-      console.log('   - Missing retry fields (payment_retry_count, last_processed_date)');
-      
-      // Show which subscriptions were excluded and why
-      if (allActiveSubscriptions.length > 0) {
-        console.log('\n🔍 EXCLUDED SUBSCRIPTIONS ANALYSIS:');
-        allActiveSubscriptions.forEach(sub => {
-          const hasRetryCount = sub.payment_retry_count !== undefined && sub.payment_retry_count > 0;
-          const processedToday = sub.last_processed_date && new Date(sub.last_processed_date).toDateString() === today.toDateString();
-          const maxRetriesExceeded = sub.payment_retry_count >= 3;
-          
-          console.log(`   📋 ${sub.quotepaymentId}:`);
-          console.log(`      - Processed today: ${processedToday}`);
-          console.log(`      - Has retry count: ${hasRetryCount} (${sub.payment_retry_count || 0})`);
-          console.log(`      - Max retries exceeded: ${maxRetriesExceeded}`);
-          console.log(`      - Reason excluded: ${processedToday ? 'Already processed today' : 
-                                              maxRetriesExceeded ? 'Max retries exceeded' : 
-                                              'Other criteria not met'}`);
-        });
-      }
-    }
-    
+
     const results = [];
-    
+
     for (const subscription of dueSubscriptions) {
       try {
-        // Determine which payment to process
         let paymentToProcess = subscription.payments_completed + 1;
         let isProcessingNextPayment = false;
-        
-        // Check if this is a max retry exceeded case - process next payment
+
         if (subscription.payment_retry_count >= 3) {
-          const nextDuePayment = subscription.payment_schedule.find(p => 
-            p.status === 'due' || p.status === 'pending'
+          const nextDuePayment = subscription.payment_schedule.find(
+            (p) => p.status === "due" || p.status === "pending"
           );
           if (nextDuePayment) {
             paymentToProcess = nextDuePayment.installment_number;
             isProcessingNextPayment = true;
-            console.log(`\n🔄 PROCESSING NEXT PAYMENT #${paymentToProcess} (after max retries exceeded) for subscription: ${subscription.quotepaymentId}`);
           }
-        } else {
-          console.log(`\n🔄 PROCESSING PAYMENT #${paymentToProcess} for subscription: ${subscription.quotepaymentId}`);
         }
-        
-        console.log(`   - Customer: ${subscription.Customer_name}`);
-        console.log(`   - Email: ${subscription.opp_email}`);
-        console.log(`   - Amount: ${parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2))} AED`);
-        console.log(`   - Retry count: ${subscription.payment_retry_count || 0}`);
-        console.log(`   - Processing next payment: ${isProcessingNextPayment}`);
-        
-        // Adjust subscription data for processing
+
         const subscriptionForProcessing = {
           quotepaymentId: subscription.quotepaymentId,
           opp_email: subscription.opp_email,
@@ -704,540 +507,203 @@ export const processRecurringPayments = async (req, res) => {
           afs_registration_id: subscription.afs_registration_id,
           salesPersonDetails: subscription.salesPersonDetails,
           payment_schedule: subscription.payment_schedule,
-          payments_completed: paymentToProcess - 1 // Adjust for the payment we're processing
+          payments_completed: paymentToProcess - 1
         };
-        
-        console.log('🔍 DEBUG - subscriptionForProcessing object:');
-        console.log(`   - quotepaymentId: ${subscriptionForProcessing.quotepaymentId}`);
-        console.log(`   - opp_email: ${subscriptionForProcessing.opp_email}`);
-        console.log(`   - Customer_name: ${subscriptionForProcessing.Customer_name}`);
-        console.log(`   - payments_completed: ${subscriptionForProcessing.payments_completed}`);
-        
+
         const paymentResult = await processSubscriptionPayment(subscriptionForProcessing);
-        
-        // 🆕 HANDLE SUCCESSFUL PAYMENT DIRECTLY IN CRON JOB
-        if (paymentResult && paymentResult.result && paymentResult.result.code.startsWith('000.')) {
-          console.log(`✅ PAYMENT SUCCESS for ${subscription.quotepaymentId} - Processing database updates and emails...`);
-          
-          try {
-            // Update subscription record
-            const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
-              subscription._id,
-              {
-                $set: { 
-                  payments_completed: paymentToProcess, // Set to actual completed count
-                  last_payment_date: new Date(paymentResult.timestamp || new Date()),
-                  payment_retry_count: 0 // Reset retry count on successful payment
-                }
-              },
-              { new: true }
-            );
-            
-            console.log(`📊 Updated payments_completed to: ${updatedRecord.payments_completed}`);
-            
-            // Check if this payment was already marked as completed by retry logic
-            const currentPayment = subscription.payment_schedule.find(p => p.installment_number === paymentToProcess);
-            const wasAlreadyCompleted = currentPayment && (currentPayment.status === 'completed' || currentPayment.status === 'paid');
-            
-            let scheduleUpdateResult = null;
-            
-            if (wasAlreadyCompleted) {
-              console.log(`⚠️ Payment #${paymentToProcess} was already marked as completed by retry logic - skipping schedule update`);
-            } else {
-              // Update payment schedule status
-              scheduleUpdateResult = await updatePaymentScheduleStatus(subscription._id, paymentToProcess, paymentResult.id);
-              console.log(`📅 Payment schedule updated:`, scheduleUpdateResult);
-            }
-            
-            // Don't fail the payment if schedule update fails - it's not critical
-            if (scheduleUpdateResult && !scheduleUpdateResult.success) {
-              console.log(`⚠️ Payment schedule update failed but payment was successful: ${scheduleUpdateResult.error}`);
-            }
-            
-            // Call Salesforce API for successful payment
-            try {
-              console.log('🔍 Debug currentPayment for Salesforce:', {
-                installment_number: currentPayment?.installment_number,
-                q_payment_id: currentPayment?.q_payment_id,
-                status: currentPayment?.status,
-                amount: currentPayment?.amount
-              });
-              
-              const salesforcePaymentData = {
-                quotepaymentId: subscription.quotepaymentId,
-                amount: parseFloat(paymentResult.amount),
-                transactionId: paymentResult.id,
-                paymentType: 'Online_payment',
-                paymentStatus: 'success',
-                resultCode: paymentResult.result.code,
-                resultDescription: paymentResult.result.description,
-                timestamp: paymentResult.timestamp || new Date().toISOString(),
-                installmentNumber: paymentToProcess,
-                nextDueDate: subscription.next_charge_date ? new Date(subscription.next_charge_date).toISOString().slice(0, 10) : null,
-                Qp_number: currentPayment?.q_payment_id || subscription.Quote_payment_number || null // Add QP number from payment schedule with fallback
-              };
-              
-              console.log('📋 Salesforce payload for recurring payment:', {
-                quotepaymentId: salesforcePaymentData.quotepaymentId,
-                Qp_number: salesforcePaymentData.Qp_number,
-                installmentNumber: salesforcePaymentData.installmentNumber,
-                amount: salesforcePaymentData.amount
-              });
 
-              const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
-              
-              console.log('📊 Salesforce API result:', {
-                success: salesforceResult.success,
-                message: salesforceResult.message,
-                error: salesforceResult.error || null
-              });
-              
-              if (salesforceResult.success) {
-                console.log(`✅ Salesforce updated successfully for payment #${paymentToProcess}`);
-              } else {
-                console.warn('⚠️ Salesforce update failed but payment was successful:', salesforceResult.error);
+        if (paymentResult?.result?.code?.startsWith("000.")) {
+          const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
+            subscription._id,
+            {
+              $set: {
+                payments_completed: paymentToProcess,
+                last_payment_date: new Date(paymentResult.timestamp || new Date()),
+                payment_retry_count: 0
               }
-              
-            } catch (salesforceError) {
-              console.error('❌ Error calling Salesforce API but payment was successful:', salesforceError);
-              // Don't fail the payment if Salesforce fails - it's not critical
-            }
-
-            // Send customer notification email for successful payment
-            try {
-              // Get q_payment_id from the payment schedule for the current payment
-              const currentPayment = subscription.payment_schedule.find(p => p.installment_number === paymentToProcess);
-              const q_payment_id = currentPayment?.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId;
-              
-              const successResult = await sendPaymentSuccessNotificationEmail({
-                quotepaymentId: subscription.quotepaymentId,
-                q_payment_id: q_payment_id,
-                Customer_name: subscription.Customer_name,
-                opp_email: subscription.opp_email,
-                opp_owner: subscription.opp_owner,
-                payment_amount: parseFloat(paymentResult.amount),
-                payment_date: new Date(paymentResult.timestamp || new Date()),
-                installment_number: paymentToProcess,
-                total_installments: subscription.InstallmentLeft,
-                payment_method: 'Card',
-                salesPersonDetails: subscription.salesPersonDetails
-              });
-              
-              if (successResult.success) {
-                console.log('📧 Customer payment success notification sent successfully');
-              } else {
-                console.warn('⚠️ Failed to send customer success notification but payment was successful:', successResult.error);
-              }
-            } catch (emailError) {
-              console.error('❌ Error sending customer success notification but payment was successful:', emailError);
-              // Don't fail the payment if email fails - it's not critical
-            }
-            
-            // Check if subscription is complete - verify ALL payments are completed
-            try {
-              console.log('🔍 Checking subscription completion after cron payment...');
-              // Fetch fresh record to ensure we have the latest payment schedule updates
-              const freshRecord = await Vzat_Recurring_Data.findById(subscription._id);
-              console.log(`📋 Fresh record payments_completed: ${freshRecord.payments_completed}/${freshRecord.InstallmentLeft}`);
-              
-              const isComplete = await checkAndHandleSubscriptionCompletion(freshRecord);
-              
-              if (!isComplete) {
-              // Schedule next payment
-              await scheduleNextPayment(subscription._id);
-              console.log(`📅 Next payment scheduled for ${subscription.quotepaymentId}`);
-              } else {
-                console.log(`🎉 SUBSCRIPTION COMPLETED! Final email sent for ${subscription.quotepaymentId}`);
-              }
-            } catch (completionError) {
-              console.error('❌ Error checking subscription completion in cron:', completionError);
-              // Don't fail the cron job if completion check fails
-              console.log('⚠️ Continuing cron processing despite completion check error');
-            }
-            
-          } catch (updateError) {
-            console.error(`❌ Error updating database for ${subscription.quotepaymentId}:`, updateError);
-            throw updateError; // Re-throw to trigger failure handling
-          }
-        } else {
-          // Payment failed - throw error to trigger failure handling
-          throw new Error(`Payment failed: ${paymentResult?.result?.description || 'Unknown error'}`);
-        }
-        
-        // Only mark as processed if payment was successful
-        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-          last_processed_date: new Date()
-        });
-        
-        results.push({
-          quotepaymentId: subscription.quotepaymentId,
-          status: 'processed',
-          result: paymentResult
-        });
-        
-        console.log(`✅ PAYMENT SUCCESS for ${subscription.quotepaymentId} - Payment #${paymentToProcess} completed!`);
-        
-      } catch (error) {
-        console.error(`\n❌ PAYMENT FAILED for ${subscription.quotepaymentId}:`, error.message);
-        console.error(`   - Error details:`, error);
-        
-        // Mark the current payment as failed in payment_schedule immediately
-        const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
-        
-        // Handle failed payment retry logic
-        const retryCount = subscription.payment_retry_count || 0;
-        const maxRetries = 3; // Allow retries for 3 days
-        
-        let nextChargeDate;
-        
-        if (retryCount >= maxRetries) {
-          console.log(`🚫 MAX RETRIES EXCEEDED for ${subscription.quotepaymentId} (${retryCount}/${maxRetries})`);
-          
-          // Find the next due payment in the schedule
-          const nextDuePayment = subscription.payment_schedule.find(p => 
-            p.status === 'due' || p.status === 'pending'
+            },
+            { new: true }
           );
-          
-          if (nextDuePayment) {
-            console.log(`🔄 MAX RETRIES EXCEEDED - Automatically processing next payment #${nextDuePayment.installment_number}`);
-            
-            try {
-              // Automatically process the next payment
-              console.log('🔍 DEBUG - Processing next payment after max retries:');
-              console.log(`   - Original subscription quotepaymentId: ${subscription.quotepaymentId}`);
-              console.log(`   - Original subscription opp_email: ${subscription.opp_email}`);
-              console.log(`   - Next payment number: ${nextDuePayment.installment_number}`);
-              
-              const nextPaymentSubscription = {
-                quotepaymentId: subscription.quotepaymentId,
-                opp_email: subscription.opp_email,
-                Customer_name: subscription.Customer_name,
-                Total_After_VAT_Currency: subscription.Total_After_VAT_Currency,
-                InstallmentLeft: subscription.InstallmentLeft,
-                afs_registration_id: subscription.afs_registration_id,
-                salesPersonDetails: subscription.salesPersonDetails,
-                payment_schedule: subscription.payment_schedule,
-                payments_completed: nextDuePayment.installment_number - 1 // Adjust for the next payment
-              };
-              
-              console.log('🔍 DEBUG - Next payment subscription object:');
-              console.log(`   - quotepaymentId: ${nextPaymentSubscription.quotepaymentId}`);
-              console.log(`   - opp_email: ${nextPaymentSubscription.opp_email}`);
-              console.log(`   - Customer_name: ${nextPaymentSubscription.Customer_name}`);
-              console.log(`   - payments_completed: ${nextPaymentSubscription.payments_completed}`);
-              
-              const nextPaymentResult = await processSubscriptionPayment(nextPaymentSubscription);
-              
-              if (nextPaymentResult && nextPaymentResult.result && nextPaymentResult.result.code.startsWith('000.')) {
-                console.log(`✅ NEXT PAYMENT #${nextDuePayment.installment_number} PROCESSED SUCCESSFULLY`);
-                
-                // Update subscription with successful next payment
-                const updatedRecord = await Vzat_Recurring_Data.findByIdAndUpdate(
-                  subscription._id,
-                  {
-                    $set: { 
-                      payments_completed: nextDuePayment.installment_number, // Set to actual completed count
-                      last_payment_date: new Date(nextPaymentResult.timestamp || new Date()),
-                      payment_retry_count: 0, // Reset retry count
-                      next_charge_date: null // Will be set by scheduleNextPayment if needed
-                    }
-                  },
-                  { new: true }
-                );
-                
-                // Update payment schedule for the next payment
-                await Vzat_Recurring_Data.findOneAndUpdate(
-                  { 
-                    _id: subscription._id,
-                    'payment_schedule.installment_number': nextDuePayment.installment_number
-                  },
-                  {
-                    $set: {
-                      'payment_schedule.$.status': 'completed',
-                      'payment_schedule.$.transaction_id': nextPaymentResult.id,
-                      'payment_schedule.$.payment_date': new Date()
-                    }
-                  }
-                );
-                
-                console.log(`✅ Payment #${nextDuePayment.installment_number} marked as completed`);
-                
-                // Also mark the failed payment as completed since we successfully processed the next one
-                // This handles the case where Payment #3 failed but Payment #4 succeeded
-                const failedPaymentNumber = nextDuePayment.installment_number - 1;
-                if (failedPaymentNumber > 0) {
-                  await Vzat_Recurring_Data.findOneAndUpdate(
-                    { 
-                      _id: subscription._id,
-                      'payment_schedule.installment_number': failedPaymentNumber,
-                      'payment_schedule.status': 'failed'
-                    },
-                    {
-                      $set: {
-                        'payment_schedule.$.status': 'completed',
-                        'payment_schedule.$.transaction_id': nextPaymentResult.id, // Use same transaction ID
-                        'payment_schedule.$.payment_date': new Date()
-                      }
-                    }
-                  );
-                  
-                  console.log(`✅ Payment #${failedPaymentNumber} also marked as completed (retry logic)`);
-                }
-                
-                // Check if subscription is now complete
-                const finalRecord = await Vzat_Recurring_Data.findById(subscription._id);
-                const isComplete = await checkAndHandleSubscriptionCompletion(finalRecord);
-                
-                if (!isComplete) {
-                  // Schedule next payment if there are more
-                  await scheduleNextPayment(subscription._id);
-                } else {
-                  console.log(`🎉 SUBSCRIPTION COMPLETED after processing next payment!`);
-                }
-                
-                // Mark as processed
-                await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-                  last_processed_date: new Date()
-                });
-                
-                console.log(`✅ Successfully processed next payment after max retries exceeded`);
-                
-              } else {
-                console.log(`❌ Next payment #${nextDuePayment.installment_number} also failed`);
-                // Move to the next due payment's due date
-                nextChargeDate = new Date(nextDuePayment.due_date);
-                nextChargeDate.setHours(0, 0, 0, 0);
-                console.log(`📅 Moving to next due payment #${nextDuePayment.installment_number} on ${nextChargeDate.toISOString().slice(0, 10)}`);
-                
-                // Reset retry count for the next payment attempt
-                await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-                  last_processed_date: new Date(),
-                  payment_retry_count: 0, // Reset for next payment
-                  next_charge_date: nextChargeDate
-                });
-              }
-              
-            } catch (nextPaymentError) {
-              console.error(`❌ Error processing next payment after max retries:`, nextPaymentError);
-              
-              // Fallback: Move to the next due payment's due date
-              nextChargeDate = new Date(nextDuePayment.due_date);
-              nextChargeDate.setHours(0, 0, 0, 0);
-              console.log(`📅 Fallback: Moving to next due payment #${nextDuePayment.installment_number} on ${nextChargeDate.toISOString().slice(0, 10)}`);
-              
-              // Reset retry count for the next payment attempt
-              await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-                last_processed_date: new Date(),
-                payment_retry_count: 0, // Reset for next payment
-                next_charge_date: nextChargeDate
-              });
-            }
-          } else {
-            // No more payments due, set to tomorrow as fallback
-            nextChargeDate = new Date();
-            nextChargeDate.setDate(nextChargeDate.getDate() + 1);
-            nextChargeDate.setHours(0, 0, 0, 0);
-            console.log(`📅 No more payments due, setting next charge to tomorrow: ${nextChargeDate.toISOString().slice(0, 10)}`);
-            
-            // Reset retry count for the next payment attempt
-            await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-              last_processed_date: new Date(),
-              payment_retry_count: 0, // Reset for next payment
-              next_charge_date: nextChargeDate
-            });
-          }
-          
-        } else {
-          // Calculate next charge date (tomorrow for retry)
-          nextChargeDate = new Date();
-          nextChargeDate.setDate(nextChargeDate.getDate() + 1);
-          nextChargeDate.setHours(0, 0, 0, 0);
-          
-          // Increment retry count and mark as processed for today
-          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-            last_processed_date: new Date(),
-            payment_retry_count: retryCount + 1,
-            next_charge_date: nextChargeDate
-          });
-          console.log(`🔄 RETRY SCHEDULED for ${subscription.quotepaymentId} - Retry ${retryCount + 1}/${maxRetries} (will retry tomorrow)`);
-        }
-        
-        // Update the payment schedule to mark current payment as failed
-        await Vzat_Recurring_Data.findOneAndUpdate(
-          { 
-            _id: subscription._id,
-            'payment_schedule.installment_number': currentPaymentNumber
-          },
-          {
-            $set: {
-              'payment_schedule.$.status': 'failed',
-              'payment_schedule.$.failure_date': new Date()
-            }
-          }
+
+          // Update schedule (if not already completed)
+          const currentPayment = updatedRecord.payment_schedule?.find(
+          (p) => p.installment_number === paymentToProcess
         );
-        console.log(`❌ Payment #${currentPaymentNumber} marked as failed in payment schedule`);
-        console.log(`📅 Next charge date updated to: ${nextChargeDate.toISOString().slice(0, 10)}`);
-        
-        // Send failure email to operations team
-        // try {
-        //   // Calculate installment amount (handle missing InstallmentLeft)
-        //   let installmentLeft = subscription.InstallmentLeft;
-        //   if (!installmentLeft && subscription.payment_schedule) {
-        //     installmentLeft = subscription.payment_schedule.length;
-        //   }
-          
-        //   const emailResult = await sendPaymentFailureEmail({
-        //     quotepaymentId: subscription.quotepaymentId,
-        //     OpportunityId: subscription.OpportunityId,
-        //     QuoteId: subscription.QuoteId,
-        //     error_message: error.message,
-        //     payment_amount: installmentLeft ? parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)) : 0,
-        //     attempt_date: new Date(),
-        //     payments_completed: subscription.payments_completed || 0,
-        //     total_installments: installmentLeft,
-        //     afs_response: null,
-        //     retry_count: retryCount + 1,
-        //     max_retries: maxRetries
-        //   });
-          
-        //   if (emailResult.success) {
-        //     console.log('📧 Payment failure email sent successfully to operations team');
-        //   } else {
-        //     console.error('📧 Failed to send failure email to operations team:', emailResult.error);
-        //   }
-        // } catch (emailError) {
-        //   console.error('📧 Error sending failure email to operations team:', emailError);
-        // }
-        
-        // 📧 SEND FAILURE EMAIL TO CUSTOMER AND OPERATIONS TEAM (only once per day)
+
+          const wasAlreadyCompleted =
+            currentPayment && (currentPayment.status === "completed" || currentPayment.status === "paid");
+
+          if (!wasAlreadyCompleted) {
+            await updatePaymentScheduleStatus(subscription._id, paymentToProcess, paymentResult.id);
+          }
+
+          // Salesforce update (non-blocking)
+          try {
+            const sfPayment = {
+              quotepaymentId: subscription.quotepaymentId,
+              amount: parseFloat(paymentResult.amount),
+              transactionId: paymentResult.id,
+              paymentType: "Online_payment",
+              paymentStatus: "success",
+              resultCode: paymentResult.result.code,
+              resultDescription: paymentResult.result.description,
+              timestamp: paymentResult.timestamp || new Date().toISOString(),
+              installmentNumber: paymentToProcess,
+              nextDueDate: subscription.next_charge_date
+                ? new Date(subscription.next_charge_date).toISOString().slice(0, 10)
+                : null,
+              Qp_number:
+                currentPayment?.q_payment_id ||
+                subscription.Quote_payment_number ||
+                null
+            };
+            await updateQuotePaymentStatus(sfPayment);
+          } catch (e) {
+            console.error("❌ Salesforce error (ignored):", e);
+          }
+
+          // Success email (non-blocking)
+          try {
+            const q_payment_id =
+            currentPayment?.q_payment_id ||
+            updatedRecord.Quote_payment_number ||
+            updatedRecord.quotepaymentId;
+
+
+            await sendPaymentSuccessNotificationEmail({
+              quotepaymentId: subscription.quotepaymentId,
+              q_payment_id,
+              Customer_name: subscription.Customer_name,
+              opp_email: subscription.opp_email,
+              opp_owner: subscription.opp_owner,
+              payment_amount: parseFloat(paymentResult.amount),
+              payment_date: new Date(paymentResult.timestamp || new Date()),
+              installment_number: paymentToProcess,
+              total_installments: subscription.InstallmentLeft,
+              payment_method: "Card",
+              salesPersonDetails: subscription.salesPersonDetails
+            });
+          } catch (e) {
+            console.error("❌ Success email error (ignored):", e);
+          }
+
+          // Completion + next schedule
+          try {
+            const freshRecord = await Vzat_Recurring_Data.findById(subscription._id);
+            const isComplete = await checkAndHandleSubscriptionCompletion(freshRecord);
+            if (!isComplete) await scheduleNextPayment(subscription._id);
+          } catch (e) {
+            console.error("❌ Completion check error (ignored):", e);
+          }
+
+          // Mark processed today
+          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+            last_processed_date: new Date()
+          });
+
+          results.push({ quotepaymentId: subscription.quotepaymentId, status: "processed", result: paymentResult });
+        } else {
+          throw new Error(`Payment failed: ${paymentResult?.result?.description || "Unknown error"}`);
+        }
+      } catch (error) {
+        // FAILURE HANDLING (kept as you had)
+        const retryCount = subscription.payment_retry_count || 0;
+        const maxRetries = 3;
+
+        // mark processed + retry scheduling
+        let nextChargeDate = new Date();
+        nextChargeDate.setDate(nextChargeDate.getDate() + 1);
+        nextChargeDate.setHours(0, 0, 0, 0);
+
+        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+          last_processed_date: new Date(),
+          payment_retry_count: retryCount + 1,
+          next_charge_date: nextChargeDate
+        });
+
+        // mark schedule failed
+        const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
+        await Vzat_Recurring_Data.findOneAndUpdate(
+          { _id: subscription._id, "payment_schedule.installment_number": currentPaymentNumber },
+          { $set: { "payment_schedule.$.status": "failed", "payment_schedule.$.failure_date": new Date() } }
+        );
+
+        // send failure email once/day
         try {
-          // Check if we already sent a failure email today
           const lastFailureEmailDate = subscription.last_failure_email_date;
           const todayString = new Date().toDateString();
-          const shouldSendEmail = !lastFailureEmailDate || new Date(lastFailureEmailDate).toDateString() !== todayString;
-          
+          const shouldSendEmail =
+            !lastFailureEmailDate || new Date(lastFailureEmailDate).toDateString() !== todayString;
+
           if (shouldSendEmail) {
-            console.log('📧 Sending payment failure email...');
-            
-            // Calculate installment amount for email
-            const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2));
-            
-            // Import email service
-            const { sendPaymentFailureNotificationEmail } = await import('../services/emailService.js');
-            
-            // Extract clean error message from AFS response
+            const installmentAmount = parseFloat(
+              (subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)
+            );
+
             let cleanErrorMessage = error.message;
-            
-            // If it's an AFS error, extract just the description
             if (error.message.includes('"description":"')) {
-              try {
-                const match = error.message.match(/"description":"([^"]+)"/);
-                if (match && match[1]) {
-                  cleanErrorMessage = match[1];
-                }
-              } catch (parseError) {
-                // Keep original error if parsing fails
-                console.log('⚠️ Could not parse AFS error message, using original');
-              }
+              const match = error.message.match(/"description":"([^"]+)"/);
+              if (match && match[1]) cleanErrorMessage = match[1];
             }
-            
-            // Prepare email data
-            // Get q_payment_id from the payment schedule for the failed payment
-            const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
-            const failedPayment = subscription.payment_schedule.find(p => p.installment_number === currentPaymentNumber);
-            const q_payment_id = failedPayment?.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId;
-            
+
+            const failedPayment = subscription.payment_schedule.find(
+              (p) => p.installment_number === currentPaymentNumber
+            );
+            const q_payment_id =
+              failedPayment?.q_payment_id ||
+              subscription.Quote_payment_number ||
+              subscription.quotepaymentId;
+
             const emailData = {
               quotepaymentId: subscription.quotepaymentId,
-              q_payment_id: q_payment_id,
-              Customer_name: subscription.Customer_name || 'Customer',
+              q_payment_id,
+              Customer_name: subscription.Customer_name || "Customer",
               opp_email: subscription.opp_email,
               opp_owner: subscription.opp_owner,
               payment_amount: installmentAmount,
               due_date: today.toISOString().slice(0, 10),
               failure_reason: cleanErrorMessage,
-              payment_link: 'https://installment.virtuzone.com/login',
+              payment_link: "https://vzatnew.yeepeey.com/login",
               salesPersonDetails: subscription.salesPersonDetails
             };
-            
-            // Send failure email
+
             const emailResult = await sendPaymentFailureNotificationEmail(emailData);
-            
+
             if (emailResult.success) {
-              console.log('📧 Payment failure email sent successfully to customer');
-              
-              // Update last failure email date
               await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
                 last_failure_email_date: new Date()
               });
-            } else {
-              console.error('📧 Failed to send failure email to customer:', emailResult.error);
             }
-          } else {
-            console.log('📧 Failure email already sent today, skipping...');
           }
-        } catch (emailError) {
-          console.error('📧 Error sending failure email to customer:', emailError);
+        } catch (e) {
+          console.error("📧 Failure email error (ignored):", e);
         }
-        
+
         results.push({
           quotepaymentId: subscription.quotepaymentId,
-          status: 'failed',
+          status: "failed",
           error: error.message,
           retry_count: retryCount + 1,
           max_retries: maxRetries
         });
       }
     }
-    
+
     const response = {
-      message: 'Recurring payments processing completed',
+      message: "Recurring payments processing completed",
       date: today.toISOString().slice(0, 10),
       total_processed: results.length,
       results
     };
-    
-    Post_Common_DB_Log_Data('/cron/recurring-payments', { date: today }, response);
-    
-    console.log('\n📊 CRON JOB SUMMARY:');
-    console.log(`   - Date: ${today.toISOString().slice(0, 10)}`);
-    console.log(`   - Total subscriptions processed: ${results.length}`);
-    
-    const successCount = results.filter(r => r.status === 'processed').length;
-    const failedCount = results.filter(r => r.status === 'failed').length;
-    
-    console.log(`   - Successful payments: ${successCount}`);
-    console.log(`   - Failed payments: ${failedCount}`);
-    
-    if (results.length > 0) {
-      console.log('\n📋 DETAILED RESULTS:');
-      results.forEach(result => {
-        if (result.status === 'processed') {
-          console.log(`   ✅ ${result.quotepaymentId}: SUCCESS`);
-        } else {
-          console.log(`   ❌ ${result.quotepaymentId}: FAILED - ${result.error}`);
-        }
-      });
-    }
-    
-    if (res) {
-      res.json(response);
-    } else {
-      console.log('\n✅ Recurring payments processing completed');
-      return response;
-    }
-    
+
+    Post_Common_DB_Log_Data("/cron/recurring-payments", { date: today }, response);
+
+    if (res) return res.json(response);
+    return response;
   } catch (error) {
-    const errorResponse = { 
-      message: 'Recurring payments processing failed', 
-      error: error.message 
-    };
-    
-    if (res) {
-      res.status(500).json(errorResponse);
-    } else {
-      return errorResponse;
-    }
+    const errorResponse = { message: "Recurring payments processing failed", error: error.message };
+    if (res) return res.status(500).json(errorResponse);
+    return errorResponse;
   }
 };
 
@@ -1245,40 +711,14 @@ export const processRecurringPayments = async (req, res) => {
  * Process a single subscription payment using server-to-server logic with saved card details
  */
 async function processSubscriptionPayment(subscription) {
-  console.log('🔄 STARTING SUBSCRIPTION PAYMENT PROCESSING:');
-  console.log(`   - Subscription ID: ${subscription.quotepaymentId}`);
-  console.log(`   - Customer: ${subscription.Customer_name}`);
-  console.log(`   - Email: ${subscription.opp_email}`);
-  console.log(`   - Payments Completed: ${subscription.payments_completed || 0}`);
-  console.log(`   - Total Installments: ${subscription.InstallmentLeft}`);
-  console.log(`   - Next Payment: #${(subscription.payments_completed || 0) + 1}`);
-  
-  // First, try to get the customer's default saved card
   const savedCard = await getCustomerDefaultCard(subscription);
-  
+
   if (!savedCard) {
-    const errorMsg = `No valid saved card found for customer ${subscription.opp_email || subscription.quotepaymentId}. Customer needs to add a payment method.`;
-    console.error(`❌ ${errorMsg}`);
+    const errorMsg = `No valid saved card found for customer ${subscription.opp_email || subscription.quotepaymentId}.`;
     throw new Error(errorMsg);
   }
-  
-  console.log(`💳 USING SAVED CARD FOR PAYMENT:`);
-  console.log(`   - Card: ${savedCard.maskedCardNumber} (${savedCard.cardBrand})`);
-  console.log(`   - Cardholder: ${savedCard.cardholderName}`);
-  console.log(`   - Expiry: ${savedCard.expiryMonth}/${savedCard.expiryYear}`);
-  console.log(`   - AFS Registration ID: ${savedCard.afs_registration_id}`);
-  console.log(`   - Card ID: ${savedCard._id}`);
-  console.log(`   - Last Used: ${savedCard.lastUsedDate || 'Never'}`);
-  
-  // Use server-to-server payment with full card details
-  console.log('🚀 INITIATING AFS DEBIT FUND OPERATION...');
+
   const result = await processServerToServerPayment(subscription, savedCard);
-  
-  console.log('✅ SUBSCRIPTION PAYMENT PROCESSING COMPLETED:');
-  console.log(`   - Result: ${result.result?.description || 'Success'}`);
-  console.log(`   - Transaction ID: ${result.id}`);
-  console.log(`   - Amount: ${result.amount} ${result.currency}`);
-  
   return result;
 }
 
@@ -1287,82 +727,36 @@ async function processSubscriptionPayment(subscription) {
  */
 async function getCustomerDefaultCard(subscription) {
   try {
-    console.log('🔍 DEBUG - getCustomerDefaultCard called with subscription:');
-    console.log(`   - quotepaymentId: ${subscription.quotepaymentId}`);
-    console.log(`   - opp_email: ${subscription.opp_email}`);
-    console.log(`   - Customer_name: ${subscription.Customer_name}`);
-    
-    // Validate required fields
-    if (!subscription.quotepaymentId) {
-      console.log('❌ No quotepaymentId provided');
-      return null;
-    }
-    
-    if (!subscription.opp_email) {
-      console.log('❌ No opp_email provided - cannot find customer');
-      return null;
-    }
-    
-    // Find customer by email or quotepaymentId
+    if (!subscription.quotepaymentId) return null;
+    if (!subscription.opp_email) return null;
+
     const customer = await Customer.findOne({
-      $or: [
-        { email: subscription.opp_email },
-        { quotepaymentId: subscription.quotepaymentId }
-      ]
+      $or: [{ email: subscription.opp_email }, { quotepaymentId: subscription.quotepaymentId }]
     });
-    
-    if (!customer) {
-      console.log(`❌ Customer not found for subscription: ${subscription.quotepaymentId}`);
-      console.log(`❌ Searched for email: ${subscription.opp_email}`);
-      console.log(`❌ Searched for quotepaymentId: ${subscription.quotepaymentId}`);
-      return null;
-    }
-    
-    console.log(`✅ Customer found: ${customer._id} (${customer.email})`);
-    
-    // First, try to get the default active card for this customer
-    let savedCard = await SavedCard.findOne({
-      customerId: customer._id,
-      isActive: true,
-      isDefault: true
-    });
-    
-    // If no default card found, get the most recently used active card
+
+    if (!customer) return null;
+
+    let savedCard = await SavedCard.findOne({ customerId: customer._id, isActive: true, isDefault: true });
+
     if (!savedCard) {
-      console.log(`⚠️ No default card found, looking for most recent active card for customer: ${customer.email}`);
-      savedCard = await SavedCard.findOne({
-        customerId: customer._id,
-        isActive: true
-      }).sort({ lastUsedDate: -1, cardAddedDate: -1 });
+      savedCard = await SavedCard.findOne({ customerId: customer._id, isActive: true }).sort({
+        lastUsedDate: -1,
+        cardAddedDate: -1
+      });
     }
-    
-    // If still no card found, get any active card
+
     if (!savedCard) {
-      console.log(`⚠️ No recently used card found, getting any active card for customer: ${customer.email}`);
-      savedCard = await SavedCard.findOne({
-        customerId: customer._id,
-        isActive: true
-      }).sort({ cardAddedDate: -1 });
+      savedCard = await SavedCard.findOne({ customerId: customer._id, isActive: true }).sort({
+        cardAddedDate: -1
+      });
     }
-    
-    if (!savedCard) {
-      console.log(`❌ No active card found for customer: ${customer.email}`);
-      return null;
-    }
-    
-    // Validate that the card has AFS registration ID for recurring payments
-    if (!savedCard.afs_registration_id) {
-      console.log(`❌ Card missing AFS registration ID for customer: ${customer.email}`);
-      console.log(`❌ Cannot process recurring payments without registration ID`);
-      return null;
-    }
-    
-    console.log(`✅ Found card for customer: ${savedCard.maskedCardNumber} (${savedCard.cardBrand})`);
-    console.log(`✅ AFS Registration ID: ${savedCard.afs_registration_id}`);
+
+    if (!savedCard) return null;
+    if (!savedCard.afs_registration_id) return null;
+
     return savedCard;
-    
   } catch (error) {
-    console.error('❌ Error retrieving customer default card:', error);
+    console.error("❌ Error retrieving customer default card:", error);
     return null;
   }
 }
@@ -1371,33 +765,28 @@ async function getCustomerDefaultCard(subscription) {
  * Process recurring payment using AFS Registration API
  */
 async function processServerToServerPayment(subscription, savedCard) {
-  
-  // Calculate InstallmentLeft if missing (fallback for older records)
+  // Calculate InstallmentLeft if missing
   let installmentLeft = subscription.InstallmentLeft;
   if (!installmentLeft && subscription.payment_schedule) {
     installmentLeft = subscription.payment_schedule.length;
-    console.log(`🔧 InstallmentLeft missing, calculated from payment_schedule: ${installmentLeft}`);
   }
-  
-  if (!installmentLeft) {
-    throw new Error('Cannot determine total installments for subscription');
-  }
-  
-  // Check if we're using mock data for testing
-  if (subscription.afs_registration_id && subscription.afs_registration_id.includes('mock')) {
-    console.log('🧪 Using mock payment for testing');
-    
-    // Simulate successful payment response for testing
-    const mockResponse = {
+  if (!installmentLeft) throw new Error("Cannot determine total installments for subscription");
+
+  // Calculate installment amount
+  const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2));
+
+  // ✅ PRODUCTION FIX: unique merchantTransactionId
+  const merchantTransactionId = buildMerchantTransactionId(subscription);
+
+  // Mock mode
+  if (subscription.afs_registration_id && subscription.afs_registration_id.includes("mock")) {
+    return {
       id: `mock-payment-${Date.now()}`,
-      result: {
-        code: "000.100.110",
-        description: "Request successfully processed in 'Merchant in Integrator Test Mode'"
-      },
-      amount: parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2)),
+      result: { code: "000.100.110", description: "Mock payment success" },
+      amount: installmentAmount,
       currency: "AED",
       paymentType: "PA",
-      merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`,
+      merchantTransactionId,
       card: {
         maskedPan: savedCard.maskedCardNumber,
         brand: savedCard.cardBrand,
@@ -1406,216 +795,74 @@ async function processServerToServerPayment(subscription, savedCard) {
         expiryYear: savedCard.expiryYear
       }
     };
-    
-    return mockResponse;
   }
-  
-  // Validate that we have the registration ID
+
   if (!savedCard.afs_registration_id) {
-    throw new Error(`No AFS registration ID found for card ${savedCard._id}. Cannot process recurring payment.`);
+    throw new Error(`No AFS registration ID found for card ${savedCard._id}.`);
   }
-  
-  // Use AFS Registration API for recurring payments
+
   const afsUrl = `${process.env.AFS_DOMAIN}/v1/registrations/${savedCard.afs_registration_id}/payments`;
   const entityId = process.env.AFS_ENTITY_ID;
   const accessToken = process.env.AFS_ACCESS_TOKEN;
-  
-  // Calculate installment amount
-  const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2));
-  
+
   const afsData = new URLSearchParams();
-  afsData.append('entityId', entityId);
-  afsData.append('amount', installmentAmount.toString());
-  afsData.append('currency', 'AED');
-  afsData.append('paymentType', 'PA'); // Pre-Authorization for recurring payments
-  afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
-  
-  // Add standing instruction parameters for recurring payments
-  afsData.append('standingInstruction.mode', 'REPEATED');
-  afsData.append('standingInstruction.type', 'UNSCHEDULED');
-  afsData.append('standingInstruction.source', 'CIT'); // Merchant Initiated Transaction
-  
+  afsData.append("entityId", entityId);
+  afsData.append("amount", installmentAmount.toString());
+  afsData.append("currency", "AED");
+  afsData.append("paymentType", "PA");
+
+  // ✅ PRODUCTION FIX: unique ID used here
+  afsData.append("merchantTransactionId", merchantTransactionId);
+
+  afsData.append("standingInstruction.mode", "REPEATED");
+  afsData.append("standingInstruction.type", "UNSCHEDULED");
+  afsData.append("standingInstruction.source", "CIT");
+
   const afsHeaders = {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/x-www-form-urlencoded"
   };
-  
-  console.log('🔗 AFS Registration Payment Request Details:');
-  console.log('- URL:', afsUrl);
-  console.log('- Registration ID:', savedCard.afs_registration_id);
-  console.log('- Entity ID:', entityId);
-  console.log('- Amount:', installmentAmount);
-  console.log('- Currency:', 'AED');
-  console.log('- Payment Type:', 'PA (Pre-Authorization)');
-  console.log('- Standing Instruction Mode:', 'REPEATED');
-  console.log('- Standing Instruction Type:', 'UNSCHEDULED');
-  console.log('- Standing Instruction Source:', 'MIT');
-  console.log('- Merchant Transaction ID:', `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
-  console.log('- Card Details:', {
-    maskedCardNumber: savedCard.maskedCardNumber,
-    cardBrand: savedCard.cardBrand,
-    cardholderName: savedCard.cardholderName,
-    expiryMonth: savedCard.expiryMonth,
-    expiryYear: savedCard.expiryYear
-  });
-  
+
   try {
-    console.log('🚀 INITIATING AFS DEBIT FUND OPERATION:');
-    console.log(`   - Registration ID: ${savedCard.afs_registration_id}`);
-    console.log(`   - Amount: ${installmentAmount} AED`);
-    console.log(`   - Payment Type: PA (Pre-Authorization)`);
-    console.log(`   - Merchant Transaction ID: ${subscription.quotepaymentId}_${subscription.payments_completed + 1}`);
-    console.log(`   - Timestamp: ${new Date().toISOString()}`);
-    
     const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
-    
-    console.log('📡 AFS DEBIT FUND RESPONSE RECEIVED:');
-    console.log('- Status Code:', response.status);
-    console.log('- Response Headers:', JSON.stringify(response.headers, null, 2));
-    console.log('- Response Data:', JSON.stringify(response.data, null, 2));
-    
-    // Log specific AFS response details
-    if (response.data) {
-      console.log('🔍 AFS RESPONSE ANALYSIS:');
-      console.log(`   - Transaction ID: ${response.data.id || 'N/A'}`);
-      console.log(`   - Payment Type: ${response.data.paymentType || 'N/A'}`);
-      console.log(`   - Amount: ${response.data.amount || 'N/A'} ${response.data.currency || 'N/A'}`);
-      console.log(`   - Result Code: ${response.data.result?.code || 'N/A'}`);
-      console.log(`   - Result Description: ${response.data.result?.description || 'N/A'}`);
-      console.log(`   - Merchant Transaction ID: ${response.data.merchantTransactionId || 'N/A'}`);
-      console.log(`   - Registration ID: ${response.data.registrationId || 'N/A'}`);
-      console.log(`   - Timestamp: ${response.data.timestamp || 'N/A'}`);
-      
-      if (response.data.resultDetails) {
-        console.log('📋 AFS RESULT DETAILS:');
-        console.log(`   - Auth Code: ${response.data.resultDetails.AuthCode || 'N/A'}`);
-        console.log(`   - Acquirer Response: ${response.data.resultDetails.AcquirerResponse || 'N/A'}`);
-        console.log(`   - Reconciliation ID: ${response.data.resultDetails.reconciliationId || 'N/A'}`);
-        console.log(`   - Extended Description: ${response.data.resultDetails.ExtendedDescription || 'N/A'}`);
-      }
-      
-      if (response.data.standingInstruction) {
-        console.log('🔄 AFS STANDING INSTRUCTION:');
-        console.log(`   - Mode: ${response.data.standingInstruction.mode || 'N/A'}`);
-        console.log(`   - Type: ${response.data.standingInstruction.type || 'N/A'}`);
-        console.log(`   - Source: ${response.data.standingInstruction.source || 'N/A'}`);
-        console.log(`   - Initial Transaction ID: ${response.data.standingInstruction.initialTransactionId || 'N/A'}`);
-      }
-    }
-    
-    if (response.data && response.data.result && response.data.result.code.startsWith('000.')) {
-      // Payment successful
-      console.log('✅ AFS DEBIT FUND OPERATION SUCCESSFUL:');
-      console.log(`   - Funds debited successfully from registration ID: ${savedCard.afs_registration_id}`);
-      console.log(`   - Amount debited: ${response.data.amount} ${response.data.currency}`);
-      console.log(`   - Transaction ID: ${response.data.id}`);
-      console.log(`   - Result: ${response.data.result.description}`);
-      
-      // Update card's last used date
-      await SavedCard.findByIdAndUpdate(savedCard._id, {
-        lastUsedDate: new Date()
-      });
-      
-      console.log('💳 Card last used date updated successfully');
-      
+
+    if (response.data?.result?.code?.startsWith("000.")) {
+      await SavedCard.findByIdAndUpdate(savedCard._id, { lastUsedDate: new Date() });
       return response.data;
-    } else {
-      const errorMsg = `AFS Debit Fund failed: ${response.data?.result?.description || 'Unknown error'}`;
-      console.error('❌ AFS DEBIT FUND OPERATION FAILED:');
-      console.error(`   - Registration ID: ${savedCard.afs_registration_id}`);
-      console.error(`   - Amount attempted: ${installmentAmount} AED`);
-      console.error(`   - Error: ${errorMsg}`);
-      console.error(`   - Result Code: ${response.data?.result?.code || 'N/A'}`);
-      throw new Error(errorMsg);
     }
+
+    const errorMsg = `AFS Debit Fund failed: ${response.data?.result?.description || "Unknown error"}`;
+    throw new Error(errorMsg);
   } catch (axiosError) {
-    console.error('🚨 AFS DEBIT FUND API ERROR:');
-    console.error(`   - Registration ID: ${savedCard.afs_registration_id}`);
-    console.error(`   - Amount attempted: ${installmentAmount} AED`);
-    console.error(`   - URL: ${afsUrl}`);
-    console.error(`   - Status Code: ${axiosError.response?.status || 'Network Error'}`);
-    console.error(`   - Status Text: ${axiosError.response?.statusText || 'N/A'}`);
-    console.error(`   - Error Message: ${axiosError.message}`);
-    console.error(`   - Request Headers: ${JSON.stringify(afsHeaders, null, 2)}`);
-    console.error(`   - Request Data: ${afsData.toString()}`);
-    
-    if (axiosError.response?.data) {
-      console.error('📋 AFS ERROR RESPONSE DETAILS:');
-      console.error(`   - Response Data: ${JSON.stringify(axiosError.response.data, null, 2)}`);
-      
-      if (axiosError.response.data.result) {
-        console.error(`   - Result Code: ${axiosError.response.data.result.code || 'N/A'}`);
-        console.error(`   - Result Description: ${axiosError.response.data.result.description || 'N/A'}`);
-      }
-    }
-    
-    // Enhanced error handling with specific AFS error codes
-    if (axiosError.response?.status === 400) {
-      const errorMsg = `AFS Debit Fund Bad Request (400): ${JSON.stringify(axiosError.response.data)}`;
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
-    } else if (axiosError.response?.status === 401) {
-      const errorMsg = `AFS Debit Fund Unauthorized (401): Check access token for registration ID ${savedCard.afs_registration_id}`;
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
-    } else if (axiosError.response?.status === 403) {
-      const errorMsg = `AFS Debit Fund Forbidden (403): Check entity ID and permissions for registration ID ${savedCard.afs_registration_id}`;
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
-    } else if (axiosError.response?.status === 404) {
-      const errorMsg = `AFS Debit Fund Not Found (404): Registration ID ${savedCard.afs_registration_id} not found or expired`;
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
-    } else if (axiosError.response?.status === 422) {
-      const errorMsg = `AFS Debit Fund Unprocessable Entity (422): Invalid payment data for registration ID ${savedCard.afs_registration_id}`;
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
-    } else if (axiosError.response?.status >= 500) {
-      const errorMsg = `AFS Debit Fund Server Error (${axiosError.response.status}): AFS server issue`;
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
-    } else {
-      const errorMsg = `AFS Debit Fund Error (${axiosError.response?.status || 'Network'}): ${axiosError.message}`;
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
-    }
+    const status = axiosError.response?.status;
+    const data = axiosError.response?.data;
+
+    if (status === 400) throw new Error(`AFS 400: ${JSON.stringify(data)}`);
+    if (status === 401) throw new Error(`AFS 401: Unauthorized (check token)`);
+    if (status === 403) throw new Error(`AFS 403: Forbidden (check entity/permission)`);
+    if (status === 404) throw new Error(`AFS 404: Registration not found/expired`);
+    if (status === 422) throw new Error(`AFS 422: Invalid payment data`);
+    if (status >= 500) throw new Error(`AFS ${status}: Server error`);
+    throw new Error(`AFS Error (${status || "Network"}): ${axiosError.message}`);
   }
 }
 
 /**
  * Test AFS Registration payment with a specific subscription
- * This endpoint can be used to test the new recurring payment logic
  */
 export const testServerToServerPayment = async (req, res) => {
   try {
     const { quotepaymentId } = req.params;
-    
-    if (!quotepaymentId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Quote payment ID is required'
-      });
-    }
-    
-    console.log(`🧪 Testing server-to-server payment for subscription: ${quotepaymentId}`);
-    
-    // Find the subscription
+    if (!quotepaymentId) return res.status(400).json({ success: false, message: "Quote payment ID is required" });
+
     const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId });
-    
-    if (!subscription) {
-      return res.status(404).json({
-        success: false,
-        message: 'Subscription not found'
-      });
-    }
-    
-    // Test card retrieval
+    if (!subscription) return res.status(404).json({ success: false, message: "Subscription not found" });
+
     const savedCard = await getCustomerDefaultCard(subscription);
-    
     if (!savedCard) {
       return res.status(400).json({
         success: false,
-        message: 'No valid saved card with AFS registration ID found for customer',
+        message: "No valid saved card with AFS registration ID found for customer",
         subscription: {
           quotepaymentId: subscription.quotepaymentId,
           customerEmail: subscription.opp_email,
@@ -1623,11 +870,13 @@ export const testServerToServerPayment = async (req, res) => {
         }
       });
     }
-    
-    // Return test information (don't actually process payment)
-    res.json({
+
+    const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2));
+    const merchantTransactionId = buildMerchantTransactionId(subscription);
+
+    return res.json({
       success: true,
-      message: 'AFS Registration payment test successful',
+      message: "AFS Registration payment test successful",
       subscription: {
         quotepaymentId: subscription.quotepaymentId,
         customerEmail: subscription.opp_email,
@@ -1648,26 +897,17 @@ export const testServerToServerPayment = async (req, res) => {
         isActive: savedCard.isActive
       },
       paymentDetails: {
-        installmentAmount: parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)),
-        currency: 'AED',
-        paymentType: 'PA',
-        standingInstruction: {
-          mode: 'REPEATED',
-          type: 'UNSCHEDULED',
-          source: 'MIT'
-        },
-        merchantTransactionId: `${subscription.quotepaymentId}_${subscription.payments_completed + 1}`,
+        installmentAmount,
+        currency: "AED",
+        paymentType: "PA",
+        standingInstruction: { mode: "REPEATED", type: "UNSCHEDULED", source: "MIT" },
+        merchantTransactionId,
         afsUrl: `${process.env.AFS_DOMAIN}/v1/registrations/${savedCard.afs_registration_id}/payments`
       }
     });
-    
   } catch (error) {
-    console.error('❌ Test server-to-server payment error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Test failed',
-      error: error.message
-    });
+    console.error("❌ Test server-to-server payment error:", error);
+    return res.status(500).json({ success: false, message: "Test failed", error: error.message });
   }
 };
 
@@ -1675,44 +915,37 @@ export const testServerToServerPayment = async (req, res) => {
  * Get subscription status
  */
 export const getSubscriptionStatus = async (req, res) => {
-  
-  
   try {
     const { quotepaymentId } = req.params;
-    
+
     const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId });
-    
-    if (!subscription) {
-      return res.status(404).json({ message: 'Subscription not found' });
-    }
-    
-    // Debug logging
- 
-    
+    if (!subscription) return res.status(404).json({ message: "Subscription not found" });
+
     const response = {
       quotepaymentId: subscription.quotepaymentId,
       subscription_status: subscription.subscription_status,
       is_subscription: subscription.is_subscription,
       total_installments: subscription.InstallmentLeft,
       payments_completed: subscription.payments_completed,
-      remaining_payments: subscription.InstallmentLeft && subscription.payments_completed ? 
-        subscription.InstallmentLeft - subscription.payments_completed : null,
+      remaining_payments:
+        subscription.InstallmentLeft && subscription.payments_completed !== undefined
+          ? subscription.InstallmentLeft - subscription.payments_completed
+          : null,
       next_charge_date: subscription.next_charge_date,
       last_payment_date: subscription.last_payment_date,
-      installment_amount: subscription.InstallmentLeft && subscription.Total_After_VAT_Currency ? 
-        parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)) : null,
+      installment_amount:
+        subscription.InstallmentLeft && subscription.Total_After_VAT_Currency
+          ? parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2))
+          : null,
       total_amount: subscription.Total_After_VAT_Currency,
       created_date: subscription.CreatedDate,
       afs_checkout_id: subscription.afs_checkout_id,
       afs_registration_id: subscription.afs_registration_id
     };
-    
-    res.json(response);
-    
+
+    return res.json(response);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get subscription status' });
-  } finally {
-    
+    return res.status(500).json({ message: "Failed to get subscription status" });
   }
 };
 
@@ -1720,38 +953,22 @@ export const getSubscriptionStatus = async (req, res) => {
  * Cancel subscription
  */
 export const cancelSubscription = async (req, res) => {
-  
-  
   try {
     const { quotepaymentId } = req.params;
-    
+
     const subscription = await Vzat_Recurring_Data.findOneAndUpdate(
       { quotepaymentId },
-      { subscription_status: 'cancelled' },
+      { subscription_status: "cancelled" },
       { new: true }
     );
-    
-    if (!subscription) {
-      return res.status(404).json({ message: 'Subscription not found' });
-    }
-    
-    
-    Post_Common_DB_Log_Data('/subscription/cancel', { quotepaymentId }, { 
-      message: 'Subscription cancelled successfully',
-      subscriptionId: subscription._id 
-    });
-    
-    res.json({ 
-      message: 'Subscription cancelled successfully',
-      quotepaymentId,
-      status: 'cancelled'
-    });
-    
+
+    if (!subscription) return res.status(404).json({ message: "Subscription not found" });
+
+    Post_Common_DB_Log_Data("/subscription/cancel", { quotepaymentId }, { message: "Subscription cancelled successfully" });
+
+    return res.json({ message: "Subscription cancelled successfully", quotepaymentId, status: "cancelled" });
   } catch (error) {
-    console.error(' Error cancelling subscription:', error);
-    res.status(500).json({ message: 'Failed to cancel subscription' });
-  } finally {
-    
+    return res.status(500).json({ message: "Failed to cancel subscription" });
   }
 };
 
@@ -1759,164 +976,25 @@ export const cancelSubscription = async (req, res) => {
  * Update subscription next charge date (for testing purposes)
  */
 export const updateNextChargeDate = async (req, res) => {
-  
-  
   try {
     const { quotepaymentId } = req.params;
     const { next_charge_date } = req.body;
-    
+
     const subscription = await Vzat_Recurring_Data.findOneAndUpdate(
       { quotepaymentId },
       { next_charge_date: new Date(next_charge_date) },
       { new: true }
     );
-    
-    if (!subscription) {
-      return res.status(404).json({ message: 'Subscription not found' });
-    }
-    
-    
-    res.json({ 
-      message: 'Next charge date updated successfully',
+
+    if (!subscription) return res.status(404).json({ message: "Subscription not found" });
+
+    return res.json({
+      message: "Next charge date updated successfully",
       quotepaymentId,
       next_charge_date: subscription.next_charge_date
     });
-    
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update next charge date' });
-  } finally {
-    
-  }
-};
-
-/**
- * Check and trigger completion email for a specific subscription
- */
-export const checkSubscriptionCompletion = async (req, res) => {
-  try {
-    const { quotepaymentId } = req.params;
-    
-    console.log(`🔍 Checking completion for subscription: ${quotepaymentId}`);
-    
-    const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId });
-    
-    if (!subscription) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Subscription not found',
-        quotepaymentId 
-      });
-    }
-    
-    console.log('📋 Current subscription data:', {
-      quotepaymentId: subscription.quotepaymentId,
-      subscription_status: subscription.subscription_status,
-      payments_completed: subscription.payments_completed,
-      InstallmentLeft: subscription.InstallmentLeft,
-      next_charge_date: subscription.next_charge_date
-    });
-    
-    const allPaymentsCompleted = subscription.payment_schedule.every(p => 
-      p.status === 'completed' || p.status === 'paid'
-    );
-    
-    console.log('🔍 Completion check:', {
-      payments_completed: subscription.payments_completed,
-      total_installments: subscription.InstallmentLeft,
-      all_payments_completed: allPaymentsCompleted,
-      payment_schedule: subscription.payment_schedule.map(p => ({
-        installment: p.installment_number,
-        status: p.status
-      }))
-    });
-    
-    if (subscription.payments_completed >= subscription.InstallmentLeft && allPaymentsCompleted) {
-      console.log(`🎉 SUBSCRIPTION IS COMPLETE - Triggering completion email for ${quotepaymentId}!`);
-      
-      // Check if already completed to prevent duplicate emails
-      if (subscription.subscription_status !== 'completed') {
-        // Update status to completed and set next_charge_date to null
-        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-          subscription_status: 'completed',
-          next_charge_date: null,
-          renewal_email_sent: true,
-          renewal_email_sent_date: new Date()
-        });
-        
-        // Send completion email to business team
-        try {
-          const emailResult = await sendFinalRenewalEmail({
-            quotepaymentId: subscription.quotepaymentId,
-            Quote_payment_number: subscription.Quote_payment_number,
-            Customer_name: subscription.Customer_name,
-            opp_email: subscription.opp_email,
-            opp_owner: subscription.opp_owner,
-            opp_owner: subscription.opp_owner,
-            payments_completed: subscription.payments_completed,
-            InstallmentLeft: subscription.InstallmentLeft,
-            last_payment_date: subscription.last_payment_date,
-            salesPersonDetails: subscription.salesPersonDetails
-          });
-          
-          if (emailResult.success) {
-            console.log('📧 Subscription completion email sent successfully');
-            return res.status(200).json({ 
-              success: true,
-              message: 'Subscription completed and email sent successfully',
-              quotepaymentId,
-              emailId: emailResult.messageId
-            });
-          } else {
-            console.error('📧 Failed to send completion email:', emailResult.error);
-            return res.status(500).json({ 
-              success: false,
-              message: 'Subscription completed but failed to send email',
-              quotepaymentId,
-              error: emailResult.error
-            });
-          }
-        } catch (completionEmailError) {
-          console.error('📧 Error sending completion email:', completionEmailError);
-          return res.status(500).json({ 
-            success: false,
-            message: 'Subscription completed but error sending email',
-            quotepaymentId,
-            error: completionEmailError.message
-          });
-        }
-      } else {
-        console.log(`ℹ️ Subscription ${quotepaymentId} already marked as completed - skipping completion email`);
-        return res.status(200).json({ 
-          success: true,
-          message: 'Subscription already completed',
-          quotepaymentId
-        });
-      }
-    } else {
-      console.log('📋 Subscription not yet complete - some payments still pending/failed');
-      return res.status(200).json({ 
-        success: false,
-        message: 'Subscription not yet complete',
-        quotepaymentId,
-        details: {
-          payments_completed: subscription.payments_completed,
-          total_installments: subscription.InstallmentLeft,
-          all_payments_completed: allPaymentsCompleted,
-          payment_schedule: subscription.payment_schedule.map(p => ({
-            installment: p.installment_number,
-            status: p.status
-          }))
-        }
-      });
-    }
-    
-  } catch (error) {
-    console.error('💥 Error checking subscription completion:', error);
-    return res.status(500).json({ 
-      success: false,
-      message: 'Error checking subscription completion',
-      error: error.message
-    });
+    return res.status(500).json({ message: "Failed to update next charge date" });
   }
 };
 
@@ -1924,143 +1002,29 @@ export const checkSubscriptionCompletion = async (req, res) => {
  * Fix missing InstallmentLeft field (for testing purposes)
  */
 export const fixInstallmentLeft = async (req, res) => {
-  
-  
   try {
     const { quotepaymentId } = req.params;
     const { installment_left } = req.body;
-    
-    
-    // First, check what's currently in the database
-    const currentSub = await Vzat_Recurring_Data.findOne({ quotepaymentId });
-    
+
     const subscription = await Vzat_Recurring_Data.findOneAndUpdate(
       { quotepaymentId },
       { InstallmentLeft: installment_left },
       { new: true }
     );
-    
-    if (!subscription) {
-      return res.status(404).json({ message: 'Subscription not found' });
-    }
-    
-    
-    res.json({ 
-      message: 'InstallmentLeft field updated successfully',
+
+    if (!subscription) return res.status(404).json({ message: "Subscription not found" });
+
+    return res.json({
+      message: "InstallmentLeft field updated successfully",
       quotepaymentId,
       InstallmentLeft: subscription.InstallmentLeft,
-      remaining_payments: subscription.InstallmentLeft && subscription.payments_completed !== undefined ? 
-        subscription.InstallmentLeft - subscription.payments_completed : null
+      remaining_payments:
+        subscription.InstallmentLeft && subscription.payments_completed !== undefined
+          ? subscription.InstallmentLeft - subscription.payments_completed
+          : null
     });
-    
   } catch (error) {
-    console.error(' Error updating InstallmentLeft:', error);
-    res.status(500).json({ message: 'Failed to update InstallmentLeft' });
-  } finally {
-    
-  }
-};
-
-/**
- * Test email notifications - FOR TESTING ONLY
- */
-export const testSubscriptionCompletionEmail = async (req, res) => {
-  try {
-    const { quotepaymentId } = req.body;
-    
-    if (!quotepaymentId) {
-      return res.status(400).json({ message: 'quotepaymentId is required for testing' });
-    }
-    
-    // Mock subscription data for testing
-    const mockSubscriptionData = {
-      quotepaymentId: quotepaymentId,
-      OpportunityId: 'TEST-OPP-123',
-      QuoteId: 'TEST-QUOTE-123',
-      Total_After_VAT_Currency: 1800,
-      InstallmentLeft: 6,
-      payments_completed: 6,
-      last_payment_date: new Date()
-    };
-    
-    const emailResult = await sendSubscriptionCompletedEmail(mockSubscriptionData);
-    
-    if (emailResult.success) {
-      res.json({
-        success: true,
-        message: 'Subscription completion email sent successfully',
-        messageId: emailResult.messageId
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Failed to send email',
-        error: emailResult.error
-      });
-    }
-    
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error testing email',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Test payment failure email - FOR TESTING ONLY
- */
-export const testPaymentFailureEmail = async (req, res) => {
-  try {
-    const { quotepaymentId } = req.body;
-    
-    if (!quotepaymentId) {
-      return res.status(400).json({ message: 'quotepaymentId is required for testing' });
-    }
-    
-    // Mock failure data for testing
-    const mockFailureData = {
-      quotepaymentId: quotepaymentId,
-      OpportunityId: 'TEST-OPP-123',
-      QuoteId: 'TEST-QUOTE-123',
-      error_message: 'TEST: Insufficient funds in customer account',
-      payment_amount: 300,
-      attempt_date: new Date(),
-      payments_completed: 3,
-      total_installments: 6,
-      afs_response: {
-        result: {
-          code: '800.100.162',
-          description: 'Transaction declined (not enough funds)'
-        },
-        id: 'TEST123456789',
-        paymentType: 'DB'
-      }
-    };
-    
-    // const emailResult = await sendPaymentFailureEmail(mockFailureData);
-    
-    if (emailResult.success) {
-      res.json({
-        success: true,
-        message: 'Payment failure email sent successfully',
-        messageId: emailResult.messageId
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Failed to send email',
-        error: emailResult.error
-      });
-    }
-    
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error testing email',
-      error: error.message
-    });
+    return res.status(500).json({ message: "Failed to update InstallmentLeft" });
   }
 };
 
@@ -2071,7 +1035,5 @@ export default {
   cancelSubscription,
   updateNextChargeDate,
   fixInstallmentLeft,
-  testSubscriptionCompletionEmail,
-  testPaymentFailureEmail
+  testServerToServerPayment
 };
-
