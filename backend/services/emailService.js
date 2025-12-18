@@ -896,7 +896,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #007bff;">
-            <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome to Customer Portal!</h1>
+            <h1 style="margin: 0; font-size: 24px; color: #000000;">Welcome to Customer Portal!</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is Ready</p>
           </div>
           
@@ -954,7 +954,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
               <p style="font-size: 14px; color: #888; margin: 0;">
                 Best regards,<br>
-                <strong>TaxReady Team</strong>
+                <strong>Virtuzone Team</strong>
               </p>
             </div>
           </div>
@@ -1020,7 +1020,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #28a745;">
-            <h1 style="margin: 0; font-size: 28px; color: #000000;">Welcome Back!</h1>
+            <h1 style="margin: 0; font-size: 24px; color: #000000;">Welcome Back!</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is already active</p>
           </div>
           
@@ -1095,7 +1095,7 @@ export const sendPasswordResetEmail = async (customerData) => {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">Password Reset</h1>
+            <h1 style="margin: 0; font-size: 24px;">Password Reset</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px;">Reset Your Recurring Account Password</p>
           </div>
           

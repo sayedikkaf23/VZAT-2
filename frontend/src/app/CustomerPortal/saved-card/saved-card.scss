@@ -205,3 +205,16 @@
 }
 
 .add_card-box .btn svg path { stroke: #fff !important; }
+
+/* Prevent overlap/overwrite on browser zoom (e.g. 110%)
+   Base CustomerPortal CSS forces `.cards-list .s-card { min-width/max-width: 270px; }`
+   which can overflow Bootstrap columns and visually overlap adjacent tiles. */
+.cards-list > [class*="col-"] {
+  min-width: 0;
+}
+
+.cards-list .s-card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100%;
+}
