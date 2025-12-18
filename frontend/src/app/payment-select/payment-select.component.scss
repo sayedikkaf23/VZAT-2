@@ -1,5 +1,11 @@
 @import '../../assets/css/payment-schedual.css';
 
+
+:root{
+	--primary:#CF3339;
+    --light-primary:#F8E8E9;
+	--secondary:#8F8F8F;
+}
 /* Remove bottom gap from sidebar */
 .payment-schedule .detils-sidebar {
   height: 100vh;
@@ -14,6 +20,112 @@
 
 .payment-schedule .detils-sidebar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
+}
+
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0 !important;
+}
+
+.details-content .details-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0 85px 20px;
+}
+
+.details-footer ul {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.details-footer ul li {
+    line-height: 18px;
+    position: relative;
+    padding-right: 15px;
+    border-right: 1px solid #8F8F8F !important;
+    margin-right: 15px;
+}
+
+.details-footer ul li a {
+text-decoration: none;
+    transition: all 0.3s !important;
+}
+
+.details-footer ul {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.details-footer ul li:last-child {
+    padding-right: 0;
+    margin-right: 0;
+    border-right: 0 !important;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.details-footer ul li {
+    line-height: 18px;
+    position: relative;
+}
+
+.details-footer ul li a {
+    color: #8F8F8F;
+}
+
+.payment-schedule .details-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 20px;
+    height: 100vh;
+    overflow: auto;
+    overflow-x: hidden;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+    .details-content .details-footer {
+        padding: 0 35px 20px !important;
+            bottom: -110px !important;
+    }
+}
+
+@media (max-width: 767px) {
+
+      .details-footer ul {
+        font-size: 11px;
+        padding-top: 20px;
+    }
+    
+    .details-footer ul li {
+        line-height: 12px;
+        padding-right: 10px;
+        margin-right: 10px;
+    }
+}
+
+.payment-schedule .details-content {
+    position: relative;
+    padding: 85px 85px 120px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .payment-schedule .sidebar-row {
@@ -265,8 +377,14 @@
     font-size: 18px !important;
     line-height: 1.2;
     margin-bottom: 8px;
+    height: 10vh !important;
+        min-height: 0px !important;
   }
-  
+    .payment-schedule .detils-sidebar {
+    
+    height: 10vh !important;
+        min-height: 0px !important;
+  }
   .payment-schedule-head h3 {
     font-size: 20px;
   }

@@ -12,6 +12,112 @@
   scrollbar-width: none; /* Firefox */
 }
 
+.details-content .details-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0 85px 0px !important;
+}
+
+.details-footer ul {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.details-footer ul li {
+    line-height: 18px;
+    position: relative;
+    padding-right: 15px;
+    border-right: 1px solid #8F8F8F !important;
+    margin-right: 15px;
+}
+
+.details-footer ul li a {
+text-decoration: none;
+    transition: all 0.3s !important;
+}
+
+.details-footer ul {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.details-footer ul li:last-child {
+    padding-right: 0;
+    margin-right: 0;
+    border-right: 0 !important;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.details-footer ul li {
+    line-height: 18px;
+    position: relative;
+}
+
+.details-footer ul li a {
+    color: #8F8F8F !important;
+}
+
+.payment-schedule .details-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 20px;
+    height: 100vh;
+    overflow: auto;
+    overflow-x: hidden;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+    .details-content .details-footer {
+        padding: 0 35px 0px !important;
+    }
+}
+
+@media (max-width: 767px) {
+
+      .details-footer ul {
+        font-size: 11px;
+        padding-top: 20px;
+    }
+    
+    .details-footer ul li {
+        line-height: 12px;
+        padding-right: 10px;
+        margin-right: 10px;
+    }
+}
+
+.payment-schedule .details-content {
+    position: relative;
+    padding: 85px 85px 120px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 767px) {
+    .payment-schedule {
+        
+        min-height: 100vh !important;
+    }
+}
+
 .payment-schedule .detils-sidebar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
@@ -128,23 +234,9 @@
 }
 
 /* Footer styling - match payment-form */
-.payment-schedule .details-content .details-footer {
-  position: relative !important;
-  bottom: auto !important;
-  padding: 0px 15px 0px !important;
-  width: 100%;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-}
 
-.payment-schedule .details-footer {
-  position: relative !important;
-  bottom: auto !important;
-  background: var(--light-primary, #F8E8E9);
-  width: 100%;
-  padding-bottom: 0 !important;
-  margin-bottom: 0 !important;
-}
+
+
 
 .payment-schedule .details-footer hr {
   border-top: 1px solid var(--primary, #FA2E52);
@@ -202,11 +294,6 @@
   color: #121212 !important;
 }
 
-.payment-schedule .details-footer h6,
-.payment-schedule .details-footer a,
-.payment-schedule .details-footer p {
-  font-size: 10px !important;
-}
 
 .payment-schedule .details-footer h3 {
   font-size: 12px !important;
@@ -337,7 +424,7 @@ html .payment-schedule {
     display: flex;
     flex-direction: column;
     background-image: none;
-    min-height: unset !important;
+    // min-height: unset !important;
     padding-bottom: 0 !important;
     margin-bottom: 0 !important;
   }
