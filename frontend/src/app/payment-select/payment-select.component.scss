@@ -225,6 +225,33 @@
     width: 96%;
   }
 
+  /* Mobile: remove the large empty gap by letting the sidebar/content
+     size naturally (our desktop `100vh` sidebar rules create a blank area on phones). */
+  .payment-schedule {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .payment-schedule .detils-sidebar {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .payment-schedule .sidebar-row {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  .payment-schedule .details-content {
+    height: auto !important;
+    overflow: visible !important;
+    /* `payment-schedual.css` sets a negative margin on mobile which causes overlap */
+    margin-top: 800px !important;
+  }
+
   .payment-schedule .details-content {
     padding: 25px 0 0;
     min-height: 0;
