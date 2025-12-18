@@ -1,6 +1,6 @@
-import axios from 'axios';
-import dotenv from 'dotenv';
-import { logSalesforceApiCall } from './salesforceApiLogService.js';
+import axios from "axios";
+import dotenv from "dotenv";
+import { logSalesforceApiCall } from "./salesforceApiLogService.js";
 
 dotenv.config();
 
@@ -12,7 +12,7 @@ dotenv.config();
 let accessTokenCache = {
   token: null,
   instanceUrl: null,
-  expiresAt: null
+  expiresAt: null,
 };
 
 /**
@@ -22,46 +22,49 @@ let accessTokenCache = {
 const getSalesforceAccessToken = async () => {
   const startTime = Date.now();
   const endpoint = `${process.env.SALESFORCE_LOGIN_URL}/services/oauth2/token`;
-  
+
   try {
     // Check if we have a valid cached token
-    if (accessTokenCache.token && accessTokenCache.instanceUrl && accessTokenCache.expiresAt > Date.now()) {
-      console.log('🔄 Using cached Salesforce access token');
+    if (
+      accessTokenCache.token &&
+      accessTokenCache.instanceUrl &&
+      accessTokenCache.expiresAt > Date.now()
+    ) {
+      console.log("🔄 Using cached Salesforce access token");
       return {
         access_token: accessTokenCache.token,
-        instance_url: accessTokenCache.instanceUrl
+        instance_url: accessTokenCache.instanceUrl,
       };
     }
 
-    console.log('🔄 Requesting new Salesforce access token...');
+    console.log("🔄 Requesting new Salesforce access token...");
 
     const authData = new URLSearchParams();
-    authData.append('grant_type', 'password');
-    authData.append('client_id', process.env.SALESFORCE_CLIENT_ID);
-    authData.append('client_secret', process.env.SALESFORCE_CLIENT_SECRET);
-    authData.append('username', process.env.SALESFORCE_USERNAME);
-    authData.append('password', process.env.SALESFORCE_PASSWORD + process.env.SALESFORCE_SECURITY_TOKEN);
+    authData.append("grant_type", "password");
+    authData.append("client_id", process.env.SALESFORCE_CLIENT_ID);
+    authData.append("client_secret", process.env.SALESFORCE_CLIENT_SECRET);
+    authData.append("username", process.env.SALESFORCE_USERNAME);
+    authData.append(
+      "password",
+      process.env.SALESFORCE_PASSWORD + process.env.SALESFORCE_SECURITY_TOKEN
+    );
 
     const requestData = {
-      grant_type: 'password',
+      grant_type: "password",
       client_id: process.env.SALESFORCE_CLIENT_ID,
       username: process.env.SALESFORCE_USERNAME,
       // Don't log sensitive data like client_secret, password, security_token
     };
 
-    const response = await axios.post(
-      endpoint,
-      authData,
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        timeout: 30000
-      }
-    );
+    const response = await axios.post(endpoint, authData, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      timeout: 30000,
+    });
 
     const { access_token, instance_url, expires_in } = response.data;
-    
+
     // Cache the token and instance URL (expires_in is typically 7200 seconds = 2 hours, we'll cache for 1.5 hours to be safe)
     accessTokenCache.token = access_token;
     accessTokenCache.instanceUrl = instance_url;
@@ -70,41 +73,40 @@ const getSalesforceAccessToken = async () => {
     // Log successful authentication
     await logSalesforceApiCall({
       endpoint,
-      method: 'POST',
+      method: "POST",
       requestData,
-      responseData: { 
+      responseData: {
         token_type: response.data.token_type,
         expires_in: response.data.expires_in,
         // Don't log the actual access token for security
       },
       statusCode: response.status,
       isSuccess: true,
-      executionTime: Date.now() - startTime
+      executionTime: Date.now() - startTime,
     });
 
-    console.log('✅ Salesforce access token obtained successfully');
+    console.log("✅ Salesforce access token obtained successfully");
     return {
       access_token,
-      instance_url
+      instance_url,
     };
-
   } catch (error) {
     // Log failed authentication
     await logSalesforceApiCall({
       endpoint,
-      method: 'POST',
+      method: "POST",
       requestData: {
-        grant_type: 'password',
+        grant_type: "password",
         client_id: process.env.SALESFORCE_CLIENT_ID,
-        username: process.env.SALESFORCE_USERNAME
+        username: process.env.SALESFORCE_USERNAME,
       },
       statusCode: error.response?.status,
       isSuccess: false,
       errorMessage: error.message,
-      executionTime: Date.now() - startTime
+      executionTime: Date.now() - startTime,
     });
 
-    console.error('❌ Failed to get Salesforce access token:', error);
+    console.error("❌ Failed to get Salesforce access token:", error);
     throw new Error(`Failed to authenticate with Salesforce: ${error.message}`);
   }
 };
@@ -146,10 +148,29 @@ export const updateQuotePaymentStatus = async (paymentData) => {
       return `${year}-${month}-${day}`;
     })();
 
-    // Process amount
-const processedAmount = Math.round(parseFloat(amount)) || 0;
-   console.log(`💰 Processing amount: "${amount}" → ${processedAmount} (type: ${typeof processedAmount})`);
+    console.log('🧪 RAW amount received:', amount, typeof amount);
 
+const numericAmount = parseFloat(
+  typeof amount === 'string'
+    ? amount.replace(/[^0-9.]/g, '') // removes AED, INR, symbols
+    : amount
+);
+
+    const processedAmount = Number.isFinite(numericAmount)
+      ? Number(numericAmount.toFixed(2))
+      : 0;
+
+    console.log(
+      `💰 Processed amount: "${amount}" → ${processedAmount} (type: ${typeof processedAmount})`
+    );
+
+
+    // Process amount
+    // const processedAmount = Number(parseFloat(amount).toFixed(2)) || 0;
+
+    // console.log(
+    //   `💰 Processing amount: "${amount}" → ${processedAmount} (type: ${typeof processedAmount})`
+    // );
     // Prepare Salesforce request payload
     const salesforcePayload = {
       QuotePaymentId: quotepaymentId,
@@ -316,7 +337,6 @@ const processedAmount = Math.round(parseFloat(amount)) || 0;
     };
   }
 };
-
 /**
  * Test Salesforce API connectivity
  * @returns {Object} - Test result
@@ -324,14 +344,14 @@ const processedAmount = Math.round(parseFloat(amount)) || 0;
 export const testSalesforceConnection = async () => {
   const startTime = Date.now();
   const endpoint = process.env.SALESFORCE_API_URL;
-  
+
   try {
-    console.log('🧪 Testing Salesforce API connection...');
-    
+    console.log("🧪 Testing Salesforce API connection...");
+
     // First test the authentication
     const accessToken = await getSalesforceAccessToken();
-    console.log('✅ Salesforce authentication successful');
-    
+    console.log("✅ Salesforce authentication successful");
+
     const testPayload = {
       QuotePaymentId: "TEST-" + Date.now(),
       Status: true,
@@ -339,78 +359,72 @@ export const testSalesforceConnection = async () => {
       Transaction_Number: "TEST-TRANSACTION-" + Date.now(),
       Message: "Test connection from VZAT payment system",
       // Next_due_date: new Date().toISOString().slice(0, 10),
-      Payment_Type: "Test_payment"
+      Payment_Type: "Test_payment",
     };
 
-    const response = await axios.put(
-      endpoint,
-      testPayload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        timeout: 15000 // 15 seconds timeout for test
-      }
-    );
+    const response = await axios.put(endpoint, testPayload, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      timeout: 15000, // 15 seconds timeout for test
+    });
 
     // Log successful test
     await logSalesforceApiCall({
       endpoint,
-      method: 'PUT',
+      method: "PUT",
       requestData: testPayload,
       responseData: response.data,
       statusCode: response.status,
       isSuccess: true,
       executionTime: Date.now() - startTime,
-      quotepaymentId: testPayload.QuotePaymentId
+      quotepaymentId: testPayload.QuotePaymentId,
     });
 
-    console.log('✅ Salesforce test connection successful');
+    console.log("✅ Salesforce test connection successful");
     return {
       success: true,
       data: response.data,
-      message: 'Salesforce API connection test successful'
+      message: "Salesforce API connection test successful",
     };
-
   } catch (error) {
-    console.error('❌ Salesforce test connection failed:', error);
-    
-    let errorMessage = 'Salesforce API connection test failed';
+    console.error("❌ Salesforce test connection failed:", error);
+
+    let errorMessage = "Salesforce API connection test failed";
     let errorDetails = {};
 
     if (error.response) {
       errorMessage = `Salesforce API error: ${error.response.status} - ${error.response.statusText}`;
       errorDetails = {
         status: error.response.status,
-        data: error.response.data
+        data: error.response.data,
       };
-      
+
       // Log failed test with response
       await logSalesforceApiCall({
         endpoint,
-        method: 'PUT',
+        method: "PUT",
         requestData: { test: true },
         responseData: error.response.data,
         statusCode: error.response.status,
         isSuccess: false,
         errorMessage: error.message,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       });
-      
     } else {
       errorDetails = { message: error.message };
-      
+
       // Log failed test without response
       await logSalesforceApiCall({
         endpoint,
-        method: 'PUT',
+        method: "PUT",
         requestData: { test: true },
         statusCode: 0,
         isSuccess: false,
         errorMessage: error.message,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       });
     }
 
@@ -418,7 +432,7 @@ export const testSalesforceConnection = async () => {
       success: false,
       error: errorMessage,
       details: errorDetails,
-      message: 'Salesforce API connection test failed'
+      message: "Salesforce API connection test failed",
     };
   }
 };
@@ -430,97 +444,104 @@ export const testSalesforceConnection = async () => {
  */
 export const updateQuotePaymentNumber = async (paymentData) => {
   const startTime = Date.now();
-  
+
   try {
-    console.log('🔄 Calling Salesforce API to update quote payment number...');
-    
-    const {
-      QuotePaymentId
-    } = paymentData;
+    console.log("🔄 Calling Salesforce API to update quote payment number...");
+
+    const { QuotePaymentId } = paymentData;
 
     // Prepare Salesforce request payload
     const requestBody = {
-      QuotePaymentId: QuotePaymentId
+      QuotePaymentId: QuotePaymentId,
     };
 
-    console.log('📋 Salesforce request body:', JSON.stringify(requestBody, null, 2));
+    console.log(
+      "📋 Salesforce request body:",
+      JSON.stringify(requestBody, null, 2)
+    );
 
     // Get access token and instance URL
     const tokenResponse = await getSalesforceAccessToken();
     const { access_token, instance_url } = tokenResponse;
-    
+
     // Build dynamic endpoint using instance URL
     const salesforceUrl = instance_url;
     const endpoint = `${salesforceUrl}/services/apexrest/updatequotepaymentnumber`;
-    console.log('🔗 Salesforce endpoint:', endpoint);
+    console.log("🔗 Salesforce endpoint:", endpoint);
 
     // Create config object for axios request
     const config = {
-      method: 'get',
+      method: "get",
       maxBodyLength: Infinity,
       url: endpoint,
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${access_token}`,
       },
-      data: requestBody
+      data: requestBody,
     };
 
     // Make the API call to Salesforce
     const salesforceResponse = await axios.request(config);
 
-    console.log('✅ Salesforce API response:', salesforceResponse.data);
-    console.log('🔍 Response type check:', {
+    console.log("✅ Salesforce API response:", salesforceResponse.data);
+    console.log("🔍 Response type check:", {
       isArray: Array.isArray(salesforceResponse.data),
       dataType: typeof salesforceResponse.data,
-      dataKeys: salesforceResponse.data ? Object.keys(salesforceResponse.data) : 'null'
+      dataKeys: salesforceResponse.data
+        ? Object.keys(salesforceResponse.data)
+        : "null",
     });
-    
+
     // Check if the response contains an error
     if (salesforceResponse.data && salesforceResponse.data.error) {
-      console.error('❌ Salesforce returned an error:', salesforceResponse.data.error);
-      
+      console.error(
+        "❌ Salesforce returned an error:",
+        salesforceResponse.data.error
+      );
+
       // Log failed API call
       await logSalesforceApiCall({
         endpoint,
-        method: 'GET',
+        method: "GET",
         requestData: requestBody,
         responseData: salesforceResponse.data,
         statusCode: salesforceResponse.status,
         isSuccess: false,
         errorMessage: salesforceResponse.data.error,
         executionTime: Date.now() - startTime,
-        quotepaymentId: QuotePaymentId
+        quotepaymentId: QuotePaymentId,
       });
-      
-      throw new Error(`Salesforce API returned error: ${salesforceResponse.data.error}`);
+
+      throw new Error(
+        `Salesforce API returned error: ${salesforceResponse.data.error}`
+      );
     }
-    
+
     // Log successful API call
     await logSalesforceApiCall({
       endpoint,
-      method: 'GET',
+      method: "GET",
       requestData: requestBody,
       responseData: salesforceResponse.data,
       statusCode: salesforceResponse.status,
       isSuccess: true,
       executionTime: Date.now() - startTime,
-      quotepaymentId: QuotePaymentId
+      quotepaymentId: QuotePaymentId,
     });
-    
+
     const salesforceMessage = `Salesforce has been notified to update quote payment number for ${QuotePaymentId}`;
     console.log(`🎉 ${salesforceMessage}`);
 
     return {
       success: true,
       data: salesforceResponse.data,
-      message: salesforceMessage
+      message: salesforceMessage,
     };
-
   } catch (error) {
-    console.error('❌ Error calling Salesforce API:', error);
-    
-    let errorMessage = 'Failed to update Salesforce quote payment number';
+    console.error("❌ Error calling Salesforce API:", error);
+
+    let errorMessage = "Failed to update Salesforce quote payment number";
     let errorDetails = {};
 
     if (error.response) {
@@ -530,68 +551,69 @@ export const updateQuotePaymentNumber = async (paymentData) => {
       errorDetails = {
         status: error.response.status,
         data: error.response.data,
-        headers: error.response.headers
+        headers: error.response.headers,
       };
-      console.error('❌ Salesforce response error:', error.response.data);
-      
+      console.error("❌ Salesforce response error:", error.response.data);
+
       // Log failed API call with response
       await logSalesforceApiCall({
         endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
-        method: 'GET',
+        method: "GET",
         requestData: paymentData,
         responseData: error.response.data,
         statusCode: error.response.status,
         isSuccess: false,
         errorMessage: error.message,
         executionTime: Date.now() - startTime,
-        quotepaymentId: paymentData.QuotePaymentId
+        quotepaymentId: paymentData.QuotePaymentId,
       });
-      
     } else if (error.request) {
       // The request was made but no response was received
-      errorMessage = 'No response received from Salesforce API';
+      errorMessage = "No response received from Salesforce API";
       errorDetails = { request: error.request };
-      console.error('❌ No response from Salesforce:', error.request);
-      
+      console.error("❌ No response from Salesforce:", error.request);
+
       // Log failed API call without response
       await logSalesforceApiCall({
         endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
-        method: 'GET',
+        method: "GET",
         requestData: paymentData,
         statusCode: 0,
         isSuccess: false,
-        errorMessage: 'No response received',
+        errorMessage: "No response received",
         executionTime: Date.now() - startTime,
-        quotepaymentId: paymentData.QuotePaymentId
+        quotepaymentId: paymentData.QuotePaymentId,
       });
-      
     } else {
       // Something happened in setting up the request that triggered an Error
       errorMessage = `Request setup error: ${error.message}`;
       errorDetails = { message: error.message };
-      console.error('❌ Request setup error:', error.message);
-      
+      console.error("❌ Request setup error:", error.message);
+
       // Log failed API call setup error
       await logSalesforceApiCall({
         endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
-        method: 'GET',
+        method: "GET",
         requestData: paymentData,
         statusCode: 0,
         isSuccess: false,
         errorMessage: error.message,
         executionTime: Date.now() - startTime,
-        quotepaymentId: paymentData.QuotePaymentId
+        quotepaymentId: paymentData.QuotePaymentId,
       });
     }
 
     // Log the error but don't fail the payment processing
-    console.error('⚠️ Salesforce quote payment number update failed, but payment processing will continue');
+    console.error(
+      "⚠️ Salesforce quote payment number update failed, but payment processing will continue"
+    );
 
     return {
       success: false,
       error: errorMessage,
       details: errorDetails,
-      message: 'Failed to update Salesforce quote payment number, but payment was processed'
+      message:
+        "Failed to update Salesforce quote payment number, but payment was processed",
     };
   }
 };
@@ -603,84 +625,92 @@ export const updateQuotePaymentNumber = async (paymentData) => {
  */
 export const getPaymentStatusAndUpdateSchedule = async (paymentData) => {
   const startTime = Date.now();
-  
+
   try {
-    console.log('🔄 Calling Salesforce API to get payment status...');
-    
-    const {
-      QuotePaymentId
-    } = paymentData;
+    console.log("🔄 Calling Salesforce API to get payment status...");
+
+    const { QuotePaymentId } = paymentData;
 
     // Prepare Salesforce request payload
     const requestBody = {
-      QuotePaymentId: QuotePaymentId
+      QuotePaymentId: QuotePaymentId,
     };
 
-    console.log('📋 Salesforce request body:', JSON.stringify(requestBody, null, 2));
+    console.log(
+      "📋 Salesforce request body:",
+      JSON.stringify(requestBody, null, 2)
+    );
 
     // Get access token and instance URL
     const tokenResponse = await getSalesforceAccessToken();
     const { access_token, instance_url } = tokenResponse;
-    
+
     // Build dynamic endpoint using instance URL
     const salesforceUrl = instance_url;
     const endpoint = `${salesforceUrl}/services/apexrest/updatequotepaymentnumber`;
-    console.log('🔗 Salesforce endpoint:', endpoint);
+    console.log("🔗 Salesforce endpoint:", endpoint);
 
     // Create config object for axios request
     const config = {
-      method: 'get',
+      method: "get",
       maxBodyLength: Infinity,
       url: endpoint,
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${access_token}`,
       },
-      data: requestBody
+      data: requestBody,
     };
 
     // Make the API call to Salesforce
     const salesforceResponse = await axios.request(config);
 
-    console.log('✅ Salesforce API response:', salesforceResponse.data);
-    console.log('🔍 Response type check:', {
+    console.log("✅ Salesforce API response:", salesforceResponse.data);
+    console.log("🔍 Response type check:", {
       isArray: Array.isArray(salesforceResponse.data),
       dataType: typeof salesforceResponse.data,
-      dataKeys: salesforceResponse.data ? Object.keys(salesforceResponse.data) : 'null'
+      dataKeys: salesforceResponse.data
+        ? Object.keys(salesforceResponse.data)
+        : "null",
     });
-    
+
     // Check if the response contains an error
     if (salesforceResponse.data && salesforceResponse.data.error) {
-      console.error('❌ Salesforce returned an error:', salesforceResponse.data.error);
-      
+      console.error(
+        "❌ Salesforce returned an error:",
+        salesforceResponse.data.error
+      );
+
       // Log failed API call
       await logSalesforceApiCall({
         endpoint,
-        method: 'GET',
+        method: "GET",
         requestData: requestBody,
         responseData: salesforceResponse.data,
         statusCode: salesforceResponse.status,
         isSuccess: false,
         errorMessage: salesforceResponse.data.error,
         executionTime: Date.now() - startTime,
-        quotepaymentId: QuotePaymentId
+        quotepaymentId: QuotePaymentId,
       });
-      
-      throw new Error(`Salesforce API returned error: ${salesforceResponse.data.error}`);
+
+      throw new Error(
+        `Salesforce API returned error: ${salesforceResponse.data.error}`
+      );
     }
-    
+
     // Log successful API call
     await logSalesforceApiCall({
       endpoint,
-      method: 'GET',
+      method: "GET",
       requestData: requestBody,
       responseData: salesforceResponse.data,
       statusCode: salesforceResponse.status,
       isSuccess: true,
       executionTime: Date.now() - startTime,
-      quotepaymentId: QuotePaymentId
+      quotepaymentId: QuotePaymentId,
     });
-    
+
     const salesforceMessage = `Salesforce payment status retrieved successfully for ${QuotePaymentId}`;
     console.log(`🎉 ${salesforceMessage}`);
 
@@ -688,13 +718,12 @@ export const getPaymentStatusAndUpdateSchedule = async (paymentData) => {
       success: true,
       data: salesforceResponse.data,
       message: salesforceMessage,
-      paymentSchedule: salesforceResponse.data // Return the payment schedule array
+      paymentSchedule: salesforceResponse.data, // Return the payment schedule array
     };
-
   } catch (error) {
-    console.error('❌ Error calling Salesforce API:', error);
-    
-    let errorMessage = 'Failed to get payment status from Salesforce';
+    console.error("❌ Error calling Salesforce API:", error);
+
+    let errorMessage = "Failed to get payment status from Salesforce";
     let errorDetails = {};
 
     if (error.response) {
@@ -704,68 +733,69 @@ export const getPaymentStatusAndUpdateSchedule = async (paymentData) => {
       errorDetails = {
         status: error.response.status,
         data: error.response.data,
-        headers: error.response.headers
+        headers: error.response.headers,
       };
-      console.error('❌ Salesforce response error:', error.response.data);
-      
+      console.error("❌ Salesforce response error:", error.response.data);
+
       // Log failed API call with response
       await logSalesforceApiCall({
         endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
-        method: 'GET',
+        method: "GET",
         requestData: paymentData,
         responseData: error.response.data,
         statusCode: error.response.status,
         isSuccess: false,
         errorMessage: error.message,
         executionTime: Date.now() - startTime,
-        quotepaymentId: paymentData.QuotePaymentId
+        quotepaymentId: paymentData.QuotePaymentId,
       });
-      
     } else if (error.request) {
       // The request was made but no response was received
-      errorMessage = 'No response received from Salesforce API';
+      errorMessage = "No response received from Salesforce API";
       errorDetails = { request: error.request };
-      console.error('❌ No response from Salesforce:', error.request);
-      
+      console.error("❌ No response from Salesforce:", error.request);
+
       // Log failed API call without response
       await logSalesforceApiCall({
         endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
-        method: 'GET',
+        method: "GET",
         requestData: paymentData,
         statusCode: 0,
         isSuccess: false,
-        errorMessage: 'No response received',
+        errorMessage: "No response received",
         executionTime: Date.now() - startTime,
-        quotepaymentId: paymentData.QuotePaymentId
+        quotepaymentId: paymentData.QuotePaymentId,
       });
-      
     } else {
       // Something happened in setting up the request that triggered an Error
       errorMessage = `Request setup error: ${error.message}`;
       errorDetails = { message: error.message };
-      console.error('❌ Request setup error:', error.message);
-      
+      console.error("❌ Request setup error:", error.message);
+
       // Log failed API call setup error
       await logSalesforceApiCall({
         endpoint: `${instance_url}/services/apexrest/updatequotepaymentnumber`,
-        method: 'GET',
+        method: "GET",
         requestData: paymentData,
         statusCode: 0,
         isSuccess: false,
         errorMessage: error.message,
         executionTime: Date.now() - startTime,
-        quotepaymentId: paymentData.QuotePaymentId
+        quotepaymentId: paymentData.QuotePaymentId,
       });
     }
 
     // Log the error but don't fail the payment processing
-    console.error('⚠️ Salesforce payment status retrieval failed, but payment processing will continue');
+    console.error(
+      "⚠️ Salesforce payment status retrieval failed, but payment processing will continue"
+    );
 
     return {
       success: false,
       error: errorMessage,
       details: errorDetails,
-      message: 'Failed to get payment status from Salesforce, but payment was processed'
+      message:
+        "Failed to get payment status from Salesforce, but payment was processed",
     };
   }
 };
@@ -776,7 +806,7 @@ export const getPaymentStatusAndUpdateSchedule = async (paymentData) => {
 export const clearTokenCache = () => {
   accessTokenCache.token = null;
   accessTokenCache.expiresAt = null;
-  console.log('🔄 Salesforce access token cache cleared');
+  console.log("🔄 Salesforce access token cache cleared");
 };
 
 export default {
@@ -784,5 +814,5 @@ export default {
   updateQuotePaymentNumber,
   getPaymentStatusAndUpdateSchedule,
   testSalesforceConnection,
-  clearTokenCache
+  clearTokenCache,
 };
