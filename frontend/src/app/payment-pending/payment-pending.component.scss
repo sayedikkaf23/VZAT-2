@@ -488,6 +488,10 @@ html .payment-schedule {
     margin-bottom: 2px !important;
     margin-top: 2px !important;
   }
+
+  .payment-schedule .details-footer .col-auto {
+      width: auto !important;
+    }
   
   /* Reduce logo spacing */
   .payment-schedule .sidebar-row .logo {
