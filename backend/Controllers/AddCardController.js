@@ -1091,8 +1091,10 @@ export const getPaymentStatus = async (req, res) => {
     let refund = null;
     let savedCard = null;
     
-    if (payment?.result?.code === "000.100.110" && payment?.id) {
+    // Check if payment succeeded - any code starting with "000." is success
+    if (payment?.result?.code?.startsWith("000.") && payment?.id) {
       console.log("✅ Debit successful → Initiating refund...");
+      console.log(`💳 Payment result code: ${payment.result.code}`);
 
       const refundUrl = `${AFS_CONFIG.baseUrl}/v1/payments/${payment.id}`;
       const refundPayload = new URLSearchParams({
