@@ -67,12 +67,34 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
           next: (response) => {
             console.log('✅ Payment status response:', response);
         
+            // Check response status first
+            if (response?.status === 'SUCCESS') {
+              // Card was saved successfully
+              const savedCard = response?.savedCard;
+              if (savedCard) {
+                console.log('✅ Card saved successfully:', savedCard);
+                this.router.navigate(['/saved-card'], {
+                  queryParams: { 
+                    id: checkoutId,
+                    cardAdded: 'success',
+                    cardId: savedCard.id,
+                    isDefault: savedCard.isDefault
+                  }
+                });
+              } else {
+                this.router.navigate(['/saved-card'], {
+                  queryParams: { id: checkoutId }
+                });
+              }
+              return;
+            }
+
+            // Fallback: Check payment result codes (any code starting with "000." is success)
             const paymentResult = response?.payment?.result?.code;
             const refundResult = response?.refund?.result?.code;
         
-            // Case 1: Debit succeeded + Refund succeeded
-            if (paymentResult?.startsWith("000.100") && refundResult?.startsWith("000.100")) {
-              // Check if card was saved successfully
+            // Case 1: Both payment and refund succeeded
+            if (paymentResult?.startsWith("000.") && (refundResult?.startsWith("000.") || refundResult === undefined)) {
               const savedCard = response?.savedCard;
               if (savedCard) {
                 console.log('✅ Card saved successfully:', savedCard);
@@ -92,15 +114,15 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
               return;
             }
         
-            // Case 2: Debit succeeded but refund failed
-            if (paymentResult?.startsWith("000.100") && !refundResult?.startsWith("000.100")) {
+            // Case 2: Payment succeeded but refund failed
+            if (paymentResult?.startsWith("000.") && refundResult && !refundResult?.startsWith("000.")) {
               this.router.navigate(['/payment-failed'], {
                 queryParams: { id: checkoutId, reason: response?.refund?.result?.description || 'Refund failed' }
               });
               return;
             }
         
-            // Case 3: Debit itself failed
+            // Case 3: Payment itself failed
             this.router.navigate(['/payment-failed'], {
               queryParams: { id: checkoutId, reason: response?.payment?.result?.description || 'Payment failed' }
             });
