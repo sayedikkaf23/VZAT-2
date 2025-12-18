@@ -1070,15 +1070,20 @@ export const getPaymentStatus = async (req, res) => {
       });
     }
 
+    // Extract checkout ID from resource path for later use
+    const checkoutIdMatch = resourcePath.match(/checkouts\/([^\/]+)\//);
+    const checkoutId = checkoutIdMatch ? checkoutIdMatch[1] : null;
+
     const decodedResourcePath = decodeURIComponent(resourcePath);
     const url = `https://eu-prod.oppwa.com/${decodedResourcePath.replace(/^\//, "")}`;
 
     console.log("🌍 Requesting payment status:", url);
+    console.log("🆔 Checkout ID extracted:", checkoutId);
 
     // 1️⃣ Get payment status
     const { data: payment } = await axios.get(url, {
-      params: { entityId: '8ac7a4c797e1beca0197e482a8200127' },
-      headers: { Authorization: `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}` },
+      params: { entityId: AFS_CONFIG.entityId },
+      headers: { Authorization: AFS_CONFIG.authorization },
       timeout: 10000,
     });
 
@@ -1089,9 +1094,9 @@ export const getPaymentStatus = async (req, res) => {
     if (payment?.result?.code === "000.100.110" && payment?.id) {
       console.log("✅ Debit successful → Initiating refund...");
 
-      const refundUrl = `https://eu-prod.oppwa.com/v1/payments/${payment.id}`;
+      const refundUrl = `${AFS_CONFIG.baseUrl}/v1/payments/${payment.id}`;
       const refundPayload = new URLSearchParams({
-        entityId: '8ac7a4c797e1beca0197e482a8200127',
+        entityId: AFS_CONFIG.entityId,
         amount: payment.amount,
         currency: payment.currency,
         paymentType: "RF", // refund
@@ -1099,7 +1104,7 @@ export const getPaymentStatus = async (req, res) => {
 
       const { data: refundData } = await axios.post(refundUrl, refundPayload, {
         headers: {
-          Authorization: `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
+          Authorization: AFS_CONFIG.authorization,
           "Content-Type": "application/x-www-form-urlencoded",
         },
         timeout: 10000,
@@ -1245,14 +1250,70 @@ export const getPaymentStatus = async (req, res) => {
     });
   } catch (err) {
     const code = err?.response?.data?.result?.code;
+    const description = err?.response?.data?.result?.description;
     console.error("❌ Payment status error →", code, err?.response?.data);
+
+    // Extract checkout ID from resource path
+    const resourcePath = req.query.resourcePath;
+    const checkoutIdMatch = resourcePath?.match(/checkouts\/([^\/]+)\//);
+    const checkoutId = checkoutIdMatch ? checkoutIdMatch[1] : null;
+    const customerEmail = req.query.customerEmail;
+
+    // 200.300.404 with "invalid or missing parameter" means payment not completed yet (user hasn't submitted form)
+    if (code === "200.300.404" && description === "invalid or missing parameter") {
+      console.log("⏳ Payment not completed yet - user hasn't submitted the form");
+      return res.status(200).json({
+        status: "PENDING",
+        message: "Payment form not submitted yet",
+        checkoutId: checkoutId,
+        waitingForUser: true
+      });
+    }
+
+    // If checkout expired/not found AND card might have been saved, check database
+    if ((code === "800.900.300" || code === "200.300.404") && checkoutId && customerEmail) {
+      console.log("🔍 Checkout expired/not found, checking if card was already saved...");
+      
+      try {
+        // Find customer
+        const customer = await CustomerLogin.findOne({ email: customerEmail });
+        
+        if (customer) {
+          // Check if a card was saved with this checkout ID
+          const existingCard = await SavedCard.findOne({ 
+            customerId: customer._id, 
+            afs_checkout_id: checkoutId,
+            isActive: true 
+          });
+
+          if (existingCard) {
+            console.log("✅ Card was already saved successfully!");
+            return res.status(200).json({
+              status: "SUCCESS",
+              message: "Card was already saved successfully",
+              alreadyProcessed: true,
+              savedCard: {
+                id: existingCard._id,
+                maskedCardNumber: existingCard.maskedCardNumber,
+                cardBrand: existingCard.cardBrand,
+                isDefault: existingCard.isDefault,
+                cardholderName: existingCard.cardholderName
+              }
+            });
+          }
+        }
+      } catch (dbError) {
+        console.error("❌ Error checking existing card:", dbError);
+        // Continue to return the original error if DB check fails
+      }
+    }
 
     if (code === "800.900.300") {
       return res.status(401).json({
         status: "FAILED",
         error: "AUTHENTICATION_FAILED",
         message: "Checkout expired or invalid",
-        suggestion: "Create a new checkout session",
+        suggestion: "The payment session has expired. Please try adding your card again.",
       });
     }
 
@@ -1261,7 +1322,7 @@ export const getPaymentStatus = async (req, res) => {
         status: "FAILED",
         error: "CHECKOUT_NOT_FOUND",
         message: "Checkout not found or already expired",
-        suggestion: "Create a new checkout session",
+        suggestion: "The payment session has expired. Please try adding your card again.",
       });
     }
 
