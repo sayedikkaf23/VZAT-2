@@ -1028,6 +1028,8 @@ export const fixInstallmentLeft = async (req, res) => {
   }
 };
 
+export { checkAndHandleSubscriptionCompletion as checkSubscriptionCompletion };
+
 export default {
   handleAFSWebhook,
   processRecurringPayments,
