@@ -101,7 +101,7 @@ ul {
 @media (min-width: 768px) and (max-width: 991px) {
     .details-content .details-footer {
         padding: 0 35px 20px !important;
-            bottom: -110px !important;
+            bottom: -10rem !important;
     }
 }
 
@@ -368,6 +368,9 @@ ul {
     padding: 25px 0 0;
     min-height: 0;
   }
+    .payment-schedule .details-footer .col-auto {
+      width: auto !important;
+    }
 
   .payment-schedule {
     background-image: none;
@@ -377,8 +380,6 @@ ul {
     font-size: 18px !important;
     line-height: 1.2;
     margin-bottom: 8px;
-    height: 10vh !important;
-        min-height: 0px !important;
   }
     .payment-schedule .detils-sidebar {
     
