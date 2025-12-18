@@ -1164,7 +1164,7 @@ export const getPaymentStatus = async (req, res) => {
             
             const maskedCardNumber = last4Digits ? `**** **** **** ${last4Digits}` : '**** **** **** ****';
             
-            // Determine card brand
+            // Determine card brand and normalize to match model enum
             let cardBrand = 'UNKNOWN';
             if (cardInfo.brand) {
               cardBrand = cardInfo.brand.toUpperCase();
@@ -1177,6 +1177,10 @@ export const getPaymentStatus = async (req, res) => {
               else if (firstDigit === '5') cardBrand = 'MASTERCARD';
               else if (firstDigit === '3') cardBrand = 'AMEX';
             }
+            
+            // Normalize card brand to match SavedCard model enum values
+            if (cardBrand === 'MASTER') cardBrand = 'MASTERCARD';
+            if (cardBrand === 'AMERICAN EXPRESS') cardBrand = 'AMEX';
             
             // Extract expiry information
             let expiryMonth = cardInfo.expiryMonth || '';
