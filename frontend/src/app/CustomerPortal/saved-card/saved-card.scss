@@ -47,7 +47,7 @@
 .s-card,
 .add_card-box{
   width:100%;
-  min-height:var(--card-min-h);
+  min-height:132px !important;
   height:100%;
   position:relative;
   display:flex;
@@ -66,7 +66,7 @@
 
 .s-card .date_cvv{ margin-top:auto; }
 .s-card .set-default{ margin-top:6px; display:flex; justify-content:flex-end; }
-.s-card .position-absolute{ z-index:2; }
+
 .card-remove{ position:absolute; right:8px; top:8px; z-index:3; }
 
 /* Add Card tile – compact pill */
@@ -103,7 +103,7 @@
 .s-card,
 .add_card-box {
   width: 100%;
-  min-height: var(--card-min-h);
+  min-height: 132px !important;
   height: 100%;
   position: relative;
   display: flex;
@@ -121,6 +121,16 @@
   border: 1px solid rgba(0,0,0,.08);
 }
 
+@media (min-width: 1200px) {
+  .col-xl-4 {
+    width: 36%;
+  }
+}
+@media (min-width: 1290px) {
+  .col-xl-4 {
+    width: 25%;
+  }
+}
 .add_card-box .btn {
   display: inline-flex;
   align-items: center;

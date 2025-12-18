@@ -547,9 +547,9 @@ if (statusData.CustomerStatus == 'Auto Approved') {
                                      <br>
                                        <p style="margin: 0; margin-top: 24px; font-weight: bold;">Your Details:</p>
                                   <ul style="margin: 0; padding-left: 18px; margin-bottom: 16px;">
-                                    <li>Quote Payment ID: <strong>${pidata.quotePaymentId}</strong></li>
-                                    <li>Opportunity ID: <strong>${pidata.oppurtunityId}</strong></li>
-                                    <li>Email: <strong>${pidata.email}</strong></li>
+                                  <li>Quote Payment ID: <strong>${pidata.quotepaymentId}</strong></li>
+                                    <li>Opportunity ID: <strong>${pidata.OpportunityId}</strong></li>
+                                    <li>Email: <strong>${pidata.opp_email}</strong></li>
                                   </ul>
                                   <br>
                                       <p style="margin: 0;">Regards,</p>
@@ -578,7 +578,7 @@ if (statusData.CustomerStatus == 'Auto Approved') {
                                 <tr>
                                   <td class="pad" style="padding-bottom:20px;width:100%;padding-right:0px;padding-left:0px;">
                                     <div class="alignment" align="center" style="line-height:10px">
-                                      <div style="max-width: 183px;"><a href="https://www.vz.ae" target="_blank" style="outline:none" tabindex="-1"><img src="assets/images/vz_logo.png" style="display: block; height: auto; border: 0; width: 100%;" width="183"></a></div>
+                                      <div style="max-width: 183px;"><a href="https://www.vz.ae" target="_blank" style="outline:none" tabindex="-1"><img src="https://res.cloudinary.com/dotkngkpl/image/upload/v1739944226/thumbnail_vz-ascentium_1_yrtbkn.png" style="display: block; height: auto; border: 0; width: 100%;" width="183"></a></div>
                                     </div>
                                   </td>
                                 </tr>
