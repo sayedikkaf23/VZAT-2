@@ -1028,19 +1028,28 @@ export const fixInstallmentLeft = async (req, res) => {
   }
 };
 
-// 👇 ADD THIS JUST ABOVE export default OR AT THE VERY END
 
+// Alias internal function to old route name
 export { 
   checkAndHandleSubscriptionCompletion as checkSubscriptionCompletion 
 };
 
-// Temporary stub to satisfy route import (safe no-op)
+// Deprecated test endpoint (kept so app boots)
 export const testPaymentFailureEmail = async (req, res) => {
   return res.status(410).json({
     success: false,
     message: "testPaymentFailureEmail endpoint deprecated"
   });
 };
+
+// Deprecated test endpoint (kept so app boots)
+export const testSubscriptionCompletionEmail = async (req, res) => {
+  return res.status(410).json({
+    success: false,
+    message: "testSubscriptionCompletionEmail endpoint deprecated"
+  });
+};
+
 
 
 export default {
