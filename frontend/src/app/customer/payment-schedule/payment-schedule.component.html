@@ -28,7 +28,8 @@
           </div>
           <h3>Hey,</h3>
           <h2 style="font-size:30px; font-family:Inter, sans-serif">
-            {{ customerData.name }}!
+             {{ customerData.name | titlecase }}!
+
           </h2>
                     <hr />
           <p class="mb-2">Your payment against Proforma Invoice <br /><b class="fw-semibold">No - {{ Quote_payment_number || customerData.invoiceNumber || 'Not available' }} is </b></p>

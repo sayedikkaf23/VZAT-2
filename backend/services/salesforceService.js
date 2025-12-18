@@ -147,8 +147,11 @@ export const updateQuotePaymentStatus = async (paymentData) => {
     })();
 
     // Process amount
-    const processedAmount = Math.round(parseFloat(amount)) || 0;
-    console.log(`💰 Processing amount: "${amount}" → ${processedAmount} (type: ${typeof processedAmount})`);
+   const processedAmount = Number(parseFloat(amount).toFixed(2)) || 0;
+
+    console.log(
+      `💰 Processing amount: "${amount}" → ${processedAmount} (type: ${typeof processedAmount})`
+    );
 
     // Prepare Salesforce request payload
     const salesforcePayload = {
