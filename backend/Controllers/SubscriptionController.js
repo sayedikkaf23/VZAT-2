@@ -559,6 +559,14 @@ export const processRecurringPayments = async (req, res) => {
 
           // Salesforce update (non-blocking)
           try {
+            console.log('🔄 Preparing Salesforce API call for recurring payment...');
+            console.log(`📋 Current payment details:`, {
+              installment_number: currentPayment?.installment_number,
+              q_payment_id: currentPayment?.q_payment_id,
+              status: currentPayment?.status,
+              amount: currentPayment?.amount
+            });
+            
             const sfPayment = {
               quotepaymentId: subscription.quotepaymentId,
               amount: parseFloat(paymentResult.amount),
@@ -577,9 +585,32 @@ export const processRecurringPayments = async (req, res) => {
                 subscription.Quote_payment_number ||
                 null
             };
-            await updateQuotePaymentStatus(sfPayment);
+            
+            console.log('📋 Salesforce payload for recurring payment:', {
+              quotepaymentId: sfPayment.quotepaymentId,
+              Qp_number: sfPayment.Qp_number,
+              installmentNumber: sfPayment.installmentNumber,
+              amount: sfPayment.amount,
+              transactionId: sfPayment.transactionId
+            });
+            
+            console.log('🚀 Calling Salesforce API...');
+            const salesforceResult = await updateQuotePaymentStatus(sfPayment);
+            
+            console.log('📊 Salesforce API result:', {
+              success: salesforceResult.success,
+              message: salesforceResult.message,
+              error: salesforceResult.error || null
+            });
+            
+            if (salesforceResult.success) {
+              console.log(`✅ Salesforce updated successfully for payment #${paymentToProcess}`);
+            } else {
+              console.warn('⚠️ Salesforce update failed but payment was successful:', salesforceResult.error);
+            }
           } catch (e) {
             console.error("❌ Salesforce error (ignored):", e);
+            console.error("❌ Salesforce error details:", e.message);
           }
 
           // Success email (non-blocking)
