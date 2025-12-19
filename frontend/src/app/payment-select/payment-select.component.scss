@@ -84,7 +84,15 @@ ul {
 }
 
 .details-footer ul li a {
-    color: #8F8F8F;
+    color: #8F8F8F !important;
+}
+
+.details-footer ul li a b:hover {
+  color: #FA2E52 !important;
+}
+
+ .details-footer ul li a img {
+height: 40px;
 }
 
 .payment-schedule .details-content {
@@ -101,8 +109,16 @@ ul {
 @media (min-width: 768px) and (max-width: 991px) {
     .details-content .details-footer {
         padding: 0 35px 20px !important;
-            bottom: -12rem !important;
+            bottom: -20rem !important;
     }
+
+    .payment-schedule .details-content {
+    align-items: flex-start !important;   
+    justify-content: flex-start !important;
+    height: 100vh;             
+    min-height: 100vh;         /* keeps footer logic sane */
+    padding: 35px 20px 60px;
+  }
 }
 
 @media (max-width: 767px) {
@@ -121,7 +137,7 @@ ul {
 
 .payment-schedule .details-content {
     position: relative;
-    padding: 85px 85px 120px;
+    padding: 20px 0;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -311,6 +327,8 @@ ul {
   .payment-schedule .details-content {
     padding: 35px 20px 60px;
   }
+
+  
   
   .payment-schedule-head h3 {
     font-size: 24px;

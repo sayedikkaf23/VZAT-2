@@ -14,7 +14,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: -5rem !important;
+    bottom: 0;
     padding: 0 85px 0px !important;
 }
 
@@ -66,7 +66,15 @@ ul {
 }
 
 .details-footer ul li a {
-    color: #8F8F8F;
+    color: #8F8F8F !important;
+}
+
+.details-footer ul li a b:hover {
+  color: #FA2E52 !important;
+}
+
+ .details-footer ul li a img {
+height: 40px;
 }
 
 .payment-schedule .details-content {
@@ -887,8 +895,7 @@ input[type="date"]::-moz-focus-inner {
   .payment-schedule .details-footer h3,
   .payment-schedule .details-footer p,
   .payment-schedule .details-footer h6,
-  .payment-schedule .details-footer a,
-  .payment-schedule .details-footer b {
+  .payment-schedule .details-footer a{
     font-family: 'Inter', sans-serif !important;
     color: #121212 !important;
   }
@@ -1008,7 +1015,7 @@ input[type="date"]::-moz-focus-inner {
   }
   
   .payment-detail-list-box.mobile-card .payment-detail-list {
-    background-color: #fff;
+    background-color: #F8E8E9;
     padding: 24px 20px 28px;
     border-radius: 16px;
     box-shadow: none;

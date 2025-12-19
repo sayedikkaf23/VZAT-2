@@ -14,7 +14,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: -10rem !important;
+    bottom: 0;
     padding: 0 85px 0px !important;
 }
 
@@ -66,19 +66,18 @@ ul {
 }
 
 .details-footer ul li a {
-    color: #8F8F8F;
+    color: #8F8F8F !important;
 }
 
-.payment-schedule .details-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    padding: 20px;
-    height: 100vh;
-    overflow: auto;
-    overflow-x: hidden;
+.details-footer ul li a b:hover {
+  color: #FA2E52 !important;
 }
+
+ .details-footer ul li a img {
+height: 40px;
+}
+    
+
 
 @media (min-width: 768px) and (max-width: 991px) {
     .details-content .details-footer {
@@ -92,6 +91,10 @@ ul {
         font-size: 11px;
         padding-top: 20px;
     }
+
+    .details-footer ul li a img {
+height: 30px;
+}
     
     .details-footer ul li {
         line-height: 12px;
@@ -106,7 +109,7 @@ ul {
 
 .payment-schedule .details-content {
     position: relative;
-    padding: 85px 85px 120px;
+    padding: 40px 0;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -120,7 +123,7 @@ input[type="date"]::-moz-focus-inner {
 
 /* Payment Detail Form Styles */
 .payment-detail-list-box {
-  max-width: 700px;
+  max-width: 580px;
   margin: 0 auto;
   width: 100%;
 }
@@ -128,7 +131,7 @@ input[type="date"]::-moz-focus-inner {
 .payment-detail-head {
   padding-bottom: 15px;
   text-align: center;
-  margin-top: 132px;
+
 }
 
 .payment-detail-head h5 {
@@ -150,7 +153,7 @@ input[type="date"]::-moz-focus-inner {
 .payment-detail-list {
   background-color: var(--light-primary, #F8E8E9);
   border-radius: 16px;
-  padding: 40px 50px;
+  padding: 40px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   border: none;
 }
@@ -306,7 +309,7 @@ input[type="date"]::-moz-focus-inner {
 }
 
 .payment-detail-list .form-field {
-  margin-bottom: 25px;
+  margin-bottom: 10px;
 }
 
 .payment-detail-list .form-label {
@@ -530,17 +533,7 @@ input[type="date"]::-moz-focus-inner {
 }
 
 /* Fix details-content layout */
-.payment-schedule .details-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  padding: 40px 20px;
-  min-height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background-color: #fff;
-}
+
 
 .payment-schedule .details-content .container {
   max-width: 100%;
@@ -553,8 +546,9 @@ input[type="date"]::-moz-focus-inner {
     padding: 35px 20px 60px;
   }
   
+  
   .payment-detail-list {
-    padding: 30px 25px;
+    padding: 20px;
   }
   
   .payment-detail-head h3 {
@@ -846,8 +840,7 @@ input[type="date"]::-moz-focus-inner {
   .payment-schedule .details-footer h3,
   .payment-schedule .details-footer p,
   .payment-schedule .details-footer h6,
-  .payment-schedule .details-footer a,
-  .payment-schedule .details-footer b {
+  .payment-schedule .details-footer a  {
     font-family: 'Inter', sans-serif !important;
     color: #121212 !important;
   }
