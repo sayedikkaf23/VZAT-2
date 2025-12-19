@@ -33,14 +33,14 @@ const EMAIL_CONFIG = {
   recipients: {
     business_team: process.env.BUSINESS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
     operations_team: process.env.OPERATIONS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
-    devtech_team: process.env.DEVTECH_TEAM_EMAIL || 'devtech@virtuzone.com',
+    devtech_team: process.env.DEVTECH_TEAM_EMAIL || 'dev.tech@vz.ae',
     ar_team: process.env.AR_TEAM_EMAIL || 'ar@virtuzone.com'
   }
 };
 
 const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'sayed@yeepeey.com';
 
-const getDevTechCcEmails = () => ['devtech@virtuzone.com', 'devtech@vz.ae'];
+const getDevTechCcEmails = () => ['dev.tech@virtuzone.com', 'dev.tech@vz.ae'];
 
 // Initialize Mailgun
 const mailgunConfig = {
@@ -135,7 +135,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
           <div style="padding: 20px; background-color: #f8f9fa;">
             <p>Dear ${Customer_name || 'Valued Customer'},</p>
             
-            <p>Congratulations! We are pleased to inform you that your subscription with Virtuzone has been <strong>successfully completed</strong>.</p>
+            <p>Congrat&#117;lations! We are pleased to inform you that your subscription with Virtuzone has been <strong>successfully completed</strong>.</p>
             
             <h2>Subscription Summary</h2>
             
