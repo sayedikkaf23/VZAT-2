@@ -258,7 +258,7 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
 
     /* 2. <form action="…" class="paymentWidgets" data-brands="VISA MASTER"> */
     const formEl = this.rnd.createElement('form');
-    formEl.action = `https://installment.virtuzone.com/saved-card/add-card`;   // shopperResultUrl
+    formEl.action = `https://vzatnew.yeepeey.com/saved-card/add-card`;   // shopperResultUrl
     formEl.className = 'paymentWidgets';
     formEl.setAttribute('data-brands', 'VISA MASTER'); // only allowed brands
          // only show card brands you need

@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://installment.virtuzone.com/api',
-  frontendUrl: 'https://installment.virtuzone.com'
+  apiUrl: 'https://vzatnew.yeepeey.com/api',
+  frontendUrl: 'https://vzatnew.yeepeey.com'
 };

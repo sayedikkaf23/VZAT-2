@@ -140,6 +140,7 @@ export const updateQuotePaymentStatus = async (paymentData) => {
                      (resultCode && resultCode.startsWith('000.'));
     
     // Send Current_due_date as today's date in YYYY-MM-DD (no extra logic)
+    // NOTE: This ignores the nextDueDate parameter passed in and always uses today's date
     const formattedNextDueDate = (() => {
       const today = new Date();
       const year = today.getFullYear();
@@ -147,6 +148,11 @@ export const updateQuotePaymentStatus = async (paymentData) => {
       const day = String(today.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     })();
+
+    // Log the date being sent vs what was passed in
+    console.log('📅 DATE LOG - nextDueDate parameter received:', nextDueDate);
+    console.log('📅 DATE LOG - Current_due_date being sent to Salesforce:', formattedNextDueDate);
+    console.log('📅 DATE LOG - Difference:', nextDueDate ? `Passed: ${nextDueDate}, Sent: ${formattedNextDueDate}` : 'No nextDueDate passed, using today');
 
     console.log('🧪 RAW amount received:', amount, typeof amount);
 
