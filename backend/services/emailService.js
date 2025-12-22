@@ -1,4 +1,4 @@
-import mailgun from 'mailgun-js';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -42,52 +42,56 @@ const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'sayed@yeepee
 
 const getDevTechCcEmails = () => ['dev.tech@virtuzone.com', 'dev.tech@vz.ae'];
 
-// Initialize Mailgun
-const mailgunConfig = {
-  apiKey: process.env.MAILGUN_API_KEY,
-  domain: process.env.MAILGUN_DOMAIN || 'vz.ae',
-  fromEmail: process.env.SMTP_USER || 'payment@vz.ae'
-};
+// Initialize Nodemailer
+const mailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "mishalnunu@gmail.com",
+    pass: "qgwlzriynfzukuwy",
+  },
+});
 
-let mailgunClient = null;
-if (mailgunConfig.apiKey && mailgunConfig.domain) {
-  try {
-    mailgunClient = mailgun(mailgunConfig);
-    console.log('✅ Mailgun client initialized successfully');
-  } catch (error) {
-    console.error('❌ Error initializing Mailgun client:', error);
-  }
-} else {
-  console.warn('⚠️ Mailgun API key or domain not configured. Email functionality will be limited.');
+const fromEmail = "mishalnunu@gmail.com";
+
+try {
+  mailTransporter.verify(function (error, success) {
+    if (error) {
+      console.error('❌ Error initializing Nodemailer:', error);
+    } else {
+      console.log('✅ Nodemailer transporter initialized successfully');
+    }
+  });
+} catch (error) {
+  console.error('❌ Error initializing Nodemailer transporter:', error);
 }
 
-// Helper function to send email via Mailgun
+// Helper function to send email via Nodemailer
 const sendEmailViaMailgun = async (mailData) => {
-  if (!mailgunClient) {
-    throw new Error('Mailgun client not initialized');
+  if (!mailTransporter) {
+    throw new Error('Nodemailer transporter not initialized');
   }
 
-  // Convert Mailgun format
-  const mailgunData = {
-    from: mailData.from?.address ? `${mailData.from.name || 'Virtuzone'} <${mailData.from.address}>` : mailData.from || `${EMAIL_CONFIG.sender.name} <${mailgunConfig.fromEmail}>`,
+  // Convert to Nodemailer format
+  const nodemailerData = {
+    from: mailData.from?.address ? `${mailData.from.name || 'Virtuzone'} <${mailData.from.address}>` : mailData.from || `${EMAIL_CONFIG.sender.name} <${fromEmail}>`,
     to: Array.isArray(mailData.to) ? mailData.to.join(', ') : mailData.to,
     subject: mailData.subject,
     html: mailData.html,
     ...(mailData.cc && { cc: Array.isArray(mailData.cc) ? mailData.cc.join(', ') : mailData.cc }),
     ...(mailData.bcc && { bcc: Array.isArray(mailData.bcc) ? mailData.bcc.join(', ') : mailData.bcc }),
-    ...(mailData.attachment && { attachment: mailData.attachment })
+    ...(mailData.attachment && { attachments: mailData.attachment })
   };
 
   console.log('📧 Sending email:', {
-    to: mailgunData.to,
-    cc: mailgunData.cc || 'none',
-    bcc: mailgunData.bcc || 'none',
-    subject: mailgunData.subject
+    to: nodemailerData.to,
+    cc: nodemailerData.cc || 'none',
+    bcc: nodemailerData.bcc || 'none',
+    subject: nodemailerData.subject
   });
 
-  const result = await mailgunClient.messages().send(mailgunData);
-  console.log('✅ Email sent successfully. Message ID:', result.id || result.message);
-  return { messageId: result.id || result.message, accepted: [mailgunData.to], rejected: [] };
+  const result = await mailTransporter.sendMail(nodemailerData);
+  console.log('✅ Email sent successfully. Message ID:', result.messageId);
+  return { messageId: result.messageId, accepted: result.accepted || [nodemailerData.to], rejected: result.rejected || [] };
 };
 
 /**
@@ -121,7 +125,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
+        address: fromEmail
       },
       to: recipientList,
       cc: devTechCcEmails,
@@ -304,7 +308,7 @@ export const sendFinalRenewalEmail = async (data) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
+        address: fromEmail
       },
       to: opp_email,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
@@ -427,7 +431,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
+        address: fromEmail
       },
       to: opp_email,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
@@ -647,7 +651,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
+        address: fromEmail
       },
       to: opp_email,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
@@ -807,7 +811,7 @@ export const sendPdfEmail = async (emailData) => {
     // Construct payment link with proper base URL
     const fullPaymentLink = paymentLink.startsWith('http') ? paymentLink : `${baseUrl}${paymentLink.startsWith('/') ? '' : '/'}${paymentLink}`;
 
-  // Process PDF attachments for Mailgun (CORRECT)
+  // Process PDF attachments for Nodemailer
 const attachments = [];
 
 if (quotePdf && Array.isArray(quotePdf)) {
@@ -817,13 +821,11 @@ if (quotePdf && Array.isArray(quotePdf)) {
         .replace(/^data:application\/pdf;base64,/, '')
         .replace(/\s/g, '');
 
-      attachments.push(
-  new mailgunClient.Attachment({
-    data: Buffer.from(cleanBase64, 'base64'),
-    filename: `${pdf.name}.pdf`,
-    contentType: 'application/pdf'
-  })
-);
+      attachments.push({
+        filename: `${pdf.name}.pdf`,
+        content: Buffer.from(cleanBase64, 'base64'),
+        contentType: 'application/pdf'
+      });
     }
   }
 }
@@ -872,7 +874,7 @@ if (quotePdf && Array.isArray(quotePdf)) {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
+        address: fromEmail
       },
       to: quote_email,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
@@ -1003,7 +1005,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
   console.log('📧 EMAIL SERVICE - Input data:', JSON.stringify(customerData, null, 2));
   
   try {
-    console.log('📧 EMAIL SERVICE - Using Mailgun...');
+    console.log('📧 EMAIL SERVICE - Using Nodemailer...');
     
     const {
       customerName,
@@ -1027,7 +1029,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
+        address: fromEmail
       },
       to: email,
       cc: devTechCcEmails,
@@ -1192,7 +1194,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
+        address: fromEmail
       },
       to: email,
       cc: devTechCcEmails,
@@ -1311,7 +1313,7 @@ export const sendPasswordResetEmail = async (customerData) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
+        address: fromEmail
       },
       to: email,
       cc: devTechCcEmails,
@@ -1442,7 +1444,7 @@ export const testEmailConfiguration = async () => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
+        address: fromEmail
       },
       to: EMAIL_CONFIG.recipients.business_team,
       subject: 'Recurring Email Service Test',
@@ -1464,7 +1466,7 @@ export const testEmailConfiguration = async () => {
                       <h2 style="margin: 0 0 20px 0; font-size: 24px; color: #333333;">Email Service Test Successful</h2>
                       <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">This is a test email to verify that the Recurring payment system email service is working correctly.</p>
                       <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
-                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;"><strong>Sender:</strong> ${mailgunConfig.fromEmail}</p>
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;"><strong>Sender:</strong> ${fromEmail}</p>
                       <p style="margin: 0; font-size: 16px; color: #333333; line-height: 1.6;">If you receive this email, the configuration is working properly.</p>
                     </td>
                   </tr>
