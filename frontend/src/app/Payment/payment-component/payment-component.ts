@@ -29,7 +29,7 @@ export class PaymentComponent implements OnInit {
 
     if (this.checkoutId && this.isBrowser) {
       const script = this.renderer.createElement('script');
-      script.src = `https://eu-prod.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
+      script.src = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
       script.type = 'text/javascript';
       
       // Add onload and onerror handlers for debugging

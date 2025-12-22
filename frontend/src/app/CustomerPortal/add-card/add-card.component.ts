@@ -207,7 +207,7 @@ export class AddCardComponent implements OnInit, OnDestroy, AfterViewInit {
         console.log(this.integrity,'integrity',response.checkoutResult?.integrity)
         this.loading = false;
 
-        // this.afsPaymentLink = `https://eu-prod.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
+        // this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.checkoutId}`;
         // this.paymentDetails = {
         //   paymentId: 'card-verification-' + Date.now(),
         //   amount: 1,
