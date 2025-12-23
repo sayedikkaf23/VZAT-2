@@ -1,3 +1,4 @@
+// import mailgun from 'mailgun-js';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
@@ -42,6 +43,93 @@ const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'sayed@yeepee
 
 const getDevTechCcEmails = () => ['dev.tech@virtuzone.com', 'dev.tech@vz.ae'];
 
+// Helper function to generate email footer
+const getEmailFooter = () => {
+  return `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top: 1px solid #dee2e6; margin-top: 30px; padding-top: 20px;">
+      <tr>
+        <td align="center" style="padding: 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td align="center" style="padding-bottom: 20px;">
+                <a href="https://www.vz.ae" target="_blank" style="outline: none;">
+                  <img src="https://res.cloudinary.com/dotkngkpl/image/upload/v1739944226/thumbnail_vz-ascentium_1_yrtbkn.png" alt="Virtuzone" style="display: block; height: auto; border: 0; max-width: 183px;" width="183">
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding-bottom: 20px;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                  <tr>
+                    <td style="padding: 0 7px;">
+                      <a href="https://www.facebook.com/virtuzone" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/facebook@2x.png" width="32" height="32" alt="Facebook" title="Facebook" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="https://twitter.com/Virtuzone_UAE" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/twitter@2x.png" width="32" height="32" alt="Twitter" title="Twitter" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="http://www.youtube.com/virtuzoneuae" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/youtube@2x.png" width="32" height="32" alt="YouTube" title="YouTube" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="http://www.instagram.com/virtuzone" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/instagram@2x.png" width="32" height="32" alt="Instagram" title="Instagram" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="http://www.linkedin.com/company/virtuzone" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/linkedin@2x.png" width="32" height="32" alt="LinkedIn" title="LinkedIn" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="https://www.vz.ae/" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/website@2x.png" width="32" height="32" alt="Web Site" title="Web Site" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding: 10px 20px;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d; line-height: 1.5;">
+                  <a href="https://g.page/virtuzone?share" target="_blank" style="text-decoration: underline; color: #6c757d;">
+                    Office 404, Al Saaha Office, Building B, Souk Al Bahar, Old Town Island,<br>Burj Khalifa District, Dubai - UAE
+                  </a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
+};
+
+// Initialize Mailgun (COMMENTED OUT - Using Nodemailer for now)
+// const mailgunConfig = {
+//   apiKey: process.env.MAILGUN_API_KEY,
+//   domain: process.env.MAILGUN_DOMAIN || 'vz.ae',
+//   fromEmail: process.env.SMTP_USER || 'payment@vz.ae'
+// };
+
+// let mailgunClient = null;
+// if (mailgunConfig.apiKey && mailgunConfig.domain) {
+//   try {
+//     mailgunClient = mailgun(mailgunConfig);
+//     console.log('✅ Mailgun client initialized successfully');
+//   } catch (error) {
+//     console.error('❌ Error initializing Mailgun client:', error);
+//   }
+// } else {
+//   console.warn('⚠️ Mailgun API key or domain not configured. Email functionality will be limited.');
+// }
+
 // Initialize Nodemailer
 const mailTransporter = nodemailer.createTransport({
   service: "gmail",
@@ -51,38 +139,33 @@ const mailTransporter = nodemailer.createTransport({
   },
 });
 
-const fromEmail = "mishalnunu@gmail.com";
+// Keep mailgunConfig for fromEmail reference
+const mailgunConfig = {
+  fromEmail: process.env.SMTP_USER || 'payment@vz.ae'
+};
 
-try {
-  mailTransporter.verify(function (error, success) {
-    if (error) {
-      console.error('❌ Error initializing Nodemailer:', error);
-    } else {
-      console.log('✅ Nodemailer transporter initialized successfully');
-    }
-  });
-} catch (error) {
-  console.error('❌ Error initializing Nodemailer transporter:', error);
-}
-
-// Helper function to send email via Nodemailer
+// Helper function to send email via Nodemailer (temporarily replacing Mailgun)
 const sendEmailViaMailgun = async (mailData) => {
   if (!mailTransporter) {
     throw new Error('Nodemailer transporter not initialized');
   }
 
   // Convert to Nodemailer format
+  const fromAddress = mailData.from?.address 
+    ? `${mailData.from.name || 'Virtuzone'} <${mailData.from.address}>` 
+    : mailData.from || `${EMAIL_CONFIG.sender.name} <${mailgunConfig.fromEmail}>`;
+
   const nodemailerData = {
-    from: mailData.from?.address ? `${mailData.from.name || 'Virtuzone'} <${mailData.from.address}>` : mailData.from || `${EMAIL_CONFIG.sender.name} <${fromEmail}>`,
-    to: Array.isArray(mailData.to) ? mailData.to.join(', ') : mailData.to,
+    from: fromAddress,
+    to: Array.isArray(mailData.to) ? mailData.to : mailData.to,
     subject: mailData.subject,
     html: mailData.html,
-    ...(mailData.cc && { cc: Array.isArray(mailData.cc) ? mailData.cc.join(', ') : mailData.cc }),
-    ...(mailData.bcc && { bcc: Array.isArray(mailData.bcc) ? mailData.bcc.join(', ') : mailData.bcc }),
+    ...(mailData.cc && { cc: Array.isArray(mailData.cc) ? mailData.cc : mailData.cc }),
+    ...(mailData.bcc && { bcc: Array.isArray(mailData.bcc) ? mailData.bcc : mailData.bcc }),
     ...(mailData.attachment && { attachments: mailData.attachment })
   };
 
-  console.log('📧 Sending email:', {
+  console.log('📧 Sending email via Nodemailer:', {
     to: nodemailerData.to,
     cc: nodemailerData.cc || 'none',
     bcc: nodemailerData.bcc || 'none',
@@ -91,7 +174,11 @@ const sendEmailViaMailgun = async (mailData) => {
 
   const result = await mailTransporter.sendMail(nodemailerData);
   console.log('✅ Email sent successfully. Message ID:', result.messageId);
-  return { messageId: result.messageId, accepted: result.accepted || [nodemailerData.to], rejected: result.rejected || [] };
+  return { 
+    messageId: result.messageId, 
+    accepted: Array.isArray(nodemailerData.to) ? nodemailerData.to : [nodemailerData.to], 
+    rejected: [] 
+  };
 };
 
 /**
@@ -125,7 +212,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: fromEmail
+        address: mailgunConfig.fromEmail
       },
       to: recipientList,
       cc: devTechCcEmails,
@@ -137,6 +224,12 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
           <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+            .outlook-header { padding-left: 10px !important; padding-right: 20px !important; }
+          </style>
+          <![endif]-->
         </head>
         <body style="margin: 0; padding: 0; background-color: #ffffff;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
@@ -146,12 +239,15 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
                   <!-- Header -->
                   <tr>
                     <td bgcolor="#28a745" style="padding: 20px; text-align: center;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
                       <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">Subscription Successfully Completed</h1>
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                   <!-- Content -->
                   <tr>
                     <td bgcolor="#f8f9fa" style="padding: 20px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
                       <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Valued Customer'},</p>
                       <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Congrat&#117;lations! We are pleased to inform you that your subscription with Virtuzone has been <strong>successfully completed</strong>.</p>
                       
@@ -204,16 +300,8 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
                       <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you for choosing Virtuzone for your corporate services. We appreciate your business and look forward to serving you in the future.</p>
                       
                       <!-- Footer -->
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top: 1px solid #dee2e6; margin-top: 30px; padding-top: 20px;">
-                        <tr>
-                          <td align="center" style="padding: 0;">
-                            <p style="margin: 0; color: #6c757d; font-size: 12px;">
-                              This is an automated notification from Recurring Payment System<br>
-                              Generated on: ${new Date().toLocaleString()}
-                            </p>
-                          </td>
-                        </tr>
-                      </table>
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                 </table>
@@ -282,6 +370,11 @@ export const sendFinalRenewalEmail = async (data) => {
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+        <!--[if mso]>
+        <style type="text/css">
+          .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+        </style>
+        <![endif]-->
       </head>
       <body style="margin: 0; padding: 0; background-color: #ffffff;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
@@ -290,11 +383,16 @@ export const sendFinalRenewalEmail = async (data) => {
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="700" style="max-width: 700px; font-family: Arial, sans-serif;">
                 <tr>
                   <td style="padding: 20px;">
+                    <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
                     <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Customer'},</p>
                     <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">We hope this message finds you well.</p>
                     <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">This is a gentle reminder that your current corporate service package with Virtuzone, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
                     <p style="margin: 0 0 40px 0; font-size: 16px; color: #333333; line-height: 1.6;">We thank you sincerely for placing your trust in Virtuzone. Your corporate services consultant is added in CC to this e-mail to assist you with tailoring a new plan for next year that fits your current needs.</p>
                     <p style="margin: 40px 0 0 0; font-size: 16px; color: #333333; line-height: 1.6;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
+                    
+                    <!-- Footer -->
+                    ${getEmailFooter()}
+                    <!--[if mso]></div><![endif]-->
                   </td>
                 </tr>
               </table>
@@ -308,7 +406,7 @@ export const sendFinalRenewalEmail = async (data) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: fromEmail
+        address: mailgunConfig.fromEmail
       },
       to: opp_email,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
@@ -388,6 +486,11 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+        <!--[if mso]>
+        <style type="text/css">
+          .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+        </style>
+        <![endif]-->
       </head>
       <body style="margin: 0; padding: 0; background-color: #ffffff;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
@@ -396,6 +499,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="700" style="max-width: 700px; font-family: Arial, sans-serif;">
                 <tr>
                   <td style="padding: 20px;">
+                    <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
                     <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Customer'},</p>
                     <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">We hope you're doing well.</p>
                     <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed.</p>
@@ -418,6 +522,10 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
                     <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Please note that timely payments help us ensure smooth continuation of your services without disruption.</p>
                     <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you for your attention to this matter.</p>
                     <p style="margin: 40px 0 0 0; font-size: 16px; color: #333333; line-height: 1.6;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
+                    
+                    <!-- Footer -->
+                    ${getEmailFooter()}
+                    <!--[if mso]></div><![endif]-->
                   </td>
                 </tr>
               </table>
@@ -431,7 +539,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: fromEmail
+        address: mailgunConfig.fromEmail
       },
       to: opp_email,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
@@ -566,6 +674,11 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+        <!--[if mso]>
+        <style type="text/css">
+          .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+        </style>
+        <![endif]-->
       </head>
       <body style="margin: 0; padding: 0; background-color: #ffffff;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
@@ -574,6 +687,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="700" style="max-width: 700px; font-family: Arial, sans-serif;">
                 <tr>
                   <td style="padding: 20px;">
+                    <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
                     <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Customer'},</p>
                     <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">We are pleased to confirm that your scheduled payment of <strong>AED ${formatAmount(payment_amount)}</strong> for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
 
@@ -638,6 +752,10 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
                     <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Should you have any questions or require further assistance, please feel free to reach out to us directly.</p>
                     <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you once again for choosing Virtuzone.</p>
                     <p style="margin: 40px 0 0 0; font-size: 16px; color: #333333; line-height: 1.6;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
+                    
+                    <!-- Footer -->
+                    ${getEmailFooter()}
+                    <!--[if mso]></div><![endif]-->
                   </td>
                 </tr>
               </table>
@@ -651,7 +769,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: fromEmail
+        address: mailgunConfig.fromEmail
       },
       to: opp_email,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
@@ -811,7 +929,7 @@ export const sendPdfEmail = async (emailData) => {
     // Construct payment link with proper base URL
     const fullPaymentLink = paymentLink.startsWith('http') ? paymentLink : `${baseUrl}${paymentLink.startsWith('/') ? '' : '/'}${paymentLink}`;
 
-  // Process PDF attachments for Nodemailer
+  // Process PDF attachments for Nodemailer (temporarily replacing Mailgun)
 const attachments = [];
 
 if (quotePdf && Array.isArray(quotePdf)) {
@@ -874,7 +992,7 @@ if (quotePdf && Array.isArray(quotePdf)) {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: fromEmail
+        address: mailgunConfig.fromEmail
       },
       to: quote_email,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
@@ -887,6 +1005,11 @@ if (quotePdf && Array.isArray(quotePdf)) {
           <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+          </style>
+          <![endif]-->
         </head>
         <body style="margin: 0; padding: 0; background-color: #ffffff;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
@@ -895,6 +1018,7 @@ if (quotePdf && Array.isArray(quotePdf)) {
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="700" style="max-width: 700px; font-family: Arial, sans-serif;">
                   <tr>
                     <td style="padding: 20px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
                       <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Hello ${Customer_name || 'Sir/Madam'},</p>
                       <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you for choosing Virtuzone as your preferred Corporate Services Provider.</p>
                       <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Based on your requirements and our discussions, we are pleased to attach the Proforma Invoice along with the Payment Link embedded therein for your reference. A summary of the Proforma Invoice is as below:</p>
@@ -975,6 +1099,10 @@ if (quotePdf && Array.isArray(quotePdf)) {
                         Regards,<br>
                         ${(salesPersonDetails && salesPersonDetails.salesPersonName) || opp_owner || 'Rodney Raymond Lewis'}
                       </p>
+                      
+                      <!-- Footer -->
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                 </table>
@@ -1029,7 +1157,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: fromEmail
+        address: mailgunConfig.fromEmail
       },
       to: email,
       cc: devTechCcEmails,
@@ -1042,6 +1170,12 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
           <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 30px !important; }
+            .outlook-header { padding-left: 10px !important; padding-right: 30px !important; }
+          </style>
+          <![endif]-->
         </head>
         <body style="margin: 0; padding: 0; background-color: #ffffff;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
@@ -1051,13 +1185,16 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
                   <!-- Header -->
                   <tr>
                     <td bgcolor="#f8f9fa" style="padding: 30px; text-align: center; border-bottom: 3px solid #007bff;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
                       <h1 style="margin: 0; font-size: 24px; color: #000000; font-weight: bold;">Welcome to Customer Portal!</h1>
                       <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is Ready</p>
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                   <!-- Content -->
                   <tr>
                     <td bgcolor="#f9f9f9" style="padding: 30px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
                       <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">
                         Dear <strong>${customerName}</strong>,
                       </p>
@@ -1122,16 +1259,8 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
                       </p>
                       
                       <!-- Footer -->
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top: 1px solid #ddd; margin-top: 30px; padding-top: 20px;">
-                        <tr>
-                          <td align="center" style="padding: 0;">
-                            <p style="font-size: 14px; color: #888888; margin: 0;">
-                              Best regards,<br>
-                              <strong>Virtuzone Team</strong>
-                            </p>
-                          </td>
-                        </tr>
-                      </table>
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                 </table>
@@ -1194,7 +1323,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: fromEmail
+        address: mailgunConfig.fromEmail
       },
       to: email,
       cc: devTechCcEmails,
@@ -1207,6 +1336,12 @@ export const sendExistingCustomerEmail = async (customerData) => {
           <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 30px !important; }
+            .outlook-header { padding-left: 10px !important; padding-right: 30px !important; }
+          </style>
+          <![endif]-->
         </head>
         <body style="margin: 0; padding: 0; background-color: #ffffff;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
@@ -1216,13 +1351,16 @@ export const sendExistingCustomerEmail = async (customerData) => {
                   <!-- Header -->
                   <tr>
                     <td bgcolor="#f8f9fa" style="padding: 30px; text-align: center; border-bottom: 3px solid #28a745;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
                       <h1 style="margin: 0; font-size: 24px; color: #000000; font-weight: bold;">Welcome Back!</h1>
                       <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is already active</p>
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                   <!-- Content -->
                   <tr>
                     <td bgcolor="#f9f9f9" style="padding: 30px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
                       <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">Dear <strong>${customerName}</strong>,</p>
                       <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">
                         We noticed you've made another payment. Since you already have an active account with us, no need to create a new account - you can continue using your existing credentials.
@@ -1269,13 +1407,8 @@ export const sendExistingCustomerEmail = async (customerData) => {
                       <p style="font-size: 14px; color: #666666; line-height: 1.6; margin: 30px 0 0 0;">If you have any questions or need assistance accessing your account, please don't hesitate to contact our support team.</p>
                       
                       <!-- Footer -->
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top: 1px solid #ddd; margin-top: 30px; padding-top: 20px;">
-                        <tr>
-                          <td align="center" style="padding: 0;">
-                            <p style="font-size: 14px; color: #888888; margin: 0;">Best regards,<br><strong>Virtuzone Team</strong></p>
-                          </td>
-                        </tr>
-                      </table>
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                 </table>
@@ -1313,7 +1446,7 @@ export const sendPasswordResetEmail = async (customerData) => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: fromEmail
+        address: mailgunConfig.fromEmail
       },
       to: email,
       cc: devTechCcEmails,
@@ -1325,6 +1458,12 @@ export const sendPasswordResetEmail = async (customerData) => {
           <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 30px !important; }
+            .outlook-header { padding-left: 10px !important; padding-right: 30px !important; }
+          </style>
+          <![endif]-->
         </head>
         <body style="margin: 0; padding: 0; background-color: #ffffff;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
@@ -1334,13 +1473,16 @@ export const sendPasswordResetEmail = async (customerData) => {
                   <!-- Header -->
                   <tr>
                     <td bgcolor="#ee5a52" style="padding: 30px; text-align: center;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
                       <h1 style="margin: 0; font-size: 28px; color: #ffffff; font-weight: bold;">Password Reset</h1>
                       <p style="margin: 10px 0 0 0; font-size: 16px; color: #ffffff;">Reset Your Recurring Account Password</p>
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                   <!-- Content -->
                   <tr>
                     <td bgcolor="#f9f9f9" style="padding: 30px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
                       <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">
                         Dear <strong>${customerName}</strong>,
                       </p>
@@ -1406,16 +1548,8 @@ export const sendPasswordResetEmail = async (customerData) => {
                       </p>
                       
                       <!-- Footer -->
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top: 1px solid #ddd; margin-top: 30px; padding-top: 20px;">
-                        <tr>
-                          <td align="center" style="padding: 0;">
-                            <p style="font-size: 14px; color: #888888; margin: 0;">
-                              Best regards,<br>
-                              <strong>Virtuzone Team</strong>
-                            </p>
-                          </td>
-                        </tr>
-                      </table>
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                 </table>
@@ -1444,7 +1578,7 @@ export const testEmailConfiguration = async () => {
     const mailOptions = {
       from: {
         name: EMAIL_CONFIG.sender.name,
-        address: fromEmail
+        address: mailgunConfig.fromEmail
       },
       to: EMAIL_CONFIG.recipients.business_team,
       subject: 'Recurring Email Service Test',
@@ -1455,6 +1589,11 @@ export const testEmailConfiguration = async () => {
           <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+          </style>
+          <![endif]-->
         </head>
         <body style="margin: 0; padding: 0; background-color: #ffffff;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
@@ -1463,11 +1602,16 @@ export const testEmailConfiguration = async () => {
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; font-family: Arial, sans-serif;">
                   <tr>
                     <td style="padding: 20px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
                       <h2 style="margin: 0 0 20px 0; font-size: 24px; color: #333333;">Email Service Test Successful</h2>
                       <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">This is a test email to verify that the Recurring payment system email service is working correctly.</p>
                       <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
-                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;"><strong>Sender:</strong> ${fromEmail}</p>
-                      <p style="margin: 0; font-size: 16px; color: #333333; line-height: 1.6;">If you receive this email, the configuration is working properly.</p>
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;"><strong>Sender:</strong> ${mailgunConfig.fromEmail}</p>
+                      <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">If you receive this email, the configuration is working properly.</p>
+                      
+                      <!-- Footer -->
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
                     </td>
                   </tr>
                 </table>
