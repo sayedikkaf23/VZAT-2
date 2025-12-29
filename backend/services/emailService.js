@@ -42,6 +42,74 @@ const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'sayed@yeepee
 
 const getDevTechCcEmails = () => ['dev.tech@virtuzone.com', 'dev.tech@vz.ae'];
 
+// Helper function to generate email footer
+const getEmailFooter = () => {
+  return `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top: 1px solid #dee2e6; margin-top: 30px; padding-top: 20px;">
+      <tr>
+        <td align="center" style="padding: 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td align="center" style="padding-bottom: 20px;">
+                <a href="https://www.vz.ae" target="_blank" style="outline: none;">
+                  <img src="https://res.cloudinary.com/dotkngkpl/image/upload/v1739944226/thumbnail_vz-ascentium_1_yrtbkn.png" alt="Virtuzone" style="display: block; height: auto; border: 0; max-width: 183px;" width="183">
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding-bottom: 20px;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                  <tr>
+                    <td style="padding: 0 7px;">
+                      <a href="https://www.facebook.com/virtuzone" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/facebook@2x.png" width="32" height="32" alt="Facebook" title="Facebook" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="https://twitter.com/Virtuzone_UAE" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/twitter@2x.png" width="32" height="32" alt="Twitter" title="Twitter" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="http://www.youtube.com/virtuzoneuae" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/youtube@2x.png" width="32" height="32" alt="YouTube" title="YouTube" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="http://www.instagram.com/virtuzone" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/instagram@2x.png" width="32" height="32" alt="Instagram" title="Instagram" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="http://www.linkedin.com/company/virtuzone" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/linkedin@2x.png" width="32" height="32" alt="LinkedIn" title="LinkedIn" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                    <td style="padding: 0 7px;">
+                      <a href="https://www.vz.ae/" target="_blank">
+                        <img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/website@2x.png" width="32" height="32" alt="Web Site" title="Web Site" style="display: block; height: auto; border: 0;">
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding: 10px 20px;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d; line-height: 1.5;">
+                  <a href="https://g.page/virtuzone?share" target="_blank" style="text-decoration: underline; color: #6c757d;">
+                    Office 404, Al Saaha Office, Building B, Souk Al Bahar, Old Town Island,<br>Burj Khalifa District, Dubai - UAE
+                  </a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
+};
+
 // Initialize Mailgun
 const mailgunConfig = {
   apiKey: process.env.MAILGUN_API_KEY,
@@ -127,67 +195,98 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
       cc: devTechCcEmails,
       subject: `Subscription Successfully Completed - ${Quote_payment_number || quotepaymentId}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #28a745; color: white; padding: 20px; text-align: center;">
-            <h1>Subscription Successfully Completed</h1>
-          </div>
-          
-          <div style="padding: 20px; background-color: #f8f9fa;">
-            <p>Dear ${Customer_name || 'Valued Customer'},</p>
-            
-            <p>Congrat&#117;lations! We are pleased to inform you that your subscription with Virtuzone has been <strong>successfully completed</strong>.</p>
-            
-            <h2>Subscription Summary</h2>
-            
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-              <tr style="background-color: #e9ecef;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote Payment ID</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${Quote_payment_number || quotepaymentId}</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Opportunity ID</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${OpportunityId}</td>
-              </tr>
-              <tr style="background-color: #e9ecef;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote ID</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${QuoteId}</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Total Amount Paid</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;"><strong>${Total_After_VAT_Currency} AED</strong></td>
-              </tr>
-              <tr style="background-color: #e9ecef;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Total Installments</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${InstallmentLeft}</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Payments Completed</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${payments_completed}</td>
-              </tr>
-              <tr style="background-color: #e9ecef;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Final Payment Date</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${last_payment_date ? new Date(last_payment_date).toLocaleDateString() : 'N/A'}</td>
-              </tr>
-            </table>
-            
-            <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
-              <h3 style="color: #155724; margin-top: 0;">Payment Complete!</h3>
-              <p style="color: #155724; margin-bottom: 0;">
-                All installment payments have been successfully processed. 
-                <strong>No further charges will be processed</strong> for this subscription.
-              </p>
-            </div>
-            
-            <p>Thank you for choosing Virtuzone for your corporate services. We appreciate your business and look forward to serving you in the future.</p>
-            
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
-              <p style="color: #6c757d; font-size: 12px;">
-                This is an automated notification from Recurring Payment System<br>
-                Generated on: ${new Date().toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
+        <!DOCTYPE html>
+        <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+            .outlook-header { padding-left: 10px !important; padding-right: 20px !important; }
+          </style>
+          <![endif]-->
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #ffffff;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 20px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; font-family: Arial, sans-serif;">
+                  <!-- Header -->
+                  <tr>
+                    <td bgcolor="#28a745" style="padding: 20px; text-align: center;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
+                      <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">Subscription Successfully Completed</h1>
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                  <!-- Content -->
+                  <tr>
+                    <td bgcolor="#f8f9fa" style="padding: 20px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Valued Customer'},</p>
+                      <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Congrat&#117;lations! We are pleased to inform you that your subscription with Virtuzone has been <strong>successfully completed</strong>.</p>
+                      
+                      <h2 style="margin: 20px 0 15px 0; font-size: 20px; color: #333333;">Subscription Summary</h2>
+                      
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse: collapse; margin: 20px 0;">
+                        <tr bgcolor="#e9ecef">
+                          <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; width: 40%;">Quote Payment ID</td>
+                          <td style="padding: 12px; border: 1px solid #dee2e6;">${Quote_payment_number || quotepaymentId}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Opportunity ID</td>
+                          <td style="padding: 12px; border: 1px solid #dee2e6;">${OpportunityId}</td>
+                        </tr>
+                        <tr bgcolor="#e9ecef">
+                          <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote ID</td>
+                          <td style="padding: 12px; border: 1px solid #dee2e6;">${QuoteId}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Total Amount Paid</td>
+                          <td style="padding: 12px; border: 1px solid #dee2e6;"><strong>${Total_After_VAT_Currency} AED</strong></td>
+                        </tr>
+                        <tr bgcolor="#e9ecef">
+                          <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Total Installments</td>
+                          <td style="padding: 12px; border: 1px solid #dee2e6;">${InstallmentLeft}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Payments Completed</td>
+                          <td style="padding: 12px; border: 1px solid #dee2e6;">${payments_completed}</td>
+                        </tr>
+                        <tr bgcolor="#e9ecef">
+                          <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Final Payment Date</td>
+                          <td style="padding: 12px; border: 1px solid #dee2e6;">${last_payment_date ? new Date(last_payment_date).toLocaleDateString() : 'N/A'}</td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Success Box -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#d4edda" style="border: 1px solid #c3e6cb; margin: 20px 0;">
+                        <tr>
+                          <td style="padding: 15px;">
+                            <h3 style="margin: 0 0 10px 0; color: #155724; font-size: 18px;">Payment Complete!</h3>
+                            <p style="margin: 0; color: #155724; font-size: 14px; line-height: 1.6;">
+                              All installment payments have been successfully processed. 
+                              <strong>No further charges will be processed</strong> for this subscription.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you for choosing Virtuzone for your corporate services. We appreciate your business and look forward to serving you in the future.</p>
+                      
+                      <!-- Footer -->
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `
     };
 
@@ -242,19 +341,43 @@ export const sendFinalRenewalEmail = async (data) => {
     });
 
     const bodyHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
-        <p>Dear ${Customer_name || 'Customer'},</p>
-
-        <p>We hope this message finds you well.</p>
-
-        <p>This is a gentle reminder that your current corporate service package with Virtuzone, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
-
-        <p>We thank you sincerely for placing your trust in Virtuzone. Your corporate services consultant is added in CC to this e-mail to assist you with  tailoring a new plan for next year that fits your current needs.</p>
-
-        
-
-        <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
-      </div>
+      <!DOCTYPE html>
+      <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+        <!--[if mso]>
+        <style type="text/css">
+          .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+        </style>
+        <![endif]-->
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #ffffff;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+          <tr>
+            <td align="center" style="padding: 20px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="700" style="max-width: 700px; font-family: Arial, sans-serif;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
+                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Customer'},</p>
+                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">We hope this message finds you well.</p>
+                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">This is a gentle reminder that your current corporate service package with Virtuzone, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
+                    <p style="margin: 0 0 40px 0; font-size: 16px; color: #333333; line-height: 1.6;">We thank you sincerely for placing your trust in Virtuzone. Your corporate services consultant is added in CC to this e-mail to assist you with tailoring a new plan for next year that fits your current needs.</p>
+                    <p style="margin: 40px 0 0 0; font-size: 16px; color: #333333; line-height: 1.6;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
+                    
+                    <!-- Footer -->
+                    ${getEmailFooter()}
+                    <!--[if mso]></div><![endif]-->
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
 
     const mailOptions = {
@@ -323,39 +446,71 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
     }) : 'N/A';
 
     const reasonText = failure_reason || 'Payment processing failed';
-    const paymentLinkHtml = payment_link ? 
-      `<a href="${payment_link}" style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Click here to access your Customer Portal account</a>` :
-      'Please contact us for assistance accessing your Customer Portal account.';
+    const paymentLinkButton = payment_link ? `
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 30px auto;">
+        <tr>
+          <td align="center" bgcolor="#dc3545" style="background-color: #dc3545; padding: 12px 24px;">
+            <a href="${payment_link}" target="_blank" style="display: inline-block; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px;">Click here to access your Customer Portal account</a>
+          </td>
+        </tr>
+      </table>
+    ` : '<p style="margin: 30px 0; text-align: center; font-size: 16px; color: #333333;">Please contact us for assistance accessing your Customer Portal account.</p>';
 
     const bodyHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
-        <p>Dear ${Customer_name || 'Customer'},</p>
+      <!DOCTYPE html>
+      <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+        <!--[if mso]>
+        <style type="text/css">
+          .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+        </style>
+        <![endif]-->
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #ffffff;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+          <tr>
+            <td align="center" style="padding: 20px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="700" style="max-width: 700px; font-family: Arial, sans-serif;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
+                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Customer'},</p>
+                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">We hope you're doing well.</p>
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed.</p>
 
-        <p>We hope you're doing well.</p>
+                    <!-- Alert Box -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f8f9fa" style="border-left: 4px solid #dc3545; margin: 20px 0;">
+                      <tr>
+                        <td style="padding: 15px;">
+                          <p style="margin: 0; font-size: 16px; color: #333333;"><strong>Amount:</strong> AED ${payment_amount || 'N/A'}</p>
+                          <p style="margin: 5px 0 0 0; font-size: 16px; color: #333333;"><strong>Reason:</strong> ${reasonText}</p>
+                        </td>
+                      </tr>
+                    </table>
 
-        <p>This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed.</p>
+                    <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">We kindly request you update your payment information to avoid service discontinuation:</p>
 
-        <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
-          <p style="margin: 0;"><strong>Amount:</strong> AED ${payment_amount || 'N/A'}</p>
-          <p style="margin: 5px 0 0 0;"><strong>Reason:</strong> ${reasonText}</p>
-        </div>
+                    ${paymentLinkButton}
 
-        <p>We kindly request you update your payment information to avoid service discontinuation:</p>
-
-      
-
-        <div style="text-align: center; margin: 30px 0;">
-          ${paymentLinkHtml}
-        </div>
-
-        <p>You may also reply to this email should you need any assistance.</p>
-
-        <p>Please note that timely payments help us ensure smooth continuation of your services without disruption.</p>
-
-        <p>Thank you for your attention to this matter.</p>
-
-        <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
-      </div>
+                    <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">You may also reply to this email should you need any assistance.</p>
+                    <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Please note that timely payments help us ensure smooth continuation of your services without disruption.</p>
+                    <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you for your attention to this matter.</p>
+                    <p style="margin: 40px 0 0 0; font-size: 16px; color: #333333; line-height: 1.6;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
+                    
+                    <!-- Footer -->
+                    ${getEmailFooter()}
+                    <!--[if mso]></div><![endif]-->
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
 
     const mailOptions = {
@@ -490,62 +645,102 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
     }
 
     const bodyHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
-        <p>Dear ${Customer_name || 'Customer'},</p>
+      <!DOCTYPE html>
+      <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+        <!--[if mso]>
+        <style type="text/css">
+          .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+        </style>
+        <![endif]-->
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #ffffff;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+          <tr>
+            <td align="center" style="padding: 20px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="700" style="max-width: 700px; font-family: Arial, sans-serif;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
+                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Customer'},</p>
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">We are pleased to confirm that your scheduled payment of <strong>AED ${formatAmount(payment_amount)}</strong> for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
 
-        <p>We are pleased to confirm that your scheduled payment of <strong>AED ${formatAmount(payment_amount)}</strong> for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
+                    <!-- Payment Details Box -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border: 2px solid #6c757d; margin: 20px 0;">
+                      <tr>
+                        <td bgcolor="#f5f5f5" style="padding: 10px; border-bottom: 1px solid #6c757d;">
+                          <h3 style="margin: 0; text-align: center; color: #6c757d; font-size: 18px;">Payment Details</h3>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse: collapse;">
+                            <tr>
+                              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 40%;">Invoice Number</td>
+                              <td style="border: 1px solid #ddd; padding: 12px;">PI ${q_payment_id || quotepaymentId}</td>
+                            </tr>
+                            <tr>
+                              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Installment</td>
+                              <td style="border: 1px solid #ddd; padding: 12px;">${installmentText}</td>
+                            </tr>
+                            <tr>
+                              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Amount Paid</td>
+                              <td style="border: 1px solid #ddd; padding: 12px;"><strong>AED ${formatAmount(payment_amount)}</strong></td>
+                            </tr>
+                            <tr>
+                              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
+                              <td style="border: 1px solid #ddd; padding: 12px;">${paymentDateStr}</td>
+                            </tr>
+                            <tr>
+                              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Method</td>
+                              <td style="border: 1px solid #ddd; padding: 12px;">${payment_method || 'Card'}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
 
-        <div style="border: 2px solid #6c757d; margin: 20px 0;">
-          <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #6c757d;">
-            <h3 style="margin: 0; text-align: center; color: #6c757d;">Payment Details</h3>
-          </div>
-          <table style="border-collapse: collapse; width: 100%;">
-            <tr>
-              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 40%;">Invoice Number</td>
-              <td style="border: 1px solid #ddd; padding: 12px;">PI ${q_payment_id || quotepaymentId}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Installment</td>
-              <td style="border: 1px solid #ddd; padding: 12px;">${installmentText}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Amount Paid</td>
-              <td style="border: 1px solid #ddd; padding: 12px;"><strong>AED ${formatAmount(payment_amount)}</strong></td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
-              <td style="border: 1px solid #ddd; padding: 12px;">${paymentDateStr}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Method</td>
-              <td style="border: 1px solid #ddd; padding: 12px;">${payment_method || 'Card'}</td>
-            </tr>
-          </table>
-        </div>
+                    <!-- Payment Schedule Box -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border: 2px solid #6c757d; margin: 20px 0;">
+                      <tr>
+                        <td bgcolor="#f5f5f5" style="padding: 10px; border-bottom: 1px solid #6c757d;">
+                          <h3 style="margin: 0; text-align: center; color: #6c757d; font-size: 18px;">Payment Schedule</h3>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse: collapse;">
+                            <tr>
+                              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Installment No.</td>
+                              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
+                              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Amount (AED)</td>
+                              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Status</td>
+                            </tr>
+                            ${paymentScheduleRows}
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
 
-        <div style="border: 2px solid #6c757d; margin: 20px 0;">
-          <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #6c757d;">
-            <h3 style="margin: 0; text-align: center; color: #6c757d;">Payment Schedule</h3>
-          </div>
-          <table style="border-collapse: collapse; width: 100%;">
-            <tr>
-              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Installment No.</td>
-              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
-              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Amount (AED)</td>
-              <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Status</td>
-            </tr>
-            ${paymentScheduleRows}
-          </table>
-        </div>
-
-        <p>Your continued support is greatly appreciated, and we remain committed to delivering a smooth and hassle-free service delivery.</p>
-
-        <p>Should you have any questions or require further assistance, please feel free to reach out to us directly.</p>
-
-        <p>Thank you once again for choosing Virtuzone.</p>
-
-        <p style="margin-top: 40px;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
-      </div>
+                    <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Your continued support is greatly appreciated, and we remain committed to delivering a smooth and hassle-free service delivery.</p>
+                    <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Should you have any questions or require further assistance, please feel free to reach out to us directly.</p>
+                    <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you once again for choosing Virtuzone.</p>
+                    <p style="margin: 40px 0 0 0; font-size: 16px; color: #333333; line-height: 1.6;">Warm regards,<br>${(salesPersonDetails && salesPersonDetails.salesPersonName) || 'Virtuzone Team'}</p>
+                    
+                    <!-- Footer -->
+                    ${getEmailFooter()}
+                    <!--[if mso]></div><![endif]-->
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
 
     const mailOptions = {
@@ -783,84 +978,118 @@ if (quotePdf && Array.isArray(quotePdf)) {
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: `Virtuzone | Proforma Invoice & Payment Link – PI ${Quote_payment_number}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; overflow-wrap: anywhere; word-break: break-word;">
-          <div style="padding: 20px;">
-            <p>Hello ${Customer_name || 'Sir/Madam'},</p>
-            
-            <p>Thank you for choosing Virtuzone as your preferred Corporate Services Provider.</p>
-            
-            <p>Based on your requirements and our discussions, we are pleased to attach the Proforma Invoice 
-            along with the Payment Link embedded therein for your reference. A summary of the Proforma 
-            Invoice is as below:</p>
-            
-            <div style="border: 2px solid #000; margin: 20px 0;">
-              <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #000;">
-                <h3 style="margin: 0; text-align: center;">Proforma Invoice Summary</h3>
-              </div>
-              <table style="border-collapse: collapse; width: 100%; table-layout: fixed; word-break: break-word;">
-                <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 40%; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Details</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Information</td>
-                </tr>
-                <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Quote Payment Number #</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">PI ${Quote_payment_number || quotepaymentId}</td>
-                </tr>
-                <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Invoice Value with VAT</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Installment_amount)}</td>
-                </tr>
-               
+        <!DOCTYPE html>
+        <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+          </style>
+          <![endif]-->
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #ffffff;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 20px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="700" style="max-width: 700px; font-family: Arial, sans-serif;">
                   <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Total Amount</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">AED ${formatAmount(Total_After_VAT_Currency)}</td>
-                </tr>
-                <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Payment Link</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">
-                    <a href="${fullPaymentLink}" style="color: #007bff; text-decoration: none; word-break: break-all;">${fullPaymentLink}</a>
-                  </td>
-                </tr>
-              
-              </table>
-            </div>
-            
-            <div style="border: 2px solid #000; margin: 20px 0;">
-              <div style="background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #000;">
-                <h3 style="margin: 0; text-align: center;">Payment Schedule</h3>
-              </div>
-              <table style="border-collapse: collapse; width: 100%; table-layout: fixed; word-break: break-word;">
-                <tr>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Installment No.</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Payment Date</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Amount (AED)</td>
-                  <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; word-break: break-word; overflow-wrap: anywhere; white-space: normal;">Payment Type</td>
-                </tr>
-                ${paymentScheduleRows}
-              </table>
-            </div>
-            
-            <p>You may also click on the below button to proceed with payment.</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${fullPaymentLink}" 
-                 style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; 
-                        border-radius: 4px; display: inline-block; font-weight: bold;">
-                Click Here To Pay
-              </a>
-            </div>
-            
-            <p>Please feel free to contact us anytime in case you have any queries on this payment or the 
-            service(s) offered.</p>
-            
-            <p>Thank you!</p>
-            
-            <p style="margin-top: 40px;">
-              Regards,<br>
-              ${(salesPersonDetails && salesPersonDetails.salesPersonName) || opp_owner || 'Rodney Raymond Lewis'}
-            </p>
-          </div>
-        </div>
+                    <td style="padding: 20px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Hello ${Customer_name || 'Sir/Madam'},</p>
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you for choosing Virtuzone as your preferred Corporate Services Provider.</p>
+                      <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Based on your requirements and our discussions, we are pleased to attach the Proforma Invoice along with the Payment Link embedded therein for your reference. A summary of the Proforma Invoice is as below:</p>
+                      
+                      <!-- Proforma Invoice Summary -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border: 2px solid #000000; margin: 20px 0;">
+                        <tr>
+                          <td bgcolor="#f5f5f5" style="padding: 10px; border-bottom: 1px solid #000000;">
+                            <h3 style="margin: 0; text-align: center; font-size: 18px; color: #000000;">Proforma Invoice Summary</h3>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse: collapse;">
+                              <tr>
+                                <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 40%;">Details</td>
+                                <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Information</td>
+                              </tr>
+                              <tr>
+                                <td style="border: 1px solid #ddd; padding: 12px;">Quote Payment Number #</td>
+                                <td style="border: 1px solid #ddd; padding: 12px;">PI ${Quote_payment_number || quotepaymentId}</td>
+                              </tr>
+                              <tr>
+                                <td style="border: 1px solid #ddd; padding: 12px;">Invoice Value with VAT</td>
+                                <td style="border: 1px solid #ddd; padding: 12px;">AED ${formatAmount(Installment_amount)}</td>
+                              </tr>
+                              <tr>
+                                <td style="border: 1px solid #ddd; padding: 12px;">Total Amount</td>
+                                <td style="border: 1px solid #ddd; padding: 12px;">AED ${formatAmount(Total_After_VAT_Currency)}</td>
+                              </tr>
+                              <tr>
+                                <td style="border: 1px solid #ddd; padding: 12px;">Payment Link</td>
+                                <td style="border: 1px solid #ddd; padding: 12px;">
+                                  <a href="${fullPaymentLink}" style="color: #007bff; text-decoration: none; word-break: break-all;">${fullPaymentLink}</a>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Payment Schedule -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border: 2px solid #000000; margin: 20px 0;">
+                        <tr>
+                          <td bgcolor="#f5f5f5" style="padding: 10px; border-bottom: 1px solid #000000;">
+                            <h3 style="margin: 0; text-align: center; font-size: 18px; color: #000000;">Payment Schedule</h3>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse: collapse;">
+                              <tr>
+                                <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Installment No.</td>
+                                <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Date</td>
+                                <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold; text-align: center;">Amount (AED)</td>
+                                <td style="border: 1px solid #ddd; padding: 12px; background-color: #f8f9fa; font-weight: bold;">Payment Type</td>
+                              </tr>
+                              ${paymentScheduleRows}
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">You may also click on the below button to proceed with payment.</p>
+                      
+                      <!-- Payment Button -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 30px auto;">
+                        <tr>
+                          <td align="center" bgcolor="#dc3545" style="background-color: #dc3545; padding: 12px 24px;">
+                            <a href="${fullPaymentLink}" target="_blank" style="display: inline-block; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px;">Click Here To Pay</a>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Please feel free to contact us anytime in case you have any queries on this payment or the service(s) offered.</p>
+                      <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you!</p>
+                      <p style="margin: 40px 0 0 0; font-size: 16px; color: #333333; line-height: 1.6;">
+                        Regards,<br>
+                        ${(salesPersonDetails && salesPersonDetails.salesPersonName) || opp_owner || 'Rodney Raymond Lewis'}
+                      </p>
+                      
+                      <!-- Footer -->
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `,
       attachment: attachments
     };
@@ -914,71 +1143,111 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome to  Customer Portal - Your Account is Ready!',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-          <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #007bff;">
-            <h1 style="margin: 0; font-size: 24px; color: #000000;">Welcome to Customer Portal!</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is Ready</p>
-          </div>
-          
-          <div style="padding: 30px; background-color: #f9f9f9;">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              Dear <strong>${customerName}</strong>,
-            </p>
-            
-            <p style="font-size: 16px; color: #333; line-height: 1.6;">
-              Congratulations! Your first payment has been successfully processed, and we've created your customer portal account. 
-              You can now access your account to view payment schedules, manage services, and more.
-            </p>
-            
-            <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #e3f2fd;">
-              <h3 style="color: #000000; margin-top: 0;">Your Login Credentials</h3>
-              <p style="margin: 10px 0; color: #333;"><strong>Email:</strong> ${email}</p>
-              <p style="margin: 10px 0; color: #333;"><strong>Temporary Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #000000; font-weight: bold;">${temporaryPassword}</code></p>
-              <p style="margin: 10px 0; color: #333;"><strong>Quote Payment ID:</strong> ${quotepaymentId}</p>
-              <p style="margin: 15px 0 5px 0; color: #333;"><strong>Portal Login URL:</strong></p>
-              <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #007bff; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
-            </div>
-            
-
-           <div style="text-align: center; margin: 30px 0;">
-  <a href="${loginUrl}" style="background-color: #ff0000; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; font-size: 16px; border: 2px solid #ff0000;">
-     Login to Your Account
-  </a>
-</div>
-
-            
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #856404; margin-top: 0;">Important Security Notice:</h4>
-              <p style="color: #856404; margin-bottom: 0; font-size: 14px;">
-                This is a temporary password. For your security, please change it immediately after your first login. 
-                You'll be prompted to create a new password when you sign in.
-              </p>
-            </div>
-            
-            <div style="background-color: #e8f5e8; border: 1px solid #c3e6c3; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #2d5a2d; margin-top: 0;">What You Can Do in Your Portal:</h4>
-              <ul style="color: #2d5a2d; margin-bottom: 0; padding-left: 20px;">
-                <li>View your payment schedules and due dates</li>
-              
-                <li>Update your saved payment methods</li>
-                <li>Get help and support</li>
-              
-              </ul>
-            </div>
-            
-            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">
-              If you have any questions or need assistance, please don't hesitate to contact our support team. 
-              We're here to help you make the most of your Recurring experience.
-            </p>
-            
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-              <p style="font-size: 14px; color: #888; margin: 0;">
-                Best regards,<br>
-                <strong>Virtuzone Team</strong>
-              </p>
-            </div>
-          </div>
-        </div>
+        <!DOCTYPE html>
+        <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 30px !important; }
+            .outlook-header { padding-left: 10px !important; padding-right: 30px !important; }
+          </style>
+          <![endif]-->
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #ffffff;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 20px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; font-family: Arial, sans-serif; border: 1px solid #ddd;">
+                  <!-- Header -->
+                  <tr>
+                    <td bgcolor="#f8f9fa" style="padding: 30px; text-align: center; border-bottom: 3px solid #007bff;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
+                      <h1 style="margin: 0; font-size: 24px; color: #000000; font-weight: bold;">Welcome to Customer Portal!</h1>
+                      <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is Ready</p>
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                  <!-- Content -->
+                  <tr>
+                    <td bgcolor="#f9f9f9" style="padding: 30px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
+                      <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">
+                        Dear <strong>${customerName}</strong>,
+                      </p>
+                      <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">
+                        Congratulations! Your first payment has been successfully processed, and we've created your customer portal account. 
+                        You can now access your account to view payment schedules, manage services, and more.
+                      </p>
+                      
+                      <!-- Credentials Box -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#ffffff" style="border: 2px solid #e3f2fd; margin: 25px 0;">
+                        <tr>
+                          <td style="padding: 25px;">
+                            <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 18px;">Your Login Credentials</h3>
+                            <p style="margin: 10px 0; color: #333333; font-size: 16px;"><strong>Email:</strong> ${email}</p>
+                            <p style="margin: 10px 0; color: #333333; font-size: 16px;"><strong>Temporary Password:</strong> <span style="background-color: #f5f5f5; padding: 4px 8px; font-family: monospace; color: #000000; font-weight: bold;">${temporaryPassword}</span></p>
+                            <p style="margin: 10px 0; color: #333333; font-size: 16px;"><strong>Quote Payment ID:</strong> ${quotepaymentId}</p>
+                            <p style="margin: 15px 0 5px 0; color: #333333; font-size: 16px;"><strong>Portal Login URL:</strong></p>
+                            <p style="margin: 5px 0; word-break: break-all; color: #333333; font-size: 14px;"><a href="${loginUrl}" style="color: #007bff; text-decoration: underline;">${loginUrl}</a></p>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Login Button -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 30px auto;">
+                        <tr>
+                          <td align="center" bgcolor="#ff0000" style="background-color: #ff0000; padding: 15px 30px; border: 2px solid #ff0000;">
+                            <a href="${loginUrl}" target="_blank" style="display: inline-block; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px;">Login to Your Account</a>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Security Notice -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#fff3cd" style="border: 1px solid #ffeaa7; margin: 20px 0;">
+                        <tr>
+                          <td style="padding: 15px;">
+                            <h4 style="color: #856404; margin: 0 0 10px 0; font-size: 16px;">Important Security Notice:</h4>
+                            <p style="color: #856404; margin: 0; font-size: 14px; line-height: 1.6;">
+                              This is a temporary password. For your security, please change it immediately after your first login. 
+                              You'll be prompted to create a new password when you sign in.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Features Box -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#e8f5e8" style="border: 1px solid #c3e6c3; margin: 20px 0;">
+                        <tr>
+                          <td style="padding: 15px;">
+                            <h4 style="color: #2d5a2d; margin: 0 0 10px 0; font-size: 16px;">What You Can Do in Your Portal:</h4>
+                            <ul style="color: #2d5a2d; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+                              <li>View your payment schedules and due dates</li>
+                              <li>Update your saved payment methods</li>
+                              <li>Get help and support</li>
+                            </ul>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <p style="font-size: 14px; color: #666666; line-height: 1.6; margin: 30px 0 0 0;">
+                        If you have any questions or need assistance, please don't hesitate to contact our support team. 
+                        We're here to help you make the most of your Recurring experience.
+                      </p>
+                      
+                      <!-- Footer -->
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `
     };
 
@@ -1040,49 +1309,93 @@ export const sendExistingCustomerEmail = async (customerData) => {
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome Back! Your Customer Portal account is Ready to Use',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-          <div style="background-color: #f8f9fa; color: #000000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 3px solid #28a745;">
-            <h1 style="margin: 0; font-size: 24px; color: #000000;">Welcome Back!</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is already active</p>
-          </div>
-          
-          <div style="padding: 30px; background-color: #f9f9f9;">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Dear <strong>${customerName}</strong>,</p>
-            
-            <p style="font-size: 16px; color: #333; line-height: 1.6;">
-              We noticed you've made another payment. Since you already have an active account with us, no need to create a new account - you can continue using your existing credentials.
-            </p>
-            
-            <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #e8f5e8;">
-              <h3 style="color: #000000; margin-top: 0;">Account Information</h3>
-              <p style="margin: 10px 0; color: #333;"><strong>Email:</strong> ${email}</p>
-              <p style="margin: 15px 0 5px 0; color: #333;"><strong>Portal Login URL:</strong></p>
-              <p style="margin: 5px 0; word-break: break-all; color: #333;"><a href="${loginUrl}" style="color: #28a745; text-decoration: underline; font-size: 14px;">${loginUrl}</a></p>
-            </div>
+        <!DOCTYPE html>
+        <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 30px !important; }
+            .outlook-header { padding-left: 10px !important; padding-right: 30px !important; }
+          </style>
+          <![endif]-->
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #ffffff;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 20px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; font-family: Arial, sans-serif; border: 1px solid #ddd;">
+                  <!-- Header -->
+                  <tr>
+                    <td bgcolor="#f8f9fa" style="padding: 30px; text-align: center; border-bottom: 3px solid #28a745;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
+                      <h1 style="margin: 0; font-size: 24px; color: #000000; font-weight: bold;">Welcome Back!</h1>
+                      <p style="margin: 10px 0 0 0; font-size: 16px; color: #000000;">Your Customer Portal Account is already active</p>
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                  <!-- Content -->
+                  <tr>
+                    <td bgcolor="#f9f9f9" style="padding: 30px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
+                      <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">Dear <strong>${customerName}</strong>,</p>
+                      <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">
+                        We noticed you've made another payment. Since you already have an active account with us, no need to create a new account - you can continue using your existing credentials.
+                      </p>
+                      
+                      <!-- Account Info Box -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#ffffff" style="border: 2px solid #e8f5e8; margin: 25px 0;">
+                        <tr>
+                          <td style="padding: 25px;">
+                            <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 18px;">Account Information</h3>
+                            <p style="margin: 10px 0; color: #333333; font-size: 16px;"><strong>Email:</strong> ${email}</p>
+                            <p style="margin: 15px 0 5px 0; color: #333333; font-size: 16px;"><strong>Portal Login URL:</strong></p>
+                            <p style="margin: 5px 0; word-break: break-all; color: #333333; font-size: 14px;"><a href="${loginUrl}" style="color: #28a745; text-decoration: underline;">${loginUrl}</a></p>
+                          </td>
+                        </tr>
+                      </table>
 
-            <div style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #1565c0; margin-top: 0;">Forgot Your Password?</h4>
-              <p style="color: #1565c0; margin-bottom: 0; font-size: 14px;">If you've forgotten your password, click "Forgot Password?" on the login page to reset it securely.</p>
-            </div>
-            
-            <div style="background-color: #fff3e0; border: 1px solid #ffcc02; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #f57c00; margin-top: 0;">Your Customer Portal Features:</h4>
-              <ul style="color: #f57c00; margin-bottom: 0; padding-left: 20px;">
-                <li>View all your payment schedules and history</li>
-                <li>Access your active services across all payments</li>
-                <li>Manage your saved payment methods</li>
-                <li>Download invoices and receipts</li>
-                <li>Get help and support when needed</li>
-              </ul>
-            </div>
-            
-            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">If you have any questions or need assistance accessing your account, please don't hesitate to contact our support team.</p>
-            
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-              <p style="font-size: 14px; color: #888; margin: 0;">Best regards,<br><strong>Virtuzone Team</strong></p>
-            </div>
-          </div>
-        </div>
+                      <!-- Password Reset Notice -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#e3f2fd" style="border: 1px solid #90caf9; margin: 20px 0;">
+                        <tr>
+                          <td style="padding: 15px;">
+                            <h4 style="color: #1565c0; margin: 0 0 10px 0; font-size: 16px;">Forgot Your Password?</h4>
+                            <p style="color: #1565c0; margin: 0; font-size: 14px; line-height: 1.6;">If you've forgotten your password, click "Forgot Password?" on the login page to reset it securely.</p>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Features Box -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#fff3e0" style="border: 1px solid #ffcc02; margin: 20px 0;">
+                        <tr>
+                          <td style="padding: 15px;">
+                            <h4 style="color: #f57c00; margin: 0 0 10px 0; font-size: 16px;">Your Customer Portal Features:</h4>
+                            <ul style="color: #f57c00; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+                              <li>View all your payment schedules and history</li>
+                              <li>Access your active services across all payments</li>
+                              <li>Manage your saved payment methods</li>
+                              <li>Download invoices and receipts</li>
+                              <li>Get help and support when needed</li>
+                            </ul>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <p style="font-size: 14px; color: #666666; line-height: 1.6; margin: 30px 0 0 0;">If you have any questions or need assistance accessing your account, please don't hesitate to contact our support team.</p>
+                      
+                      <!-- Footer -->
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `
     };
 
@@ -1118,74 +1431,112 @@ export const sendPasswordResetEmail = async (customerData) => {
       cc: devTechCcEmails,
       subject: 'Reset Your Recurring Account Password',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-          <div style="background-color: #ee5a52; background-image: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: #ffffff; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">Password Reset</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">Reset Your Recurring Account Password</p>
-          </div>
-          
-          <div style="padding: 30px; background-color: #f9f9f9;">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              Dear <strong>${customerName}</strong>,
-            </p>
-            
-            <p style="font-size: 16px; color: #333; line-height: 1.6;">
-              We received a request to reset your password for your Recurring customer account. 
-              Click the button below to set a new password:
-            </p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 0 auto;">
-                <tr>
-                  <td bgcolor="#ee5a52" style="background-color: #ee5a52; border-radius: 25px; text-align: center;">
-                    <a href="${resetUrl}" target="_blank" style="display: inline-block; padding: 15px 30px; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none; border-radius: 25px; background-color: #ee5a52;">
-                      Reset My Password
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </div>
-            
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #856404; margin-top: 0;">Important:</h4>
-              <p style="color: #856404; margin-bottom: 0; font-size: 14px;">
-                This password reset link will expire in <strong>1 hour</strong> for security reasons. 
-                If you don't reset your password within this time, you'll need to request a new reset link.
-              </p>
-            </div>
-            
-            <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #721c24; margin-top: 0;">Security Notice:</h4>
-              <p style="color: #721c24; margin-bottom: 5px; font-size: 14px;">
-                If you didn't request this password reset, please ignore this email. Your account will remain secure.
-              </p>
-              <p style="color: #721c24; margin-bottom: 0; font-size: 14px;">
-                For additional security, we recommend using a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters.
-              </p>
-            </div>
-            
-            <div style="background-color: #e8f4f8; border: 1px solid #bee5eb; border-radius: 6px; padding: 15px; margin: 20px 0;">
-              <h4 style="color: #0c5460; margin-top: 0;">Alternative Method:</h4>
-              <p style="color: #0c5460; margin-bottom: 5px; font-size: 14px;">
-                If the button doesn't work, copy and paste this link into your browser:
-              </p>
-              <p style="color: #0c5460; margin-bottom: 0; font-size: 12px; word-break: break-all; background-color: #f1f9fc; padding: 8px; border-radius: 4px;">
-                ${resetUrl}
-              </p>
-            </div>
-            
-            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-top: 30px;">
-              If you continue to have problems accessing your account, please contact our support team for assistance.
-            </p>
-            
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-              <p style="font-size: 14px; color: #888; margin: 0;">
-                Best regards,<br>
-                <strong>Virtuzone Team</strong>
-              </p>
-            </div>
-          </div>
-        </div>
+        <!DOCTYPE html>
+        <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 30px !important; }
+            .outlook-header { padding-left: 10px !important; padding-right: 30px !important; }
+          </style>
+          <![endif]-->
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #ffffff;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 20px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; font-family: Arial, sans-serif; border: 1px solid #ddd;">
+                  <!-- Header -->
+                  <tr>
+                    <td bgcolor="#ee5a52" style="padding: 30px; text-align: center;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
+                      <h1 style="margin: 0; font-size: 28px; color: #ffffff; font-weight: bold;">Password Reset</h1>
+                      <p style="margin: 10px 0 0 0; font-size: 16px; color: #ffffff;">Reset Your Recurring Account Password</p>
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                  <!-- Content -->
+                  <tr>
+                    <td bgcolor="#f9f9f9" style="padding: 30px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 30px;"><![endif]-->
+                      <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">
+                        Dear <strong>${customerName}</strong>,
+                      </p>
+                      <p style="font-size: 16px; color: #333333; margin: 0 0 30px 0; line-height: 1.6;">
+                        We received a request to reset your password for your Recurring customer account. 
+                        Click the button below to set a new password:
+                      </p>
+                      
+                      <!-- Reset Button -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 30px auto;">
+                        <tr>
+                          <td align="center" bgcolor="#ee5a52" style="background-color: #ee5a52; padding: 15px 30px;">
+                            <a href="${resetUrl}" target="_blank" style="display: inline-block; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none;">Reset My Password</a>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Important Notice -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#fff3cd" style="border: 1px solid #ffeaa7; margin: 20px 0;">
+                        <tr>
+                          <td style="padding: 15px;">
+                            <h4 style="color: #856404; margin: 0 0 10px 0; font-size: 16px;">Important:</h4>
+                            <p style="color: #856404; margin: 0; font-size: 14px; line-height: 1.6;">
+                              This password reset link will expire in <strong>1 hour</strong> for security reasons. 
+                              If you don't reset your password within this time, you'll need to request a new reset link.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Security Notice -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f8d7da" style="border: 1px solid #f5c6cb; margin: 20px 0;">
+                        <tr>
+                          <td style="padding: 15px;">
+                            <h4 style="color: #721c24; margin: 0 0 10px 0; font-size: 16px;">Security Notice:</h4>
+                            <p style="color: #721c24; margin: 0 0 10px 0; font-size: 14px; line-height: 1.6;">
+                              If you didn't request this password reset, please ignore this email. Your account will remain secure.
+                            </p>
+                            <p style="color: #721c24; margin: 0; font-size: 14px; line-height: 1.6;">
+                              For additional security, we recommend using a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Alternative Method -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#e8f4f8" style="border: 1px solid #bee5eb; margin: 20px 0;">
+                        <tr>
+                          <td style="padding: 15px;">
+                            <h4 style="color: #0c5460; margin: 0 0 10px 0; font-size: 16px;">Alternative Method:</h4>
+                            <p style="color: #0c5460; margin: 0 0 10px 0; font-size: 14px; line-height: 1.6;">
+                              If the button doesn't work, copy and paste this link into your browser:
+                            </p>
+                            <p style="color: #0c5460; margin: 0; font-size: 12px; word-break: break-all; background-color: #f1f9fc; padding: 8px;">
+                              ${resetUrl}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <p style="font-size: 14px; color: #666666; line-height: 1.6; margin: 30px 0 0 0;">
+                        If you continue to have problems accessing your account, please contact our support team for assistance.
+                      </p>
+                      
+                      <!-- Footer -->
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `
     };
 
@@ -1211,13 +1562,43 @@ export const testEmailConfiguration = async () => {
       to: EMAIL_CONFIG.recipients.business_team,
       subject: 'Recurring Email Service Test',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2>Email Service Test Successful</h2>
-          <p>This is a test email to verify that the Recurring payment system email service is working correctly.</p>
-          <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
-          <p><strong>Sender:</strong> ${mailgunConfig.fromEmail}</p>
-          <p>If you receive this email, the configuration is working properly.</p>
-        </div>
+        <!DOCTYPE html>
+        <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if mso]>
+          <style type="text/css">
+            .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+          </style>
+          <![endif]-->
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #ffffff;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 20px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; font-family: Arial, sans-serif;">
+                  <tr>
+                    <td style="padding: 20px;">
+                      <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
+                      <h2 style="margin: 0 0 20px 0; font-size: 24px; color: #333333;">Email Service Test Successful</h2>
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">This is a test email to verify that the Recurring payment system email service is working correctly.</p>
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;"><strong>Sender:</strong> ${mailgunConfig.fromEmail}</p>
+                      <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">If you receive this email, the configuration is working properly.</p>
+                      
+                      <!-- Footer -->
+                      ${getEmailFooter()}
+                      <!--[if mso]></div><![endif]-->
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `
     };
 

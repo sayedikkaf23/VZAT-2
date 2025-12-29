@@ -442,10 +442,19 @@ if (statusData.CustomerStatus == 'Auto Approved') {
       .json({ message: "Email is required"});
   }
 
-  const mailData = {
-    from: `Virtuzone <${mailgunConfig.fromEmail}>`,
-    to: pidata.opp_email,
-    subject: "Your account is waiting for approval",
+  const rejectionBcc = process.env.REJECTION_MAIL_BCC || '';
+
+  // Construct Salesforce URLs
+  const salesforceBaseUrl = "https://dd0000000pp16mae.lightning.force.com";
+  const quotePaymentUrl = `${salesforceBaseUrl}/${pidata.quotepaymentId}`;
+  const opportunityUrl = `${salesforceBaseUrl}/${pidata.OpportunityId}`;
+  const customerEmail = pidata.userEmailId || 'N/A';
+
+  const data = {
+    from: process.env.SMTP_USER,
+    to: pidata.opportunityOwnerEmail,
+    bcc: rejectionBcc || undefined,
+    subject: "Prepayment Screening Flagged – Action Required",
     html: `<!DOCTYPE html>
       <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
     
@@ -453,6 +462,11 @@ if (statusData.CustomerStatus == 'Auto Approved') {
       <title></title>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0"><!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch><o:AllowPNG/></o:OfficeDocumentSettings></xml><![endif]-->
+      <!--[if mso]>
+      <style type="text/css">
+        .outlook-content { padding-left: 10px !important; padding-right: 20px !important; }
+      </style>
+      <![endif]-->
       <style>
         * {
           box-sizing: border-box;
@@ -540,21 +554,25 @@ if (statusData.CustomerStatus == 'Auto Approved') {
                               <table class="paragraph_block block-1" width="100%" border="0" cellpadding="5" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; word-break: break-word;">
                                 <tr>
                                   <td class="pad">
+                                    <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
                                     <div style="color:#000000;direction:ltr;font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:400;letter-spacing:0px;line-height:150%;text-align:left;mso-line-height-alt:21px;">
-                                      <p style="margin: 0; margin-bottom: 16px;">Hi&nbsp;,</p>
-                                      <p style="margin: 0; margin-bottom: 16px;"> Thank you for uploading the required supporting documents. We are pleased to inform you that they are now under review.</p>
-                                      <p style="margin: 0; margin-bottom: 16px;">We will send an email with the link for the payment once you got the approval</p>
+                                      <p style="margin: 0; margin-bottom: 16px;">Hi Team,</p>
+                                      <p style="margin: 0; margin-bottom: 16px;">A new customer Prepayment Screening submission has been flagged by DigiComply.</p>
+                                      <p style="margin: 0; margin-bottom: 16px;">Below are the associated links for your review:</p>
                                      <br>
-                                       <p style="margin: 0; margin-top: 24px; font-weight: bold;">Your Details:</p>
-                                  <ul style="margin: 0; padding-left: 18px; margin-bottom: 16px;">
-                                  <li>Quote Payment ID: <strong>${pidata.quotepaymentId}</strong></li>
-                                    <li>Opportunity ID: <strong>${pidata.OpportunityId}</strong></li>
-                                    <li>Email: <strong>${pidata.opp_email}</strong></li>
-                                  </ul>
+                                       <p style="margin: 0; margin-top: 24px; font-weight: bold;">Quote Payment:</p>
+                                  <p style="margin: 0; margin-bottom: 16px;"><a href="${quotePaymentUrl}" style="color: #0066cc; text-decoration: underline;">${quotePaymentUrl}</a></p>
                                   <br>
-                                      <p style="margin: 0;">Regards,</p>
-                                      <p style="margin: 0;"></p>
+                                  <p style="margin: 0; margin-top: 16px; font-weight: bold;">Opportunity:</p>
+                                  <p style="margin: 0; margin-bottom: 16px;"><a href="${opportunityUrl}" style="color: #0066cc; text-decoration: underline;">${opportunityUrl}</a></p>
+                                  <br>
+                                  <p style="margin: 0; margin-top: 16px; font-weight: bold;">Customer Email:</p>
+                                  <p style="margin: 0; margin-bottom: 16px;">${customerEmail}</p>
+                                  <br>
+                                      <p style="margin: 0; margin-top: 24px;">Regards,</p>
+                                      <p style="margin: 0;">Compliance Automation</p>
                                     </div>
+                                    <!--[if mso]></div><![endif]-->
                                   </td>
                                 </tr>
                               </table>
@@ -634,7 +652,7 @@ if (statusData.CustomerStatus == 'Auto Approved') {
      if (!mailgunClient) {
        throw new Error('Mailgun client not initialized');
      }
-     const result = await mailgunClient.messages().send(mailData);
+     const result = await mailgunClient.messages().send(data);
      console.log('✅ Email sent successfully to:', pidata.opp_email, 'Message ID:', result.id);
    } catch (emailError) {
      console.error('❌ Email sending failed:', {
