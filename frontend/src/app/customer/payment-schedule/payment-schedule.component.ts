@@ -627,10 +627,11 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           next: (response: any) => {
             console.log('✅ Fresh checkout ID generated:', response.checkout_id);
             
-            // Navigate to payment widget with the fresh checkout ID
+            // Navigate to payment widget with the fresh checkout ID and entity ID
             this.router.navigate(['/payment-widget'], {
               queryParams: {
                 checkoutId: response.checkout_id,
+                entityId: response.entity_id, // Pass entity ID for form data-entity-id attribute
                 paymentId: payment.id,
                 amount: payment.amount,
                 dueDate: payment.dueDate.toISOString(),

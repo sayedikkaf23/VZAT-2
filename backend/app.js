@@ -358,8 +358,9 @@ app.post('/api/generate_checkout/:quotepaymentId', async (req, res) => {
     
     if (afsResponse.data && afsResponse.data.id) {
       const checkoutId = afsResponse.data.id;
-      // CRITICAL: Include entityId in widget URL - required by AFS to prevent "invalid or missing entity type" error
-      const paymentWidgetUrl = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${checkoutId}&entityId=${entityId}`;
+      // Widget URL should only have checkoutId, NOT entityId (AFS rejects entityId in script URL)
+      // EntityId is used during checkout creation and in the HTML form data-entity-id attribute
+      const paymentWidgetUrl = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
       
       console.log('✅ Fresh checkout ID generated:', checkoutId);
       console.log('🔗 Widget URL:', paymentWidgetUrl);
@@ -379,6 +380,7 @@ app.post('/api/generate_checkout/:quotepaymentId', async (req, res) => {
         message: 'Fresh checkout ID generated successfully',
         checkout_id: checkoutId,
         payment_widget_url: paymentWidgetUrl,
+        entity_id: entityId, // Include for frontend to use in form data-entity-id attribute
         amount: installmentAmount,
         currency: 'AED',
         quotepaymentId: paymentData.quotepaymentId,
