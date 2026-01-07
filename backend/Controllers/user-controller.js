@@ -1,7 +1,7 @@
 
 import qs from "querystring";
 
-import VzatRecurringDataModel from "../model/VzatRecurringDataModel.js";
+import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 // Remove the import * as AWS from 'aws-sdk';
 import fs from 'fs';
 // import mailgun from 'mailgun-js';
@@ -351,12 +351,12 @@ export const checkStatus = async (req, res) => {
     const statusData = statusResponse.data;
     
  
-    // Step 3: Find the VzatRecurringDataModel entry using the LeadId in leadWithDetails to match CustomerId
-    const pidata = await VzatRecurringDataModel.findOne({ afs_checkout_id: CustomerId });
+    // Step 3: Find the Vzat_Recurring_Data entry using the LeadId in leadWithDetails to match CustomerId
+    const pidata = await Vzat_Recurring_Data.findOne({ afs_checkout_id: CustomerId });
 
  
     if (!pidata) {
-      return res.status(404).json({ error: 'VzatRecurringDataModel not found' });
+      return res.status(404).json({ error: 'Payment record not found' });
     }
  
     // Update the kycStatus field with the value from the API response
@@ -692,7 +692,7 @@ if (statusData.CustomerStatus == 'Auto Approved') {
 
  
     res.status(200).json({
-      message: 'Status retrieved and VzatRecurringDataModel updated successfully',
+      message: 'Status retrieved and payment record updated successfully',
       data: statusData,
     });
  
