@@ -80,7 +80,13 @@ const vzatRecurringDataSchema = new Schema({
         type: String,
         required: false
     },
-    // Payment link expiry date - links expire 7 days after creation
+    // Track when checkout IDs are generated (for monitoring/debugging)
+    last_checkout_generated: {
+        type: Date,
+        required: false
+    },
+    // Payment link expiry date - NO LONGER USED (kept for backward compatibility)
+    // Payment links using quotepaymentId never expire
     payment_link_expiry: {
         type: Date,
         required: false

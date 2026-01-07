@@ -180,13 +180,14 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // Load payment schedule by checkout ID (from URL like /payment/{checkoutId})
-  private loadPaymentScheduleByCheckoutId(checkoutId: string): void {    this.isLoading = true;
+  // Load payment schedule by quotepaymentId (from URL like /payment/{quotepaymentId})
+  private loadPaymentScheduleByCheckoutId(quotepaymentId: string): void {
+    this.isLoading = true;
     this.errorMessage = ''; // Clear any previous error
-    this.paymentScheduleService.getPaymentScheduleByCheckoutId(checkoutId).subscribe({
+    this.paymentScheduleService.getPaymentScheduleByCheckoutId(quotepaymentId).subscribe({
       next: (data: any) => {
         this.populateComponentData(data);
-        this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+        // Don't set afsPaymentLink here - it will be generated on-demand when user clicks pay
         // isLoading is set to false in populateComponentData
       },
       error: (error: any) => {
@@ -197,32 +198,13 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
           message: error.message
         });
         
-        // Handle payment link expiration (410 Gone)
-        if (error.status === 410 && error.error?.isExpired) {
-          const errorData = error.error;
-          let expiredMessage = '🚫 Payment Link Expired\n\n';
-          expiredMessage += errorData.message || 'This payment link has expired and is no longer valid for payments.';
-          
-          if (errorData.expiryDate) {
-            const expiryDate = new Date(errorData.expiryDate);
-            expiredMessage += `\n\nThis link expired on ${expiryDate.toLocaleDateString()}.`;
-          }
-          
-          expiredMessage += '\n\nPlease contact your sales representative to generate a new payment link.';
-          this.errorMessage = expiredMessage;
-        } else {
-          this.errorMessage = `Failed to load payment schedule: ${error.status} ${error.statusText}\n\nPlease try again later or contact support if the problem persists.`;
-        }
+        this.errorMessage = `Failed to load payment schedule: ${error.status} ${error.statusText}\n\nPlease try again later or contact support if the problem persists.`;
+        this.isLoading = false;
+        this.cdr.detectChanges();
         
-        this.isLoading = false; // Set loading to false immediately
-        this.cdr.detectChanges(); // Force change detection
-        
-        // Only load demo data if it's not an expiration error
-        if (error.status !== 410) {
-          setTimeout(() => {
-            this.loadDemoData();
-          }, 500); // Small delay to show error message
-        }
+        setTimeout(() => {
+          this.loadDemoData();
+        }, 500);
       }
     });
   }
@@ -638,23 +620,31 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     if (payment.status === 'due' && payment.isNextPayment) {
       this.selectedPayment = payment;
 
-      
-      // Navigate to payment widget with AFS checkout data
-      if (this.currentCheckoutId) {
-
-        // If we have a checkout ID, navigate to the AFS payment widget
-        this.router.navigate(['/payment-widget'], {
-          queryParams: {
-            checkoutId: this.currentCheckoutId,
-            paymentId: payment.id,
-            amount: payment.amount,
-            dueDate: payment.dueDate.toISOString(),
-            quotepaymentId: this.quotepaymentId,
-            paymentLink: this.afsPaymentLink
+      // Generate fresh checkout ID on-demand to avoid expiration issues
+      if (this.quotepaymentId) {
+        console.log('🔄 Generating fresh checkout ID for payment...');
+        this.paymentScheduleService.generateCheckoutId(this.quotepaymentId).subscribe({
+          next: (response: any) => {
+            console.log('✅ Fresh checkout ID generated:', response.checkout_id);
+            
+            // Navigate to payment widget with the fresh checkout ID
+            this.router.navigate(['/payment-widget'], {
+              queryParams: {
+                checkoutId: response.checkout_id,
+                paymentId: payment.id,
+                amount: payment.amount,
+                dueDate: payment.dueDate.toISOString(),
+                quotepaymentId: this.quotepaymentId,
+                paymentLink: response.payment_widget_url
+              }
+            });
+          },
+          error: (error: any) => {
+            console.error('❌ Failed to generate checkout ID:', error);
+            alert('Failed to initialize payment. Please try again or contact support.');
           }
         });
       } else {
-
         // Fallback to manual payment widget
         this.router.navigate(['/payment-widget'], {
           queryParams: {

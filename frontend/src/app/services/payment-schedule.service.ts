@@ -129,13 +129,22 @@ export class PaymentScheduleService {
   }
 
   /**
-   * Get payment schedule details by checkoutId
+   * Get payment schedule details by quotepaymentId (updated to use persistent identifier)
    */
-  getPaymentScheduleByCheckoutId(checkoutId: string): Observable<VzatRecurringData> {
-    const url = `${this.apiUrl}/payment_schedule/${checkoutId}`;
-
-    
+  getPaymentScheduleByCheckoutId(quotepaymentId: string): Observable<VzatRecurringData> {
+    const url = `${this.apiUrl}/payment_schedule/${quotepaymentId}`;
     return this.http.get<VzatRecurringData>(url);
+  }
+
+  /**
+   * Generate fresh AFS checkout ID on demand
+   * This prevents the 30-minute expiration issue
+   */
+  generateCheckoutId(quotepaymentId: string): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/generate_checkout/${quotepaymentId}`,
+      {}
+    );
   }
 
   /**
