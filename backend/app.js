@@ -358,9 +358,11 @@ app.post('/api/generate_checkout/:quotepaymentId', async (req, res) => {
     
     if (afsResponse.data && afsResponse.data.id) {
       const checkoutId = afsResponse.data.id;
-      const paymentWidgetUrl = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+      // CRITICAL: Include entityId in widget URL - required by AFS to prevent "invalid or missing entity type" error
+      const paymentWidgetUrl = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${checkoutId}&entityId=${entityId}`;
       
-      console.log('\u2705 Fresh checkout ID generated:', checkoutId);
+      console.log('✅ Fresh checkout ID generated:', checkoutId);
+      console.log('🔗 Widget URL:', paymentWidgetUrl);
       
       // Update the database with the latest checkout ID (for reference only)
       await Vzat_Recurring_Data.findOneAndUpdate(
