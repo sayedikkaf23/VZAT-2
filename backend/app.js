@@ -90,13 +90,17 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     });
     
     // If not found, check if it's in old_checkout_ids array
+    let isOldCheckoutId = false;
     if (!paymentData) {
       paymentData = await Vzat_Recurring_Data.findOne({
         'old_checkout_ids.checkout_id': req.params.checkoutId
       });
       
       if (paymentData) {
+        isOldCheckoutId = true;
         console.log('🔍 Found payment data using old checkout ID:', req.params.checkoutId);
+        console.log('📝 Current checkout ID in database:', paymentData.afs_checkout_id);
+        console.log('💡 Old checkout ID URL will work, but payment widget will use current checkout ID');
       }
     }
     
@@ -151,7 +155,9 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       console.log('⏰ Using payment_link_expiry fallback - expired');
     }
     
-    let currentCheckoutId = req.params.checkoutId;
+    // Use the current checkout ID from database (not the one from URL if it's old)
+    // This ensures old checkout ID URLs work but payment widget uses current checkout ID
+    let currentCheckoutId = paymentData.afs_checkout_id || req.params.checkoutId;
     let newCheckoutIdGenerated = false;
     
     if (isExpired) {
@@ -356,9 +362,12 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       ...paymentData.toObject ? paymentData.toObject() : paymentData,
       compliance_clear: paymentData.compliance_clear !== undefined ? paymentData.compliance_clear : false,
       prepayment_screening: paymentData.prepayment_screening !== undefined ? paymentData.prepayment_screening : false,
-      // Include new checkout ID if it was regenerated
+      // Always return the CURRENT checkout ID (may be newly generated)
+      // This ensures payment widget uses the valid checkout ID even if accessed via old checkout ID URL
       afs_checkout_id: currentCheckoutId,
-      checkout_id_regenerated: newCheckoutIdGenerated
+      checkout_id_regenerated: newCheckoutIdGenerated,
+      // Include the original checkout ID from URL for reference
+      requested_checkout_id: req.params.checkoutId
     };
     
     console.log('✅ Final responseData prepared:', {

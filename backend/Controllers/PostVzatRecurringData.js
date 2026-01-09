@@ -47,10 +47,17 @@ export const generateNewCheckoutId = async (paymentData) => {
       // For subscriptions, we use 'DB' (Direct Debit) for immediate charge of first payment
       afsData.append('paymentType', 'DB');
       
+      // IMPORTANT: For checkout creation, always use INITIAL type
+      // REPEAT type is only for server-to-server payments using registration API
+      // Even if registration exists, checkout sessions always use INITIAL
+      // The registration will be created/updated after successful payment
+      console.log('🔄 Creating checkout for subscription (always INITIAL for checkout sessions)');
+      if (paymentData.afs_registration_id) {
+        console.log('   ℹ️  Note: Registration ID exists but checkout uses INITIAL type');
+      }
+      
       // CRITICAL: Add createRegistration=true for subscriptions to enable recurring payments
       afsData.append('createRegistration', 'true');
-      
-      // Add subscription-specific parameters
       afsData.append('recurringType', 'INITIAL');
       
       // Calculate next charge date

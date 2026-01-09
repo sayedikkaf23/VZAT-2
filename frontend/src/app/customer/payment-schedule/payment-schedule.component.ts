@@ -187,17 +187,17 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       next: (data: any) => {
         this.populateComponentData(data);
         
-        // If checkout ID was regenerated, update the URL without reloading
+        // If checkout ID was regenerated, log it but DON'T update the URL
+        // Keep the old checkout ID in the URL so the link still works
+        // The payment widget will use the new checkout ID from the API response
         if (data.checkout_id_regenerated && data.afs_checkout_id && data.afs_checkout_id !== checkoutId) {
-          console.log('🔄 Checkout ID was regenerated, updating URL:', {
+          console.log('🔄 Checkout ID was regenerated (old link still works):', {
             oldCheckoutId: checkoutId,
-            newCheckoutId: data.afs_checkout_id
+            newCheckoutId: data.afs_checkout_id,
+            message: 'Old checkout ID URL will work, but payment widget uses new checkout ID'
           });
-          // Update the browser URL without reloading to reflect the new checkout ID
-          if (isPlatformBrowser(this.platformId)) {
-            const newUrl = `/payment/${data.afs_checkout_id}`;
-            window.history.replaceState({}, '', newUrl);
-          }
+          // DO NOT update the URL - keep the old checkout ID in the URL
+          // The payment widget will automatically use the new checkout ID from data.afs_checkout_id
         }
         
         // isLoading is set to false in populateComponentData
