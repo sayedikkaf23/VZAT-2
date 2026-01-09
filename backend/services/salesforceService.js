@@ -21,7 +21,7 @@ let accessTokenCache = {
  */
 const getSalesforceAccessToken = async () => {
   const startTime = Date.now();
-  const endpoint = `${process.env.SALESFORCE_LOGIN_URL}/services/oauth2/token`;
+  const endpoint = `${process.env.SALESFORCE_API_URL}/services/oauth2/token`;
   console.log("🔄 Getting Salesforce access token...", endpoint);
   try {
     // Check if we have a valid cached token
