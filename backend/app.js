@@ -318,14 +318,19 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       } catch (checkoutError) {
         console.error('❌ Error generating new checkoutId:', checkoutError);
         // Continue with old checkoutId if generation fails
+        // Don't return error - still allow access with expired checkoutId
         console.log('⚠️ Continuing with existing checkoutId despite expiration');
+        console.log('⚠️ Note: CheckoutId generation failed, but allowing access with expired checkoutId');
       }
     }
     
+    // IMPORTANT: Even if checkoutId generation failed, continue processing
+    // Don't return error for expired payment links - allow access with expired checkoutId
     console.log('✅ Payment data found and processed:', {
       checkoutId: paymentData.afs_checkout_id,
       wasRegenerated: checkoutIdRegenerated,
-      paymentLinkExpired: paymentLinkExpired
+      paymentLinkExpired: paymentLinkExpired,
+      originalCheckoutId: req.params.checkoutId
     });
     
     // Get Salesforce OAuth token and fetch compliance_clear and prepayment_screening
@@ -479,7 +484,15 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       // Include flag if checkoutId was regenerated
       checkoutId_regenerated: checkoutIdRegenerated,
       // Include message if payment link was expired and regenerated
-      payment_link_regenerated: paymentLinkExpired && checkoutIdRegenerated
+      payment_link_regenerated: paymentLinkExpired && checkoutIdRegenerated,
+      // Include warning if payment link expired but checkoutId generation failed
+      payment_link_expired: paymentLinkExpired && !checkoutIdRegenerated,
+      // Message for frontend
+      message: paymentLinkExpired && checkoutIdRegenerated 
+        ? 'Payment link was expired but has been automatically renewed with a new checkout ID.'
+        : paymentLinkExpired && !checkoutIdRegenerated
+        ? 'Payment link has expired. A new checkout ID could not be generated automatically. Please try again or contact support.'
+        : undefined
     };
     
     console.log('✅ Final responseData prepared:', {
