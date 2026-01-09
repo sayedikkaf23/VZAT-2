@@ -117,17 +117,38 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     
     // ⏰ CHECK PAYMENT LINK EXPIRY (30 minutes after creation)
     const currentDate = new Date();
-    const paymentLinkExpiry = paymentData.payment_link_expiry;
-    const checkoutCreatedAt = paymentData.checkout_created_at || (paymentLinkExpiry ? new Date(paymentLinkExpiry.getTime() - 30 * 60 * 1000) : null);
+    // Ensure dates are Date objects (MongoDB might return strings)
+    const paymentLinkExpiry = paymentData.payment_link_expiry ? new Date(paymentData.payment_link_expiry) : null;
+    const checkoutCreatedAt = paymentData.checkout_created_at 
+      ? new Date(paymentData.checkout_created_at) 
+      : (paymentLinkExpiry ? new Date(paymentLinkExpiry.getTime() - 30 * 60 * 1000) : null);
+    
+    // Debug logging
+    console.log('⏰ Checking checkout expiry:', {
+      currentDate: currentDate.toISOString(),
+      checkoutCreatedAt: checkoutCreatedAt ? checkoutCreatedAt.toISOString() : 'MISSING',
+      paymentLinkExpiry: paymentLinkExpiry ? paymentLinkExpiry.toISOString() : 'MISSING',
+      checkoutId: req.params.checkoutId
+    });
     
     // Check if checkout ID is expired (more than 30 minutes old)
     let isExpired = false;
     if (checkoutCreatedAt) {
       const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000);
+      const timeDifference = currentDate.getTime() - checkoutCreatedAt.getTime();
+      const minutesOld = Math.floor(timeDifference / (60 * 1000));
       isExpired = checkoutCreatedAt < thirtyMinutesAgo;
+      
+      console.log('⏰ Expiry check details:', {
+        checkoutCreatedAt: checkoutCreatedAt.toISOString(),
+        thirtyMinutesAgo: thirtyMinutesAgo.toISOString(),
+        minutesOld: minutesOld,
+        isExpired: isExpired
+      });
     } else if (paymentLinkExpiry && currentDate > paymentLinkExpiry) {
       // Fallback: use payment_link_expiry if checkout_created_at is not set
       isExpired = true;
+      console.log('⏰ Using payment_link_expiry fallback - expired');
     }
     
     let currentCheckoutId = req.params.checkoutId;
