@@ -333,6 +333,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         try {
           const updateData = { 
             afs_checkout_id: afsResponse.data.id,
+            checkout_created_at: new Date(), // Store checkout creation time for expiration check
             is_subscription: isSubscription,
             subscription_status: isSubscription ? 'pending' : 'one-time',
             next_charge_date: isSubscription ? nextInstallmentDate : null
