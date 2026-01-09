@@ -79,90 +79,14 @@ app.use('/api/test-payment-update', TestPaymentUpdate);
 app.use('/api/debug', WebhookDebugRoute);
 app.use('/api/retry-payment', RetryPaymentRoute);
 app.use('/api/user', UserRoute);
-
-// Helper function to generate a new AFS checkoutId
-async function generateNewCheckoutId(paymentData) {
-  try {
-    const axios = (await import('axios')).default;
-    const afsUrl = `${process.env.AFS_DOMAIN}/v1/checkouts`;
-    const entityId = process.env.AFS_ENTITY_ID;
-    const accessToken = process.env.AFS_ACCESS_TOKEN;
-    const backendUrl = process.env.BACKEND_URL;
-    
-    if (!process.env.AFS_DOMAIN || !process.env.AFS_ENTITY_ID || !process.env.AFS_ACCESS_TOKEN) {
-      throw new Error('Missing AFS environment variables');
-    }
-    
-    // Calculate installment amount
-    const installmentAmount = paymentData.payment_schedule && paymentData.payment_schedule.length > 0
-      ? paymentData.payment_schedule[0].amount
-      : paymentData.Total_After_VAT_Currency / (paymentData.InstallmentLeft || 1);
-    
-    const afsData = new URLSearchParams();
-    afsData.append('entityId', entityId);
-    afsData.append('amount', installmentAmount.toFixed(2));
-    afsData.append('currency', 'AED');
-    afsData.append('merchantTransactionId', paymentData.quotepaymentId);
-    afsData.append('shopperResultUrl', `${backendUrl}/payment-result`);
-    
-    // Add webhook notification URL
-    const notificationUrl = `${backendUrl}/api/subscription/webhook/afs`;
-    afsData.append('notificationUrl', notificationUrl);
-    
-    // Check if subscription
-    if (paymentData.is_subscription) {
-      afsData.append('paymentType', 'DB');
-      afsData.append('createRegistration', 'true');
-      afsData.append('recurringType', 'INITIAL');
-      
-      if (paymentData.next_charge_date) {
-        const nextChargeDate = new Date(paymentData.next_charge_date).toISOString().slice(0, 10);
-        afsData.append('merchantMemo', `Subscription:${paymentData.quotepaymentId}:${paymentData.InstallmentLeft}:${nextChargeDate}`);
-      }
-    } else {
-      afsData.append('paymentType', 'DB');
-    }
-    
-    const afsHeaders = {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/x-www-form-urlencoded"
-    };
-    
-    console.log('🔄 Generating new checkoutId for quotepaymentId:', paymentData.quotepaymentId);
-    const afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
-    
-    if (afsResponse.data && afsResponse.data.id) {
-      console.log('✅ New checkoutId generated:', afsResponse.data.id);
-      return afsResponse.data.id;
-    } else {
-      throw new Error('Failed to generate checkoutId from AFS');
-    }
-  } catch (error) {
-    console.error('❌ Error generating new checkoutId:', error);
-    throw error;
-  }
-}
-
 // Payment schedule API endpoint for Angular component
 app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
   
   try {
-    // First, try to find payment data by current checkout ID
-    let paymentData = await Vzat_Recurring_Data.findOne({ 
+    // Find payment data by checkout ID (using persistent connection)
+    const paymentData = await Vzat_Recurring_Data.findOne({ 
       afs_checkout_id: req.params.checkoutId 
     });
-    
-    // If not found by current checkoutId, try to find by previous checkoutIds
-    if (!paymentData) {
-      console.log('🔍 Not found by current checkoutId, searching in previous_checkout_ids...');
-      paymentData = await Vzat_Recurring_Data.findOne({
-        'previous_checkout_ids.checkout_id': req.params.checkoutId
-      });
-      
-      if (paymentData) {
-        console.log('✅ Found payment data by previous checkoutId:', req.params.checkoutId);
-      }
-    }
     
     console.log('🔍 Payment data found:', paymentData);
     if (!paymentData) {
@@ -179,159 +103,27 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       return res.status(404).json(errorData);
     }
     
-    // Check if checkoutId is expired (30 minutes)
-    const currentDate = new Date();
-    
-    // Get checkout creation time - use checkout_created_at if available, otherwise use subscription_created_date as fallback
-    let checkoutCreatedAt = paymentData.checkout_created_at;
-    if (!checkoutCreatedAt) {
-      // For old records without checkout_created_at, use subscription_created_date as fallback
-      checkoutCreatedAt = paymentData.subscription_created_date || paymentData.createdAt;
-      
-      // If we're using fallback and checkoutId matches, update the record to set checkout_created_at
-      // This helps future expiration checks
-      if (checkoutCreatedAt && paymentData.afs_checkout_id === req.params.checkoutId) {
-        console.log('⚠️ Missing checkout_created_at, using subscription_created_date as fallback');
-        // We'll update this after checking expiration
-      }
-    }
-    
-    // Convert to Date object if it's a string or MongoDB date object
-    const checkoutCreatedAtDate = checkoutCreatedAt ? new Date(checkoutCreatedAt) : null;
-    
-    let isCheckoutExpired = false;
-    let needsNewCheckout = false;
-    
-    if (checkoutCreatedAtDate) {
-      const checkoutAge = currentDate - checkoutCreatedAtDate;
-      const thirtyMinutesInMs = 30 * 60 * 1000; // 30 minutes in milliseconds
-      isCheckoutExpired = checkoutAge > thirtyMinutesInMs;
-      
-      console.log('⏰ Checkout age check:', {
-        checkoutCreatedAt: checkoutCreatedAtDate,
-        currentDate: currentDate,
-        ageMinutes: Math.round(checkoutAge / 60000),
-        isExpired: isCheckoutExpired
-      });
-      
-      // Also check if the current checkoutId matches the request (might be using old checkoutId)
-      if (paymentData.afs_checkout_id !== req.params.checkoutId) {
-        // User is accessing with old checkoutId, we should use the current one if not expired
-        if (!isCheckoutExpired && paymentData.afs_checkout_id) {
-          console.log('🔄 Using current checkoutId instead of old one');
-          // The paymentData already has the current checkoutId, continue with it
-        } else {
-          needsNewCheckout = true;
-        }
-      } else if (isCheckoutExpired) {
-        needsNewCheckout = true;
-        console.log('⏰ CheckoutId expired, will generate new one');
-      }
-    } else {
-      // If no creation time is stored at all, assume it's expired and regenerate
-      console.log('⚠️ No checkout creation time found, will regenerate to be safe');
-      needsNewCheckout = true;
-    }
-    
-    // If checkout_created_at is missing but we have a fallback date, update the record
-    if (!paymentData.checkout_created_at && checkoutCreatedAtDate && !needsNewCheckout && paymentData.afs_checkout_id === req.params.checkoutId) {
-      try {
-        await Vzat_Recurring_Data.findByIdAndUpdate(
-          paymentData._id,
-          { $set: { checkout_created_at: checkoutCreatedAtDate } },
-          { new: true }
-        );
-        paymentData.checkout_created_at = checkoutCreatedAtDate;
-        console.log('✅ Updated record with checkout_created_at from fallback');
-      } catch (updateErr) {
-        console.error('⚠️ Error updating checkout_created_at:', updateErr);
-      }
-    }
-    
     // ⏰ CHECK PAYMENT LINK EXPIRY (7 days after creation)
-    // If expired, regenerate checkoutId instead of returning error
+    const currentDate = new Date();
     const paymentLinkExpiry = paymentData.payment_link_expiry;
-    let paymentLinkExpired = false;
     
     if (paymentLinkExpiry && currentDate > paymentLinkExpiry) {
-      console.log('⏰ Payment link has expired (7 days), will regenerate checkoutId');
-      paymentLinkExpired = true;
-      needsNewCheckout = true; // Trigger checkoutId regeneration
+      console.log('🚫 Payment link has expired for checkoutId:', req.params.checkoutId);
+      const expiredData = {
+        error: 'Payment link has expired',
+        message: 'This payment link has expired. Please contact your sales representative to generate a new payment link.',
+        isExpired: true,
+        expiryDate: paymentLinkExpiry,
+        checkoutId: req.params.checkoutId
+      };
+      
+      // Log expired link access attempt
+      Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, expiredData);
+      
+      return res.status(410).json(expiredData); // 410 Gone - resource expired
     }
     
-    // Track if checkoutId was actually regenerated
-    let checkoutIdRegenerated = false;
-    
-    // Generate new checkoutId if payment link expired (7 days) or checkoutId expired (30 minutes)
-    if (needsNewCheckout) {
-      try {
-        if (paymentLinkExpired) {
-          console.log('🔄 Payment link expired, generating new checkoutId and extending expiry...');
-        } else {
-          console.log('⏰ CheckoutId expired or missing, generating new one...');
-        }
-        
-        // Store old checkoutId in previous_checkout_ids before replacing
-        const oldCheckoutId = paymentData.afs_checkout_id || req.params.checkoutId;
-        const previousCheckoutIds = paymentData.previous_checkout_ids || [];
-        
-        // Add old checkoutId to previous list if not already there
-        if (oldCheckoutId && !previousCheckoutIds.some(p => p.checkout_id === oldCheckoutId)) {
-          previousCheckoutIds.push({
-            checkout_id: oldCheckoutId,
-            created_at: checkoutCreatedAtDate || paymentData.subscription_created_date || new Date(),
-            replaced_at: new Date()
-          });
-        }
-        
-        // Generate new checkoutId
-        const newCheckoutId = await generateNewCheckoutId(paymentData);
-        
-        // Calculate new payment link expiry (7 days from now)
-        const newPaymentLinkExpiry = new Date();
-        newPaymentLinkExpiry.setDate(newPaymentLinkExpiry.getDate() + 7);
-        
-        // Update database with new checkoutId and extend payment link expiry
-        const updateData = {
-          afs_checkout_id: newCheckoutId,
-          checkout_created_at: new Date(),
-          previous_checkout_ids: previousCheckoutIds,
-          payment_link_expiry: newPaymentLinkExpiry // Extend payment link expiry by 7 days
-        };
-        
-        await Vzat_Recurring_Data.findByIdAndUpdate(
-          paymentData._id,
-          { $set: updateData },
-          { new: true }
-        );
-        
-        // Update paymentData object with new checkoutId
-        paymentData.afs_checkout_id = newCheckoutId;
-        paymentData.checkout_created_at = new Date();
-        paymentData.previous_checkout_ids = previousCheckoutIds;
-        paymentData.payment_link_expiry = newPaymentLinkExpiry;
-        checkoutIdRegenerated = true;
-        
-        console.log('✅ New checkoutId generated and saved:', newCheckoutId);
-        console.log('📝 Old checkoutId stored in previous_checkout_ids:', oldCheckoutId);
-        console.log('📅 Payment link expiry extended to:', newPaymentLinkExpiry);
-      } catch (checkoutError) {
-        console.error('❌ Error generating new checkoutId:', checkoutError);
-        // Continue with old checkoutId if generation fails
-        // Don't return error - still allow access with expired checkoutId
-        console.log('⚠️ Continuing with existing checkoutId despite expiration');
-        console.log('⚠️ Note: CheckoutId generation failed, but allowing access with expired checkoutId');
-      }
-    }
-    
-    // IMPORTANT: Even if checkoutId generation failed, continue processing
-    // Don't return error for expired payment links - allow access with expired checkoutId
-    console.log('✅ Payment data found and processed:', {
-      checkoutId: paymentData.afs_checkout_id,
-      wasRegenerated: checkoutIdRegenerated,
-      paymentLinkExpired: paymentLinkExpired,
-      originalCheckoutId: req.params.checkoutId
-    });
+    console.log('✅ Payment data found and link is still valid:', paymentData);
     
     // Get Salesforce OAuth token and fetch compliance_clear and prepayment_screening
     let compliance_clear, prepayment_screening;
@@ -478,36 +270,19 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     const responseData = {
       ...paymentData.toObject ? paymentData.toObject() : paymentData,
       compliance_clear: paymentData.compliance_clear !== undefined ? paymentData.compliance_clear : false,
-      prepayment_screening: paymentData.prepayment_screening !== undefined ? paymentData.prepayment_screening : false,
-      // Include current checkoutId (may be newly generated)
-      afs_checkout_id: paymentData.afs_checkout_id,
-      // Include flag if checkoutId was regenerated
-      checkoutId_regenerated: checkoutIdRegenerated,
-      // Include message if payment link was expired and regenerated
-      payment_link_regenerated: paymentLinkExpired && checkoutIdRegenerated,
-      // Include warning if payment link expired but checkoutId generation failed
-      payment_link_expired: paymentLinkExpired && !checkoutIdRegenerated,
-      // Message for frontend
-      message: paymentLinkExpired && checkoutIdRegenerated 
-        ? 'Payment link was expired but has been automatically renewed with a new checkout ID.'
-        : paymentLinkExpired && !checkoutIdRegenerated
-        ? 'Payment link has expired. A new checkout ID could not be generated automatically. Please try again or contact support.'
-        : undefined
+      prepayment_screening: paymentData.prepayment_screening !== undefined ? paymentData.prepayment_screening : false
     };
     
     console.log('✅ Final responseData prepared:', {
       compliance_clear: responseData.compliance_clear,
       prepayment_screening: responseData.prepayment_screening,
-      quotepaymentId: responseData.quotepaymentId,
-      afs_checkout_id: responseData.afs_checkout_id,
-      checkoutId_regenerated: responseData.checkoutId_regenerated
+      quotepaymentId: responseData.quotepaymentId
     });
     
     // Log successful response to database
     Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, {
       success: true,
-      paymentData: responseData,
-      checkoutId_regenerated: responseData.checkoutId_regenerated
+      paymentData: responseData
     });
     
     // Return the data in the format expected by Angular component

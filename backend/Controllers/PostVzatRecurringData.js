@@ -7,7 +7,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 
 // Load environment variables
-dotenv.config();
+dotenv.config();z
 
 const Post_Vzat_Recurring_Data = async (req, res) => {
   await connectDB();
@@ -119,7 +119,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     let nextInstallmentDate = null;
     let installmentAmount = parseFloat(Total_After_VAT_Currency);
     let paymentLinkExpiryDate = new Date(createdDateObj);
-    paymentLinkExpiryDate.setDate(paymentLinkExpiryDate.getDate() + 7); // Payment link expires 7 days after creation
+    paymentLinkExpiryDate.setMinutes(paymentLinkExpiryDate.getMinutes() + 30); // Payment link expires 30 minutes after creation
     
     if (finalInstallmentType === "Installments") {
       const currentDate = new Date();
@@ -333,7 +333,6 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
         try {
           const updateData = { 
             afs_checkout_id: afsResponse.data.id,
-            checkout_created_at: new Date(), // Store checkout creation time for expiration check
             is_subscription: isSubscription,
             subscription_status: isSubscription ? 'pending' : 'one-time',
             next_charge_date: isSubscription ? nextInstallmentDate : null
