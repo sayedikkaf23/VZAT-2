@@ -186,7 +186,20 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     this.paymentScheduleService.getPaymentScheduleByCheckoutId(checkoutId).subscribe({
       next: (data: any) => {
         this.populateComponentData(data);
-        this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+        
+        // If checkout ID was regenerated, update the URL without reloading
+        if (data.checkout_id_regenerated && data.afs_checkout_id && data.afs_checkout_id !== checkoutId) {
+          console.log('🔄 Checkout ID was regenerated, updating URL:', {
+            oldCheckoutId: checkoutId,
+            newCheckoutId: data.afs_checkout_id
+          });
+          // Update the browser URL without reloading to reflect the new checkout ID
+          if (isPlatformBrowser(this.platformId)) {
+            const newUrl = `/payment/${data.afs_checkout_id}`;
+            window.history.replaceState({}, '', newUrl);
+          }
+        }
+        
         // isLoading is set to false in populateComponentData
       },
       error: (error: any) => {
