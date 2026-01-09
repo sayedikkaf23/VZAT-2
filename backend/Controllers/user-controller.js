@@ -379,11 +379,11 @@ if (statusData.CustomerStatus == 'Auto Approved') {
     console.warn('⚠️ Missing Salesforce credentials:', missingCredentials);
     console.warn('⚠️ Skipping Salesforce update - continuing without it');
   } else {
-    // 2. Get Salesforce OAuth token
+    // 2. Get Salesforce OAuth tokedddn
     let TokenResponse;
     try {
       TokenResponse = await axios.post(
-        `https://login.salesforce.com/services/oauth2/token`,
+        `https://test.salesforce.com/services/oauth2/token`,
         null,
         {
           params: {
