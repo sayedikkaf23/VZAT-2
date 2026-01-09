@@ -80,25 +80,79 @@ export const generateNewCheckoutId = async (paymentData) => {
     };
     
     console.log("🔄 Generating new checkout ID for expired payment link...");
+    console.log("📤 AFS Request Details:", {
+      url: afsUrl,
+      entityId: entityId,
+      amount: installmentAmount.toFixed(2),
+      currency: 'AED',
+      merchantTransactionId: paymentData.quotepaymentId,
+      isSubscription: paymentData.is_subscription,
+      paymentType: paymentData.is_subscription ? 'DB' : 'DB',
+      recurringType: paymentData.is_subscription ? 'INITIAL' : undefined,
+      createRegistration: paymentData.is_subscription ? 'true' : undefined
+    });
+    
     const afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
     
+    console.log("📥 AFS Response:", {
+      status: afsResponse.status,
+      hasId: !!afsResponse.data?.id,
+      checkoutId: afsResponse.data?.id,
+      fullResponse: JSON.stringify(afsResponse.data, null, 2)
+    });
+    
     if (afsResponse.data && afsResponse.data.id) {
-      const paymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${afsResponse.data.id}`;
-      console.log("✅ New checkout ID generated successfully:", afsResponse.data.id);
+      const checkoutId = afsResponse.data.id;
+      const paymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
       
-      return {
-        success: true,
-        checkoutId: afsResponse.data.id,
-        paymentLink: paymentLink
-      };
+      // Validate the checkout was created successfully
+      if (afsResponse.data.result && afsResponse.data.result.code) {
+        const resultCode = afsResponse.data.result.code;
+        if (resultCode.startsWith('000.') || resultCode.startsWith('200.')) {
+          console.log("✅ New checkout ID generated successfully:", checkoutId);
+          console.log("✅ AFS Result Code:", resultCode, "-", afsResponse.data.result.description);
+          
+          return {
+            success: true,
+            checkoutId: checkoutId,
+            paymentLink: paymentLink,
+            resultCode: resultCode
+          };
+        } else {
+          console.error("❌ AFS returned error code:", resultCode, afsResponse.data.result.description);
+          return {
+            success: false,
+            error: {
+              code: resultCode,
+              description: afsResponse.data.result.description,
+              fullResponse: afsResponse.data
+            }
+          };
+        }
+      } else {
+        // If no result code, assume success if we have an ID
+        console.log("✅ New checkout ID generated (no result code in response):", checkoutId);
+        return {
+          success: true,
+          checkoutId: checkoutId,
+          paymentLink: paymentLink
+        };
+      }
     } else {
+      console.error("❌ AFS Response missing checkout ID:", afsResponse.data);
       return {
         success: false,
         error: afsResponse.data || 'Failed to generate checkout ID'
       };
     }
   } catch (err) {
-    console.error("❌ Error generating new checkout ID:", err);
+    console.error("❌ Error generating new checkout ID:", {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status,
+      statusText: err.response?.statusText,
+      stack: err.stack
+    });
     return {
       success: false,
       error: err.response ? err.response.data : err.message
