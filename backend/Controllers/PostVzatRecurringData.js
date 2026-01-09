@@ -118,7 +118,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     let firstPaymentDueDate = new Date(createdDateObj); // First payment due on CreatedDate itself
     let nextInstallmentDate = null;
     let installmentAmount = parseFloat(Total_After_VAT_Currency);
-    let paymentLinkExpiryDate = new Date(createdDateObj);
+    let paymentLinkExpiryDate = new Date(); // Use current time, NOT creation date
     paymentLinkExpiryDate.setMinutes(paymentLinkExpiryDate.getMinutes() + 30); // Payment link expires 30 minutes after creation
     
     if (finalInstallmentType === "Installments") {
