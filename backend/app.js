@@ -153,6 +153,7 @@ app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
     
     // ⏰ PAYMENT LINK EXPIRY CHECK - DISABLED
     // Payment link expiry check has been disabled - links will work regardless of expiry date
+    // The code below is commented out, so expired links will return normal payment data
     // const currentDate = new Date();
     // const paymentLinkExpiry = paymentData.payment_link_expiry;
     // 
@@ -172,7 +173,8 @@ app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
     //   return res.status(410).json(expiredData); // 410 Gone - resource expired
     // }
     
-    console.log('✅ Payment data found:', paymentData);
+    // Expiry check is disabled - continuing with normal data return
+    console.log('✅ Payment data found (expiry check disabled - returning data regardless of expiry):', paymentData);
     
     // Get Salesforce OAuth token and fetch compliance_clear and prepayment_screening
     let compliance_clear, prepayment_screening;
