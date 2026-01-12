@@ -414,7 +414,7 @@ if (statusData.CustomerStatus == 'Auto Approved') {
     let TokenResponse;
     try {
       TokenResponse = await axios.post(
-        `https://test.salesforce.com/services/oauth2/token`,
+        `https://dd0000000pp16mae--vzfullcopy.sandbox.my.salesforce-setup.com/services/oauth2/token`,
         null,
         {
           params: {
