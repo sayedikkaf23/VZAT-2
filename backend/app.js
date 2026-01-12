@@ -151,27 +151,28 @@ app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
       return res.status(404).json(errorData);
     }
     
-    // ⏰ CHECK PAYMENT LINK EXPIRY (7 days after creation)
-    const currentDate = new Date();
-    const paymentLinkExpiry = paymentData.payment_link_expiry;
+    // ⏰ PAYMENT LINK EXPIRY CHECK - DISABLED
+    // Payment link expiry check has been disabled - links will work regardless of expiry date
+    // const currentDate = new Date();
+    // const paymentLinkExpiry = paymentData.payment_link_expiry;
+    // 
+    // if (paymentLinkExpiry && currentDate > paymentLinkExpiry) {
+    //   console.log('🚫 Payment link has expired for quotepaymentId:', req.params.quotepaymentId);
+    //   const expiredData = {
+    //     error: 'Payment link has expired',
+    //     message: 'This payment link has expired. Please contact your sales representative to generate a new payment link.',
+    //     isExpired: true,
+    //     expiryDate: paymentLinkExpiry,
+    //     quotepaymentId: req.params.quotepaymentId
+    //   };
+    //   
+    //   // Log expired link access attempt
+    //   Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, expiredData);
+    //   
+    //   return res.status(410).json(expiredData); // 410 Gone - resource expired
+    // }
     
-    if (paymentLinkExpiry && currentDate > paymentLinkExpiry) {
-      console.log('🚫 Payment link has expired for quotepaymentId:', req.params.quotepaymentId);
-      const expiredData = {
-        error: 'Payment link has expired',
-        message: 'This payment link has expired. Please contact your sales representative to generate a new payment link.',
-        isExpired: true,
-        expiryDate: paymentLinkExpiry,
-        quotepaymentId: req.params.quotepaymentId
-      };
-      
-      // Log expired link access attempt
-      Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, expiredData);
-      
-      return res.status(410).json(expiredData); // 410 Gone - resource expired
-    }
-    
-    console.log('✅ Payment data found and link is still valid:', paymentData);
+    console.log('✅ Payment data found:', paymentData);
     
     // Get Salesforce OAuth token and fetch compliance_clear and prepayment_screening
     let compliance_clear, prepayment_screening;
