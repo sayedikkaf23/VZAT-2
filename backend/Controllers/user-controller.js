@@ -351,13 +351,44 @@ export const checkStatus = async (req, res) => {
     const statusData = statusResponse.data;
     
  
-    // Step 3: Find the VzatRecurringDataModel entry using the LeadId in leadWithDetails to match CustomerId
-    const pidata = await VzatRecurringDataModel.findOne({ afs_checkout_id: CustomerId });
-
+    // Step 3: Find the VzatRecurringDataModel entry
+    // CustomerId might be: afs_checkout_id, quotepaymentId, or OpportunityId
+    // Try multiple fields to find the record
+    let pidata = await VzatRecurringDataModel.findOne({ afs_checkout_id: CustomerId });
+    
+    // If not found by checkout ID, try quotepaymentId
+    if (!pidata) {
+      pidata = await VzatRecurringDataModel.findOne({ quotepaymentId: CustomerId });
+    }
+    
+    // If still not found, try OpportunityId
+    if (!pidata) {
+      pidata = await VzatRecurringDataModel.findOne({ OpportunityId: CustomerId });
+    }
+    
+    // If still not found, check in old_checkout_ids array
+    if (!pidata) {
+      pidata = await VzatRecurringDataModel.findOne({ 'old_checkout_ids.checkout_id': CustomerId });
+    }
  
     if (!pidata) {
-      return res.status(404).json({ error: 'VzatRecurringDataModel not found' });
+      console.error('❌ VzatRecurringDataModel not found for CustomerId:', CustomerId);
+      console.error('   Searched in: afs_checkout_id, quotepaymentId, OpportunityId, old_checkout_ids');
+      return res.status(404).json({ 
+        error: 'VzatRecurringDataModel not found',
+        details: `No record found matching CustomerId: ${CustomerId}`,
+        searchedFields: ['afs_checkout_id', 'quotepaymentId', 'OpportunityId', 'old_checkout_ids']
+      });
     }
+    
+    console.log('✅ Found VzatRecurringDataModel record:', {
+      _id: pidata._id,
+      quotepaymentId: pidata.quotepaymentId,
+      afs_checkout_id: pidata.afs_checkout_id,
+      matchedField: pidata.afs_checkout_id === CustomerId ? 'afs_checkout_id' :
+                    pidata.quotepaymentId === CustomerId ? 'quotepaymentId' :
+                    pidata.OpportunityId === CustomerId ? 'OpportunityId' : 'old_checkout_ids'
+    });
  
     // Update the kycStatus field with the value from the API response
 if (statusData.CustomerStatus == 'Auto Approved') {
