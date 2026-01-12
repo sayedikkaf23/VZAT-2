@@ -26,6 +26,9 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
   private scriptElement: HTMLScriptElement | null = null;
   isLoading: boolean = true;
   isAfsPayment: boolean = false;
+  entityId: string = ''; // Will be set from query params
+  brands = 'VISA MASTER AMEX';
+  backendUrl = 'https://vzatnew.yeepeey.com';
 
   constructor(
     private route: ActivatedRoute,
@@ -50,6 +53,8 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
           paymentLink: params['paymentLink'] ? decodeURIComponent(params['paymentLink']) : undefined
         };
         
+        // Set entityId from query params (required for form data-entity-id attribute)
+        this.entityId = params['entityId'] || '8acda4cc97f436a801981cb37ede2e0b';
         
         // Check if this is an AFS payment
         this.isAfsPayment = !!(this.paymentDetails.checkoutId && this.paymentDetails.paymentLink);

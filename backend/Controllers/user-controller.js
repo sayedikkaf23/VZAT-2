@@ -1,7 +1,7 @@
 
 import qs from "querystring";
 
-import VzatRecurringDataModel from "../model/VzatRecurringDataModel.js";
+import Vzat_Recurring_Data from "../model/VzatRecurringDataModel.js";
 // Remove the import * as AWS from 'aws-sdk';
 import fs from 'fs';
 // import mailgun from 'mailgun-js';
@@ -351,6 +351,7 @@ export const checkStatus = async (req, res) => {
     const statusData = statusResponse.data;
     
  
+<<<<<<< HEAD
     // Step 3: Find the VzatRecurringDataModel entry
     // CustomerId might be: afs_checkout_id, quotepaymentId, or OpportunityId
     // Try multiple fields to find the record
@@ -379,6 +380,14 @@ export const checkStatus = async (req, res) => {
         details: `No record found matching CustomerId: ${CustomerId}`,
         searchedFields: ['afs_checkout_id', 'quotepaymentId', 'OpportunityId', 'old_checkout_ids']
       });
+=======
+    // Step 3: Find the Vzat_Recurring_Data entry using the LeadId in leadWithDetails to match CustomerId
+    const pidata = await Vzat_Recurring_Data.findOne({ afs_checkout_id: CustomerId });
+
+ 
+    if (!pidata) {
+      return res.status(404).json({ error: 'Payment record not found' });
+>>>>>>> 4bf4c6c40ae48c1574868f2c30a28e7e942db574
     }
     
     console.log('✅ Found VzatRecurringDataModel record:', {
@@ -723,7 +732,7 @@ if (statusData.CustomerStatus == 'Auto Approved') {
 
  
     res.status(200).json({
-      message: 'Status retrieved and VzatRecurringDataModel updated successfully',
+      message: 'Status retrieved and payment record updated successfully',
       data: statusData,
     });
  

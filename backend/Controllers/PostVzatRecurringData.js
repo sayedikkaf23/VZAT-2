@@ -210,15 +210,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     const existingRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
     
     if (existingRecord) {
-      
-      // Generate payment page URL for existing record
-      let existingPaymentPageUrl = null;
-      let existingPaymentLink = null;
-      
-      if (existingRecord.afs_checkout_id) {
-        existingPaymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(existingRecord.afs_checkout_id)}`;
-        existingPaymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${existingRecord.afs_checkout_id}`;
-      }
+      // Generate payment page URL using quotepaymentId (persistent identifier)
+      const existingPaymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(existingRecord.quotepaymentId)}`;
 
       const data = {
         status: false,
@@ -231,9 +224,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
           status: existingRecord.Status,
           total_amount: existingRecord.Total_After_VAT_Currency,
           installment_type: existingRecord.InstallmentType,
-          afs_checkout_id: existingRecord.afs_checkout_id,
           payment_page_url: existingPaymentPageUrl,
-          payment_widget_link: existingPaymentLink
+          payment_link: existingPaymentPageUrl
         },
         suggestion: "Use the existing payment link or provide a different quotepaymentId"
       };
@@ -413,66 +405,19 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       );
     }
 
-    // Generate AFS payment link or subscription
-    let paymentLink = null;
-    let afsError = null;
-    let afsResponse = null;
+    // Store subscription metadata without creating AFS checkout
+    // Checkout IDs will be generated dynamically when users access the payment page
+    // This prevents the 30-minute expiration issue
     
     try {
-      const afsUrl = `${process.env.AFS_DOMAIN}/v1/checkouts`;
-      const entityId = process.env.AFS_ENTITY_ID;
-      const accessToken = process.env.AFS_ACCESS_TOKEN;
-      const backendUrl = process.env.BACKEND_URL;
-      const frontendUrl = process.env.FRONTEND_URL;
-     
-      // Use backend URL for shopperResultUrl since that's where the payment-result endpoint is
-      const shopperResultUrl = `${backendUrl}/payment-result`;
-    
-      
-      // Debug: Check if environment variables are loaded
-      if (!process.env.AFS_DOMAIN || !process.env.AFS_ENTITY_ID || !process.env.AFS_ACCESS_TOKEN) {
-        throw new Error(`Missing AFS environment variables: AFS_DOMAIN=${!!process.env.AFS_DOMAIN}, AFS_ENTITY_ID=${!!process.env.AFS_ENTITY_ID}, AFS_ACCESS_TOKEN=${!!process.env.AFS_ACCESS_TOKEN}`);
-      }
-      
-      const afsData = new URLSearchParams();
-      afsData.append('entityId', entityId);
-      afsData.append('amount', installmentAmount.toFixed(2)); // Ensure 2 decimal places
-      afsData.append('currency', 'AED');
-      afsData.append('merchantTransactionId', quotepaymentId);
-      afsData.append('shopperResultUrl', shopperResultUrl);
-      
-      // Add webhook notification URL for automatic payment status updates
-      const notificationUrl = `${backendUrl}/api/subscription/webhook/afs`;
-      afsData.append('notificationUrl', notificationUrl);
-      
-      if (isSubscription) {
-        
-        // For subscriptions, we use 'DB' (Direct Debit) for immediate charge of first payment
-        // This ensures the first payment is actually debited, not just pre-authorized
-        afsData.append('paymentType', 'DB');
-        
-        // CRITICAL: Add createRegistration=true for subscriptions to enable recurring payments
-        afsData.append('createRegistration', 'true');
-        
-        // Add subscription-specific parameters
-        afsData.append('recurringType', 'INITIAL');
-        
-        // Calculate next charge date based on creation date logic
-        const nextChargeDate = nextInstallmentDate.toISOString().slice(0, 10);
-        
-        // Add subscription metadata (for tracking)
-        afsData.append('merchantMemo', `Subscription:${quotepaymentId}:${InstallmentLeft}:${nextChargeDate}`);
-        
-      } else {
-        // For one-time payments, use 'DB' (Direct Debit)
-        afsData.append('paymentType', 'DB');
-      }
-      
-      const afsHeaders = {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/x-www-form-urlencoded"
+      const updateData = { 
+        is_subscription: isSubscription,
+        subscription_status: isSubscription ? 'pending' : 'one-time',
+        next_charge_date: isSubscription ? nextInstallmentDate : null,
+        payment_link_expiry: null // No expiry for the payment link itself
       };
       
+<<<<<<< HEAD
       console.log("afsResponse called");
       afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
       console.log("afsResponse 1", afsResponse);
@@ -506,18 +451,24 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       }
     } catch (err) {
       afsError = err.response ? err.response.data : err.message;
+=======
+      await Vzat_Recurring_Data.findByIdAndUpdate(
+        result._id,
+        updateData,
+        { new: true }
+      );
+      
+      console.log('✅ Payment record created successfully without AFS checkout ID');
+      console.log('🔄 Checkout ID will be generated dynamically when user accesses payment page');
+      
+    } catch (updateErr) {
+      console.error('❌ Error updating payment record:', updateErr);
+>>>>>>> 4bf4c6c40ae48c1574868f2c30a28e7e942db574
     }
 
-    // Final response including payment link
-    // Generate final URLs for response
-    let finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result`;
-    let paymentPageUrl = null;
-    if (afsResponse && afsResponse.data && afsResponse.data.id) {
-      const id = encodeURIComponent(afsResponse.data.id);
-      const resourcePath = encodeURIComponent(`/v1/checkouts/${afsResponse.data.id}/payment`);
-      finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
-      paymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(afsResponse.data.id)}`;
-    }
+    // Generate payment page URL using quotepaymentId (persistent identifier)
+    // This URL will never expire since checkout IDs are generated on-demand
+    const paymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(quotepaymentId)}`;
     
     const brands = "VISA MASTER AMEX";
     const data = {
@@ -530,20 +481,20 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       payment_amount: installmentAmount,
       installments_left: InstallmentLeft,
       installment_type: finalInstallmentType,
-      payment_link: paymentLink,
       payment_page_url: paymentPageUrl,
-      afs_checkout_id: afsResponse && afsResponse.data && afsResponse.data.id ? afsResponse.data.id : null,
-      shopper_result_url: finalShopperResultUrl,
+      payment_link: paymentPageUrl, // Same as payment_page_url for backward compatibility
+      afs_checkout_id: null, // Will be generated dynamically when user accesses payment page
+      shopper_result_url: `${process.env.BACKEND_URL}/payment-result`,
       data_brands: brands,
-      payment_schedule: paymentSchedule, // Add the structured payment schedule
+      payment_schedule: paymentSchedule,
       subscription_info: isSubscription ? {
         total_installments: InstallmentLeft,
-        remaining_installments: InstallmentLeft - 1, // First payment is immediate
+        remaining_installments: InstallmentLeft - 1,
         next_charge_date: nextInstallmentDate ? nextInstallmentDate.toISOString().slice(0, 10) : null,
         installment_amount: installmentAmount,
         total_amount: Total_After_VAT_Currency
       } : null,
-      afs_error: afsError
+      note: "Payment link will remain valid. Checkout ID is generated when user accesses the payment page."
     };
 
     Post_Common_DB_Log_Data("/api/vzat_recurring_create_payment_link", req.body, data);

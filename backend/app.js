@@ -80,9 +80,11 @@ app.use('/api/debug', WebhookDebugRoute);
 app.use('/api/retry-payment', RetryPaymentRoute);
 app.use('/api/user', UserRoute);
 // Payment schedule API endpoint for Angular component
-app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
+// Updated to use quotepaymentId instead of temporary checkout ID
+app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
   
   try {
+<<<<<<< HEAD
     // Find payment data by checkout ID (check both current and old checkout IDs)
     // First try to find by current checkout ID
     let paymentData = await Vzat_Recurring_Data.findOne({ 
@@ -105,20 +107,26 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     }
     
     console.log('🔍 Payment data found:', paymentData);
+=======
+    // Find payment data by quotepaymentId (persistent identifier)
+    const paymentData = await Vzat_Recurring_Data.findOne({ 
+      quotepaymentId: req.params.quotepaymentId 
+    });
+    
+    console.log('🔍 Payment data lookup by quotepaymentId:', req.params.quotepaymentId);
+    
+>>>>>>> 4bf4c6c40ae48c1574868f2c30a28e7e942db574
     if (!paymentData) {
-      
       const errorData = {
         error: 'Payment data not found',
-        checkoutId: req.params.checkoutId
+        quotepaymentId: req.params.quotepaymentId
       };
-
       
-      // Log to database
-      Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, errorData);
-      
+      Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, errorData);
       return res.status(404).json(errorData);
     }
     
+<<<<<<< HEAD
     // ⏰ CHECK PAYMENT LINK EXPIRY (30 minutes after creation)
     const currentDate = new Date();
     // Ensure dates are Date objects (MongoDB might return strings)
@@ -213,12 +221,18 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     } else {
       console.log('✅ Payment data found and checkout ID is still valid:', paymentData);
     }
+=======
+    // No expiry check - payment links using quotepaymentId never expire
+    // Checkout IDs are generated on-demand when user initiates payment
+    
+    console.log('✅ Payment data found:', paymentData);
+>>>>>>> 4bf4c6c40ae48c1574868f2c30a28e7e942db574
     
     // Get Salesforce OAuth token and fetch compliance_clear and prepayment_screening
     let compliance_clear, prepayment_screening;
     const quoteId = paymentData.quotepaymentId;
     
-    console.log('🔍 Checking for quoteId to call Salesforce API:', { quoteId, checkoutId: req.params.checkoutId });
+    console.log('🔍 Checking for quoteId to call Salesforce API:', { quoteId, quotepaymentId: req.params.quotepaymentId });
     
     if (quoteId) {
       console.log('📞 Starting Salesforce API call process...');
@@ -229,7 +243,11 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
         // Step 1: Get Salesforce OAuth token
         console.log('🔐 Step 1: Requesting Salesforce OAuth token...');
         const TokenResponse = await axios.post(
+<<<<<<< HEAD
           `https://test.salesforce.com/services/oauth2/token`,
+=======
+          `https://dd0000000pp16mae--vzfullcopy.sandbox.my.salesforce-setup.com/services/oauth2/token`,
+>>>>>>> 4bf4c6c40ae48c1574868f2c30a28e7e942db574
           null,
           {
             params: {
@@ -310,11 +328,19 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
             
             console.log('💾 Updating database with Salesforce data...', {
               updateData,
+<<<<<<< HEAD
               checkoutId: paymentData.afs_checkout_id || req.params.checkoutId
             });
             
             await Vzat_Recurring_Data.updateOne(
               { _id: paymentData._id },
+=======
+              quotepaymentId: req.params.quotepaymentId
+            });
+            
+            await Vzat_Recurring_Data.updateOne(
+              { quotepaymentId: req.params.quotepaymentId },
+>>>>>>> 4bf4c6c40ae48c1574868f2c30a28e7e942db574
               { $set: updateData }
             );
             
@@ -379,7 +405,7 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     });
     
     // Log successful response to database
-    Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, {
+    Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, {
       success: true,
       paymentData: responseData,
       checkoutIdRegenerated: newCheckoutIdGenerated,
@@ -398,9 +424,134 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     };
     
     // Log error to database
-    Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, errorData);
+    Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, errorData);
     
     res.status(500).json(errorData);
+  }
+});
+
+// Generate fresh AFS checkout ID on demand
+// This endpoint creates a new checkout ID each time it's called
+// Prevents the 30-minute expiration issue
+app.post('/api/generate_checkout/:quotepaymentId', async (req, res) => {
+  await connectDB();
+  
+  try {
+    console.log('\ud83d\udd04 Generating fresh checkout ID for:', req.params.quotepaymentId);
+    
+    // Find payment data by quotepaymentId
+    const paymentData = await Vzat_Recurring_Data.findOne({ 
+      quotepaymentId: req.params.quotepaymentId 
+    });
+    
+    if (!paymentData) {
+      const errorData = {
+        error: 'Payment data not found',
+        quotepaymentId: req.params.quotepaymentId
+      };
+      Post_Common_DB_Log_Data('/api/generate_checkout/:quotepaymentId', req.params, errorData);
+      return res.status(404).json(errorData);
+    }
+    
+    // Determine if this is a subscription
+    const isSubscription = paymentData.InstallmentType === 'Installments' && paymentData.InstallmentLeft > 1;
+    
+    // Calculate installment amount
+    const installmentAmount = paymentData.Total_After_VAT_Currency / paymentData.InstallmentLeft;
+    
+    // Prepare AFS checkout request
+    const axios = (await import('axios')).default;
+    const afsUrl = `${process.env.AFS_DOMAIN}/v1/checkouts`;
+    const entityId = process.env.AFS_ENTITY_ID;
+    const accessToken = process.env.AFS_ACCESS_TOKEN;
+    const backendUrl = process.env.BACKEND_URL;
+    
+    const shopperResultUrl = `${backendUrl}/payment-result`;
+    
+    const afsData = new URLSearchParams();
+    afsData.append('entityId', entityId);
+    afsData.append('amount', installmentAmount.toFixed(2));
+    afsData.append('currency', 'AED');
+    afsData.append('merchantTransactionId', paymentData.quotepaymentId);
+    afsData.append('shopperResultUrl', shopperResultUrl);
+    
+    // Add webhook notification URL
+    const notificationUrl = `${backendUrl}/api/subscription/webhook/afs`;
+    afsData.append('notificationUrl', notificationUrl);
+    
+    if (isSubscription) {
+      afsData.append('paymentType', 'DB');
+      afsData.append('createRegistration', 'true');
+      afsData.append('recurringType', 'INITIAL');
+      
+      // Calculate next charge date
+      const createdDate = new Date(paymentData.CreatedDate);
+      const nextInstallmentDate = new Date(createdDate);
+      nextInstallmentDate.setMonth(nextInstallmentDate.getMonth() + 1);
+      const nextChargeDate = nextInstallmentDate.toISOString().slice(0, 10);
+      
+      afsData.append('merchantMemo', `Subscription:${paymentData.quotepaymentId}:${paymentData.InstallmentLeft}:${nextChargeDate}`);
+    } else {
+      afsData.append('paymentType', 'DB');
+    }
+    
+    const afsHeaders = {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    };
+    
+    console.log('\ud83d\udce1 Calling AFS to generate checkout ID...');
+    const afsResponse = await axios.post(afsUrl, afsData, { headers: afsHeaders });
+    
+    if (afsResponse.data && afsResponse.data.id) {
+      const checkoutId = afsResponse.data.id;
+      // Widget URL should only have checkoutId, NOT entityId (AFS rejects entityId in script URL)
+      // EntityId is used during checkout creation and in the HTML form data-entity-id attribute
+      const paymentWidgetUrl = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+      
+      console.log('✅ Fresh checkout ID generated:', checkoutId);
+      console.log('🔗 Widget URL:', paymentWidgetUrl);
+      
+      // Update the database with the latest checkout ID (for reference only)
+      await Vzat_Recurring_Data.findOneAndUpdate(
+        { quotepaymentId: req.params.quotepaymentId },
+        { 
+          afs_checkout_id: checkoutId,
+          last_checkout_generated: new Date()
+        },
+        { new: true }
+      );
+      
+      const responseData = {
+        status: true,
+        message: 'Fresh checkout ID generated successfully',
+        checkout_id: checkoutId,
+        payment_widget_url: paymentWidgetUrl,
+        entity_id: entityId, // Include for frontend to use in form data-entity-id attribute
+        amount: installmentAmount,
+        currency: 'AED',
+        quotepaymentId: paymentData.quotepaymentId,
+        is_subscription: isSubscription
+      };
+      
+      Post_Common_DB_Log_Data('/api/generate_checkout/:quotepaymentId', req.params, responseData);
+      return res.status(200).json(responseData);
+      
+    } else {
+      throw new Error('Failed to get checkout ID from AFS');
+    }
+    
+  } catch (error) {
+    console.error('\u274c Error generating checkout ID:', error.message);
+    
+    const errorData = {
+      error: 'Failed to generate checkout ID',
+      message: error.message,
+      details: error.response?.data || null
+    };
+    
+    Post_Common_DB_Log_Data('/api/generate_checkout/:quotepaymentId', req.params, errorData);
+    return res.status(500).json(errorData);
   }
 });
 
