@@ -144,11 +144,12 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     // Get route parameters
     this.route.params.subscribe((params: any) => {
-      if (params['checkoutId']) {
-        this.currentCheckoutId = params['checkoutId'];
-        this.loadPaymentScheduleByCheckoutId(this.currentCheckoutId);
-      } else if (params['quotepaymentId']) {
+      if (params['quotepaymentId']) {
         this.quotepaymentId = params['quotepaymentId'];
+        this.loadPaymentScheduleByQuoteId(this.quotepaymentId);
+      } else if (params['checkoutId']) {
+        // Backward compatibility: treat checkoutId as quotepaymentId
+        this.quotepaymentId = params['checkoutId'];
         this.loadPaymentScheduleByQuoteId(this.quotepaymentId);
       } else {
         // Load default/demo data
@@ -180,25 +181,13 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // Load payment schedule by checkout ID (from URL like /payment/{checkoutId})
-  private loadPaymentScheduleByCheckoutId(checkoutId: string): void {    this.isLoading = true;
+  // Load payment schedule by quote payment ID (primary method)
+  private loadPaymentScheduleByQuoteId(quotepaymentId: string): void {
+    this.isLoading = true;
     this.errorMessage = ''; // Clear any previous error
-    this.paymentScheduleService.getPaymentScheduleByCheckoutId(checkoutId).subscribe({
+    this.paymentScheduleService.getPaymentScheduleByQuotePaymentId(quotepaymentId).subscribe({
       next: (data: any) => {
         this.populateComponentData(data);
-        
-        // If checkout ID was regenerated, log it but DON'T update the URL
-        // Keep the old checkout ID in the URL so the link still works
-        // The payment widget will use the new checkout ID from the API response
-        if (data.checkout_id_regenerated && data.afs_checkout_id && data.afs_checkout_id !== checkoutId) {
-          console.log('🔄 Checkout ID was regenerated (old link still works):', {
-            oldCheckoutId: checkoutId,
-            newCheckoutId: data.afs_checkout_id,
-            message: 'Old checkout ID URL will work, but payment widget uses new checkout ID'
-          });
-          // DO NOT update the URL - keep the old checkout ID in the URL
-          // The payment widget will automatically use the new checkout ID from data.afs_checkout_id
-        }
         
         // isLoading is set to false in populateComponentData
       },
@@ -240,26 +229,6 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
     });
   }
 
-  // Load payment schedule by quote payment ID
-  private loadPaymentScheduleByQuoteId(quotepaymentId: string): void {
-    this.isLoading = true;
-    this.errorMessage = ''; // Clear any previous error
-    this.paymentScheduleService.getVzatRecurringData(quotepaymentId).subscribe({
-      next: (data: VzatRecurringData) => {
-        this.populateComponentData(data);
-        // isLoading is set to false in populateComponentData
-      },
-      error: (error: any) => {
-        console.error('Error loading payment data:', error);
-        this.errorMessage = 'Failed to load payment data. Loading demo data...';
-        this.isLoading = false; // Set loading to false immediately
-        this.cdr.detectChanges(); // Force change detection
-        setTimeout(() => {
-          this.loadDemoData();
-        }, 500); // Small delay to show error message
-      }
-    });
-  }
 
   // Load demo data (for testing)
   private loadDemoData(): void {
@@ -302,9 +271,15 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       // Check if prepayment_screening and compliance_clear are both false, then redirect
       if (data.prepayment_screening === false && data.compliance_clear === false) {
        
-       
+        
           this.isLoading = false;
-          this.router.navigate([`/payment-select/${this.currentCheckoutId}`]);
+          // Use quotepaymentId instead of checkoutId for navigation
+          const quotepaymentIdToUse = this.quotepaymentId || data.quotepaymentId || data.quotepayment_id;
+          if (quotepaymentIdToUse) {
+            this.router.navigate([`/payment-select/${quotepaymentIdToUse}`]);
+          } else {
+            console.error('quotepaymentId not found, cannot navigate to payment-select');
+          }
           return; // Exit early to prevent further processing
         
       }

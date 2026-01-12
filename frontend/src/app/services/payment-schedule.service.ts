@@ -129,13 +129,22 @@ export class PaymentScheduleService {
   }
 
   /**
-   * Get payment schedule details by checkoutId
+   * Get payment schedule details by quotepaymentId
    */
-  getPaymentScheduleByCheckoutId(checkoutId: string): Observable<VzatRecurringData> {
-    const url = `${this.apiUrl}/payment_schedule/${checkoutId}`;
+  getPaymentScheduleByQuotePaymentId(quotepaymentId: string): Observable<VzatRecurringData> {
+    const url = `${this.apiUrl}/payment_schedule/${quotepaymentId}`;
 
     
     return this.http.get<VzatRecurringData>(url);
+  }
+
+  /**
+   * @deprecated Use getPaymentScheduleByQuotePaymentId instead
+   * Get payment schedule details by checkoutId (kept for backward compatibility)
+   */
+  getPaymentScheduleByCheckoutId(checkoutId: string): Observable<VzatRecurringData> {
+    // For backward compatibility, try to use as quotepaymentId
+    return this.getPaymentScheduleByQuotePaymentId(checkoutId);
   }
 
   /**

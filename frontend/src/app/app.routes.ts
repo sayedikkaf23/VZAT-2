@@ -36,7 +36,7 @@ export const routes: Routes = [
   { path: 'paymentSchedule/:quotepaymentId', component: PaymentScheduleComponent },
   { path: 'payment-widget', component: PaymentWidgetComponent },
   { path: 'payment/result', component: PaymentResultComponent }, // Moved before parameterized route
-  { path: 'payment/:checkoutId', component: PaymentScheduleComponent }, // Updated to use payment schedule
+  { path: 'payment/:quotepaymentId', component: PaymentScheduleComponent }, // Updated to use quotepaymentId
   { path: 'payment-form/:id', component: PaymentFormComponent },
   { path: 'payment-select/:id', component: PaymentSelectComponent },
   { path: 'payment-pending/:id', component: PaymentPendingComponent },

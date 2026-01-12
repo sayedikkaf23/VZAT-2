@@ -79,26 +79,55 @@ app.use('/api/test-payment-update', TestPaymentUpdate);
 app.use('/api/debug', WebhookDebugRoute);
 app.use('/api/retry-payment', RetryPaymentRoute);
 app.use('/api/user', UserRoute);
-// Payment schedule API endpoint for Angular component
-app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
+// Payment schedule API endpoint for Angular component - now uses quotepaymentId
+app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
+  // Ensure database connection
+  await connectDB();
   
   try {
-    // Find payment data by checkout ID (using persistent connection)
+    const quotepaymentId = req.params.quotepaymentId;
+    console.log('🔍 [NEW CODE] Searching for payment data with quotepaymentId:', quotepaymentId);
+    console.log('🔍 [NEW CODE] Request params:', req.params);
+    
+    // Find payment data by quotepaymentId - use exact match
     const paymentData = await Vzat_Recurring_Data.findOne({ 
-      afs_checkout_id: req.params.checkoutId 
+      quotepaymentId: quotepaymentId 
+    }).lean(); // Use lean() for better performance
+    
+    console.log('🔍 [NEW CODE] Payment data search result:', {
+      quotepaymentId: quotepaymentId,
+      found: !!paymentData,
+      hasData: paymentData ? 'Yes' : 'No',
+      dataId: paymentData?._id,
+      dataQuotepaymentId: paymentData?.quotepaymentId,
+      queryUsed: { quotepaymentId: quotepaymentId }
     });
     
-    console.log('🔍 Payment data found:', paymentData);
     if (!paymentData) {
+      // Try to find any record with similar quotepaymentId for debugging
+      const allRecords = await Vzat_Recurring_Data.find({}).limit(5).select('quotepaymentId').lean();
+      console.log('🔍 [NEW CODE] Sample quotepaymentIds in database:', allRecords.map(r => r.quotepaymentId));
+      
+      // Also try a case-insensitive search to see if it's a case issue
+      const caseInsensitiveMatch = await Vzat_Recurring_Data.findOne({ 
+        quotepaymentId: { $regex: new RegExp(`^${quotepaymentId}$`, 'i') }
+      }).select('quotepaymentId').lean();
+      
+      if (caseInsensitiveMatch) {
+        console.log('⚠️ [NEW CODE] Found case-insensitive match:', caseInsensitiveMatch.quotepaymentId);
+      }
       
       const errorData = {
         error: 'Payment data not found',
-        checkoutId: req.params.checkoutId
+        quotepaymentId: quotepaymentId,
+        message: `No payment record found with quotepaymentId: ${quotepaymentId}`,
+        searchedValue: quotepaymentId,
+        timestamp: new Date().toISOString()
       };
 
       
       // Log to database
-      Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, errorData);
+      Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, errorData);
       
       return res.status(404).json(errorData);
     }
@@ -108,17 +137,17 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     const paymentLinkExpiry = paymentData.payment_link_expiry;
     
     if (paymentLinkExpiry && currentDate > paymentLinkExpiry) {
-      console.log('🚫 Payment link has expired for checkoutId:', req.params.checkoutId);
+      console.log('🚫 Payment link has expired for quotepaymentId:', req.params.quotepaymentId);
       const expiredData = {
         error: 'Payment link has expired',
         message: 'This payment link has expired. Please contact your sales representative to generate a new payment link.',
         isExpired: true,
         expiryDate: paymentLinkExpiry,
-        checkoutId: req.params.checkoutId
+        quotepaymentId: req.params.quotepaymentId
       };
       
       // Log expired link access attempt
-      Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, expiredData);
+      Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, expiredData);
       
       return res.status(410).json(expiredData); // 410 Gone - resource expired
     }
@@ -129,7 +158,7 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     let compliance_clear, prepayment_screening;
     const quoteId = paymentData.quotepaymentId;
     
-    console.log('🔍 Checking for quoteId to call Salesforce API:', { quoteId, checkoutId: req.params.checkoutId });
+    console.log('🔍 Checking for quoteId to call Salesforce API:', { quoteId, quotepaymentId: req.params.quotepaymentId });
     
     if (quoteId) {
       console.log('📞 Starting Salesforce API call process...');
@@ -221,11 +250,11 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
             
             console.log('💾 Updating database with Salesforce data...', {
               updateData,
-              checkoutId: req.params.checkoutId
+              quotepaymentId: req.params.quotepaymentId
             });
             
             await Vzat_Recurring_Data.updateOne(
-              { afs_checkout_id: req.params.checkoutId },
+              { quotepaymentId: req.params.quotepaymentId },
               { $set: updateData }
             );
             
@@ -280,7 +309,7 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     });
     
     // Log successful response to database
-    Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, {
+    Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, {
       success: true,
       paymentData: responseData
     });
@@ -296,9 +325,12 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
     };
     
     // Log error to database
-    Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, errorData);
+    Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, errorData);
     
     res.status(500).json(errorData);
+  } finally {
+    // Disconnect from database
+    await disconnectDB();
   }
 });
 
