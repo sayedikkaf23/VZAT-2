@@ -79,6 +79,25 @@ app.use('/api/test-payment-update', TestPaymentUpdate);
 app.use('/api/debug', WebhookDebugRoute);
 app.use('/api/retry-payment', RetryPaymentRoute);
 app.use('/api/user', UserRoute);
+
+// TEST ENDPOINT - Remove after debugging
+app.get('/api/test-payment/:quotepaymentId', async (req, res) => {
+  await connectDB();
+  try {
+    const quotepaymentId = req.params.quotepaymentId;
+    const testData = await Vzat_Recurring_Data.findOne({ quotepaymentId }).lean();
+    res.json({ 
+      found: !!testData, 
+      quotepaymentId,
+      data: testData ? { id: testData._id, quotepaymentId: testData.quotepaymentId } : null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  } finally {
+    await disconnectDB();
+  }
+});
+
 // Payment schedule API endpoint for Angular component - now uses quotepaymentId
 app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
   // Ensure database connection
