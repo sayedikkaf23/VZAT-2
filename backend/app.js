@@ -19,7 +19,7 @@ import WebhookDebugRoute from "./routes/WebhookDebugRoute.js";
 import RetryPaymentRoute from "./routes/RetryPaymentRoute.js";
 import UserRoute from "./routes/UserRoute.js";
 
-import { getAFSPaymentResult, generateNewCheckoutId } from "./Controllers/PostVzatRecurringData.js";
+import { getAFSPaymentResult } from "./Controllers/PostVzatRecurringData.js";
 import { connectDB, disconnectDB } from "./config/db.js";
 import Vzat_Recurring_Data from "./model/VzatRecurringDataModel.js";
 import { initializeCronJobs } from "./config/cronJobs.js";
@@ -47,7 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 // Global CORS middleware
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = ['http://localhost:4200', 'http://localhost:3000','https://vzatnew.yeepeey.com', 'https://p11.techlab-cdn.com'];
+    const allowedOrigins = ['http://localhost:4200', 'http://localhost:3000','https://installment.virtuzone.com', 'https://p11.techlab-cdn.com'];
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
@@ -83,26 +83,10 @@ app.use('/api/user', UserRoute);
 app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
   
   try {
-    // Find payment data by checkout ID (check both current and old checkout IDs)
-    // First try to find by current checkout ID
-    let paymentData = await Vzat_Recurring_Data.findOne({ 
+    // Find payment data by checkout ID (using persistent connection)
+    const paymentData = await Vzat_Recurring_Data.findOne({ 
       afs_checkout_id: req.params.checkoutId 
     });
-    
-    // If not found, check if it's in old_checkout_ids array
-    let isOldCheckoutId = false;
-    if (!paymentData) {
-      paymentData = await Vzat_Recurring_Data.findOne({
-        'old_checkout_ids.checkout_id': req.params.checkoutId
-      });
-      
-      if (paymentData) {
-        isOldCheckoutId = true;
-        console.log('🔍 Found payment data using old checkout ID:', req.params.checkoutId);
-        console.log('📝 Current checkout ID in database:', paymentData.afs_checkout_id);
-        console.log('💡 Old checkout ID URL will work, but payment widget will use current checkout ID');
-      }
-    }
     
     console.log('🔍 Payment data found:', paymentData);
     if (!paymentData) {
@@ -119,100 +103,27 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       return res.status(404).json(errorData);
     }
     
-    // ⏰ CHECK PAYMENT LINK EXPIRY (30 minutes after creation)
+    // ⏰ CHECK PAYMENT LINK EXPIRY (7 days after creation)
     const currentDate = new Date();
-    // Ensure dates are Date objects (MongoDB might return strings)
-    const paymentLinkExpiry = paymentData.payment_link_expiry ? new Date(paymentData.payment_link_expiry) : null;
-    const checkoutCreatedAt = paymentData.checkout_created_at 
-      ? new Date(paymentData.checkout_created_at) 
-      : (paymentLinkExpiry ? new Date(paymentLinkExpiry.getTime() - 30 * 60 * 1000) : null);
+    const paymentLinkExpiry = paymentData.payment_link_expiry;
     
-    // Debug logging
-    console.log('⏰ Checking checkout expiry:', {
-      currentDate: currentDate.toISOString(),
-      checkoutCreatedAt: checkoutCreatedAt ? checkoutCreatedAt.toISOString() : 'MISSING',
-      paymentLinkExpiry: paymentLinkExpiry ? paymentLinkExpiry.toISOString() : 'MISSING',
-      checkoutId: req.params.checkoutId
-    });
-    
-    // Check if checkout ID is expired (more than 30 minutes old)
-    let isExpired = false;
-    if (checkoutCreatedAt) {
-      const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000);
-      const timeDifference = currentDate.getTime() - checkoutCreatedAt.getTime();
-      const minutesOld = Math.floor(timeDifference / (60 * 1000));
-      isExpired = checkoutCreatedAt < thirtyMinutesAgo;
+    if (paymentLinkExpiry && currentDate > paymentLinkExpiry) {
+      console.log('🚫 Payment link has expired for checkoutId:', req.params.checkoutId);
+      const expiredData = {
+        error: 'Payment link has expired',
+        message: 'This payment link has expired. Please contact your sales representative to generate a new payment link.',
+        isExpired: true,
+        expiryDate: paymentLinkExpiry,
+        checkoutId: req.params.checkoutId
+      };
       
-      console.log('⏰ Expiry check details:', {
-        checkoutCreatedAt: checkoutCreatedAt.toISOString(),
-        thirtyMinutesAgo: thirtyMinutesAgo.toISOString(),
-        minutesOld: minutesOld,
-        isExpired: isExpired
-      });
-    } else if (paymentLinkExpiry && currentDate > paymentLinkExpiry) {
-      // Fallback: use payment_link_expiry if checkout_created_at is not set
-      isExpired = true;
-      console.log('⏰ Using payment_link_expiry fallback - expired');
+      // Log expired link access attempt
+      Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, expiredData);
+      
+      return res.status(410).json(expiredData); // 410 Gone - resource expired
     }
     
-    // Use the current checkout ID from database (not the one from URL if it's old)
-    // This ensures old checkout ID URLs work but payment widget uses current checkout ID
-    let currentCheckoutId = paymentData.afs_checkout_id || req.params.checkoutId;
-    let newCheckoutIdGenerated = false;
-    
-    if (isExpired) {
-      console.log('🚫 Payment checkout ID has expired for checkoutId:', req.params.checkoutId);
-      console.log('🔄 Generating new checkout ID...');
-      
-      // Generate new checkout ID
-      const checkoutResult = await generateNewCheckoutId(paymentData);
-      
-      if (checkoutResult.success) {
-        const oldCheckoutId = paymentData.afs_checkout_id;
-        const newCheckoutId = checkoutResult.checkoutId;
-        const checkoutCreatedAt = new Date();
-        const newPaymentLinkExpiry = new Date(checkoutCreatedAt.getTime() + 30 * 60 * 1000); // 30 minutes from now
-        
-        // Store old checkout ID in the old_checkout_ids array
-        // Use the original checkout creation date if available, otherwise use current time
-        const oldCheckoutCreatedAt = paymentData.checkout_created_at || (paymentData.payment_link_expiry ? new Date(paymentData.payment_link_expiry.getTime() - 30 * 60 * 1000) : new Date());
-        const oldCheckoutEntry = {
-          checkout_id: oldCheckoutId,
-          created_at: oldCheckoutCreatedAt,
-          expired_at: new Date() // When it was moved to old_checkout_ids (i.e., when it expired)
-        };
-        
-        // Update database with new checkout ID and store old one
-        // Use $set for regular fields and $push for array
-        await Vzat_Recurring_Data.updateOne(
-          { _id: paymentData._id },
-          {
-            $set: {
-              afs_checkout_id: newCheckoutId,
-              checkout_created_at: checkoutCreatedAt,
-              payment_link_expiry: newPaymentLinkExpiry
-            },
-            $push: { old_checkout_ids: oldCheckoutEntry }
-          }
-        );
-        
-        // Update paymentData object with new checkout ID for response
-        paymentData.afs_checkout_id = newCheckoutId;
-        paymentData.checkout_created_at = checkoutCreatedAt;
-        paymentData.payment_link_expiry = newPaymentLinkExpiry;
-        
-        currentCheckoutId = newCheckoutId;
-        newCheckoutIdGenerated = true;
-        
-        console.log('✅ New checkout ID generated and stored:', newCheckoutId);
-        console.log('📝 Old checkout ID preserved:', oldCheckoutId);
-      } else {
-        console.error('❌ Failed to generate new checkout ID:', checkoutResult.error);
-        // Continue with expired checkout ID - user will see error but we tried to regenerate
-      }
-    } else {
-      console.log('✅ Payment data found and checkout ID is still valid:', paymentData);
-    }
+    console.log('✅ Payment data found and link is still valid:', paymentData);
     
     // Get Salesforce OAuth token and fetch compliance_clear and prepayment_screening
     let compliance_clear, prepayment_screening;
@@ -229,7 +140,7 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
         // Step 1: Get Salesforce OAuth token
         console.log('🔐 Step 1: Requesting Salesforce OAuth token...');
         const TokenResponse = await axios.post(
-          `https://dd0000000pp16mae--vzfullcopy.sandbox.my.salesforce-setup.com/services/oauth2/token`,
+          `https://login.salesforce.com/services/oauth2/token`,
           null,
           {
             params: {
@@ -310,11 +221,11 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
             
             console.log('💾 Updating database with Salesforce data...', {
               updateData,
-              checkoutId: paymentData.afs_checkout_id || req.params.checkoutId
+              checkoutId: req.params.checkoutId
             });
             
             await Vzat_Recurring_Data.updateOne(
-              { _id: paymentData._id },
+              { afs_checkout_id: req.params.checkoutId },
               { $set: updateData }
             );
             
@@ -353,38 +264,25 @@ app.get('/api/payment_schedule/:checkoutId', async (req, res) => {
       hasComplianceClear: paymentData.compliance_clear !== undefined,
       hasPrepaymentScreening: paymentData.prepayment_screening !== undefined,
       compliance_clear: paymentData.compliance_clear,
-      prepayment_screening: paymentData.prepayment_screening,
-      currentCheckoutId: currentCheckoutId,
-      newCheckoutIdGenerated: newCheckoutIdGenerated
+      prepayment_screening: paymentData.prepayment_screening
     });
     
     const responseData = {
       ...paymentData.toObject ? paymentData.toObject() : paymentData,
       compliance_clear: paymentData.compliance_clear !== undefined ? paymentData.compliance_clear : false,
-      prepayment_screening: paymentData.prepayment_screening !== undefined ? paymentData.prepayment_screening : false,
-      // Always return the CURRENT checkout ID (may be newly generated)
-      // This ensures payment widget uses the valid checkout ID even if accessed via old checkout ID URL
-      afs_checkout_id: currentCheckoutId,
-      checkout_id_regenerated: newCheckoutIdGenerated,
-      // Include the original checkout ID from URL for reference
-      requested_checkout_id: req.params.checkoutId
+      prepayment_screening: paymentData.prepayment_screening !== undefined ? paymentData.prepayment_screening : false
     };
     
     console.log('✅ Final responseData prepared:', {
       compliance_clear: responseData.compliance_clear,
       prepayment_screening: responseData.prepayment_screening,
-      quotepaymentId: responseData.quotepaymentId,
-      afs_checkout_id: responseData.afs_checkout_id,
-      checkout_id_regenerated: responseData.checkout_id_regenerated
+      quotepaymentId: responseData.quotepaymentId
     });
     
     // Log successful response to database
     Post_Common_DB_Log_Data('/api/payment_schedule/:checkoutId', req.params, {
       success: true,
-      paymentData: responseData,
-      checkoutIdRegenerated: newCheckoutIdGenerated,
-      oldCheckoutId: newCheckoutIdGenerated ? req.params.checkoutId : null,
-      newCheckoutId: newCheckoutIdGenerated ? currentCheckoutId : null
+      paymentData: responseData
     });
     
     // Return the data in the format expected by Angular component
