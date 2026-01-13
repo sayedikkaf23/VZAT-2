@@ -119,7 +119,8 @@ export const createCheckoutId = async ({
           is_subscription: isSubscription,
           subscription_status: isSubscription ? 'pending' : 'one-time',
           next_charge_date: isSubscription ? nextInstallmentDate : null,
-          old_checkout_ids: oldCheckoutIds
+          old_checkout_ids: oldCheckoutIds,
+          checkout_created_at: new Date() // Track when this checkout ID was created
         };
         
         await Vzat_Recurring_Data.findByIdAndUpdate(
@@ -128,7 +129,12 @@ export const createCheckoutId = async ({
           { new: true }
         );
         
-        console.log(`Successfully updated record with new checkoutId: ${afsResponse.data.id}`);
+        console.log(`Successfully updated record with new checkoutId: ${afsResponse.data.id}`, {
+          is_subscription: isSubscription,
+          subscription_status: isSubscription ? 'pending' : 'one-time',
+          next_charge_date: isSubscription ? nextInstallmentDate : null,
+          checkout_created_at: new Date()
+        });
       } catch (updateErr) {
         console.error('Error storing checkout/subscription data:', updateErr);
       }
@@ -152,14 +158,30 @@ export const createCheckoutIdForQuotePayment = async (req, res) => {
   await connectDB();
   
   try {
-    const { quotepaymentId } = req.params;
+    let { quotepaymentId } = req.params;
     
-    if (!quotepaymentId) {
+    // Decode URL-encoded quotepaymentId
+    quotepaymentId = decodeURIComponent(quotepaymentId);
+    
+    if (!quotepaymentId || quotepaymentId.trim() === '') {
       return res.status(400).json({ 
         status: false,
         message: "quotepaymentId is required" 
       });
     }
+
+    // Validate quotepaymentId format - reject common invalid values
+    const invalidValues = ['not available', 'n/a', 'na', 'null', 'undefined', 'none', ''];
+    if (invalidValues.includes(quotepaymentId.toLowerCase().trim())) {
+      return res.status(400).json({ 
+        status: false,
+        message: `Invalid quotepaymentId format: "${quotepaymentId}" is not a valid Quote Payment ID`,
+        error: "INVALID_QUOTE_PAYMENT_ID"
+      });
+    }
+
+    // Trim whitespace
+    quotepaymentId = quotepaymentId.trim();
     
     // Find the existing payment record
     const paymentRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
