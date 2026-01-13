@@ -311,7 +311,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       
       if (existingRecord.afs_checkout_id) {
         // Use quotepaymentId for payment page URL (checkoutId will be created when user clicks "Pay Here")
-        existingPaymentPageUrl = `${process.env.FRONTEND_URL}/payment-widget`;
+        existingPaymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(quotepaymentId)}`;
         existingPaymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${existingRecord.afs_checkout_id}`;
       }
 
@@ -526,8 +526,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
     afsResponse = checkoutResult.afsResponse;
     afsError = checkoutResult.afsError;
     if (afsResponse && afsResponse.data && afsResponse.data.id) {
-      // Generate payment link with quotepaymentId only (not checkoutId)
-      paymentLink = `${process.env.FRONTEND_URL}/payment-select/${encodeURIComponent(quotepaymentId)}`;
+      // Generate payment link with quotepaymentId as path parameter (for email)
+      paymentLink = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(quotepaymentId)}`;
     }
 
     // Final response including payment link
