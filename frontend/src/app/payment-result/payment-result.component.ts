@@ -88,8 +88,8 @@ export class PaymentResultComponent implements OnInit {
         // Extract dynamic data
         this.extractDynamicData(res);
         
-        // If quotepaymentId is available, fetch additional data from VzatRecurringData
-        if (this.quotepaymentId) {
+        // If quotepaymentId is available and valid, fetch additional data from VzatRecurringData
+        if (this.quotepaymentId && this.isValidQuotePaymentId(this.quotepaymentId)) {
           this.fetchVzatRecurringData(this.quotepaymentId);
         }
         
@@ -102,8 +102,8 @@ export class PaymentResultComponent implements OnInit {
         this.error = err?.error?.message || 'Failed to get payment result.';
         this.loading = false;
         
-        // If payment fails, fetch VzatRecurringData using quotepaymentId
-        if (quotepaymentId) {
+        // If payment fails, fetch VzatRecurringData using quotepaymentId (only if valid)
+        if (quotepaymentId && this.isValidQuotePaymentId(quotepaymentId)) {
           this.fetchVzatRecurringData(quotepaymentId);
         }
         
@@ -122,7 +122,13 @@ export class PaymentResultComponent implements OnInit {
    * Fetch VzatRecurringData when payment fails
    */
   private fetchVzatRecurringData(quotepaymentId: string): void {
-    const vzatDataUrl = `${environment.apiUrl}/vzat_recurring_create_payment_link/${quotepaymentId}`;
+    // Validate quotepaymentId before making the request
+    if (!this.isValidQuotePaymentId(quotepaymentId)) {
+      console.warn('⚠️ Invalid quotepaymentId, skipping VzatRecurringData fetch:', quotepaymentId);
+      return;
+    }
+
+    const vzatDataUrl = `${environment.apiUrl}/vzat_recurring_create_payment_link/${encodeURIComponent(quotepaymentId)}`;
     
     console.log('🔍 Fetching VzatRecurringData for quotepaymentId:', quotepaymentId);
     
@@ -306,12 +312,19 @@ export class PaymentResultComponent implements OnInit {
     console.log('🔧 Sales Agent Data Updated:', this.salesAgent);
     
     // Extract QP ID from multiple possible sources and store in quotepaymentId property
-    this.quotepaymentId = result?.quotepaymentId || 
-                         result?.quote_payment_id || 
-                         result?.QuotePaymentId ||
-                         this.route.snapshot.queryParamMap.get('quotepaymentId') ||
-                         this.quotepaymentId ||
-                         'Not available';
+    const extractedQuotepaymentId = result?.quotepaymentId || 
+                                   result?.quote_payment_id || 
+                                   result?.QuotePaymentId ||
+                                   this.route.snapshot.queryParamMap.get('quotepaymentId') ||
+                                   this.quotepaymentId ||
+                                   '';
+    
+    // Only set quotepaymentId if it's valid, otherwise leave it empty
+    if (extractedQuotepaymentId && this.isValidQuotePaymentId(extractedQuotepaymentId)) {
+      this.quotepaymentId = extractedQuotepaymentId;
+    } else {
+      this.quotepaymentId = ''; // Set to empty string instead of 'Not available'
+    }
     
     // Calculate remaining amount
     this.remainingAmount = this.totalAmount - this.paymentAmount;
@@ -331,5 +344,27 @@ export class PaymentResultComponent implements OnInit {
 
   private normalizePhone(n: string | null | undefined): string {
     return (n || '').replace(/\D+/g, '');
+  }
+
+  /**
+   * Validate quotepaymentId format
+   * Rejects common invalid values and validates Salesforce ID format
+   */
+  private isValidQuotePaymentId(quotepaymentId: string | null | undefined): boolean {
+    if (!quotepaymentId || typeof quotepaymentId !== 'string') {
+      return false;
+    }
+
+    const trimmed = quotepaymentId.trim();
+    
+    // Reject common invalid values
+    const invalidValues = ['not available', 'n/a', 'na', 'null', 'undefined', 'none', ''];
+    if (invalidValues.includes(trimmed.toLowerCase())) {
+      return false;
+    }
+
+    // Validate Salesforce ID format (typically 15-18 alphanumeric characters)
+    const salesforceIdPattern = /^[a-zA-Z0-9]{15,18}$/;
+    return salesforceIdPattern.test(trimmed);
   }
 }
