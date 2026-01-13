@@ -671,6 +671,16 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    // Find the next payment from payment schedule
+    const nextPayment = this.paymentSchedule.find(payment => 
+      payment.status === 'due' && payment.isNextPayment
+    );
+
+    if (!nextPayment) {
+      alert('No active payment found. Please contact support.');
+      return;
+    }
+
     // Show loading state
     this.isLoading = true;
 
@@ -679,23 +689,72 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       next: (response: { status: boolean; message: string; quotepaymentId: string; afs_checkout_id?: string; payment_page_url?: string; error?: any }) => {
         this.isLoading = false;
         
-        if (response.status) {
-          // CheckoutId created or already exists, navigate to payment-select page with quotepaymentId
-          this.router.navigate([`/payment-select/${this.quotepaymentId}`]);
+        // Get checkoutId from response or use existing one
+        const checkoutId = response.afs_checkout_id || this.currentCheckoutId;
+        
+        if (checkoutId) {
+          // Build the AFS payment widget link
+          const paymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+          
+          // Navigate to payment-widget page with all required parameters
+          this.router.navigate(['/payment-widget'], {
+            queryParams: {
+              checkoutId: checkoutId,
+              paymentId: nextPayment.id,
+              amount: nextPayment.amount,
+              dueDate: nextPayment.dueDate.toISOString(),
+              invoiceNumber: this.customerData.invoiceNumber,
+              quotepaymentId: this.quotepaymentId,
+              paymentLink: encodeURIComponent(paymentLink)
+            }
+          });
         } else {
-          // If there's an error, still try to navigate (checkoutId might already exist)
-          console.warn('CheckoutId creation response:', response);
-          this.router.navigate([`/payment-select/${this.quotepaymentId}`]);
+          // If no checkoutId, still navigate but without AFS payment (fallback)
+          console.warn('No checkoutId available, navigating without AFS payment');
+          this.router.navigate(['/payment-widget'], {
+            queryParams: {
+              paymentId: nextPayment.id,
+              amount: nextPayment.amount,
+              dueDate: nextPayment.dueDate.toISOString(),
+              invoiceNumber: this.customerData.invoiceNumber,
+              quotepaymentId: this.quotepaymentId
+            }
+          });
         }
       },
       error: (error: any) => {
         this.isLoading = false;
         console.error('Error creating checkout ID:', error);
         
-        // Even if there's an error, try to navigate if we have quotepaymentId
-        // The backend might have the checkoutId already
-        if (this.quotepaymentId) {
-          this.router.navigate([`/payment-select/${this.quotepaymentId}`]);
+        // Even if there's an error, try to navigate with existing checkoutId if available
+        const checkoutId = this.currentCheckoutId;
+        
+        if (checkoutId) {
+          // Use existing checkoutId
+          const paymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+          
+          this.router.navigate(['/payment-widget'], {
+            queryParams: {
+              checkoutId: checkoutId,
+              paymentId: nextPayment.id,
+              amount: nextPayment.amount,
+              dueDate: nextPayment.dueDate.toISOString(),
+              invoiceNumber: this.customerData.invoiceNumber,
+              quotepaymentId: this.quotepaymentId,
+              paymentLink: encodeURIComponent(paymentLink)
+            }
+          });
+        } else if (this.quotepaymentId) {
+          // Navigate without checkoutId (fallback)
+          this.router.navigate(['/payment-widget'], {
+            queryParams: {
+              paymentId: nextPayment.id,
+              amount: nextPayment.amount,
+              dueDate: nextPayment.dueDate.toISOString(),
+              invoiceNumber: this.customerData.invoiceNumber,
+              quotepaymentId: this.quotepaymentId
+            }
+          });
         } else {
           alert('Failed to create payment checkout. Please try again or contact support.');
         }

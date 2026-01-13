@@ -18,6 +18,7 @@ dotenv.config();
  * @param {number} params.InstallmentLeft - Number of installments left
  * @param {Date} params.nextInstallmentDate - Next installment date
  * @param {string} params.recordId - Database record ID to update
+ * @param {string} params.oldCheckoutId - Old checkout ID to store in old_checkout_ids array
  * @returns {Promise<Object>} Object with afsResponse and afsError
  */
 export const createCheckoutId = async ({
@@ -26,7 +27,8 @@ export const createCheckoutId = async ({
   isSubscription,
   InstallmentLeft,
   nextInstallmentDate,
-  recordId
+  recordId,
+  oldCheckoutId = null
 }) => {
   let afsResponse = null;
   let afsError = null;
@@ -89,11 +91,35 @@ export const createCheckoutId = async ({
     if (afsResponse.data && afsResponse.data.id) {
       // Store the checkout ID and subscription info in the database
       try {
+        // Get the current record to handle old_checkout_ids array
+        const currentRecord = await Vzat_Recurring_Data.findById(recordId);
+        
+        // Prepare old_checkout_ids array
+        let oldCheckoutIds = currentRecord?.old_checkout_ids || [];
+        
+        // If there's an old checkoutId, add it to the array
+        if (oldCheckoutId) {
+          // Check if old checkoutId is not already in the array
+          const checkoutIdExists = oldCheckoutIds.some(
+            item => (typeof item === 'string' ? item : item.checkout_id) === oldCheckoutId
+          );
+          
+          if (!checkoutIdExists) {
+            // Add old checkoutId with timestamp (using created_at to indicate when it was replaced)
+            oldCheckoutIds.push({
+              checkout_id: oldCheckoutId,
+              created_at: new Date()
+            });
+            console.log(`Added old checkoutId ${oldCheckoutId} to old_checkout_ids array`);
+          }
+        }
+        
         const updateData = { 
           afs_checkout_id: afsResponse.data.id,
           is_subscription: isSubscription,
           subscription_status: isSubscription ? 'pending' : 'one-time',
-          next_charge_date: isSubscription ? nextInstallmentDate : null
+          next_charge_date: isSubscription ? nextInstallmentDate : null,
+          old_checkout_ids: oldCheckoutIds
         };
         
         await Vzat_Recurring_Data.findByIdAndUpdate(
@@ -101,6 +127,8 @@ export const createCheckoutId = async ({
           updateData,
           { new: true }
         );
+        
+        console.log(`Successfully updated record with new checkoutId: ${afsResponse.data.id}`);
       } catch (updateErr) {
         console.error('Error storing checkout/subscription data:', updateErr);
       }
@@ -118,6 +146,7 @@ export const createCheckoutId = async ({
 /**
  * Create checkout ID for an existing quotepaymentId
  * This endpoint is called when user clicks "Pay Here" button
+ * ALWAYS creates a new checkoutId (even if one already exists)
  */
 export const createCheckoutIdForQuotePayment = async (req, res) => {
   await connectDB();
@@ -142,16 +171,11 @@ export const createCheckoutIdForQuotePayment = async (req, res) => {
       });
     }
     
-    // Check if checkoutId already exists
+    // Store old checkoutId in old_checkout_ids array before creating a new one
+    let oldCheckoutId = null;
     if (paymentRecord.afs_checkout_id) {
-      // Return existing checkoutId
-      return res.status(200).json({
-        status: true,
-        message: "Checkout ID already exists",
-        quotepaymentId,
-        afs_checkout_id: paymentRecord.afs_checkout_id,
-        payment_page_url: `${process.env.FRONTEND_URL}/payment-select/${encodeURIComponent(quotepaymentId)}`
-      });
+      oldCheckoutId = paymentRecord.afs_checkout_id;
+      console.log(`Storing old checkoutId: ${oldCheckoutId} for quotepaymentId: ${quotepaymentId}`);
     }
     
     // Calculate installment amount and other required fields
@@ -160,14 +184,15 @@ export const createCheckoutIdForQuotePayment = async (req, res) => {
     const installmentAmount = paymentRecord.Total_After_VAT_Currency / InstallmentLeft;
     const nextInstallmentDate = paymentRecord.next_charge_date || new Date();
     
-    // Create checkoutId using the extracted function
+    // Create new checkoutId using the extracted function
     const checkoutResult = await createCheckoutId({
       quotepaymentId,
       installmentAmount,
       isSubscription,
       InstallmentLeft,
       nextInstallmentDate,
-      recordId: paymentRecord._id
+      recordId: paymentRecord._id,
+      oldCheckoutId: oldCheckoutId // Pass old checkoutId to store it
     });
     
     if (checkoutResult.afsError) {
@@ -179,11 +204,14 @@ export const createCheckoutIdForQuotePayment = async (req, res) => {
     }
     
     if (checkoutResult.afsResponse && checkoutResult.afsResponse.data && checkoutResult.afsResponse.data.id) {
+      const newCheckoutId = checkoutResult.afsResponse.data.id;
+      console.log(`New checkoutId created: ${newCheckoutId} for quotepaymentId: ${quotepaymentId}`);
+      
       return res.status(200).json({
         status: true,
         message: "Checkout ID created successfully",
         quotepaymentId,
-        afs_checkout_id: checkoutResult.afsResponse.data.id,
+        afs_checkout_id: newCheckoutId,
         payment_page_url: `${process.env.FRONTEND_URL}/payment-select/${encodeURIComponent(quotepaymentId)}`
       });
     } else {
