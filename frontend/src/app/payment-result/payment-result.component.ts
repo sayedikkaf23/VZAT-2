@@ -85,11 +85,24 @@ export class PaymentResultComponent implements OnInit {
         this.loading = false;
         this.error = '';
         
-        // Extract dynamic data
+        // Extract dynamic data first (this may update quotepaymentId from response)
         this.extractDynamicData(res);
         
-        // If quotepaymentId is available and valid, fetch additional data from VzatRecurringData
-        if (this.quotepaymentId && this.isValidQuotePaymentId(this.quotepaymentId)) {
+        // Try to get quotepaymentId from response if not already set
+        const quotepaymentIdFromResponse = res?.quotepaymentId || 
+                                          res?.quote_payment_id || 
+                                          res?.QuotePaymentId ||
+                                          this.quotepaymentId;
+        
+        // Update quotepaymentId if we got it from response
+        if (quotepaymentIdFromResponse && quotepaymentIdFromResponse !== this.quotepaymentId) {
+          this.quotepaymentId = quotepaymentIdFromResponse;
+        }
+        
+        // Always try to fetch VzatRecurringData if we have any quotepaymentId value
+        // This ensures sidebar data is loaded even if validation is strict
+        if (this.quotepaymentId && this.quotepaymentId.trim() !== '' && 
+            this.quotepaymentId.toLowerCase() !== 'not available') {
           this.fetchVzatRecurringData(this.quotepaymentId);
         }
         
@@ -102,8 +115,10 @@ export class PaymentResultComponent implements OnInit {
         this.error = err?.error?.message || 'Failed to get payment result.';
         this.loading = false;
         
-        // If payment fails, fetch VzatRecurringData using quotepaymentId (only if valid)
-        if (quotepaymentId && this.isValidQuotePaymentId(quotepaymentId)) {
+        // If payment fails, try to fetch VzatRecurringData using quotepaymentId
+        // Try even if validation fails - let the API handle invalid IDs
+        if (quotepaymentId && quotepaymentId.trim() !== '' && 
+            quotepaymentId.toLowerCase() !== 'not available') {
           this.fetchVzatRecurringData(quotepaymentId);
         }
         
@@ -122,53 +137,88 @@ export class PaymentResultComponent implements OnInit {
    * Fetch VzatRecurringData when payment fails
    */
   private fetchVzatRecurringData(quotepaymentId: string): void {
-    // Validate quotepaymentId before making the request
-    if (!this.isValidQuotePaymentId(quotepaymentId)) {
-      console.warn('⚠️ Invalid quotepaymentId, skipping VzatRecurringData fetch:', quotepaymentId);
+    // Clean and validate quotepaymentId
+    const cleanedQuotepaymentId = quotepaymentId.trim();
+    
+    // Skip if obviously invalid
+    const invalidValues = ['not available', 'n/a', 'na', 'null', 'undefined', 'none', ''];
+    if (invalidValues.includes(cleanedQuotepaymentId.toLowerCase())) {
+      console.warn('⚠️ Skipping VzatRecurringData fetch for invalid quotepaymentId:', quotepaymentId);
       return;
     }
 
-    const vzatDataUrl = `${environment.apiUrl}/vzat_recurring_create_payment_link/${encodeURIComponent(quotepaymentId)}`;
+    const vzatDataUrl = `${environment.apiUrl}/vzat_recurring_create_payment_link/${encodeURIComponent(cleanedQuotepaymentId)}`;
     
-    console.log('🔍 Fetching VzatRecurringData for quotepaymentId:', quotepaymentId);
+    console.log('🔍 Fetching VzatRecurringData for quotepaymentId:', cleanedQuotepaymentId);
     
     this.http.get(vzatDataUrl).subscribe({
-      next: (data: any) => {
-        console.log('📋 VzatRecurringData Response:', data);
+      next: (response: any) => {
+        console.log('📋 VzatRecurringData Response:', response);
         
-        // Extract data for sidebar display
-        this.extractVzatDataForSidebar(data);
+        // Handle different response structures
+        // API might return { data: {...} } or just {...}
+        const data = response?.data || response;
         
-        // Force change detection
-        this.cdr.detectChanges();
+        if (data) {
+          // Extract data for sidebar display
+          this.extractVzatDataForSidebar(data);
+          
+          // Force change detection
+          this.cdr.detectChanges();
+        } else {
+          console.warn('⚠️ VzatRecurringData response has no data:', response);
+        }
       },
       error: (err: any) => {
         console.error('❌ VzatRecurringData fetch error:', err);
         // Keep default sales agent data if fetch fails
+        // Don't show error to user - just use defaults
       }
     });
   }
 
   /**
-   * Extract VzatRecurringData for sidebar display
+   * Extract VzatRecurringData for sidebar display and update all component data
    */
   private extractVzatDataForSidebar(data: any): void {
+    console.log('📦 Extracting VzatRecurringData for sidebar:', data);
+    
     // Extract customer name
-    this.customerName = data?.Customer_name || 
-                       data?.customer_name || 
-                       data?.name ||
-                       'Customer';
+    const extractedCustomerName = data?.Customer_name || 
+                                   data?.customer_name || 
+                                   data?.name ||
+                                   '';
+    if (extractedCustomerName) {
+      this.customerName = extractedCustomerName;
+    }
     
     // Extract Quote_payment_number
-    this.Quote_payment_number = data?.Quote_payment_number || 
-                               data?.quote_payment_number ||
-                               data?.QuotePaymentNumber ||
-                               '';
+    const extractedQuotePaymentNumber = data?.Quote_payment_number || 
+                                       data?.quote_payment_number ||
+                                       data?.QuotePaymentNumber ||
+                                       '';
+    if (extractedQuotePaymentNumber) {
+      this.Quote_payment_number = extractedQuotePaymentNumber;
+    }
+    
+    // Extract total amount from Total_After_VAT_Currency
+    const extractedTotalAmount = parseFloat(data?.Total_After_VAT_Currency) || 
+                                parseFloat(data?.total_after_vat_currency) ||
+                                parseFloat(data?.total_amount) ||
+                                0;
+    if (extractedTotalAmount > 0) {
+      this.totalAmount = extractedTotalAmount;
+      this.sidebarPaymentAmount = extractedTotalAmount;
+    }
     
     // Extract installment amount from payment schedule (first installment)
     let installmentAmount = 0;
     if (data?.payment_schedule && Array.isArray(data.payment_schedule) && data.payment_schedule.length > 0) {
-      installmentAmount = parseFloat(data.payment_schedule[0].amount) || 0;
+      // Find the first due or completed payment
+      const firstPayment = data.payment_schedule.find((p: any) => 
+        p.status === 'due' || p.status === 'completed'
+      ) || data.payment_schedule[0];
+      installmentAmount = parseFloat(firstPayment.amount) || 0;
     }
     
     // If no payment schedule, try to get installment amount from other fields
@@ -179,20 +229,36 @@ export class PaymentResultComponent implements OnInit {
                          0;
     }
     
+    // Update payment amount if we found an installment amount
+    if (installmentAmount > 0 && this.paymentAmount === 0) {
+      this.paymentAmount = installmentAmount;
+    }
+    
     // Store full amount for sidebar display (total contract value)
-    this.sidebarPaymentAmount = parseFloat(data?.Total_After_VAT_Currency) || 
-                               parseFloat(data?.total_after_vat_currency) ||
-                               parseFloat(data?.amount) ||
-                               0;
+    if (this.sidebarPaymentAmount === 0 && extractedTotalAmount > 0) {
+      this.sidebarPaymentAmount = extractedTotalAmount;
+    }
+    
+    // Recalculate remaining amount
+    this.remainingAmount = this.totalAmount - this.paymentAmount;
+    if (this.remainingAmount < 0) {
+      this.remainingAmount = 0;
+    }
     
     console.log('💰 Sidebar Amount Logic:', {
       totalAfterVAT: data?.Total_After_VAT_Currency,
       sidebarPaymentAmount: this.sidebarPaymentAmount,
-      installmentAmount: installmentAmount
+      installmentAmount: installmentAmount,
+      paymentAmount: this.paymentAmount,
+      totalAmount: this.totalAmount,
+      remainingAmount: this.remainingAmount
     });
     
-    // Store quotepaymentId for display
-    this.quotepaymentId = data?.quotepaymentId || this.quotepaymentId;
+    // Store quotepaymentId for display (only if valid)
+    const extractedQuotepaymentId = data?.quotepaymentId || data?.data?.quotepaymentId;
+    if (extractedQuotepaymentId && this.isValidQuotePaymentId(extractedQuotepaymentId)) {
+      this.quotepaymentId = extractedQuotepaymentId;
+    }
     
     // Extract sales agent information from VzatRecurringData with better fallback
     if (data?.salesPersonDetails) {
