@@ -197,13 +197,21 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             console.log(`✅ Calculated installment amount: ${calculatedInstallmentAmount} (${Total_After_VAT_Currency} / ${Total_Installments})`);
         }
 
+        // Construct correct payment link format: /payment/{quotepaymentId}
+        // Override the paymentLink from Salesforce webhook with the correct format
+        const correctPaymentLink = quotepaymentId 
+            ? `${process.env.FRONTEND_URL || 'https://vzatnew.yeepeey.com'}/payment/${encodeURIComponent(quotepaymentId)}`
+            : paymentLink; // Fallback to original if quotepaymentId is missing
+        
+        console.log(`🔗 Constructed payment link: ${correctPaymentLink}`);
+
         // Prepare email data
         const emailData = {
             Quote_payment_number: quote_payment_number,
             Total_After_VAT_Currency,
             quote_email,
             quotepaymentId,
-            paymentLink,
+            paymentLink: correctPaymentLink, // Use the correctly formatted payment link
             Installment_amount: calculatedInstallmentAmount, // Use calculated amount
             Total_Installments,
             quotePdf,
