@@ -212,7 +212,7 @@ export const createCheckoutIdForQuotePayment = async (req, res) => {
         message: "Checkout ID created successfully",
         quotepaymentId,
         afs_checkout_id: newCheckoutId,
-        payment_page_url: `${process.env.FRONTEND_URL}/payment-select/${encodeURIComponent(quotepaymentId)}`
+        payment_page_url: `${process.env.FRONTEND_URL}/payment-widget`
       });
     } else {
       return res.status(500).json({
@@ -289,7 +289,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       
       if (existingRecord.afs_checkout_id) {
         // Use quotepaymentId for payment page URL (checkoutId will be created when user clicks "Pay Here")
-        existingPaymentPageUrl = `${process.env.FRONTEND_URL}/payment-select/${encodeURIComponent(existingRecord.quotepaymentId)}`;
+        existingPaymentPageUrl = `${process.env.FRONTEND_URL}/payment-widget`;
         existingPaymentLink = `${process.env.AFS_DOMAIN}/v1/paymentWidgets.js?checkoutId=${existingRecord.afs_checkout_id}`;
       }
 
@@ -517,7 +517,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       const resourcePath = encodeURIComponent(`/v1/checkouts/${afsResponse.data.id}/payment`);
       finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
       // Payment page URL uses quotepaymentId only (checkoutId will be created when user clicks "Pay Here")
-      paymentPageUrl = `${process.env.FRONTEND_URL}/payment-select/${encodeURIComponent(quotepaymentId)}`;
+      paymentPageUrl = `${process.env.FRONTEND_URL}/payment-widget`;
     }
     
     const brands = "VISA MASTER AMEX";

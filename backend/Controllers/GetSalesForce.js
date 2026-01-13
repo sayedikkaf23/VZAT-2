@@ -1,9 +1,13 @@
 import SalesForce from "../model/SalesForceModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
+import { connectDB } from "../config/db.js";
 import _ from 'lodash';
 
 
 const GetSalesForce = async (req, res) => {
+      // Ensure database connection before running operations
+      await connectDB();
+      
       const { token } = req.query;
       if (!token) {
         const query = {
@@ -20,7 +24,7 @@ const GetSalesForce = async (req, res) => {
 
       
       try {
-        // Use persistent connection - mongoose will handle connection state automatically
+        // Database connection is ensured above
         const salesAgent = await SalesForce.findOne({token: token});
         
         if (salesAgent) {

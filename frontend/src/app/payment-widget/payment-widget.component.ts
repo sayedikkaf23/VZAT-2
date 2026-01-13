@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../environments/environment';
 
 interface PaymentDetails {
   paymentId: string;
@@ -219,8 +220,8 @@ export class PaymentWidgetComponent implements OnInit, AfterViewInit, OnDestroy 
     
     // Redirect to the shopper result URL if available
     if (this.paymentDetails?.checkoutId) {
-      // Use the actual result URL pattern from your API
-      const resultUrl = `https://vzatnew.yeepeey.com/payment-result?id=${this.paymentDetails.checkoutId}&quotepaymentId=${this.paymentDetails.quotepaymentId}`;
+      // Use environment variable for the result URL
+      const resultUrl = `${environment.frontendUrl}/payment-result?id=${this.paymentDetails.checkoutId}&quotepaymentId=${this.paymentDetails.quotepaymentId}`;
       window.location.href = resultUrl;
     } else {
       // Fallback to local result page
