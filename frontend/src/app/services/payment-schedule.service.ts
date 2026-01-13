@@ -148,6 +148,17 @@ export class PaymentScheduleService {
   }
 
   /**
+   * Create checkout ID for an existing quotepaymentId
+   * This is called when user clicks "Pay Here" button
+   */
+  createCheckoutId(quotepaymentId: string): Observable<{ status: boolean; message: string; quotepaymentId: string; afs_checkout_id?: string; payment_page_url?: string; error?: any }> {
+    return this.http.post<{ status: boolean; message: string; quotepaymentId: string; afs_checkout_id?: string; payment_page_url?: string; error?: any }>(
+      `${this.apiUrl}/vzat_recurring_create_payment_link/create-checkout/${quotepaymentId}`,
+      {}
+    );
+  }
+
+  /**
    * Process payment for a specific installment
    */
   processPayment(checkoutId: string, paymentData: any): Observable<any> {

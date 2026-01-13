@@ -666,15 +666,41 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const nextPayment = this.paymentSchedule.find(payment => 
-      payment.status === 'due' && payment.isNextPayment
-    );
-
-    if (nextPayment) {
-      this.initiatePayment(nextPayment);
-    } else {
-      alert('No payment is currently due.');
+    if (!this.quotepaymentId) {
+      alert('Quote payment ID is missing. Please contact support.');
+      return;
     }
+
+    // Show loading state
+    this.isLoading = true;
+
+    // Call the API to create checkoutId for this quotepaymentId
+    this.paymentScheduleService.createCheckoutId(this.quotepaymentId).subscribe({
+      next: (response: { status: boolean; message: string; quotepaymentId: string; afs_checkout_id?: string; payment_page_url?: string; error?: any }) => {
+        this.isLoading = false;
+        
+        if (response.status) {
+          // CheckoutId created or already exists, navigate to payment-select page with quotepaymentId
+          this.router.navigate([`/payment-select/${this.quotepaymentId}`]);
+        } else {
+          // If there's an error, still try to navigate (checkoutId might already exist)
+          console.warn('CheckoutId creation response:', response);
+          this.router.navigate([`/payment-select/${this.quotepaymentId}`]);
+        }
+      },
+      error: (error: any) => {
+        this.isLoading = false;
+        console.error('Error creating checkout ID:', error);
+        
+        // Even if there's an error, try to navigate if we have quotepaymentId
+        // The backend might have the checkoutId already
+        if (this.quotepaymentId) {
+          this.router.navigate([`/payment-select/${this.quotepaymentId}`]);
+        } else {
+          alert('Failed to create payment checkout. Please try again or contact support.');
+        }
+      }
+    });
   }
 
   private calculateRemainingAmount(): void {
