@@ -71,7 +71,12 @@ export class PaymentResultComponent implements OnInit {
       return;
     }
     
-    const params: any = { resourcePath: resourcePath || '', quotepaymentId: quotepaymentId || '' };
+    // Include id (checkoutId) in params so backend can look up quotepaymentId if missing
+    const params: any = { 
+      resourcePath: resourcePath || '', 
+      quotepaymentId: quotepaymentId || '',
+      id: id || '' // Include checkoutId so backend can look up quotepaymentId
+    };
     
     const backendUrl = `${environment.apiUrl}/payment/result`;
     
@@ -92,6 +97,7 @@ export class PaymentResultComponent implements OnInit {
         const quotepaymentIdFromResponse = res?.quotepaymentId || 
                                           res?.quote_payment_id || 
                                           res?.QuotePaymentId ||
+                                          res?.vzatRecurringData?.quotepaymentId ||
                                           this.quotepaymentId;
         
         // Update quotepaymentId if we got it from response
@@ -99,10 +105,19 @@ export class PaymentResultComponent implements OnInit {
           this.quotepaymentId = quotepaymentIdFromResponse;
         }
         
-        // Always try to fetch VzatRecurringData if we have any quotepaymentId value
-        // This ensures sidebar data is loaded even if validation is strict
-        if (this.quotepaymentId && this.quotepaymentId.trim() !== '' && 
-            this.quotepaymentId.toLowerCase() !== 'not available') {
+        // If vzatRecurringData is included in the response, use it directly for sidebar
+        if (res?.vzatRecurringData) {
+          console.log('📦 Using VzatRecurringData from payment result response');
+          this.extractVzatDataForSidebar(res.vzatRecurringData);
+          
+          // Update quotepaymentId from vzatRecurringData if available
+          if (res.vzatRecurringData.quotepaymentId) {
+            this.quotepaymentId = res.vzatRecurringData.quotepaymentId;
+          }
+        } else if (this.quotepaymentId && this.quotepaymentId.trim() !== '' && 
+                   this.quotepaymentId.toLowerCase() !== 'not available') {
+          // Fallback: fetch VzatRecurringData if we have quotepaymentId but no data in response
+          console.log('🔍 Fetching VzatRecurringData separately');
           this.fetchVzatRecurringData(this.quotepaymentId);
         }
         
@@ -115,11 +130,21 @@ export class PaymentResultComponent implements OnInit {
         this.error = err?.error?.message || 'Failed to get payment result.';
         this.loading = false;
         
+        // Try to extract quotepaymentId from error response if available
+        const quotepaymentIdFromError = err?.error?.quotepaymentId || 
+                                       err?.error?.vzatRecurringData?.quotepaymentId ||
+                                       quotepaymentId;
+        
+        if (quotepaymentIdFromError) {
+          this.quotepaymentId = quotepaymentIdFromError;
+        }
+        
         // If payment fails, try to fetch VzatRecurringData using quotepaymentId
         // Try even if validation fails - let the API handle invalid IDs
-        if (quotepaymentId && quotepaymentId.trim() !== '' && 
-            quotepaymentId.toLowerCase() !== 'not available') {
-          this.fetchVzatRecurringData(quotepaymentId);
+        const quotepaymentIdToUse = this.quotepaymentId || quotepaymentId;
+        if (quotepaymentIdToUse && quotepaymentIdToUse.trim() !== '' && 
+            quotepaymentIdToUse.toLowerCase() !== 'not available') {
+          this.fetchVzatRecurringData(quotepaymentIdToUse);
         }
         
         this.cdr.detectChanges();

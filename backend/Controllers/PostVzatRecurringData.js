@@ -659,7 +659,7 @@ export const getAFSPaymentResult = async (req, res) => {
   // Connect to database first
   await connectDB();
   
-  const { resourcePath, quotepaymentId, id } = req.query;
+  const { resourcePath, quotepaymentId: quotepaymentIdFromQuery, id } = req.query;
 
   if (!resourcePath) {
     return res.status(400).json({ message: "Missing resourcePath" });
@@ -672,8 +672,31 @@ export const getAFSPaymentResult = async (req, res) => {
     return res.status(400).json({ message: "Invalid resourcePath format" });
   }
 
-  // Check if checkout ID is provided and log environment info for debugging
-  if (id) {
+  // Try to find quotepaymentId from database if not provided in query
+  let quotepaymentId = quotepaymentIdFromQuery;
+  let paymentRecord = null;
+  
+  if (!quotepaymentId && id) {
+    try {
+      console.log('🔍 Looking up quotepaymentId from checkoutId:', id);
+      paymentRecord = await Vzat_Recurring_Data.findOne({ 
+        afs_checkout_id: id 
+      });
+      if (paymentRecord && paymentRecord.quotepaymentId) {
+        quotepaymentId = paymentRecord.quotepaymentId;
+        console.log('✅ Found quotepaymentId from database:', quotepaymentId);
+      }
+    } catch (dbError) {
+      console.error('❌ Error looking up quotepaymentId from checkoutId:', dbError);
+      // Continue without quotepaymentId - not critical
+    }
+  } else if (quotepaymentId) {
+    // If quotepaymentId is provided, fetch the payment record for additional data
+    try {
+      paymentRecord = await Vzat_Recurring_Data.findOne({ quotepaymentId });
+    } catch (dbError) {
+      console.error('❌ Error fetching payment record:', dbError);
+    }
   }
 
   try {
@@ -734,6 +757,24 @@ export const getAFSPaymentResult = async (req, res) => {
     const resultData = { ...response.data };
     if (quotepaymentId) {
       resultData.quotepaymentId = quotepaymentId;
+    }
+    
+    // Include payment record data for sidebar display if available
+    if (paymentRecord) {
+      // Convert Mongoose document to plain object
+      const paymentData = paymentRecord.toObject ? paymentRecord.toObject() : paymentRecord;
+      
+      // Attach relevant fields for frontend sidebar
+      resultData.vzatRecurringData = {
+        Customer_name: paymentData.Customer_name,
+        Quote_payment_number: paymentData.Quote_payment_number,
+        Total_After_VAT_Currency: paymentData.Total_After_VAT_Currency,
+        payment_schedule: paymentData.payment_schedule,
+        salesPersonDetails: paymentData.salesPersonDetails,
+        quotepaymentId: paymentData.quotepaymentId
+      };
+      
+      console.log('📦 Attached VzatRecurringData to response for sidebar');
     }
 
     // Check if this is actually a successful response with payment data
