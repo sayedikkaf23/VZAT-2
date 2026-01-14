@@ -438,25 +438,46 @@ async function scheduleNextPayment(subscriptionId) {
     const subscription = await Vzat_Recurring_Data.findById(subscriptionId);
     if (!subscription || subscription.subscription_status !== "active") return;
 
-    const currentDate = new Date();
-    const day = currentDate.getDate();
+    // Find the next pending/due payment from payment_schedule
+    const nextPayment = subscription.payment_schedule?.find(
+      (p) => p.status === "pending" || p.status === "due"
+    );
 
-    let chargeDay = day <= 15 ? 10 : 25;
-    let chargeMonth = currentDate.getMonth() + 1;
-    let chargeYear = currentDate.getFullYear();
+    if (nextPayment && nextPayment.due_date) {
+      // Use the due_date from payment schedule
+      const nextChargeDate = new Date(nextPayment.due_date);
+      nextChargeDate.setHours(0, 0, 0, 0);
+      
+      await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionId, {
+        next_charge_date: nextChargeDate
+      });
+      
+      console.log(`✅ Scheduled next payment for ${nextChargeDate.toISOString().slice(0, 10)} (Installment #${nextPayment.installment_number} from payment schedule)`);
+    } else {
+      // Fallback to old logic if no payment schedule
+      console.log('⚠️ No payment schedule found, using fallback date calculation');
+      const currentDate = new Date();
+      const day = currentDate.getDate();
 
-    if (chargeMonth > 11) {
-      chargeMonth = 0;
-      chargeYear += 1;
+      let chargeDay = day <= 15 ? 10 : 25;
+      let chargeMonth = currentDate.getMonth() + 1;
+      let chargeYear = currentDate.getFullYear();
+
+      if (chargeMonth > 11) {
+        chargeMonth = 0;
+        chargeYear += 1;
+      }
+
+      const nextChargeDate = new Date(Date.UTC(chargeYear, chargeMonth, chargeDay, 0, 0, 0, 0));
+
+      await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionId, {
+        next_charge_date: nextChargeDate
+      });
+      
+      console.log(`✅ Scheduled next payment for ${nextChargeDate.toISOString().slice(0, 10)} (fallback calculation)`);
     }
-
-    const nextChargeDate = new Date(Date.UTC(chargeYear, chargeMonth, chargeDay, 0, 0, 0, 0));
-
-    await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionId, {
-      next_charge_date: nextChargeDate
-    });
   } catch (error) {
-    console.error(" Error scheduling next payment:", error);
+    console.error("❌ Error scheduling next payment:", error);
   }
 }
 
@@ -476,7 +497,9 @@ export const processRecurringPayments = async (req, res) => {
       next_charge_date: { $gte: today, $lt: tomorrow }
     });
 
-    const dueSubscriptions = await Vzat_Recurring_Data.find({
+    // Find subscriptions that are due today
+    // First, get all active subscriptions with next_charge_date today
+    const allDueToday = await Vzat_Recurring_Data.find({
       subscription_status: "active",
       next_charge_date: { $gte: today, $lt: tomorrow },
       $or: [
@@ -493,13 +516,69 @@ export const processRecurringPayments = async (req, res) => {
           payment_retry_count: { $gte: 3 },
           "payment_schedule.status": { $in: ["due", "pending"] }
         }
-      ],
-      $and: [
-        {
-          $or: [{ last_processed_date: { $exists: false } }, { last_processed_date: { $lt: today } }]
-        }
       ]
     });
+
+    // Filter in JavaScript to check if the next installment hasn't been completed
+    // This allows same-day processing if there are multiple installments due
+    console.log(`🔍 Found ${allDueToday.length} subscriptions with next_charge_date today`);
+    
+    const dueSubscriptions = allDueToday.filter(subscription => {
+      const quotepaymentId = subscription.quotepaymentId;
+      const paymentsCompleted = subscription.payments_completed || 0;
+      const nextInstallmentNumber = paymentsCompleted + 1;
+      
+      console.log(`\n📋 Checking subscription: ${quotepaymentId}`);
+      console.log(`   - Payments completed: ${paymentsCompleted}`);
+      console.log(`   - Next installment: #${nextInstallmentNumber}`);
+      console.log(`   - Last processed: ${subscription.last_processed_date ? new Date(subscription.last_processed_date).toISOString() : 'Never'}`);
+      
+      // If never processed, allow it
+      if (!subscription.last_processed_date) {
+        console.log(`   ✅ Allowing: Never processed before`);
+        return true;
+      }
+
+      // If processed before today, allow it
+      const lastProcessed = new Date(subscription.last_processed_date);
+      lastProcessed.setHours(0, 0, 0, 0);
+      if (lastProcessed < today) {
+        console.log(`   ✅ Allowing: Last processed before today (${lastProcessed.toISOString().slice(0, 10)})`);
+        return true;
+      }
+
+      // If processed today, check if next installment is due today and not completed
+      const nextPayment = subscription.payment_schedule?.find(
+        p => p.installment_number === nextInstallmentNumber
+      );
+
+      if (nextPayment) {
+        // Check if this installment is due today and not completed
+        const dueDate = new Date(nextPayment.due_date);
+        dueDate.setHours(0, 0, 0, 0);
+        const isDueToday = dueDate.getTime() === today.getTime();
+        const isNotCompleted = nextPayment.status !== 'completed' && nextPayment.status !== 'paid';
+        
+        console.log(`   - Next payment due_date: ${nextPayment.due_date}`);
+        console.log(`   - Next payment status: ${nextPayment.status}`);
+        console.log(`   - Is due today: ${isDueToday}`);
+        console.log(`   - Is not completed: ${isNotCompleted}`);
+        
+        if (isDueToday && isNotCompleted) {
+          console.log(`   ✅ Allowing: Installment #${nextInstallmentNumber} is due today and not completed`);
+          return true;
+        } else {
+          console.log(`   ⏭️ Skipping: Installment #${nextInstallmentNumber} ${!isDueToday ? 'not due today' : 'already completed'}`);
+        }
+      } else {
+        console.log(`   ⏭️ Skipping: No payment schedule entry found for installment #${nextInstallmentNumber}`);
+      }
+
+      // Default: don't process if already processed today and no valid reason
+      return false;
+    });
+    
+    console.log(`\n✅ Final: ${dueSubscriptions.length} subscriptions will be processed\n`);
 
     const results = [];
 
