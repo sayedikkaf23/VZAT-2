@@ -38,9 +38,15 @@ const EMAIL_CONFIG = {
   }
 };
 
-const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'sayed@yeepeey.com';
+const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'dev.tech@vz.ae' ;
 
-const getDevTechCcEmails = () => ['dev.tech@virtuzone.com', 'dev.tech@vz.ae'];
+const getSalesPersonCc = (salesPersonDetails) =>
+  salesPersonDetails?.salesPersonEmail &&
+  salesPersonDetails.salesPersonEmail.includes('@')
+    ? [salesPersonDetails.salesPersonEmail]
+    : [];
+
+// const getDevTechCcEmails = () => [''];
 
 // Helper function to generate email footer
 const getEmailFooter = () => {
@@ -177,14 +183,17 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
       salesPersonDetails
     } = subscriptionData;
 
-    // Send to both customer and business team
+    // Send to customer and business team
     const recipientList = [
       opp_email, // Customer email
-      EMAIL_CONFIG.recipients.business_team, // Business team
-      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined // Sales person
+      EMAIL_CONFIG.recipients.business_team // Business team
     ].filter(Boolean);
 
-    const devTechCcEmails = getDevTechCcEmails();
+    // CC to sales person if available
+    const salesPersonEmail = salesPersonDetails?.salesPersonEmail;
+    const ccRecipients = salesPersonEmail && salesPersonEmail.includes('@') ? [salesPersonEmail] : [];
+
+    const devTechBccEmail = getDevTechBccEmail();
 
     const mailOptions = {
       from: {
@@ -192,7 +201,8 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
         address: mailgunConfig.fromEmail
       },
       to: recipientList,
-      cc: devTechCcEmails,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: `Subscription Successfully Completed - ${Quote_payment_number || quotepaymentId}`,
       html: `
         <!DOCTYPE html>
@@ -328,7 +338,7 @@ export const sendFinalRenewalEmail = async (data) => {
       salesPersonDetails?.salesPersonEmail ||
       (typeof opp_owner === 'string' && opp_owner.includes('@') ? opp_owner : undefined);
 
-    const ccRecipients = [...getDevTechCcEmails()];
+    const ccRecipients = [];
     if (oppOwnerEmail) {
       ccRecipients.push(oppOwnerEmail);
     }
@@ -386,8 +396,7 @@ export const sendFinalRenewalEmail = async (data) => {
         address: mailgunConfig.fromEmail
       },
       to: opp_email,
-      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
-      ...(devTechBccEmail && { bcc: devTechBccEmail }),
+      bcc:devTechBccEmail,
       subject,
       html: bodyHtml
     };
@@ -431,10 +440,9 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
 
     const ccRecipientsSet = new Set(
       [
-        ...getDevTechCcEmails(),
         oppOwnerEmail,
         'maryia.vinahradava1@virtuzone.com',
-        'arteam1@vz.ae'
+        'arteam@vz.ae'
       ].filter(Boolean)
     );
     const ccRecipients = Array.from(ccRecipientsSet);
@@ -566,9 +574,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 
     const ccRecipientsSet = new Set(
       [
-        ...getDevTechCcEmails(),
         oppOwnerEmail,
-        salesPersonDetails?.salesPersonEmail,
         'maryia.vinahradava1@virtuzone.com',
         'arteam1@vz.ae'
       ].filter(Boolean)
@@ -961,8 +967,8 @@ if (quotePdf && Array.isArray(quotePdf)) {
     }
 
     const salesPersonEmail = salesPersonDetails?.salesPersonEmail;
-    const ccRecipients = [...getDevTechCcEmails()];
-    if (salesPersonEmail) {
+    const ccRecipients = [];
+    if (salesPersonEmail && salesPersonEmail.includes('@')) {
       ccRecipients.push(salesPersonEmail);
     }
 
@@ -974,6 +980,7 @@ if (quotePdf && Array.isArray(quotePdf)) {
         address: mailgunConfig.fromEmail
       },
       to: quote_email,
+      // bcc: devTechBccEmail,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: `Virtuzone | Proforma Invoice & Payment Link – PI ${Quote_payment_number}`,
@@ -1131,7 +1138,13 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
     });
 
     const devTechBccEmail = getDevTechBccEmail();
-    const devTechCcEmails = getDevTechCcEmails();
+    
+    // Extract salesPersonEmail from customerData if available
+    const salesPersonEmail = customerData?.salesPersonDetails?.salesPersonEmail;
+    const ccRecipients = [];
+    if (salesPersonEmail && salesPersonEmail.includes('@')) {
+      ccRecipients.push(salesPersonEmail);
+    }
 
     const mailOptions = {
       from: {
@@ -1139,7 +1152,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
         address: mailgunConfig.fromEmail
       },
       to: email,
-      cc: devTechCcEmails,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome to  Customer Portal - Your Account is Ready!',
       html: `
@@ -1297,7 +1310,13 @@ export const sendExistingCustomerEmail = async (customerData) => {
     } = customerData;
 
     const devTechBccEmail = getDevTechBccEmail();
-    const devTechCcEmails = getDevTechCcEmails();
+    
+    // Extract salesPersonEmail from customerData if available
+    const salesPersonEmail = customerData?.salesPersonDetails?.salesPersonEmail;
+    const ccRecipients = [];
+    if (salesPersonEmail && salesPersonEmail.includes('@')) {
+      ccRecipients.push(salesPersonEmail);
+    }
 
     const mailOptions = {
       from: {
@@ -1305,7 +1324,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
         address: mailgunConfig.fromEmail
       },
       to: email,
-      cc: devTechCcEmails,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome Back! Your Customer Portal account is Ready to Use',
       html: `
@@ -1420,7 +1439,14 @@ export const sendPasswordResetEmail = async (customerData) => {
       resetUrl
     } = customerData;
 
-    const devTechCcEmails = getDevTechCcEmails();
+    const devTechBccEmail = getDevTechBccEmail();
+    
+    // Extract salesPersonEmail from customerData if available
+    const salesPersonEmail = customerData?.salesPersonDetails?.salesPersonEmail;
+    const ccRecipients = [];
+    if (salesPersonEmail && salesPersonEmail.includes('@')) {
+      ccRecipients.push(salesPersonEmail);
+    }
 
     const mailOptions = {
       from: {
@@ -1428,7 +1454,8 @@ export const sendPasswordResetEmail = async (customerData) => {
         address: mailgunConfig.fromEmail
       },
       to: email,
-      cc: devTechCcEmails,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Reset Your Recurring Account Password',
       html: `
         <!DOCTYPE html>
