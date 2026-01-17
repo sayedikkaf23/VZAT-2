@@ -7,10 +7,10 @@ import { processRecurringPayments } from '../Controllers/SubscriptionController.
 export function initializeCronJobs() {
   console.log('⏰ Initializing cron jobs...');
   
-  // Run every 2 minutes for testing purposes
-  // This checks for payments due today based on the 10th/25th logic
-  cron.schedule('*/2 * * * *', async () => {
-    console.log('🔄 Starting recurring payments processing (TEST MODE - Every 2 minutes)...');
+  // Run daily at 9:00 AM GST (Gulf Standard Time / Asia/Dubai)
+  // This checks for payments due today based on the payment schedule
+  cron.schedule('0 9 * * *', async () => {
+    console.log('🔄 Starting recurring payments processing (Daily at 9:00 AM GST)...');
     try {
       await processRecurringPayments();
       console.log('✅ Recurring payments processing completed');
@@ -19,11 +19,11 @@ export function initializeCronJobs() {
     }
   }, {
     scheduled: true,
-    timezone: "Asia/Dubai" // UAE timezone
+    timezone: "Asia/Dubai" // GST (Gulf Standard Time) - same as Asia/Dubai
   });
   
   console.log('✅ Cron jobs initialized successfully');
-  console.log('📅 TEST MODE: Processing every 2 minutes (Asia/Dubai)');
+  console.log('📅 Production Schedule: Processing daily at 9:00 AM GST (Asia/Dubai)');
 }
 
 /**
