@@ -191,7 +191,7 @@ app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
         // Step 1: Get Salesforce OAuth token
         console.log('🔐 Step 1: Requesting Salesforce OAuth token...');
         const TokenResponse = await axios.post(
-          `https://dd0000000pp16mae--vzfullcopy.sandbox.my.salesforce-setup.com/services/oauth2/token`,
+          `${process.env.SALESFORCE_API_URL || 'https://dd0000000pp16mae--vzfullcopy.sandbox.my.salesforce-setup.com'}/services/oauth2/token`,
           null,
           {
             params: {
@@ -199,7 +199,7 @@ app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
               client_secret: process.env.SALESFORCE_CLIENT_SECRET,
               grant_type: "password",
               username: process.env.SALESFORCE_USERNAME,
-              password: process.env.SALESFORCE_PASSWORD,
+              password: process.env.SALESFORCE_PASSWORD + (process.env.SALESFORCE_SECURITY_TOKEN || ''),
             },
           }
         );
