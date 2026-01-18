@@ -254,7 +254,7 @@ export class PaymentSelectComponent implements OnInit {
         // Stay on this page - show payment select options
       } else {
         // Redirect to online payment
-        // this.router.navigate([`/payment/${this.orderId}`]);
+        this.router.navigate([`/payment/${this.orderId}`]);
       }
       
     } catch (error) {

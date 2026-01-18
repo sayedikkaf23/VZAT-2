@@ -191,7 +191,7 @@ app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
         // Step 1: Get Salesforce OAuth token
         console.log('🔐 Step 1: Requesting Salesforce OAuth token...');
         const TokenResponse = await axios.post(
-          `https://login.salesforce.com/services/oauth2/token`,
+          `https://dd0000000pp16mae--vzfullcopy.sandbox.my.salesforce-setup.com/services/oauth2/token`,
           null,
           {
             params: {
