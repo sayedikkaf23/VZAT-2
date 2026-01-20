@@ -93,9 +93,8 @@ app.get('/api/test-payment/:quotepaymentId', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
-  } finally {
-    await disconnectDB();
   }
+  // Note: Don't disconnect - keep connection persistent
 });
 
 // Payment schedule API endpoint for Angular component - now uses quotepaymentId
@@ -352,10 +351,8 @@ app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
     Post_Common_DB_Log_Data('/api/payment_schedule/:quotepaymentId', req.params, errorData);
     
     res.status(500).json(errorData);
-  } finally {
-    // Disconnect from database
-    await disconnectDB();
   }
+  // Note: Don't disconnect - keep connection persistent
 });
 
 // Payment result API endpoint

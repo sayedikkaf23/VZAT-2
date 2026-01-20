@@ -10,9 +10,9 @@ let connectionPromise = null; // Track ongoing connection attempts
 
 const connectDB = async () => { 
   try {
-    // If already connected and ready, don't reconnect
+    // If already connected and ready, return immediately
+    // Don't ping on every call to avoid overhead - mongoose handles connection health
     if (mongoose.connection.readyState === 1) {
-      console.log('MongoDB already connected');
       isConnected = true;
       return;
     }
@@ -50,10 +50,14 @@ const connectDB = async () => {
     connectionPromise = (async () => {
       // Connect to MongoDB
       const conn = await mongoose.connect(process.env.MONGODB_URI, {
-        // Essential connection settings only
+        // Essential connection settings for persistent connection
         maxPoolSize: 10, // Maintain up to 10 socket connections
+        minPoolSize: 2, // Keep at least 2 connections open
         serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
         socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+        heartbeatFrequencyMS: 10000, // Send a ping every 10 seconds to keep connection alive
+        retryWrites: true, // Retry writes if connection is lost
+        retryReads: true, // Retry reads if connection is lost
       });
 
       // Wait for connection to be fully ready
@@ -95,8 +99,19 @@ const connectDB = async () => {
       });
 
       mongoose.connection.on('disconnected', () => {
-        console.log('Mongoose disconnected from MongoDB');
+        console.log('⚠️ Mongoose disconnected from MongoDB - will attempt to reconnect');
         isConnected = false;
+        // Automatically attempt to reconnect
+        setTimeout(async () => {
+          if (mongoose.connection.readyState === 0) {
+            console.log('🔄 Attempting to reconnect to MongoDB...');
+            try {
+              await connectDB();
+            } catch (error) {
+              console.error('❌ Reconnection attempt failed:', error.message);
+            }
+          }
+        }, 2000); // Wait 2 seconds before reconnecting
       });
 
       // Handle process termination
@@ -137,5 +152,29 @@ const isDBConnected = () => {
   return connectionState === 1;
 };
 
-export { connectDB, disconnectDB, isDBConnected };
+// Ensure database is connected before operations
+// This function should be called before any database operation
+const ensureConnection = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return; // Already connected
+  }
+  
+  // If disconnected or connecting, wait for connection
+  if (mongoose.connection.readyState === 0 || mongoose.connection.readyState === 2) {
+    await connectDB();
+  }
+  
+  // Wait for connection to be ready (max 10 seconds)
+  let attempts = 0;
+  while (mongoose.connection.readyState !== 1 && attempts < 20) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    attempts++;
+  }
+  
+  if (mongoose.connection.readyState !== 1) {
+    throw new Error('MongoDB connection not ready after ensureConnection attempt');
+  }
+};
+
+export { connectDB, disconnectDB, isDBConnected, ensureConnection };
 

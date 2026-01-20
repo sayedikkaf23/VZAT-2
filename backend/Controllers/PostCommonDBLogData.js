@@ -1,10 +1,10 @@
-import {connectDB,disconnectDB} from "../config/db.js";
+import {connectDB, ensureConnection} from "../config/db.js";
 import CommonDBLog from "../model/CommonDBLogModel.js";
 
 
 const Post_Common_DB_Log_Data = async (url,reqData,resData) => {
 
-    await connectDB();
+    await ensureConnection();
     try {
         const dataToUpload = new CommonDBLog({
             S_No: 0,
