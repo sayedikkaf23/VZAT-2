@@ -275,7 +275,8 @@ export class PaymentSelectComponent implements OnInit {
     this.salesForceService.getSalesForceDetails().subscribe({
       next: (res: any) => {
         console.log('✅ SalesForce response:', res);
-        if (res && res.name) {
+        // Check if response is valid and has a non-empty name
+        if (res && res.name && res.name.trim() !== '') {
           this.salesAgent = {
             name: res.name,
             position: res.position,
@@ -297,7 +298,12 @@ export class PaymentSelectComponent implements OnInit {
           this.salesForceDataLoaded = true; // Mark as loaded
 
         } else {
-          console.warn('⚠️ Invalid SalesForce response, using fallback data');
+          // Only warn if response exists but is invalid (not null/empty)
+          if (res !== null && res !== undefined) {
+            console.warn('⚠️ Invalid SalesForce response, using fallback data:', res);
+          } else {
+            console.log('ℹ️ No SalesForce data found, using fallback data');
+          }
           this.setFallbackSalesAgent();
         }
       },

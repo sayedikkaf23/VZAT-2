@@ -1,9 +1,13 @@
 import SalesForce from "../model/SalesForceModel.js";
 import Post_Common_DB_Log_Data from "../Controllers/PostCommonDBLogData.js";
+import { connectDB } from "../config/db.js";
 import _ from 'lodash';
 
 
 const GetSalesForce = async (req, res) => {
+      // Ensure database connection
+      await connectDB();
+      
       const { token } = req.query;
       if (!token) {
         const query = {
@@ -20,8 +24,20 @@ const GetSalesForce = async (req, res) => {
 
       
       try {
-        // Use persistent connection - mongoose will handle connection state automatically
-        const salesAgent = await SalesForce.findOne({token: token});
+        // Convert token to number since the model expects a Number type
+        const tokenNumber = parseInt(token, 10);
+        
+        if (isNaN(tokenNumber)) {
+          const errorData = {
+            message: "Invalid token format",
+            token: token
+          };
+          const LogData = Post_Common_DB_Log_Data("/api/salesForce", req.query, errorData);
+          return res.status(400).json(errorData);
+        }
+        
+        // Query with number type
+        const salesAgent = await SalesForce.findOne({token: tokenNumber});
         
         if (salesAgent) {
           const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.query, salesAgent);
@@ -29,14 +45,10 @@ const GetSalesForce = async (req, res) => {
           return res.json(salesAgent);
         }
         
-        const data = {
-          name:"",
-          position:"",
-          mobNo1:0,
-          mobNo2:0,
-          token:0
-        }
-        const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.query, data);
+        // Return null instead of empty object to indicate no data found
+        // Frontend will handle null and use fallback data
+        const data = null;
+        const LogData = Post_Common_DB_Log_Data("/api/salesForce",req.query, { message: "No sales agent found for token", token: tokenNumber });
         
         return res.json(data);
         
