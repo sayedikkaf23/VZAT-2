@@ -5,8 +5,8 @@ export const environment = {
   // apiUrl: 'http://localhost:3000/api',
   // Sandbox API URL for development
   // This should be replaced with the actual API URL in production
-  apiUrl: 'https://vzatnew.yeepeey.com/api',
+  apiUrl: 'https://installment.virtuzone.com/api',
   // Use localhost URL for development frontend
-  frontendUrl: 'https://vzatnew.yeepeey.com' // Development URL
+  frontendUrl: 'https://installment.virtuzone.com' // Development URL
 };
 

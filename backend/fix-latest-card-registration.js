@@ -28,7 +28,7 @@ async function fixLatestCardRegistrationId() {
     console.log(`  - Current AFS Registration ID: ${savedCard.afs_registration_id}`);
     
     // The correct registration ID should be: 8ac7a4a29978ae2601997aae2c094cda
-    const correctRegistrationId = '8ac7a4c797e1beca0197e482a8200127';
+    const correctRegistrationId = '8acda4cc97f436a801981cb37ede2e0b';
     
     console.log(`\n🔄 Updating registration ID from:`);
     console.log(`  - OLD: ${savedCard.afs_registration_id}`);

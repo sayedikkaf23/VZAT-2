@@ -200,7 +200,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
         // Construct correct payment link format: /payment/{quotepaymentId}
         // Override the paymentLink from Salesforce webhook with the correct format
         const correctPaymentLink = quotepaymentId 
-            ? `${process.env.FRONTEND_URL || 'https://vzatnew.yeepeey.com'}/payment/${encodeURIComponent(quotepaymentId)}`
+            ? `${process.env.FRONTEND_URL || 'https://installment.virtuzone.com'}/payment/${encodeURIComponent(quotepaymentId)}`
             : paymentLink; // Fallback to original if quotepaymentId is missing
         
         console.log(`🔗 Constructed payment link: ${correctPaymentLink}`);

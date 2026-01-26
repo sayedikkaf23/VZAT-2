@@ -8,7 +8,7 @@ import Post_Common_DB_Log_Data from './PostCommonDBLogData.js';
 import qs from 'qs';   // CommonJS
 // AFS Configuration - Registration specific credentials
 const AFS_CONFIG = {
-  baseUrl: process.env.AFS_BASE_URL ||  'https://eu-test.oppwa.com',
+  baseUrl: process.env.AFS_BASE_URL ||  ' https://eu-prod.oppwa.com',
   entityId: process.env.AFS_ENTITY_ID,
   accessToken: process.env.AFS_ACCESS_TOKEN ,
   authorization: process.env.AFS_AUTHORIZATION ,
@@ -1002,7 +1002,7 @@ export const migrateSubscriptionTokens = async (customerEmail, newRegistrationId
 //     }
 
 //     // Ensure baseUrl ends with /
-//     const baseUrl = "https://eu-test.oppwa.com"
+//     const baseUrl = " https://eu-prod.oppwa.com"
 
 //     const decodedResourcePath = decodeURIComponent(resourcePath);
 //     const url = `${baseUrl}/${decodedResourcePath.replace(/^\//, "")}`; // avoid double //
@@ -1010,9 +1010,9 @@ export const migrateSubscriptionTokens = async (customerEmail, newRegistrationId
 //     console.log("🌍 Requesting payment status:", url);
 
 //     const { data } = await axios.get(url, {
-//       params: { entityId: "8ac7a4c797e1beca0197e482a8200127" },
+//       params: { entityId: "8acda4cc97f436a801981cb37ede2e0b" },
 //       headers: {
-//         'Authorization': `Bearer ${'OGFjN2E0Yzc5N2UxYmVjYTAxOTdlNDgxYWFhYTAxMjJ8NnBtN1IlWVlTUkRSYXE2UXFDWXA='}`,
+//         'Authorization': `Bearer ${'OGFjZGE0Y2M5N2Y0MzZhODAxOTgxY2IxZDk3MjJkZWV8RytFWFhXNE5NWGtudzl4Kz9KaWU='}`,
 //       },
 //       timeout: 10000,
 //     });
@@ -1075,7 +1075,7 @@ export const getPaymentStatus = async (req, res) => {
     const checkoutId = checkoutIdMatch ? checkoutIdMatch[1] : null;
 
     const decodedResourcePath = decodeURIComponent(resourcePath);
-    const url = `https://eu-test.oppwa.com/${decodedResourcePath.replace(/^\//, "")}`;
+    const url = ` https://eu-prod.oppwa.com/${decodedResourcePath.replace(/^\//, "")}`;
 
     console.log("🌍 Requesting payment status:", url);
     console.log("🆔 Checkout ID extracted:", checkoutId);

@@ -384,7 +384,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
       
       // If we have a checkout ID, build the AFS payment link
       if (this.currentCheckoutId) {
-        this.afsPaymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.currentCheckoutId}`;
+        this.afsPaymentLink = ` https://eu-prod.oppwa.com/v1/paymentWidgets.js?checkoutId=${this.currentCheckoutId}`;
       } else {
         console.log('� Available fields in API response:', Object.keys(data));
       }
@@ -694,7 +694,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         
         if (checkoutId) {
           // Build the AFS payment widget link
-          const paymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+          const paymentLink = ` https://eu-prod.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
           
           // Navigate to payment-widget page with all required parameters
           this.router.navigate(['/payment-widget'], {
@@ -731,7 +731,7 @@ export class PaymentScheduleComponent implements OnInit, AfterViewInit {
         
         if (checkoutId) {
           // Use existing checkoutId
-          const paymentLink = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+          const paymentLink = ` https://eu-prod.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
           
           this.router.navigate(['/payment-widget'], {
             queryParams: {

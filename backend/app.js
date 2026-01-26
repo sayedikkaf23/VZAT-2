@@ -47,7 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 // Global CORS middleware
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = ['http://localhost:4200', 'http://localhost:3000','https://vzatnew.yeepeey.com', 'https://p11.techlab-cdn.com'];
+    const allowedOrigins = ['http://localhost:4200', 'http://localhost:3000','https://installment.virtuzone.com', 'https://p11.techlab-cdn.com'];
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
@@ -192,7 +192,7 @@ app.get('/api/payment_schedule/:quotepaymentId', async (req, res) => {
 
         console.log("object",process.env.SALESFORCE_API_URL, process.env.SALESFORCE_CLIENT_ID, process.env.SALESFORCE_CLIENT_SECRET, process.env.SALESFORCE_USERNAME, process.env.SALESFORCE_PASSWORD + (process.env.SALESFORCE_SECURITY_TOKEN || ''))
         const TokenResponse = await axios.post(
-          `${process.env.SALESFORCE_API_URL || 'https://dd0000000pp16mae--vzfullcopy.sandbox.my.salesforce-setup.com'}/services/oauth2/token`,
+          `${process.env.SALESFORCE_API_URL || 'https://login.salesforce.com'}/services/oauth2/token`,
           null,
           {
             params: {

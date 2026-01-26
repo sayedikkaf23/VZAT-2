@@ -801,7 +801,7 @@ export const processRecurringPayments = async (req, res) => {
               payment_amount: installmentAmount,
               due_date: today.toISOString().slice(0, 10),
               failure_reason: cleanErrorMessage,
-              payment_link: "https://vzatnew.yeepeey.com/login",
+              payment_link: "https://installment.virtuzone.com/login",
               salesPersonDetails: subscription.salesPersonDetails
             };
 
