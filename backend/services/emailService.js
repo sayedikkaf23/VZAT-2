@@ -1,4 +1,5 @@
-import mailgun from 'mailgun-js';
+// import mailgun from 'mailgun-js';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -38,15 +39,9 @@ const EMAIL_CONFIG = {
   }
 };
 
-const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'dev.tech@vz.ae' ;
+const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'sayed@yeepeey.com';
 
-const getSalesPersonCc = (salesPersonDetails) =>
-  salesPersonDetails?.salesPersonEmail &&
-  salesPersonDetails.salesPersonEmail.includes('@')
-    ? [salesPersonDetails.salesPersonEmail]
-    : [];
-
-// const getDevTechCcEmails = () => [''];
+const getDevTechCcEmails = () => ['dev.tech@virtuzone.com', 'dev.tech@vz.ae'];
 
 // Helper function to generate email footer
 const getEmailFooter = () => {
@@ -116,52 +111,74 @@ const getEmailFooter = () => {
   `;
 };
 
-// Initialize Mailgun
+// Initialize Mailgun (COMMENTED OUT - Using Nodemailer for now)
+// const mailgunConfig = {
+//   apiKey: process.env.MAILGUN_API_KEY,
+//   domain: process.env.MAILGUN_DOMAIN || 'vz.ae',
+//   fromEmail: process.env.SMTP_USER || 'payment@vz.ae'
+// };
+
+// let mailgunClient = null;
+// if (mailgunConfig.apiKey && mailgunConfig.domain) {
+//   try {
+//     mailgunClient = mailgun(mailgunConfig);
+//     console.log('✅ Mailgun client initialized successfully');
+//   } catch (error) {
+//     console.error('❌ Error initializing Mailgun client:', error);
+//   }
+// } else {
+//   console.warn('⚠️ Mailgun API key or domain not configured. Email functionality will be limited.');
+// }
+
+// Initialize Nodemailer
+const mailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "mishalnunu@gmail.com",
+    pass: "qgwlzriynfzukuwy",
+  },
+});
+
+// Keep mailgunConfig for fromEmail reference
 const mailgunConfig = {
-  apiKey: process.env.MAILGUN_API_KEY,
-  domain: process.env.MAILGUN_DOMAIN || 'vz.ae',
   fromEmail: process.env.SMTP_USER || 'payment@vz.ae'
 };
 
-let mailgunClient = null;
-if (mailgunConfig.apiKey && mailgunConfig.domain) {
-  try {
-    mailgunClient = mailgun(mailgunConfig);
-    console.log('✅ Mailgun client initialized successfully');
-  } catch (error) {
-    console.error('❌ Error initializing Mailgun client:', error);
-  }
-} else {
-  console.warn('⚠️ Mailgun API key or domain not configured. Email functionality will be limited.');
-}
-
-// Helper function to send email via Mailgun
+// Helper function to send email via Nodemailer (temporarily replacing Mailgun)
 const sendEmailViaMailgun = async (mailData) => {
-  if (!mailgunClient) {
-    throw new Error('Mailgun client not initialized');
+  if (!mailTransporter) {
+    throw new Error('Nodemailer transporter not initialized');
   }
 
-  // Convert Mailgun format
-  const mailgunData = {
-    from: mailData.from?.address ? `${mailData.from.name || 'Virtuzone'} <${mailData.from.address}>` : mailData.from || `${EMAIL_CONFIG.sender.name} <${mailgunConfig.fromEmail}>`,
-    to: Array.isArray(mailData.to) ? mailData.to.join(', ') : mailData.to,
+  // Convert to Nodemailer format
+  const fromAddress = mailData.from?.address 
+    ? `${mailData.from.name || 'Virtuzone'} <${mailData.from.address}>` 
+    : mailData.from || `${EMAIL_CONFIG.sender.name} <${mailgunConfig.fromEmail}>`;
+
+  const nodemailerData = {
+    from: fromAddress,
+    to: Array.isArray(mailData.to) ? mailData.to : mailData.to,
     subject: mailData.subject,
     html: mailData.html,
-    ...(mailData.cc && { cc: Array.isArray(mailData.cc) ? mailData.cc.join(', ') : mailData.cc }),
-    ...(mailData.bcc && { bcc: Array.isArray(mailData.bcc) ? mailData.bcc.join(', ') : mailData.bcc }),
-    ...(mailData.attachment && { attachment: mailData.attachment })
+    ...(mailData.cc && { cc: Array.isArray(mailData.cc) ? mailData.cc : mailData.cc }),
+    ...(mailData.bcc && { bcc: Array.isArray(mailData.bcc) ? mailData.bcc : mailData.bcc }),
+    ...(mailData.attachment && { attachments: mailData.attachment })
   };
 
-  console.log('📧 Sending email:', {
-    to: mailgunData.to,
-    cc: mailgunData.cc || 'none',
-    bcc: mailgunData.bcc || 'none',
-    subject: mailgunData.subject
+  console.log('📧 Sending email via Nodemailer:', {
+    to: nodemailerData.to,
+    cc: nodemailerData.cc || 'none',
+    bcc: nodemailerData.bcc || 'none',
+    subject: nodemailerData.subject
   });
 
-  const result = await mailgunClient.messages().send(mailgunData);
-  console.log('✅ Email sent successfully. Message ID:', result.id || result.message);
-  return { messageId: result.id || result.message, accepted: [mailgunData.to], rejected: [] };
+  const result = await mailTransporter.sendMail(nodemailerData);
+  console.log('✅ Email sent successfully. Message ID:', result.messageId);
+  return { 
+    messageId: result.messageId, 
+    accepted: Array.isArray(nodemailerData.to) ? nodemailerData.to : [nodemailerData.to], 
+    rejected: [] 
+  };
 };
 
 /**
@@ -183,17 +200,14 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
       salesPersonDetails
     } = subscriptionData;
 
-    // Send to customer and business team
+    // Send to both customer and business team
     const recipientList = [
       opp_email, // Customer email
-      EMAIL_CONFIG.recipients.business_team // Business team
+      EMAIL_CONFIG.recipients.business_team, // Business team
+      (salesPersonDetails && salesPersonDetails.salesPersonEmail) || undefined // Sales person
     ].filter(Boolean);
 
-    // CC to sales person if available
-    const salesPersonEmail = salesPersonDetails?.salesPersonEmail;
-    const ccRecipients = salesPersonEmail && salesPersonEmail.includes('@') ? [salesPersonEmail] : [];
-
-    const devTechBccEmail = getDevTechBccEmail();
+    const devTechCcEmails = getDevTechCcEmails();
 
     const mailOptions = {
       from: {
@@ -201,8 +215,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
         address: mailgunConfig.fromEmail
       },
       to: recipientList,
-      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
-      ...(devTechBccEmail && { bcc: devTechBccEmail }),
+      cc: devTechCcEmails,
       subject: `Subscription Successfully Completed - ${Quote_payment_number || quotepaymentId}`,
       html: `
         <!DOCTYPE html>
@@ -338,7 +351,7 @@ export const sendFinalRenewalEmail = async (data) => {
       salesPersonDetails?.salesPersonEmail ||
       (typeof opp_owner === 'string' && opp_owner.includes('@') ? opp_owner : undefined);
 
-    const ccRecipients = [];
+    const ccRecipients = [...getDevTechCcEmails()];
     if (oppOwnerEmail) {
       ccRecipients.push(oppOwnerEmail);
     }
@@ -396,7 +409,8 @@ export const sendFinalRenewalEmail = async (data) => {
         address: mailgunConfig.fromEmail
       },
       to: opp_email,
-      bcc:devTechBccEmail,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject,
       html: bodyHtml
     };
@@ -440,9 +454,10 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
 
     const ccRecipientsSet = new Set(
       [
+        ...getDevTechCcEmails(),
         oppOwnerEmail,
         'maryia.vinahradava1@virtuzone.com',
-        'arteam@vz.ae'
+        'arteam1@vz.ae'
       ].filter(Boolean)
     );
     const ccRecipients = Array.from(ccRecipientsSet);
@@ -574,7 +589,9 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 
     const ccRecipientsSet = new Set(
       [
+        ...getDevTechCcEmails(),
         oppOwnerEmail,
+        salesPersonDetails?.salesPersonEmail,
         'maryia.vinahradava1@virtuzone.com',
         'arteam1@vz.ae'
       ].filter(Boolean)
@@ -912,7 +929,7 @@ export const sendPdfEmail = async (emailData) => {
     // Construct payment link with proper base URL
     const fullPaymentLink = paymentLink.startsWith('http') ? paymentLink : `${baseUrl}${paymentLink.startsWith('/') ? '' : '/'}${paymentLink}`;
 
-  // Process PDF attachments for Mailgun (CORRECT)
+  // Process PDF attachments for Nodemailer (temporarily replacing Mailgun)
 const attachments = [];
 
 if (quotePdf && Array.isArray(quotePdf)) {
@@ -922,13 +939,11 @@ if (quotePdf && Array.isArray(quotePdf)) {
         .replace(/^data:application\/pdf;base64,/, '')
         .replace(/\s/g, '');
 
-      attachments.push(
-  new mailgunClient.Attachment({
-    data: Buffer.from(cleanBase64, 'base64'),
-    filename: `${pdf.name}.pdf`,
-    contentType: 'application/pdf'
-  })
-);
+      attachments.push({
+        filename: `${pdf.name}.pdf`,
+        content: Buffer.from(cleanBase64, 'base64'),
+        contentType: 'application/pdf'
+      });
     }
   }
 }
@@ -967,8 +982,8 @@ if (quotePdf && Array.isArray(quotePdf)) {
     }
 
     const salesPersonEmail = salesPersonDetails?.salesPersonEmail;
-    const ccRecipients = [];
-    if (salesPersonEmail && salesPersonEmail.includes('@')) {
+    const ccRecipients = [...getDevTechCcEmails()];
+    if (salesPersonEmail) {
       ccRecipients.push(salesPersonEmail);
     }
 
@@ -980,7 +995,6 @@ if (quotePdf && Array.isArray(quotePdf)) {
         address: mailgunConfig.fromEmail
       },
       to: quote_email,
-      // bcc: devTechBccEmail,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: `Virtuzone | Proforma Invoice & Payment Link – PI ${Quote_payment_number}`,
@@ -1119,7 +1133,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
   console.log('📧 EMAIL SERVICE - Input data:', JSON.stringify(customerData, null, 2));
   
   try {
-    console.log('📧 EMAIL SERVICE - Using Mailgun...');
+    console.log('📧 EMAIL SERVICE - Using Nodemailer...');
     
     const {
       customerName,
@@ -1138,13 +1152,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
     });
 
     const devTechBccEmail = getDevTechBccEmail();
-    
-    // Extract salesPersonEmail from customerData if available
-    const salesPersonEmail = customerData?.salesPersonDetails?.salesPersonEmail;
-    const ccRecipients = [];
-    if (salesPersonEmail && salesPersonEmail.includes('@')) {
-      ccRecipients.push(salesPersonEmail);
-    }
+    const devTechCcEmails = getDevTechCcEmails();
 
     const mailOptions = {
       from: {
@@ -1152,7 +1160,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
         address: mailgunConfig.fromEmail
       },
       to: email,
-      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      cc: devTechCcEmails,
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome to  Customer Portal - Your Account is Ready!',
       html: `
@@ -1310,13 +1318,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
     } = customerData;
 
     const devTechBccEmail = getDevTechBccEmail();
-    
-    // Extract salesPersonEmail from customerData if available
-    const salesPersonEmail = customerData?.salesPersonDetails?.salesPersonEmail;
-    const ccRecipients = [];
-    if (salesPersonEmail && salesPersonEmail.includes('@')) {
-      ccRecipients.push(salesPersonEmail);
-    }
+    const devTechCcEmails = getDevTechCcEmails();
 
     const mailOptions = {
       from: {
@@ -1324,7 +1326,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
         address: mailgunConfig.fromEmail
       },
       to: email,
-      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      cc: devTechCcEmails,
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject: 'Welcome Back! Your Customer Portal account is Ready to Use',
       html: `
@@ -1439,14 +1441,7 @@ export const sendPasswordResetEmail = async (customerData) => {
       resetUrl
     } = customerData;
 
-    const devTechBccEmail = getDevTechBccEmail();
-    
-    // Extract salesPersonEmail from customerData if available
-    const salesPersonEmail = customerData?.salesPersonDetails?.salesPersonEmail;
-    const ccRecipients = [];
-    if (salesPersonEmail && salesPersonEmail.includes('@')) {
-      ccRecipients.push(salesPersonEmail);
-    }
+    const devTechCcEmails = getDevTechCcEmails();
 
     const mailOptions = {
       from: {
@@ -1454,8 +1449,7 @@ export const sendPasswordResetEmail = async (customerData) => {
         address: mailgunConfig.fromEmail
       },
       to: email,
-      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
-      ...(devTechBccEmail && { bcc: devTechBccEmail }),
+      cc: devTechCcEmails,
       subject: 'Reset Your Recurring Account Password',
       html: `
         <!DOCTYPE html>
