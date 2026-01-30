@@ -138,6 +138,14 @@ const vzatRecurringDataSchema = new Schema({
         type: String,
         required: false
     },
+    contactName: {
+        type: String,
+        required: false
+    },
+    contactEmail: {
+        type: String,
+        required: false
+    },
     salesPersonDetails: {
         salesPersonEmail: { type: String, required: false },
         salesPersonMobile: { type: String, required: false },

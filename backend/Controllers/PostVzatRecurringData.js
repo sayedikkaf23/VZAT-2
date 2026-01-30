@@ -284,6 +284,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       opp_title,
       opp_phone,
       opp_mobile,
+      contactName,
+      contactEmail,
       salesPersonDetails : salesPersonDetails
       
     } = req.body;
@@ -427,6 +429,8 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       opp_title,
       opp_phone,
       opp_mobile,
+      contactName,
+      contactEmail,
       salesPersonDetails,
       payment_link_expiry: paymentLinkExpiryDate,
       InstallmentLeft: InstallmentLeft, // Add InstallmentLeft field
