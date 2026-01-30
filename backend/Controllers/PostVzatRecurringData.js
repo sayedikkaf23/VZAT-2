@@ -234,7 +234,7 @@ export const createCheckoutIdForQuotePayment = async (req, res) => {
         message: "Checkout ID created successfully",
         quotepaymentId,
         afs_checkout_id: newCheckoutId,
-        payment_page_url: `${process.env.FRONTEND_URL}/payment-widget`
+        payment_page_url: `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(quotepaymentId)}`
       });
     } else {
       return res.status(500).json({
@@ -539,7 +539,7 @@ const Post_Vzat_Recurring_Data = async (req, res) => {
       const resourcePath = encodeURIComponent(`/v1/checkouts/${afsResponse.data.id}/payment`);
       finalShopperResultUrl = `${process.env.BACKEND_URL}/payment-result?id=${id}&resourcePath=${resourcePath}&quotepaymentId=${encodeURIComponent(quotepaymentId)}`;
       // Payment page URL uses quotepaymentId only (checkoutId will be created when user clicks "Pay Here")
-      paymentPageUrl = `${process.env.FRONTEND_URL}/payment-widget`;
+      paymentPageUrl = `${process.env.FRONTEND_URL}/payment/${encodeURIComponent(quotepaymentId)}`;
     }
     
     const brands = "VISA MASTER AMEX";
