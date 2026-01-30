@@ -179,6 +179,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
       payments_completed,
       last_payment_date,
       Customer_name,
+      contactName,
       opp_email,
       salesPersonDetails
     } = subscriptionData;
@@ -235,7 +236,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
                   <tr>
                     <td bgcolor="#f8f9fa" style="padding: 20px;">
                       <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
-                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Valued Customer'},</p>
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${contactName || Customer_name || 'Valued Customer'},</p>
                       <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Congrat&#117;lations! We are pleased to inform you that your subscription with Virtuzone has been <strong>successfully completed</strong>.</p>
                       
                       <h2 style="margin: 20px 0 15px 0; font-size: 20px; color: #333333;">Subscription Summary</h2>
@@ -319,6 +320,7 @@ export const sendFinalRenewalEmail = async (data) => {
       quotepaymentId,
       Quote_payment_number,
       Customer_name,
+      contactName,
       opp_email,
       opp_owner,
       payments_completed,
@@ -371,7 +373,7 @@ export const sendFinalRenewalEmail = async (data) => {
                 <tr>
                   <td style="padding: 20px;">
                     <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
-                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Customer'},</p>
+                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${contactName || Customer_name || 'Customer'},</p>
                     <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">We hope this message finds you well.</p>
                     <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">This is a gentle reminder that your current corporate service package with Virtuzone, is nearing the end of its term. Your final installment was successfully processed on <strong>${finalDateStr}</strong>.</p>
                     <p style="margin: 0 0 40px 0; font-size: 16px; color: #333333; line-height: 1.6;">We thank you sincerely for placing your trust in Virtuzone. Your corporate services consultant is added in CC to this e-mail to assist you with tailoring a new plan for next year that fits your current needs.</p>
@@ -423,6 +425,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
       quotepaymentId,
       q_payment_id,
       Customer_name,
+      contactName,
       opp_email,
       opp_owner,
       payment_amount,
@@ -485,7 +488,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
                 <tr>
                   <td style="padding: 20px;">
                     <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
-                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Customer'},</p>
+                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${contactName || Customer_name || 'Customer'},</p>
                     <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">We hope you're doing well.</p>
                     <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">This is to inform you that the scheduled payment for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong>, due on <strong>${dueDateStr}</strong>, could not be processed.</p>
 
@@ -555,6 +558,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       quotepaymentId,
       q_payment_id,
       Customer_name,
+      contactName,
       opp_email,
       opp_owner,
       payment_amount,
@@ -671,7 +675,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
                 <tr>
                   <td style="padding: 20px;">
                     <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
-                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${Customer_name || 'Customer'},</p>
+                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Dear ${contactName || Customer_name || 'Customer'},</p>
                     <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">We are pleased to confirm that your scheduled payment of <strong>AED ${formatAmount(payment_amount)}</strong> for your Proforma Invoice <strong>#PI ${q_payment_id || quotepaymentId}</strong> has been successfully processed on <strong>${paymentDateStr}</strong>.</p>
 
                     <!-- Payment Details Box -->
@@ -901,6 +905,7 @@ export const sendPdfEmail = async (emailData) => {
       Total_Installments,
       quotePdf,
       Customer_name,
+      contactName,
       opp_owner,
       salesPersonDetails,
       installmentSchedule // New parameter for dynamic payment schedule
@@ -1005,7 +1010,7 @@ if (quotePdf && Array.isArray(quotePdf)) {
                   <tr>
                     <td style="padding: 20px;">
                       <!--[if mso]><div style="padding-left: 10px; padding-right: 20px;"><![endif]-->
-                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Hello ${Customer_name || 'Sir/Madam'},</p>
+                      <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333;">Hello ${contactName || Customer_name || 'Sir/Madam'},</p>
                       <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; line-height: 1.6;">Thank you for choosing Virtuzone as your preferred Corporate Services Provider.</p>
                       <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">Based on your requirements and our discussions, we are pleased to attach the Proforma Invoice along with the Payment Link embedded therein for your reference. A summary of the Proforma Invoice is as below:</p>
                       
