@@ -35,6 +35,8 @@ interface ApiResponseData {
   QuoteId: string;
   quote_payment_number?: string;
   Customer_name?: string;
+  contactName?: string;
+  contactEmail?: string;
   opp_owner?: string;
   opp_email?: string;
   opp_number?: string;
@@ -67,16 +69,16 @@ export class PaymentCompanyComponent implements OnInit {
   loading: boolean = true;
   message: string = '';
   basicDetailsForm!: FormGroup;
-  
+
   // Customer data for sidebar
   customerData: CustomerData = {
     name: "Loading...",
     invoiceNumber: "Loading...",
     totalAmount: 0
   };
-  
+
   Quote_payment_number: string = '';
-  
+
   // Sales agent data
   salesAgent: SalesAgent = {
     name: "Loading...",
@@ -85,13 +87,13 @@ export class PaymentCompanyComponent implements OnInit {
     phoneNumber: "",
     email: ""
   };
-  
+
   // API response data
   apiData: ApiResponseData | null = null;
-  
+
   // SalesForce data loading flag
   salesForceDataLoaded: boolean = false;
-  
+
   // Store the original API sales agent data to prevent overwriting
   originalSalesAgentData: SalesAgent | null = null;
 
@@ -106,8 +108,8 @@ export class PaymentCompanyComponent implements OnInit {
     private messageService: MessageService,
     private cdRef: ChangeDetectorRef,
     private toastr: ToastrService
-  ) {}
-  
+  ) { }
+
   // Normalize optional text fields like fax/email/phone coming from API
   private sanitizeField(val: any): string {
     if (val === null) return '';
@@ -116,7 +118,7 @@ export class PaymentCompanyComponent implements OnInit {
     if (!s || up === 'NA' || up === 'N/A') return '';
     return s;
   }
-  
+
   private normalizePhone(n: string | null | undefined): string {
     return (n || '').replace(/\D+/g, '');
   }
@@ -166,7 +168,7 @@ export class PaymentCompanyComponent implements OnInit {
 
       // Load payment data using the same API as payment-schedule
       this.loadPaymentData(this.orderId);
-      
+
       // Get SalesForce details
       this.getSalesForceDetails();
 
@@ -206,7 +208,7 @@ export class PaymentCompanyComponent implements OnInit {
       });
     });
   }
-  
+
   // Load payment data using PaymentScheduleService (same as payment-schedule)
   private loadPaymentData(quotepaymentId: string): void {
     this.loading = true;
@@ -222,7 +224,7 @@ export class PaymentCompanyComponent implements OnInit {
       }
     });
   }
-  
+
   // Fallback to original OnlinePaymentService if needed
   private fallbackToOnlinePaymentService(quotepaymentId: string): void {
     this.onlinePaymentService.getQuoteById(quotepaymentId).subscribe((data) => {
@@ -240,40 +242,41 @@ export class PaymentCompanyComponent implements OnInit {
       }
     });
   }
-  
+
   // Populate component data from API response (same logic as payment-schedule)
   private populateComponentData(data: any): void {
     try {
       // Store API data for reference
       this.apiData = data;
-      
+
       // Extract Quote_payment_number
-      this.Quote_payment_number = data.Quote_payment_number || 
-                                 data.quote_payment_number ||
-                                 data.QuotePaymentNumber ||
-                                 '';
-      
+      this.Quote_payment_number = data.Quote_payment_number ||
+        data.quote_payment_number ||
+        data.QuotePaymentNumber ||
+        '';
+
       // Update customer data - handle both API response formats
       this.customerData = {
-        name: data.Customer_name || 
-              data.customer_details?.name || 
-              data.Customer_Name || 
-              data.customerName || 
-              data.name || 
-              "Customer",
-        invoiceNumber: data.quotepaymentId || 
-                      data.quote_payment_number || 
-                      data.QuoteId || 
-                      data.quote_id || 
-                      data.invoiceNumber || 
-                      data.invoice_number || 
-                      "INV-001",
-        totalAmount: data.Total_After_VAT_Currency || 
-                     data.subscription_info?.total_amount || 
-                     data.TotalPrice || 
-                     data.total_amount ||
-                     data.amount ||
-                     0
+        name: data.contactName ||
+          data.Customer_name ||
+          data.customer_details?.name ||
+          data.Customer_Name ||
+          data.customerName ||
+          data.name ||
+          "Customer",
+        invoiceNumber: data.quotepaymentId ||
+          data.quote_payment_number ||
+          data.QuoteId ||
+          data.quote_id ||
+          data.invoiceNumber ||
+          data.invoice_number ||
+          "INV-001",
+        totalAmount: data.Total_After_VAT_Currency ||
+          data.subscription_info?.total_amount ||
+          data.TotalPrice ||
+          data.total_amount ||
+          data.amount ||
+          0
       };
 
       // Update sales agent data with dynamic fields from API
@@ -326,20 +329,20 @@ export class PaymentCompanyComponent implements OnInit {
           this.salesAgent.mobNo1 = undefined;
         }
       }
-      
+
       // Store piData for compatibility
       this.piData = data;
-      
+
       // Set loading to false and force change detection
       this.loading = false;
       this.cdRef.detectChanges();
-      
+
     } catch (error) {
       console.error('❌ Error populating component data:', error);
       this.loading = false;
     }
   }
-  
+
   // Get SalesForce details (same as payment-schedule)
   getSalesForceDetails(): void {
     // Prevent multiple calls if data already loaded
@@ -347,7 +350,7 @@ export class PaymentCompanyComponent implements OnInit {
       console.log('🔄 SalesForce data already loaded, skipping API call');
       return;
     }
-    
+
     console.log('🔄 Fetching SalesForce details...');
     this.salesForceService.getSalesForceDetails().subscribe({
       next: (res: any) => {
@@ -368,7 +371,7 @@ export class PaymentCompanyComponent implements OnInit {
           if (this.normalizePhone(this.salesAgent.phoneNumber) === this.normalizePhone(this.salesAgent.mobNo1 || '')) {
             this.salesAgent.mobNo1 = undefined;
           }
-          
+
           // Store a copy of the original data to prevent future overwrites
           this.originalSalesAgentData = { ...this.salesAgent };
           this.salesForceDataLoaded = true; // Mark as loaded
@@ -381,7 +384,7 @@ export class PaymentCompanyComponent implements OnInit {
         console.error('❌ Error fetching SalesForce details:', err);
         this.setFallbackSalesAgent();
       },
-      complete: () => {},
+      complete: () => { },
     });
   }
 
@@ -389,13 +392,13 @@ export class PaymentCompanyComponent implements OnInit {
     // Only set fallback if we don't already have sales agent data
     if (!this.salesAgent.name && !this.salesAgent.email && !this.salesAgent.phoneNumber) {
       this.salesAgent = {
-        name: "", 
-        position: "", 
+        name: "",
+        position: "",
         faxNumber: "",
         phoneNumber: "",
         email: "",
-        mobNo1: "", 
-        mobNo2: "", 
+        mobNo1: "",
+        mobNo2: "",
         token: 0
       };
       console.log('🔄 Using fallback sales agent data:', this.salesAgent);
@@ -445,9 +448,9 @@ export class PaymentCompanyComponent implements OnInit {
         map(digiRes => {
           // For corporate customers, use quotePaymentId as CustomerId since that's what backend uses
           // Try to get customerId from response, otherwise fallback to quotePaymentId
-          const leadId = digiRes?.screeningmatchScore?.customerId || 
-                        digiRes?.screeningmatchScore?.CustomerId || 
-                        this.orderId; // Fallback to quotePaymentId
+          const leadId = digiRes?.screeningmatchScore?.customerId ||
+            digiRes?.screeningmatchScore?.CustomerId ||
+            this.orderId; // Fallback to quotePaymentId
           if (!leadId) throw new Error('Missing CustomerId from digicomplice response');
           return { quotePaymentId: this.orderId, leadId };
         }),
