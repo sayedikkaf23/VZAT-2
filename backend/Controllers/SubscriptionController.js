@@ -134,7 +134,7 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
             const emailResult = await sendFinalRenewalEmail({
               quotepaymentId: subscription.quotepaymentId,
               Quote_payment_number: subscription.Quote_payment_number,
-              Customer_name: subscription.Customer_name,
+              contactName: subscription.contactName,
               opp_email: subscription.opp_email,
               payments_completed: subscription.payments_completed,
               InstallmentLeft: subscription.InstallmentLeft,
@@ -373,7 +373,7 @@ export const handleAFSWebhook = async (req, res) => {
         await sendPaymentSuccessNotificationEmail({
           quotepaymentId: subscription.quotepaymentId,
           q_payment_id,
-          Customer_name: subscription.Customer_name,
+          contactName: subscription.contactName,
           opp_email: subscription.opp_email,
           opp_owner: subscription.opp_owner,
           payment_amount: parseFloat(result.amount),
@@ -703,7 +703,7 @@ export const processRecurringPayments = async (req, res) => {
             await sendPaymentSuccessNotificationEmail({
               quotepaymentId: subscription.quotepaymentId,
               q_payment_id,
-              Customer_name: subscription.Customer_name,
+              contactName: subscription.contactName,
               opp_email: subscription.opp_email,
               opp_owner: subscription.opp_owner,
               payment_amount: parseFloat(paymentResult.amount),
@@ -795,7 +795,7 @@ export const processRecurringPayments = async (req, res) => {
             const emailData = {
               quotepaymentId: subscription.quotepaymentId,
               q_payment_id,
-              Customer_name: subscription.Customer_name || "Customer",
+              contactName: subscription.contactName,
               opp_email: subscription.opp_email,
               opp_owner: subscription.opp_owner,
               payment_amount: installmentAmount,

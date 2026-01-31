@@ -426,7 +426,7 @@ async function sendRetrySuccessEmail(subscription, payment, transactionId) {
     const emailData = {
       quotepaymentId: subscription.quotepaymentId,
       q_payment_id: payment.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId,
-      Customer_name: subscription.Customer_name || 'Customer',
+      contactName: subscription.contactName,
       opp_email: subscription.opp_email,
       opp_owner: subscription.opp_owner,
       payment_amount: payment.amount,
@@ -494,7 +494,7 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
           const emailResult = await sendFinalRenewalEmail({
             quotepaymentId: subscription.quotepaymentId,
             Quote_payment_number: subscription.Quote_payment_number,
-            Customer_name: subscription.Customer_name,
+            contactName: subscription.contactName,
             opp_email: subscription.opp_email,
             opp_owner: subscription.opp_owner,
             payments_completed: subscription.payments_completed,
@@ -547,7 +547,7 @@ async function sendRetryFailureEmail(subscription, payment, error) {
     const emailData = {
       quotepaymentId: subscription.quotepaymentId,
       q_payment_id: payment.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId,
-      Customer_name: subscription.Customer_name || 'Customer',
+      contactName: subscription.contactName,
       opp_email: subscription.opp_email,
       opp_owner: subscription.opp_owner,
       payment_amount: installmentAmount,

@@ -144,9 +144,9 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
                 const recurringData = await VzatRecurringData.findOne({ quotepaymentId: quotepaymentId });
                 
                 if (recurringData) {
-                    // Get customer name from database
-                    customerNameFromDB = recurringData.Customer_name;
-                    // console.log('🧑‍💼 Customer name from DB:', customerNameFromDB);
+                    // Get contact name from database
+                    customerNameFromDB = recurringData.contactName;
+                    // console.log('🧑‍💼 Contact name from DB:', customerNameFromDB);
                     
                     // Get sales person details from database if available
                     if (recurringData.salesPersonDetails) {
@@ -215,7 +215,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             Installment_amount: calculatedInstallmentAmount, // Use calculated amount
             Total_Installments,
             quotePdf,
-            Customer_name: finalCustomerName, // Use the corrected customer name
+            contactName: finalCustomerName, // Use the corrected contact name
             opp_owner,
             salesPersonDetails: salesPersonDetails || salesPersonDetailsFromDB,
             installmentSchedule: paymentScheduleFromDB || installmentSchedule, // Use DB data if available, fallback to webhook data
