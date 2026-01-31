@@ -136,6 +136,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
         // Fetch payment schedule from database if quotepaymentId exists
         let paymentScheduleFromDB = null;
         let customerNameFromDB = null;
+        let contactNameFromDB = null;
         let salesPersonDetailsFromDB = null;
         
         try {
@@ -146,6 +147,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
                 if (recurringData) {
                     // Get customer name from database
                     customerNameFromDB = recurringData.Customer_name;
+                    contactNameFromDB = recurringData.contactName;
                     // console.log('🧑‍💼 Customer name from DB:', customerNameFromDB);
                     
                     // Get sales person details from database if available
@@ -216,6 +218,7 @@ export const handleSalesforcePdfWebhook = async (req, res) => {
             Total_Installments,
             quotePdf,
             Customer_name: finalCustomerName, // Use the corrected customer name
+            contactName: contactNameFromDB,
             opp_owner,
             salesPersonDetails: salesPersonDetails || salesPersonDetailsFromDB,
             installmentSchedule: paymentScheduleFromDB || installmentSchedule, // Use DB data if available, fallback to webhook data

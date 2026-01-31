@@ -114,6 +114,7 @@ export const testPaymentCompletion = async (req, res) => {
               const emailResult = await sendFinalRenewalEmail({
                 quotepaymentId: updatedSubscription.quotepaymentId,
                 Customer_name: updatedSubscription.Customer_name,
+                contactName: updatedSubscription.contactName,
                 opp_email: updatedSubscription.opp_email,
                 opp_owner: updatedSubscription.opp_owner,
                 payments_completed: updatedSubscription.payments_completed,
