@@ -444,7 +444,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
     const ccRecipientsSet = new Set(
       [
         oppOwnerEmail,
-        'maryia.vinahradava1@virtuzone.com',
+        'maryia.vinahradava@virtuzone.com',
         'arteam@vz.ae'
       ].filter(Boolean)
     );
@@ -580,8 +580,8 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
     const ccRecipientsSet = new Set(
       [
         oppOwnerEmail,
-        'maryia.vinahradava1@virtuzone.com',
-        'arteam1@vz.ae'
+        'maryia.vinahradava@virtuzone.com',
+        'arteam@vz.ae'
       ].filter(Boolean)
     );
     const ccRecipients = Array.from(ccRecipientsSet);
