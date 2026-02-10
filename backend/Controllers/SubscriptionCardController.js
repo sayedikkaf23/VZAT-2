@@ -48,7 +48,7 @@ export const createCardChangePaymentForm = async (req, res) => {
     afsData.append('entityId', entityId);
     afsData.append('amount', '1.00'); // Minimal amount for card registration
     afsData.append('currency', 'AED');
-    afsData.append('paymentType', 'PA'); // Pre-authorization for registration
+    afsData.append('paymentType', 'DB'); // Pre-authorization for registration
     afsData.append('createRegistration', 'true'); // Key: Create registration for future payments
     afsData.append('merchantTransactionId', `card_change_${quotepaymentId}_${Date.now()}`);
     
