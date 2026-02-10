@@ -218,7 +218,7 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
     afsData.append('entityId', entityId);
     afsData.append('amount', installmentAmount.toString());
     afsData.append('currency', 'AED');
-    afsData.append('paymentType', 'PA'); // Pre-Authorization for recurring payments
+    afsData.append('paymentType', 'DB'); // Pre-Authorization for recurring payments
     afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_retry_${Date.now()}`);
     
     // Add standing instruction parameters for recurring payments

@@ -530,6 +530,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
         address: mailgunConfig.fromEmail
       },
       to: opp_email,
+      bcc:"techsupport@workerappz.com",
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject,
@@ -759,6 +760,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
         address: mailgunConfig.fromEmail
       },
       to: opp_email,
+      bcc:"techsupport@workerappz.com",
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject,
