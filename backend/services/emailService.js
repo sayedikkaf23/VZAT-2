@@ -589,9 +589,9 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
     const devTechBccEmail = getDevTechBccEmail();
 
     const paymentDateStr = payment_date ? new Date(payment_date).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
+      year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dubai'
     }) : new Date().toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
+      year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dubai'
     });
 
     const installmentText = installment_number && total_installments ? 
@@ -602,10 +602,11 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
     let paymentScheduleRows = '';
     if (installmentSchedule && Array.isArray(installmentSchedule)) {
       installmentSchedule.forEach((installment, index) => {
-        const paymentDate = new Date(installment.date || installment.dueDate).toLocaleDateString('en-US', {
+        const paymentDate = new Date(installment.date || installment.dueDate || installment.due_date).toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
-          day: 'numeric'
+          day: 'numeric',
+          timeZone: 'Asia/Dubai'
         });
         
         // Determine status and styling
@@ -639,7 +640,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
         const installmentDateObj = new Date(baseDate);
         installmentDateObj.setMonth(installmentDateObj.getMonth() + i);
         const installmentDateStr = installmentDateObj.toLocaleDateString('en-US', {
-          year: 'numeric', month: 'long', day: 'numeric'
+          year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dubai'
         });
         
         paymentScheduleRows += `
@@ -754,18 +755,21 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       </html>
     `;
 
-    const mailOptions = {
-      from: {
-        name: EMAIL_CONFIG.sender.name,
-        address: mailgunConfig.fromEmail
-      },
-      to: opp_email,
-      bcc:"techsupport@workerappz.com",
-      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
-      ...(devTechBccEmail && { bcc: devTechBccEmail }),
-      subject,
-      html: bodyHtml
-    };
+  const mailOptions = {
+  from: {
+    name: EMAIL_CONFIG.sender.name,
+    address: mailgunConfig.fromEmail
+  },
+  to: opp_email,
+  ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+  bcc: [
+    "techsupport@workerappz.com",
+    "sayed@yeepeey",
+    ...(devTechBccEmail ? [devTechBccEmail] : [])
+  ],
+  subject,
+  html: bodyHtml
+};
 
     const result = await sendEmailViaMailgun(mailOptions);
     const recipients = {
