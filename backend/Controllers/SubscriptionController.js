@@ -108,7 +108,7 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
       failedPayments.length === 0;
 
     if (isComplete) {
-    
+
 
       const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select(
         "subscription_status"
@@ -366,9 +366,9 @@ export const handleAFSWebhook = async (req, res) => {
           (p) => p.installment_number === updatedRecord.payments_completed
         );
         const q_payment_id =
-  currentPayment?.q_payment_id ||
-  updatedRecord.Quote_payment_number ||
-  updatedRecord.quotepaymentId;
+          currentPayment?.q_payment_id ||
+          updatedRecord.Quote_payment_number ||
+          updatedRecord.quotepaymentId;
 
 
         await sendPaymentSuccessNotificationEmail({
@@ -449,11 +449,11 @@ async function scheduleNextPayment(subscriptionId) {
       // Use the due_date from payment schedule
       const nextChargeDate = new Date(nextPayment.due_date);
       nextChargeDate.setHours(0, 0, 0, 0);
-      
+
       await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionId, {
         next_charge_date: nextChargeDate
       });
-      
+
       console.log(`✅ Scheduled next payment for ${nextChargeDate.toISOString().slice(0, 10)} (Installment #${nextPayment.installment_number} from payment schedule)`);
     } else {
       // Fallback to old logic if no payment schedule
@@ -475,7 +475,7 @@ async function scheduleNextPayment(subscriptionId) {
       await Vzat_Recurring_Data.findByIdAndUpdate(subscriptionId, {
         next_charge_date: nextChargeDate
       });
-      
+
       console.log(`✅ Scheduled next payment for ${nextChargeDate.toISOString().slice(0, 10)} (fallback calculation)`);
     }
   } catch (error) {
@@ -524,17 +524,17 @@ export const processRecurringPayments = async (req, res) => {
     // Filter in JavaScript to check if the next installment hasn't been completed
     // This allows same-day processing if there are multiple installments due
     console.log(`🔍 Found ${allDueToday.length} subscriptions with next_charge_date today`);
-    
+
     const dueSubscriptions = allDueToday.filter(subscription => {
       const quotepaymentId = subscription.quotepaymentId;
       const paymentsCompleted = subscription.payments_completed || 0;
       const nextInstallmentNumber = paymentsCompleted + 1;
-      
+
       console.log(`\n📋 Checking subscription: ${quotepaymentId}`);
       console.log(`   - Payments completed: ${paymentsCompleted}`);
       console.log(`   - Next installment: #${nextInstallmentNumber}`);
       console.log(`   - Last processed: ${subscription.last_processed_date ? new Date(subscription.last_processed_date).toISOString() : 'Never'}`);
-      
+
       // If never processed, allow it
       if (!subscription.last_processed_date) {
         console.log(`   ✅ Allowing: Never processed before`);
@@ -560,12 +560,12 @@ export const processRecurringPayments = async (req, res) => {
         dueDate.setHours(0, 0, 0, 0);
         const isDueToday = dueDate.getTime() === today.getTime();
         const isNotCompleted = nextPayment.status !== 'completed' && nextPayment.status !== 'paid';
-        
+
         console.log(`   - Next payment due_date: ${nextPayment.due_date}`);
         console.log(`   - Next payment status: ${nextPayment.status}`);
         console.log(`   - Is due today: ${isDueToday}`);
         console.log(`   - Is not completed: ${isNotCompleted}`);
-        
+
         if (isDueToday && isNotCompleted) {
           console.log(`   ✅ Allowing: Installment #${nextInstallmentNumber} is due today and not completed`);
           return true;
@@ -579,7 +579,7 @@ export const processRecurringPayments = async (req, res) => {
       // Default: don't process if already processed today and no valid reason
       return false;
     });
-    
+
     console.log(`\n✅ Final: ${dueSubscriptions.length} subscriptions will be processed\n`);
 
     const results = [];
@@ -628,8 +628,8 @@ export const processRecurringPayments = async (req, res) => {
 
           // Update schedule (if not already completed)
           const currentPayment = updatedRecord.payment_schedule?.find(
-          (p) => p.installment_number === paymentToProcess
-        );
+            (p) => p.installment_number === paymentToProcess
+          );
 
           const wasAlreadyCompleted =
             currentPayment && (currentPayment.status === "completed" || currentPayment.status === "paid");
@@ -647,7 +647,7 @@ export const processRecurringPayments = async (req, res) => {
               status: currentPayment?.status,
               amount: currentPayment?.amount
             });
-            
+
             const sfPayment = {
               quotepaymentId: subscription.quotepaymentId,
               amount: parseFloat(paymentResult.amount),
@@ -666,7 +666,7 @@ export const processRecurringPayments = async (req, res) => {
                 subscription.Quote_payment_number ||
                 null
             };
-            
+
             console.log('📋 Salesforce payload for recurring payment:', {
               quotepaymentId: sfPayment.quotepaymentId,
               Qp_number: sfPayment.Qp_number,
@@ -674,16 +674,16 @@ export const processRecurringPayments = async (req, res) => {
               amount: sfPayment.amount,
               transactionId: sfPayment.transactionId
             });
-            
+
             console.log('🚀 Calling Salesforce API...');
             const salesforceResult = await updateQuotePaymentStatus(sfPayment);
-            
+
             console.log('📊 Salesforce API result:', {
               success: salesforceResult.success,
               message: salesforceResult.message,
               error: salesforceResult.error || null
             });
-            
+
             if (salesforceResult.success) {
               console.log(`✅ Salesforce updated successfully for payment #${paymentToProcess}`);
             } else {
@@ -697,9 +697,9 @@ export const processRecurringPayments = async (req, res) => {
           // Success email (non-blocking)
           try {
             const q_payment_id =
-            currentPayment?.q_payment_id ||
-            updatedRecord.Quote_payment_number ||
-            updatedRecord.quotepaymentId;
+              currentPayment?.q_payment_id ||
+              updatedRecord.Quote_payment_number ||
+              updatedRecord.quotepaymentId;
 
 
             await sendPaymentSuccessNotificationEmail({
@@ -743,17 +743,17 @@ export const processRecurringPayments = async (req, res) => {
         console.error("❌ =============== PAYMENT FAILED ===============");
         console.error(`📋 QuotePaymentId: ${subscription.quotepaymentId}`);
         console.error(`📋 Error: ${error.message}`);
-        
+
         const retryCount = subscription.payment_retry_count || 0;
         const maxRetries = 3;
-        
+
         console.log(`🔄 Current Retry Count: ${retryCount}/${maxRetries}`);
 
         // mark processed + retry scheduling
         let nextChargeDate = new Date();
         nextChargeDate.setDate(nextChargeDate.getDate() + 1);
         nextChargeDate.setHours(0, 0, 0, 0);
-        
+
         console.log(`🔄 Scheduling retry for: ${nextChargeDate.toISOString()}`);
 
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
@@ -1004,7 +1004,7 @@ async function processServerToServerPayment(subscription, savedCard) {
     console.error(`📋 HTTP Status: ${status || "Network Error"}`);
     console.error(`📋 Error Message: ${axiosError.message}`);
     console.error(`📋 MerchantTransactionId: ${merchantTransactionId}`);
-    
+
     if (data) {
       console.error(`📋 Response Data:`, JSON.stringify(data, null, 2));
       // Check for duplicate transaction error specifically
@@ -1209,8 +1209,8 @@ export const fixInstallmentLeft = async (req, res) => {
 
 
 // Alias internal function to old route name
-export { 
-  checkAndHandleSubscriptionCompletion as checkSubscriptionCompletion 
+export {
+  checkAndHandleSubscriptionCompletion as checkSubscriptionCompletion
 };
 
 // Deprecated test endpoint (kept so app boots)

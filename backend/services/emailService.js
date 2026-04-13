@@ -8,15 +8,15 @@ const formatAmount = (amount) => {
   if (amount === null || amount === undefined || amount === '') {
     return '0.00';
   }
-  
+
   // Convert to number if it's a string
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+
   // Check if it's a valid number
   if (isNaN(numAmount)) {
     return '0.00';
   }
-  
+
   // Format with thousand separators and 2 decimal places
   return numAmount.toLocaleString('en-US', {
     minimumFractionDigits: 2,
@@ -38,11 +38,11 @@ const EMAIL_CONFIG = {
   }
 };
 
-const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'dev.tech@vz.ae' ;
+const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'dev.tech@vz.ae';
 
 const getSalesPersonCc = (salesPersonDetails) =>
   salesPersonDetails?.salesPersonEmail &&
-  salesPersonDetails.salesPersonEmail.includes('@')
+    salesPersonDetails.salesPersonEmail.includes('@')
     ? [salesPersonDetails.salesPersonEmail]
     : [];
 
@@ -304,7 +304,7 @@ export const sendSubscriptionCompletedEmail = async (subscriptionData) => {
     const result = await sendEmailViaMailgun(mailOptions);
 
     return { success: true, messageId: result.messageId, recipients: recipientList };
-    
+
   } catch (error) {
     console.error('❌ Failed to send subscription completion email:', error);
     return { success: false, error: error.message };
@@ -398,7 +398,7 @@ export const sendFinalRenewalEmail = async (data) => {
         address: mailgunConfig.fromEmail
       },
       to: opp_email,
-      bcc:devTechBccEmail,
+      bcc: devTechBccEmail,
       subject,
       html: bodyHtml
     };
@@ -436,7 +436,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
     } = data;
 
     const subject = `Action Required: Virtuzone | Payment Attempt Unsuccessful for Your Scheduled Installment`;
-    
+
     const oppOwnerEmail =
       salesPersonDetails?.salesPersonEmail ||
       (typeof opp_owner === 'string' && opp_owner.includes('@') ? opp_owner : undefined);
@@ -530,7 +530,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
         address: mailgunConfig.fromEmail
       },
       to: opp_email,
-      bcc:"techsupport@workerappz.com",
+      bcc: "techsupport@workerappz.com",
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject,
@@ -572,7 +572,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
     } = data;
 
     const subject = `Virtuzone | Payment Received`;
-    
+
     const oppOwnerEmail =
       salesPersonDetails?.salesPersonEmail ||
       (typeof opp_owner === 'string' && opp_owner.includes('@') ? opp_owner : undefined);
@@ -594,8 +594,8 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dubai'
     });
 
-    const installmentText = installment_number && total_installments ? 
-      `${installment_number} of ${total_installments}` : 
+    const installmentText = installment_number && total_installments ?
+      `${installment_number} of ${total_installments}` :
       'N/A';
 
     // Generate payment schedule table rows
@@ -608,14 +608,14 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
           day: 'numeric',
           timeZone: 'Asia/Dubai'
         });
-        
+
         // Determine status and styling
-        const isPaid = installment.status === 'paid' || installment.status === 'completed' || 
-                      (installment_number && index + 1 <= installment_number);
+        const isPaid = installment.status === 'paid' || installment.status === 'completed' ||
+          (installment_number && index + 1 <= installment_number);
         const statusText = isPaid ? 'Paid' : 'Pending';
         const statusColor = isPaid ? '#28a745' : '#6c757d';
         const rowBgColor = '#ffffff';
-        
+
         paymentScheduleRows += `
           <tr style="background-color: ${rowBgColor};">
             <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${index + 1}</td>
@@ -642,7 +642,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
         const installmentDateStr = installmentDateObj.toLocaleDateString('en-US', {
           year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dubai'
         });
-        
+
         paymentScheduleRows += `
           <tr style="background-color: ${rowBgColor};">
             <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${i + 1}</td>
@@ -755,21 +755,21 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       </html>
     `;
 
-  const mailOptions = {
-  from: {
-    name: EMAIL_CONFIG.sender.name,
-    address: mailgunConfig.fromEmail
-  },
-  to: opp_email,
-  ...(ccRecipients.length > 0 && { cc: ccRecipients }),
-  bcc: [
-    "techsupport@workerappz.com",
-    "sayed@yeepeey",
-    ...(devTechBccEmail ? [devTechBccEmail] : [])
-  ],
-  subject,
-  html: bodyHtml
-};
+    const mailOptions = {
+      from: {
+        name: EMAIL_CONFIG.sender.name,
+        address: mailgunConfig.fromEmail
+      },
+      to: opp_email,
+      ...(ccRecipients.length > 0 && { cc: ccRecipients }),
+      bcc: [
+        "techsupport@workerappz.com",
+        "sayed@yeepeey",
+        ...(devTechBccEmail ? [devTechBccEmail] : [])
+      ],
+      subject,
+      html: bodyHtml
+    };
 
     const result = await sendEmailViaMailgun(mailOptions);
     const recipients = {
@@ -790,7 +790,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 // export const sendPaymentFailureEmail = async (failureData) => {
 //   try {
 //     const transporter = createTransporter();
-    
+
 //     const {
 //       quotepaymentId,
 //       OpportunityId,
@@ -815,7 +815,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 //           <div style="background-color: #dc3545; color: white; padding: 20px; text-align: center;">
 //             <h1>🚨 Payment Failure Alert</h1>
 //           </div>
-          
+
 //           <div style="padding: 20px; background-color: #f8f9fa;">
 //             <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
 //               <h3 style="color: #721c24; margin-top: 0;">⚠️ Immediate Action Required</h3>
@@ -823,9 +823,9 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 //                 A recurring payment has failed and requires immediate attention from the operations team.
 //               </p>
 //             </div>
-            
+
 //             <h2>Payment Failure Details</h2>
-            
+
 //             <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
 //               <tr style="background-color: #e9ecef;">
 //                 <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Quote Payment ID</td>
@@ -856,14 +856,14 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 //                 <td style="padding: 12px; border: 1px solid #dee2e6; color: #dc3545;"><strong>${error_message}</strong></td>
 //               </tr>
 //             </table>
-            
+
 //             ${afs_response ? `
 //             <h3>AFS Response Details</h3>
 //             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; overflow-x: auto;">
 //               <pre>${JSON.stringify(afs_response, null, 2)}</pre>
 //             </div>
 //             ` : ''}
-            
+
 //             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
 //               <h3 style="color: #856404; margin-top: 0;">📋 Recommended Actions</h3>
 //               <ul style="color: #856404;">
@@ -874,7 +874,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 //                 <li>Consider rescheduling payment or offering alternative payment methods</li>
 //               </ul>
 //             </div>
-            
+
 //             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
 //               <p style="color: #6c757d; font-size: 12px;">
 //                 This is an automated alert from Recurring Payment System<br>
@@ -889,7 +889,7 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
 
 //     const result = await transporter.sendMail(mailOptions);
 //     return { success: true, messageId: result.messageId };
-    
+
 //   } catch (error) {
 //     console.error('❌ Failed to send payment failure email:', error);
 //     return { success: false, error: error.message };
@@ -919,30 +919,30 @@ export const sendPdfEmail = async (emailData) => {
 
     // Get base URL from environment
     const baseUrl = process.env.BASE_URL || 'https://vzatnew.yeepeey.com';
-    
+
     // Construct payment link with proper base URL
     const fullPaymentLink = paymentLink.startsWith('http') ? paymentLink : `${baseUrl}${paymentLink.startsWith('/') ? '' : '/'}${paymentLink}`;
 
-  // Process PDF attachments for Mailgun (CORRECT)
-const attachments = [];
+    // Process PDF attachments for Mailgun (CORRECT)
+    const attachments = [];
 
-if (quotePdf && Array.isArray(quotePdf)) {
-  for (const pdf of quotePdf) {
-    if (pdf.pdfContent && pdf.name) {
-      const cleanBase64 = pdf.pdfContent
-        .replace(/^data:application\/pdf;base64,/, '')
-        .replace(/\s/g, '');
+    if (quotePdf && Array.isArray(quotePdf)) {
+      for (const pdf of quotePdf) {
+        if (pdf.pdfContent && pdf.name) {
+          const cleanBase64 = pdf.pdfContent
+            .replace(/^data:application\/pdf;base64,/, '')
+            .replace(/\s/g, '');
 
-      attachments.push(
-  new mailgunClient.Attachment({
-    data: Buffer.from(cleanBase64, 'base64'),
-    filename: `${pdf.name}.pdf`,
-    contentType: 'application/pdf'
-  })
-);
+          attachments.push(
+            new mailgunClient.Attachment({
+              data: Buffer.from(cleanBase64, 'base64'),
+              filename: `${pdf.name}.pdf`,
+              contentType: 'application/pdf'
+            })
+          );
+        }
+      }
     }
-  }
-}
 
     // Generate payment schedule table rows
     let paymentScheduleRows = '';
@@ -953,7 +953,7 @@ if (quotePdf && Array.isArray(quotePdf)) {
           month: 'long',
           day: 'numeric'
         });
-        
+
         paymentScheduleRows += `
           <tr>
             <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${index + 1}</td>
@@ -1115,7 +1115,7 @@ if (quotePdf && Array.isArray(quotePdf)) {
     const result = await sendEmailViaMailgun(mailOptions);
     console.log(`✅ PDF email sent successfully to ${quote_email}: ${result.messageId}`);
     return { success: true, messageId: result.messageId, recipient: quote_email };
-    
+
   } catch (error) {
     console.error('❌ Failed to send PDF email:', error);
     return { success: false, error: error.message };
@@ -1128,10 +1128,10 @@ if (quotePdf && Array.isArray(quotePdf)) {
 export const sendCustomerWelcomeEmail = async (customerData) => {
 
   console.log('📧 EMAIL SERVICE - Input data:', JSON.stringify(customerData, null, 2));
-  
+
   try {
     console.log('📧 EMAIL SERVICE - Using Mailgun...');
-    
+
     const {
       customerName,
       email,
@@ -1139,7 +1139,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       quotepaymentId,
       loginUrl
     } = customerData;
-    
+
     console.log('📧 EMAIL SERVICE - Extracted data:', {
       customerName,
       email,
@@ -1149,7 +1149,7 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
     });
 
     const devTechBccEmail = getDevTechBccEmail();
-    
+
     // Extract salesPersonEmail from customerData if available
     const salesPersonEmail = customerData?.salesPersonDetails?.salesPersonEmail;
     const ccRecipients = [];
@@ -1282,18 +1282,18 @@ export const sendCustomerWelcomeEmail = async (customerData) => {
       subject: mailOptions.subject,
       htmlLength: mailOptions.html?.length || 0
     });
-    
+
     const result = await sendEmailViaMailgun(mailOptions);
-    
+
     console.log('📧 EMAIL SERVICE - Email sent successfully!');
     console.log('📧 EMAIL SERVICE - Result:', {
       messageId: result.messageId,
       accepted: result.accepted,
       rejected: result.rejected
     });
-    
+
     return { success: true, messageId: result.messageId, recipient: email };
-    
+
   } catch (error) {
     console.error('❌ 📧 EMAIL SERVICE - Error details:', {
       name: error.name,
@@ -1321,7 +1321,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
     } = customerData;
 
     const devTechBccEmail = getDevTechBccEmail();
-    
+
     // Extract salesPersonEmail from customerData if available
     const salesPersonEmail = customerData?.salesPersonDetails?.salesPersonEmail;
     const ccRecipients = [];
@@ -1431,7 +1431,7 @@ export const sendExistingCustomerEmail = async (customerData) => {
 
     const result = await sendEmailViaMailgun(mailOptions);
     return { success: true, messageId: result.messageId, recipient: email };
-    
+
   } catch (error) {
     console.error('❌ Failed to send existing customer email:', error);
     return { success: false, error: error.message };
@@ -1451,7 +1451,7 @@ export const sendPasswordResetEmail = async (customerData) => {
     } = customerData;
 
     const devTechBccEmail = getDevTechBccEmail();
-    
+
     // Extract salesPersonEmail from customerData if available
     const salesPersonEmail = customerData?.salesPersonDetails?.salesPersonEmail;
     const ccRecipients = [];
@@ -1580,7 +1580,7 @@ export const sendPasswordResetEmail = async (customerData) => {
 
     const result = await sendEmailViaMailgun(mailOptions);
     return { success: true, messageId: result.messageId, recipient: email };
-    
+
   } catch (error) {
     console.error('❌ Failed to send password reset email:', error);
     return { success: false, error: error.message };
@@ -1642,7 +1642,7 @@ export const testEmailConfiguration = async () => {
 
     const result = await sendEmailViaMailgun(mailOptions);
     return { success: true, messageId: result.messageId };
-    
+
   } catch (error) {
     return { success: false, error: error.message };
   }

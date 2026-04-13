@@ -32,9 +32,9 @@ export const retryPayment = async (req, res) => {
     console.log(`📧 Customer email: ${customerEmail}`);
 
     // Find the subscription
-    const subscription = await Vzat_Recurring_Data.findOne({ 
+    const subscription = await Vzat_Recurring_Data.findOne({
       quotepaymentId: quotepaymentId,
-      opp_email: customerEmail 
+      opp_email: customerEmail
     });
 
     if (!subscription) {
@@ -62,10 +62,10 @@ export const retryPayment = async (req, res) => {
     }
 
     // Find the customer's saved card
-    const savedCard = await SavedCard.findOne({ 
+    const savedCard = await SavedCard.findOne({
       quotepaymentId: quotepaymentId,
       customerEmail: customerEmail,
-      isActive: true 
+      isActive: true
     });
 
     if (!savedCard) {
@@ -84,10 +84,10 @@ export const retryPayment = async (req, res) => {
     });
 
     // Find the failed payment to retry
-    const failedPayment = subscription.payment_schedule.find(p => 
+    const failedPayment = subscription.payment_schedule.find(p =>
       p.status === 'failed'
     );
-    
+
     // Debug: Log the exact failed payment found
     if (failedPayment) {
       console.log('🎯 Found failed payment:', {
@@ -144,16 +144,16 @@ export const retryPayment = async (req, res) => {
 
     if (paymentResult.success) {
       console.log('✅ Payment retry successful');
-      
+
       // Update subscription and payment schedule
       const updatedSubscription = await updateSubscriptionAfterRetry(subscription, failedPayment, paymentResult.transactionId);
-      
+
       // Send retry success email (same as regular payment success)
       await sendRetrySuccessEmail(updatedSubscription, failedPayment, paymentResult.transactionId);
-      
+
       // Check if subscription is now complete and send completion email if needed
       await checkAndHandleSubscriptionCompletion(updatedSubscription);
-      
+
       return res.status(200).json({
         success: true,
         message: 'Payment retry successful!',
@@ -162,10 +162,10 @@ export const retryPayment = async (req, res) => {
       });
     } else {
       console.log('❌ Payment retry failed:', paymentResult.error);
-      
+
       // Mark the payment as failed with failure_date
       await Vzat_Recurring_Data.findOneAndUpdate(
-        { 
+        {
           _id: subscription._id,
           'payment_schedule.installment_number': failedPayment.installment_number
         },
@@ -177,10 +177,10 @@ export const retryPayment = async (req, res) => {
         }
       );
       console.log(`❌ Payment #${failedPayment.installment_number} marked as failed in payment schedule`);
-      
+
       // Send failure email to customer
       await sendRetryFailureEmail(subscription, failedPayment, paymentResult.error);
-      
+
       return res.status(400).json({
         success: false,
         message: 'Payment retry failed. Please try again or contact support.',
@@ -210,27 +210,27 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
     const afsUrl = `${process.env.AFS_DOMAIN}/v1/registrations/${savedCard.afs_registration_id}/payments`;
     const entityId = process.env.AFS_ENTITY_ID;
     const accessToken = process.env.AFS_ACCESS_TOKEN;
-    
+
     // Calculate installment amount
     const installmentAmount = parseFloat(payment.amount.toFixed(2));
-    
+
     const afsData = new URLSearchParams();
     afsData.append('entityId', entityId);
     afsData.append('amount', installmentAmount.toString());
     afsData.append('currency', 'AED');
     afsData.append('paymentType', 'DB'); // Pre-Authorization for recurring payments
     afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_retry_${Date.now()}`);
-    
+
     // Add standing instruction parameters for recurring payments
     afsData.append('standingInstruction.mode', 'REPEATED');
     afsData.append('standingInstruction.type', 'UNSCHEDULED');
     afsData.append('standingInstruction.source', 'CIT'); // Merchant Initiated Transaction
-    
+
     const afsHeaders = {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/x-www-form-urlencoded"
     };
-    
+
     console.log('🔗 AFS Registration Payment Retry Request Details:');
     console.log('- URL:', afsUrl);
     console.log('- Registration ID:', savedCard.afs_registration_id);
@@ -294,7 +294,7 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
       transactionId: transactionId,
       paymentId: payment._id
     });
-    
+
     // Debug: Log the exact query being used
     console.log('🔍 MongoDB Query:', {
       _id: subscription._id,
@@ -303,30 +303,30 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
 
     // Update payment schedule
     const updateResult = await Vzat_Recurring_Data.findOneAndUpdate(
-      { 
-        _id: subscription._id, 
-        'payment_schedule.installment_number': payment.installment_number 
+      {
+        _id: subscription._id,
+        'payment_schedule.installment_number': payment.installment_number
       },
-      { 
-        $set: { 
+      {
+        $set: {
           'payment_schedule.$.status': 'completed',
           'payment_schedule.$.transaction_id': transactionId,
           'payment_schedule.$.payment_date': new Date()
-        } 
+        }
       },
       { new: true }
     );
 
     console.log('✅ Payment schedule updated:', updateResult ? 'Success' : 'Failed');
-    
+
     // Verify the update by checking the payment schedule
     const updatedSubscription = await Vzat_Recurring_Data.findById(subscription._id);
-    const updatedPayment = updatedSubscription.payment_schedule.find(p => 
+    const updatedPayment = updatedSubscription.payment_schedule.find(p =>
       p.installment_number === payment.installment_number
     );
     console.log('🔍 Verification - Updated payment status:', updatedPayment?.status);
     console.log('🔍 Verification - Updated payment transaction_id:', updatedPayment?.transaction_id);
-    
+
     // Debug: Show all payments after update
     console.log('📋 All payments after update:');
     updatedSubscription.payment_schedule.forEach(p => {
@@ -334,7 +334,7 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
     });
 
     // Update subscription
-    const nextDuePayment = subscription.payment_schedule.find(p => 
+    const nextDuePayment = subscription.payment_schedule.find(p =>
       p.installment_number === payment.installment_number + 1
     );
 
@@ -357,7 +357,7 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
     );
 
     console.log('✅ Subscription updated successfully');
-    
+
     // Call Salesforce API for successful retry payment
     try {
       console.log('🔍 Debug payment for Salesforce:', {
@@ -366,7 +366,7 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
         status: payment.status,
         amount: payment.amount
       });
-      
+
       const salesforcePaymentData = {
         quotepaymentId: subscription.quotepaymentId,
         amount: parseFloat(payment.amount),
@@ -380,7 +380,7 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
         nextDueDate: nextChargeDate ? new Date(nextChargeDate).toISOString().slice(0, 10) : null,
         Qp_number: payment.q_payment_id || subscription.Quote_payment_number || null // Add QP number from payment schedule with fallback
       };
-      
+
       console.log('📋 Salesforce payload for retry payment:', {
         quotepaymentId: salesforcePaymentData.quotepaymentId,
         Qp_number: salesforcePaymentData.Qp_number,
@@ -389,24 +389,24 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
       });
 
       const salesforceResult = await updateQuotePaymentStatus(salesforcePaymentData);
-      
+
       console.log('📊 Salesforce API result:', {
         success: salesforceResult.success,
         message: salesforceResult.message,
         error: salesforceResult.error || null
       });
-      
+
       if (salesforceResult.success) {
         console.log(`✅ Salesforce updated successfully for retry payment #${payment.installment_number}`);
       } else {
         console.warn('⚠️ Salesforce update failed but retry payment was successful:', salesforceResult.error);
       }
-      
+
     } catch (salesforceError) {
       console.error('❌ Error calling Salesforce API but retry payment was successful:', salesforceError);
       // Don't fail the retry if Salesforce fails - it's not critical
     }
-    
+
     // Return the updated subscription
     const finalSubscription = await Vzat_Recurring_Data.findById(subscription._id);
     return finalSubscription;
@@ -422,7 +422,7 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
 async function sendRetrySuccessEmail(subscription, payment, transactionId) {
   try {
     console.log('📧 Sending retry success email...');
-    
+
     const emailData = {
       quotepaymentId: subscription.quotepaymentId,
       q_payment_id: payment.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId,
@@ -437,9 +437,9 @@ async function sendRetrySuccessEmail(subscription, payment, transactionId) {
       payment_method: 'Saved Card (Retry)',
       salesPersonDetails: subscription.salesPersonDetails
     };
-    
+
     const emailResult = await sendPaymentSuccessNotificationEmail(emailData);
-    
+
     if (emailResult.success) {
       console.log('📧 Retry success email sent successfully');
     } else {
@@ -456,12 +456,12 @@ async function sendRetrySuccessEmail(subscription, payment, transactionId) {
 async function checkAndHandleSubscriptionCompletion(subscription) {
   try {
     console.log('🔍 Checking if subscription is complete...');
-    
+
     // Check if ALL payments are completed (not just payments_completed count)
-    const allPaymentsCompleted = subscription.payment_schedule.every(p => 
+    const allPaymentsCompleted = subscription.payment_schedule.every(p =>
       p.status === 'completed' || p.status === 'paid'
     );
-    
+
     console.log('📋 Payment completion status:', {
       payments_completed: subscription.payments_completed,
       total_installments: subscription.InstallmentLeft,
@@ -471,14 +471,14 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
         status: p.status
       }))
     });
-    
+
     if (subscription.payments_completed >= subscription.InstallmentLeft && allPaymentsCompleted) {
       console.log(`🎉 SUBSCRIPTION COMPLETED via retry for ${subscription.quotepaymentId}!`);
       console.log(`✅ All ${subscription.payment_schedule.length} payments are completed`);
-      
+
       // Check if already completed to prevent duplicate emails
       const currentStatus = await Vzat_Recurring_Data.findById(subscription._id).select('subscription_status');
-      
+
       if (currentStatus.subscription_status !== 'completed') {
         // Update status to completed and set next_charge_date to null
         await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
@@ -487,11 +487,11 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
           renewal_email_sent: true,
           renewal_email_sent_date: new Date()
         });
-        
+
         // Send completion email to business team
         try {
           const { sendFinalRenewalEmail } = await import('../services/emailService.js');
-          
+
           const emailResult = await sendFinalRenewalEmail({
             quotepaymentId: subscription.quotepaymentId,
             Quote_payment_number: subscription.Quote_payment_number,
@@ -504,7 +504,7 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
             last_payment_date: subscription.last_payment_date,
             salesPersonDetails: subscription.salesPersonDetails
           });
-          
+
           if (emailResult.success) {
             console.log('📧 Subscription completion email sent successfully');
           } else {
@@ -530,9 +530,9 @@ async function checkAndHandleSubscriptionCompletion(subscription) {
 async function sendRetryFailureEmail(subscription, payment, error) {
   try {
     console.log('📧 Sending retry failure email...');
-    
+
     const installmentAmount = payment.amount;
-    
+
     // Extract clean error message
     let cleanErrorMessage = error;
     if (error.includes('"description":"')) {
@@ -545,7 +545,7 @@ async function sendRetryFailureEmail(subscription, payment, error) {
         console.log('⚠️ Could not parse error message, using original');
       }
     }
-    
+
     const emailData = {
       quotepaymentId: subscription.quotepaymentId,
       q_payment_id: payment.q_payment_id || subscription.Quote_payment_number || subscription.quotepaymentId,
@@ -559,9 +559,9 @@ async function sendRetryFailureEmail(subscription, payment, error) {
       payment_link: 'https://installment.virtuzone.com/login',
       salesPersonDetails: subscription.salesPersonDetails
     };
-    
+
     const emailResult = await sendPaymentFailureNotificationEmail(emailData);
-    
+
     if (emailResult.success) {
       console.log('📧 Retry failure email sent successfully');
     } else {
