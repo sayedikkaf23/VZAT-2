@@ -934,7 +934,7 @@ async function processServerToServerPayment(subscription, savedCard) {
       result: { code: "000.100.110", description: "Mock payment success" },
       amount: installmentAmount,
       currency: "AED",
-      paymentType: "PA",
+      paymentType: "DB",
       merchantTransactionId,
       card: {
         maskedPan: savedCard.maskedCardNumber,
@@ -958,7 +958,7 @@ async function processServerToServerPayment(subscription, savedCard) {
   afsData.append("entityId", entityId);
   afsData.append("amount", installmentAmount.toString());
   afsData.append("currency", "AED");
-  afsData.append("paymentType", "PA");
+  afsData.append("paymentType", "DB");
 
   // ✅ PRODUCTION FIX: unique ID used here
   afsData.append("merchantTransactionId", merchantTransactionId);
@@ -1078,7 +1078,7 @@ export const testServerToServerPayment = async (req, res) => {
       paymentDetails: {
         installmentAmount,
         currency: "AED",
-        paymentType: "PA",
+        paymentType: "DB",
         standingInstruction: { mode: "REPEATED", type: "UNSCHEDULED", source: "MIT" },
         merchantTransactionId,
         afsUrl: `${process.env.AFS_DOMAIN}/v1/registrations/${savedCard.afs_registration_id}/payments`

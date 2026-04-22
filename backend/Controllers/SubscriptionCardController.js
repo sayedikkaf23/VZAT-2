@@ -144,7 +144,7 @@ export const handleCardChangeWebhook = async (req, res) => {
       return res.status(404).json({ message: 'Subscription not found' });
     }
 
-    if (paymentType === 'PA' && result.code.startsWith('000.') && registrationId) {
+    if (paymentType === 'DB' && result.code.startsWith('000.') && registrationId) {
       // Store the old registration ID for reference
       const oldRegistrationId = subscription.afs_registration_id;
 

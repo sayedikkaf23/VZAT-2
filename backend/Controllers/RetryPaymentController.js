@@ -237,7 +237,7 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
     console.log('- Entity ID:', entityId);
     console.log('- Amount:', installmentAmount);
     console.log('- Currency:', 'AED');
-    console.log('- Payment Type:', 'PA (Pre-Authorization)');
+    console.log('- Payment Type:', 'DB ');
     console.log('- Standing Instruction Mode:', 'REPEATED');
     console.log('- Standing Instruction Type:', 'UNSCHEDULED');
     console.log('- Standing Instruction Source:', 'MIT');
