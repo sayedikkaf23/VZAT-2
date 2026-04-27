@@ -362,28 +362,31 @@ export const handleAFSWebhook = async (req, res) => {
 
       // Customer success email (non-blocking)
       try {
-        const currentPayment = updatedRecord.payment_schedule?.find(
-          (p) => p.installment_number === updatedRecord.payments_completed
+        // Fetch fresh record to get updated schedule
+        const freshRecordForEmail = await Vzat_Recurring_Data.findById(subscription._id).lean();
+        
+        const currentPayment = freshRecordForEmail.payment_schedule?.find(
+          (p) => p.installment_number === freshRecordForEmail.payments_completed
         );
         const q_payment_id =
           currentPayment?.q_payment_id ||
-          updatedRecord.Quote_payment_number ||
-          updatedRecord.quotepaymentId;
-
+          freshRecordForEmail.Quote_payment_number ||
+          freshRecordForEmail.quotepaymentId;
 
         await sendPaymentSuccessNotificationEmail({
-          quotepaymentId: subscription.quotepaymentId,
+          quotepaymentId: freshRecordForEmail.quotepaymentId,
           q_payment_id,
-          Customer_name: subscription.Customer_name,
-          contactName: subscription.contactName,
-          opp_email: subscription.opp_email,
-          opp_owner: subscription.opp_owner,
+          Customer_name: freshRecordForEmail.Customer_name,
+          contactName: freshRecordForEmail.contactName,
+          opp_email: freshRecordForEmail.opp_email,
+          opp_owner: freshRecordForEmail.opp_owner,
           payment_amount: parseFloat(result.amount),
           payment_date: new Date(result.timestamp || new Date()),
-          installment_number: updatedRecord.payments_completed,
-          total_installments: subscription.InstallmentLeft,
+          installment_number: freshRecordForEmail.payments_completed,
+          total_installments: freshRecordForEmail.InstallmentLeft,
           payment_method: "Card",
-          salesPersonDetails: subscription.salesPersonDetails
+          salesPersonDetails: freshRecordForEmail.salesPersonDetails,
+          installmentSchedule: freshRecordForEmail.payment_schedule
         });
       } catch (e) {
         console.error("❌ Success email error (ignored):", e);
@@ -696,25 +699,32 @@ export const processRecurringPayments = async (req, res) => {
 
           // Success email (non-blocking)
           try {
+            // Fetch fresh record to get updated schedule
+            const freshRecordForEmail = await Vzat_Recurring_Data.findById(subscription._id).lean();
+
+            const currentPayment = freshRecordForEmail.payment_schedule?.find(
+              (p) => p.installment_number === paymentToProcess
+            );
+            
             const q_payment_id =
               currentPayment?.q_payment_id ||
-              updatedRecord.Quote_payment_number ||
-              updatedRecord.quotepaymentId;
-
+              freshRecordForEmail.Quote_payment_number ||
+              freshRecordForEmail.quotepaymentId;
 
             await sendPaymentSuccessNotificationEmail({
-              quotepaymentId: subscription.quotepaymentId,
+              quotepaymentId: freshRecordForEmail.quotepaymentId,
               q_payment_id,
-              Customer_name: subscription.Customer_name,
-              contactName: subscription.contactName,
-              opp_email: subscription.opp_email,
-              opp_owner: subscription.opp_owner,
+              Customer_name: freshRecordForEmail.Customer_name,
+              contactName: freshRecordForEmail.contactName,
+              opp_email: freshRecordForEmail.opp_email,
+              opp_owner: freshRecordForEmail.opp_owner,
               payment_amount: parseFloat(paymentResult.amount),
               payment_date: new Date(paymentResult.timestamp || new Date()),
               installment_number: paymentToProcess,
-              total_installments: subscription.InstallmentLeft,
+              total_installments: freshRecordForEmail.InstallmentLeft,
               payment_method: "Card",
-              salesPersonDetails: subscription.salesPersonDetails
+              salesPersonDetails: freshRecordForEmail.salesPersonDetails,
+              installmentSchedule: freshRecordForEmail.payment_schedule
             });
           } catch (e) {
             console.error("❌ Success email error (ignored):", e);

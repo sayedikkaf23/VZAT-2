@@ -636,9 +636,15 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
         const rowBgColor = '#ffffff';
 
         // Derive a schedule date if possible: monthly from payment_date
+        // IMPORTANT: If this is a recurring payment (e.g. installment 3), 
+        // the baseDate for "Installment 1" should be in the past.
         const baseDate = payment_date ? new Date(payment_date) : new Date();
         const installmentDateObj = new Date(baseDate);
-        installmentDateObj.setMonth(installmentDateObj.getMonth() + i);
+        
+        // Calculate offset based on current installment number
+        const offset = i - (installment_number ? (installment_number - 1) : 0);
+        installmentDateObj.setMonth(installmentDateObj.getMonth() + offset);
+        
         const installmentDateStr = installmentDateObj.toLocaleDateString('en-US', {
           year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dubai'
         });
