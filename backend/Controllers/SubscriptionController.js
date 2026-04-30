@@ -383,7 +383,8 @@ export const handleAFSWebhook = async (req, res) => {
           installment_number: updatedRecord.payments_completed,
           total_installments: subscription.InstallmentLeft,
           payment_method: "Card",
-          salesPersonDetails: subscription.salesPersonDetails
+          salesPersonDetails: subscription.salesPersonDetails,
+          installmentSchedule: updatedRecord.payment_schedule
         });
       } catch (e) {
         console.error("❌ Success email error (ignored):", e);
@@ -714,7 +715,8 @@ export const processRecurringPayments = async (req, res) => {
               installment_number: paymentToProcess,
               total_installments: subscription.InstallmentLeft,
               payment_method: "Card",
-              salesPersonDetails: subscription.salesPersonDetails
+              salesPersonDetails: subscription.salesPersonDetails,
+              installmentSchedule: updatedRecord.payment_schedule
             });
           } catch (e) {
             console.error("❌ Success email error (ignored):", e);

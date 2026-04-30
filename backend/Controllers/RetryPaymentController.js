@@ -435,7 +435,8 @@ async function sendRetrySuccessEmail(subscription, payment, transactionId) {
       installment_number: payment.installment_number,
       total_installments: subscription.InstallmentLeft,
       payment_method: 'Saved Card (Retry)',
-      salesPersonDetails: subscription.salesPersonDetails
+      salesPersonDetails: subscription.salesPersonDetails,
+      installmentSchedule: subscription.payment_schedule
     };
 
     const emailResult = await sendPaymentSuccessNotificationEmail(emailData);
