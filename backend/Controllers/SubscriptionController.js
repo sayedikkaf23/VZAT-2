@@ -407,7 +407,7 @@ export const handleAFSWebhook = async (req, res) => {
       transactionId: id,
       result,
       isFirstPayment
-    });
+    }, subscription.opp_email);
 
     return res.status(200).json({
       message: "Successful payment webhook processed",
@@ -424,7 +424,7 @@ export const handleAFSWebhook = async (req, res) => {
       paymentType,
       merchantTransactionId,
       transactionId: id
-    });
+    }, subscription?.opp_email);
 
     return res.status(500).json({
       message: "Error processing webhook",
@@ -736,7 +736,11 @@ export const processRecurringPayments = async (req, res) => {
             last_processed_date: new Date()
           });
 
-          results.push({ quotepaymentId: subscription.quotepaymentId, status: "processed", result: paymentResult });
+          const successResult = { quotepaymentId: subscription.quotepaymentId, status: "processed", result: paymentResult };
+          results.push(successResult);
+          
+          // Log individual success
+          Post_Common_DB_Log_Data("/cron/recurring-payment-success", subscriptionForProcessing, successResult, subscription.opp_email);
         } else {
           throw new Error(`Payment failed: ${paymentResult?.result?.description || "Unknown error"}`);
         }
@@ -823,13 +827,23 @@ export const processRecurringPayments = async (req, res) => {
           console.error("📧 Failure email error (ignored):", e);
         }
 
-        results.push({
+        const failureResult = {
           quotepaymentId: subscription.quotepaymentId,
           status: "failed",
           error: error.message,
           retry_count: retryCount + 1,
           max_retries: maxRetries
-        });
+        };
+        results.push(failureResult);
+
+        // Log individual failure with more context
+        Post_Common_DB_Log_Data("/cron/recurring-payment-failed", { 
+          quotepaymentId: subscription.quotepaymentId,
+          customer_name: subscription.Customer_name,
+          installment_number: currentPaymentNumber,
+          amount: parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)),
+          failure_timestamp: new Date().toISOString()
+        }, failureResult, subscription.opp_email);
       }
     }
 
@@ -981,10 +995,17 @@ async function processServerToServerPayment(subscription, savedCard) {
   console.log(`📋 Registration ID: ${savedCard.afs_registration_id}`);
 
   try {
+    // Log the request to AFS
+    Post_Common_DB_Log_Data("/api/afs-recurring-payment-request", { url: afsUrl, data: afsData.toString() }, { message: "Request sent to AFS" }, subscription.opp_email);
+
     const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
 
     if (response.data?.result?.code?.startsWith("000.")) {
       console.log("✅ AFS Payment Successful!");
+      
+      // Log successful AFS response in DB
+      Post_Common_DB_Log_Data("/api/afs-recurring-payment-response-success", { transactionId: response.data.id }, response.data, subscription.opp_email);
+
       console.log(`📋 Transaction ID: ${response.data.id}`);
       console.log(`📋 Result Code: ${response.data.result.code}`);
       console.log(`📋 Result Description: ${response.data.result.description}`);
@@ -996,6 +1017,10 @@ async function processServerToServerPayment(subscription, savedCard) {
     const errorMsg = `AFS Debit Fund failed: ${response.data?.result?.description || "Unknown error"}`;
     console.error("❌ AFS Payment Failed:", errorMsg);
     console.error("📋 Response Data:", JSON.stringify(response.data, null, 2));
+    
+    // Log failed AFS response in DB
+    Post_Common_DB_Log_Data("/api/afs-recurring-payment-response-failed", { merchantTransactionId }, response.data, subscription.opp_email);
+
     console.log("💳 =============== PAYMENT PROCESSING COMPLETE ===============");
     throw new Error(errorMsg);
   } catch (axiosError) {
@@ -1006,6 +1031,9 @@ async function processServerToServerPayment(subscription, savedCard) {
     console.error(`📋 HTTP Status: ${status || "Network Error"}`);
     console.error(`📋 Error Message: ${axiosError.message}`);
     console.error(`📋 MerchantTransactionId: ${merchantTransactionId}`);
+
+    // Log AFS API exception in DB
+    Post_Common_DB_Log_Data("/api/afs-recurring-payment-exception", { merchantTransactionId, status: status || "Network Error" }, data || { error: axiosError.message }, subscription.opp_email);
 
     if (data) {
       console.error(`📋 Response Data:`, JSON.stringify(data, null, 2));

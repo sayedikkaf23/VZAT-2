@@ -2,7 +2,7 @@ import {connectDB, ensureConnection} from "../config/db.js";
 import CommonDBLog from "../model/CommonDBLogModel.js";
 
 
-const Post_Common_DB_Log_Data = async (url,reqData,resData) => {
+const Post_Common_DB_Log_Data = async (url,reqData,resData, requestedBy = null) => {
 
     await ensureConnection();
     try {
@@ -10,7 +10,8 @@ const Post_Common_DB_Log_Data = async (url,reqData,resData) => {
             S_No: 0,
             Method_Name: url,
             Request: reqData,
-            Response: resData
+            Response: resData,
+            Requested_By: requestedBy
         });
         
         const result = await dataToUpload.save();

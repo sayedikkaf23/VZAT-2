@@ -4,6 +4,7 @@ import SavedCard from '../model/SavedCardModel.js';
 import Customer from '../model/CustomerLoginModel.js';
 import { sendPaymentFailureNotificationEmail, sendPaymentSuccessNotificationEmail } from '../services/emailService.js';
 import { updateQuotePaymentStatus } from '../services/salesforceService.js';
+import Post_Common_DB_Log_Data from './PostCommonDBLogData.js';
 
 /**
  * Retry a failed payment for a customer
@@ -18,6 +19,9 @@ export const retryPayment = async (req, res) => {
     console.log('📋 Request Body:', req.body);
 
     const { quotepaymentId, customerEmail } = req.body;
+
+    // Log the incoming request
+    Post_Common_DB_Log_Data("/api/retry-payment-request", req.body, { message: "Retry request received" }, customerEmail);
 
     // Validate required fields
     if (!quotepaymentId || !customerEmail) {
@@ -154,12 +158,17 @@ export const retryPayment = async (req, res) => {
       // Check if subscription is now complete and send completion email if needed
       await checkAndHandleSubscriptionCompletion(updatedSubscription);
 
-      return res.status(200).json({
+      const responseData = {
         success: true,
         message: 'Payment retry successful!',
         transactionId: paymentResult.transactionId,
         amount: failedPayment.amount
-      });
+      };
+
+      // Log successful retry
+      Post_Common_DB_Log_Data("/api/retry-payment-success", req.body, responseData, customerEmail);
+
+      return res.status(200).json(responseData);
     } else {
       console.log('❌ Payment retry failed:', paymentResult.error);
 
@@ -181,19 +190,37 @@ export const retryPayment = async (req, res) => {
       // Send failure email to customer
       await sendRetryFailureEmail(subscription, failedPayment, paymentResult.error);
 
-      return res.status(400).json({
+      const errorResponse = {
         success: false,
         message: 'Payment retry failed. Please try again or contact support.',
         error: paymentResult.error
-      });
+      };
+
+      // Log failed retry with more context
+      Post_Common_DB_Log_Data("/api/retry-payment-failed", {
+        ...req.body,
+        installment_number: failedPayment.installment_number,
+        amount: failedPayment.amount,
+        customer_name: subscription.Customer_name,
+        failure_timestamp: new Date().toISOString()
+      }, errorResponse, customerEmail);
+
+      return res.status(400).json(errorResponse);
     }
 
   } catch (error) {
     console.error('💥 Error in retryPayment:', error);
-    return res.status(500).json({
+    
+    const errorResponse = {
       success: false,
-      message: 'Internal server error. Please try again later.'
-    });
+      message: 'Internal server error. Please try again later.',
+      error: error.message
+    };
+
+    // Log internal server error
+    Post_Common_DB_Log_Data("/api/retry-payment-internal-error", req.body, errorResponse, req.body?.customerEmail);
+
+    return res.status(500).json(errorResponse);
   }
 };
 
@@ -251,6 +278,10 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
     });
 
     console.log('🚀 INITIATING AFS DEBIT FUND OPERATION FOR RETRY:');
+    
+    // Log the request to AFS in DB
+    Post_Common_DB_Log_Data("/api/afs-retry-payment-request", { url: afsUrl, data: afsData.toString() }, { message: "Request sent to AFS for retry" }, subscription.opp_email);
+
     const response = await fetch(afsUrl, {
       method: 'POST',
       headers: afsHeaders,
@@ -261,12 +292,18 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
     console.log('💳 AFS Retry Response:', result);
 
     if (result.result && result.result.code && result.result.code.startsWith('000.')) {
+      // Log successful AFS response
+      Post_Common_DB_Log_Data("/api/afs-retry-payment-response-success", { transactionId: result.id }, result, subscription.opp_email);
+      
       return {
         success: true,
         transactionId: result.id,
         registrationId: result.registrationId
       };
     } else {
+      // Log failed AFS response
+      Post_Common_DB_Log_Data("/api/afs-retry-payment-response-failed", { merchantTransactionId: afsData.get('merchantTransactionId') }, result, subscription.opp_email);
+      
       return {
         success: false,
         error: result.result ? result.result.description : 'Payment failed'
@@ -274,6 +311,10 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
     }
   } catch (error) {
     console.error('💥 AFS Payment Retry Error:', error);
+    
+    // Log exception in DB
+    Post_Common_DB_Log_Data("/api/afs-retry-payment-exception", {}, { error: error.message }, subscription?.opp_email);
+    
     return {
       success: false,
       error: error.message
