@@ -34,7 +34,11 @@ const EMAIL_CONFIG = {
     business_team: process.env.BUSINESS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
     operations_team: process.env.OPERATIONS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
     devtech_team: process.env.DEVTECH_TEAM_EMAIL || 'dev.tech@vz.ae',
-    ar_team: process.env.AR_TEAM_EMAIL || 'ar@virtuzone.com'
+    ar_team: process.env.AR_TEAM_EMAIL || 'ar@virtuzone.com',
+    ar_team_secondary: process.env.AR_TEAM_SECONDARY_EMAIL || 'arteam@vz.ae',
+    maria_email: process.env.MARIA_EMAIL || 'maryia.vinahradava@virtuzone.com',
+    tech_support: process.env.TECH_SUPPORT_EMAIL || 'techsupport@workerappz.com',
+    sayed_email: process.env.SAYED_EMAIL || 'sayed@yeepeey'
   }
 };
 
@@ -444,8 +448,8 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
     const ccRecipientsSet = new Set(
       [
         oppOwnerEmail,
-        'maryia.vinahradava@virtuzone.com',
-        'arteam@vz.ae'
+        EMAIL_CONFIG.recipients.maria_email,
+        EMAIL_CONFIG.recipients.ar_team_secondary
       ].filter(Boolean)
     );
     const ccRecipients = Array.from(ccRecipientsSet);
@@ -530,7 +534,7 @@ export const sendPaymentFailureNotificationEmail = async (data) => {
         address: mailgunConfig.fromEmail
       },
       to: opp_email,
-      bcc: "techsupport@workerappz.com",
+      bcc: EMAIL_CONFIG.recipients.tech_support,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
       ...(devTechBccEmail && { bcc: devTechBccEmail }),
       subject,
@@ -580,8 +584,8 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
     const ccRecipientsSet = new Set(
       [
         oppOwnerEmail,
-        'maryia.vinahradava@virtuzone.com',
-        'arteam@vz.ae'
+        EMAIL_CONFIG.recipients.maria_email,
+        EMAIL_CONFIG.recipients.ar_team_secondary
       ].filter(Boolean)
     );
     const ccRecipients = Array.from(ccRecipientsSet);
@@ -763,8 +767,8 @@ export const sendPaymentSuccessNotificationEmail = async (data) => {
       to: opp_email,
       ...(ccRecipients.length > 0 && { cc: ccRecipients }),
       bcc: [
-        "techsupport@workerappz.com",
-        "sayed@yeepeey",
+        EMAIL_CONFIG.recipients.tech_support,
+        EMAIL_CONFIG.recipients.sayed_email,
         ...(devTechBccEmail ? [devTechBccEmail] : [])
       ],
       subject,
