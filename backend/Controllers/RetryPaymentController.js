@@ -238,12 +238,16 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
     const entityId = process.env.AFS_ENTITY_ID;
     const accessToken = process.env.AFS_ACCESS_TOKEN;
 
-    // Calculate installment amount
-    const installmentAmount = parseFloat(payment.amount.toFixed(2));
+    // AFS requires amount to be sent with exactly 2 decimals (string), e.g. "1198.80"
+    const installmentAmountNumber = Number(payment.amount);
+    if (!Number.isFinite(installmentAmountNumber)) {
+      throw new Error(`Invalid payment amount: ${payment.amount}`);
+    }
+    const installmentAmount = installmentAmountNumber.toFixed(2);
 
     const afsData = new URLSearchParams();
     afsData.append('entityId', entityId);
-    afsData.append('amount', installmentAmount.toString());
+    afsData.append('amount', installmentAmount);
     afsData.append('currency', 'AED');
     afsData.append('paymentType', 'DB'); // Pre-Authorization for recurring payments
     afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_retry_${Date.now()}`);

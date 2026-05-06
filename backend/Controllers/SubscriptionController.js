@@ -936,8 +936,14 @@ async function processServerToServerPayment(subscription, savedCard) {
   }
   if (!installmentLeft) throw new Error("Cannot determine total installments for subscription");
 
-  // Calculate installment amount
-  const installmentAmount = parseFloat((subscription.Total_After_VAT_Currency / installmentLeft).toFixed(2));
+  // AFS requires amount to be sent with exactly 2 decimals (string), e.g. "1198.80"
+  const installmentAmountNumber = Number(subscription.Total_After_VAT_Currency) / Number(installmentLeft);
+  if (!Number.isFinite(installmentAmountNumber)) {
+    throw new Error(
+      `Invalid installment amount (total=${subscription.Total_After_VAT_Currency}, installments=${installmentLeft})`
+    );
+  }
+  const installmentAmount = installmentAmountNumber.toFixed(2);
   console.log(`💰 Installment Amount: ${installmentAmount} AED`);
 
   // ✅ PRODUCTION FIX: unique merchantTransactionId
@@ -972,7 +978,7 @@ async function processServerToServerPayment(subscription, savedCard) {
 
   const afsData = new URLSearchParams();
   afsData.append("entityId", entityId);
-  afsData.append("amount", installmentAmount.toString());
+  afsData.append("amount", installmentAmount);
   afsData.append("currency", "AED");
   afsData.append("paymentType", "PA");
 
