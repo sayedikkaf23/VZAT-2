@@ -5,6 +5,7 @@ import CustomerLogin from '../model/CustomerLoginModel.js';
 // import config from '../config.env.js';
 import { connectDB } from '../config/db.js';
 import Post_Common_DB_Log_Data from './PostCommonDBLogData.js';
+import PostAddCardLog from './PostAddCardLog.js';
 import qs from 'qs';   // CommonJS
 // AFS Configuration - Registration specific credentials
 const AFS_CONFIG = {
@@ -73,18 +74,44 @@ export const prepareCardRegistrationWithPayment = async (req, res) => {
     console.log('📧 Customer:', customerEmail);
     console.log('💰 Amount:', amount, currency);
 
-    const response = await axios.post(
-      `${AFS_CONFIG.baseUrl}/v1/checkouts`,
-      qs.stringify(checkoutData),
-      {
-        headers: {
-          'Authorization': AFS_CONFIG.authorization,
-         "Content-Type": "application/x-www-form-urlencoded",
+    const afsEndpoint = `${AFS_CONFIG.baseUrl}/v1/checkouts`;
+    const afsRequestPayload = {
+      headers: { Authorization: AFS_CONFIG.authorization, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: checkoutData
+    };
+
+    let response;
+    try {
+      response = await axios.post(
+        afsEndpoint,
+        qs.stringify(checkoutData),
+        {
+          headers: {
+            'Authorization': AFS_CONFIG.authorization,
+            "Content-Type": "application/x-www-form-urlencoded",
+          }
         }
-      }
-    );
+      );
+    } catch (afsError) {
+      await PostAddCardLog(
+        'prepare-checkout-with-payment',
+        customerEmail,
+        { endpoint: afsEndpoint, method: 'POST', request: afsRequestPayload, response: afsError.response?.data, statusCode: afsError.response?.status, resultCode: afsError.response?.data?.result?.code },
+        { request: req.body },
+        'ERROR',
+        { message: afsError.message, status: afsError.response?.status, data: afsError.response?.data }
+      );
+      throw afsError;
+    }
 
     const checkoutResult = response.data;
+    await PostAddCardLog(
+      'prepare-checkout-with-payment',
+      customerEmail,
+      { endpoint: afsEndpoint, method: 'POST', request: afsRequestPayload, response: checkoutResult, statusCode: response.status, resultCode: checkoutResult?.result?.code },
+      { request: req.body },
+      'SUCCESS'
+    );
     console.log('✅ AFS checkout created successfully');
     console.log('🆔 Checkout ID:', checkoutResult.id);
     console.log('📋 Full Response:', JSON.stringify(checkoutResult, null, 2));
@@ -203,18 +230,44 @@ export const prepareCardRegistration = async (req, res) => {
     console.log('🔑 Entity ID:', AFS_CONFIG.entityId);
     console.log('📧 Customer:', customerEmail);
 
-    const response = await axios.post(
-      `${AFS_CONFIG.baseUrl}/v1/checkouts`,
-      urlEncodedCheckoutData,
-      {
-        headers: {
-          'Authorization': AFS_CONFIG.authorization,
-          'Content-Type': 'application/x-www-form-urlencoded'
+    const afsEndpoint2 = `${AFS_CONFIG.baseUrl}/v1/checkouts`;
+    const afsRequestPayload2 = {
+      headers: { Authorization: AFS_CONFIG.authorization, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: checkoutData
+    };
+
+    let response;
+    try {
+      response = await axios.post(
+        afsEndpoint2,
+        urlEncodedCheckoutData,
+        {
+          headers: {
+            'Authorization': AFS_CONFIG.authorization,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
         }
-      }
-    );
+      );
+    } catch (afsError) {
+      await PostAddCardLog(
+        'prepare-checkout-registration-only',
+        customerEmail,
+        { endpoint: afsEndpoint2, method: 'POST', request: afsRequestPayload2, response: afsError.response?.data, statusCode: afsError.response?.status, resultCode: afsError.response?.data?.result?.code },
+        { request: req.body },
+        'ERROR',
+        { message: afsError.message, status: afsError.response?.status, data: afsError.response?.data }
+      );
+      throw afsError;
+    }
 
     const checkoutResult = response.data;
+    await PostAddCardLog(
+      'prepare-checkout-registration-only',
+      customerEmail,
+      { endpoint: afsEndpoint2, method: 'POST', request: afsRequestPayload2, response: checkoutResult, statusCode: response.status, resultCode: checkoutResult?.result?.code },
+      { request: req.body },
+      'SUCCESS'
+    );
     console.log('✅ AFS checkout created successfully');
     console.log('🆔 Checkout ID:', checkoutResult.id);
     console.log('📋 Full Response:', JSON.stringify(checkoutResult, null, 2));
@@ -320,15 +373,37 @@ export const handleCardPaymentCallback = async (req, res) => {
 
     // Check payment status with AFS
     console.log('🔍 Checking payment status with AFS...');
-    const statusResponse = await axios.get(
-      `${AFS_CONFIG.baseUrl}${resourcePath}`,
-      {
-        headers: {
-          'Authorization': AFS_CONFIG.authorization
-        }
-      }
-    );
+    const afsStatusEndpoint = `${AFS_CONFIG.baseUrl}${resourcePath}`;
+    const afsStatusRequest = {
+      headers: { Authorization: AFS_CONFIG.authorization },
+      params: {}
+    };
 
+    let statusResponse;
+    try {
+      statusResponse = await axios.get(
+        afsStatusEndpoint,
+        { headers: { 'Authorization': AFS_CONFIG.authorization } }
+      );
+    } catch (afsError) {
+      await PostAddCardLog(
+        'payment-callback-status-check',
+        customerEmail,
+        { endpoint: afsStatusEndpoint, method: 'GET', request: afsStatusRequest, response: afsError.response?.data, statusCode: afsError.response?.status, resultCode: afsError.response?.data?.result?.code },
+        { request: { body: req.body, query: req.query } },
+        'ERROR',
+        { message: afsError.message, status: afsError.response?.status, data: afsError.response?.data }
+      );
+      throw afsError;
+    }
+
+    await PostAddCardLog(
+      'payment-callback-status-check',
+      customerEmail,
+      { endpoint: afsStatusEndpoint, method: 'GET', request: afsStatusRequest, response: statusResponse.data, statusCode: statusResponse.status, resultCode: statusResponse.data?.result?.code },
+      { request: { body: req.body, query: req.query } },
+      statusResponse.data?.result?.code?.startsWith('000.') ? 'SUCCESS' : 'FAILED'
+    );
     console.log('✅ AFS payment status response:', statusResponse.data);
 
     // Check if payment was successful
@@ -530,15 +605,39 @@ export const handleCardRegistrationCallback = async (req, res) => {
         console.log(`📋 AFS Note: Callback indicates form submission, not completion. Waiting for processing.`);
         await new Promise(resolve => setTimeout(resolve, delayTime));
 
-        const registrationResponse = await axios.get(requestUrl, {
-          params: requestParams,
-          headers: {
-            'Authorization': AFS_CONFIG.authorization
-          }
-        });
+        const afsRegRequest = {
+          headers: { Authorization: AFS_CONFIG.authorization },
+          params: requestParams
+        };
+
+        let registrationResponse;
+        try {
+          registrationResponse = await axios.get(requestUrl, {
+            params: requestParams,
+            headers: { 'Authorization': AFS_CONFIG.authorization }
+          });
+        } catch (afsRegError) {
+          await PostAddCardLog(
+            'registration-status-check',
+            checkoutId,
+            { endpoint: requestUrl, method: 'GET', request: afsRegRequest, response: afsRegError.response?.data, statusCode: afsRegError.response?.status, resultCode: afsRegError.response?.data?.result?.code },
+            { request: req.body },
+            'ERROR',
+            { message: afsRegError.message, attempt: retryCount + 1, data: afsRegError.response?.data }
+          );
+          throw afsRegError;
+        }
 
         registrationData = registrationResponse.data;
-        
+
+        await PostAddCardLog(
+          'registration-status-check',
+          checkoutId,
+          { endpoint: requestUrl, method: 'GET', request: afsRegRequest, response: registrationData, statusCode: registrationResponse.status, resultCode: registrationData?.result?.code },
+          { request: req.body },
+          registrationData?.result?.code?.match(/^(000\.000\.|000\.100\.1|000\.200)/) ? 'SUCCESS' : 'PENDING'
+        );
+
         console.log('📋 RAW AFS Response received:');
         console.log('📊 Status:', registrationResponse.status);
         console.log('💾 Full Response Data:', JSON.stringify(registrationData, null, 2));
@@ -1081,16 +1180,43 @@ export const getPaymentStatus = async (req, res) => {
     console.log("🆔 Checkout ID extracted:", checkoutId);
 
     // 1️⃣ Get payment status
-    const { data: payment } = await axios.get(url, {
-      params: { entityId: AFS_CONFIG.entityId },
+    const afsPaymentStatusRequest = {
       headers: { Authorization: AFS_CONFIG.authorization },
-      timeout: 10000,
-    });
+      params: { entityId: AFS_CONFIG.entityId }
+    };
+
+    let paymentStatusRes;
+    try {
+      paymentStatusRes = await axios.get(url, {
+        params: { entityId: AFS_CONFIG.entityId },
+        headers: { Authorization: AFS_CONFIG.authorization },
+        timeout: 10000,
+      });
+    } catch (afsErr) {
+      await PostAddCardLog(
+        'payment-status-check',
+        customerEmail || null,
+        { endpoint: url, method: 'GET', request: afsPaymentStatusRequest, response: afsErr.response?.data, statusCode: afsErr.response?.status, resultCode: afsErr.response?.data?.result?.code },
+        { request: req.query },
+        'ERROR',
+        { message: afsErr.message, data: afsErr.response?.data }
+      );
+      throw afsErr;
+    }
+
+    const payment = paymentStatusRes.data;
+    await PostAddCardLog(
+      'payment-status-check',
+      customerEmail || null,
+      { endpoint: url, method: 'GET', request: afsPaymentStatusRequest, response: payment, statusCode: paymentStatusRes.status, resultCode: payment?.result?.code },
+      { request: req.query },
+      payment?.result?.code?.startsWith('000.') ? 'SUCCESS' : 'FAILED'
+    );
 
     // 2️⃣ If debit succeeded, issue refund and save card details
     let refund = null;
     let savedCard = null;
-    
+
     // Check if payment succeeded - any code starting with "000." is success
     if (payment?.result?.code?.startsWith("000.") && payment?.id) {
       console.log("✅ Debit successful → Initiating refund...");
@@ -1103,14 +1229,40 @@ export const getPaymentStatus = async (req, res) => {
         currency: payment.currency,
         paymentType: "RF", // refund
       });
+      const refundRequestLog = {
+        headers: { Authorization: AFS_CONFIG.authorization, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: { entityId: AFS_CONFIG.entityId, amount: payment.amount, currency: payment.currency, paymentType: 'RF' }
+      };
 
-      const { data: refundData } = await axios.post(refundUrl, refundPayload, {
-        headers: {
-          Authorization: AFS_CONFIG.authorization,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        timeout: 10000,
-      });
+      let refundRes;
+      try {
+        refundRes = await axios.post(refundUrl, refundPayload, {
+          headers: {
+            Authorization: AFS_CONFIG.authorization,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          timeout: 10000,
+        });
+      } catch (refundErr) {
+        await PostAddCardLog(
+          'refund',
+          customerEmail || null,
+          { endpoint: refundUrl, method: 'POST', request: refundRequestLog, response: refundErr.response?.data, statusCode: refundErr.response?.status, resultCode: refundErr.response?.data?.result?.code },
+          { request: req.query },
+          'ERROR',
+          { message: refundErr.message, data: refundErr.response?.data }
+        );
+        throw refundErr;
+      }
+
+      const refundData = refundRes.data;
+      await PostAddCardLog(
+        'refund',
+        customerEmail || null,
+        { endpoint: refundUrl, method: 'POST', request: refundRequestLog, response: refundData, statusCode: refundRes.status, resultCode: refundData?.result?.code },
+        { request: req.query },
+        refundData?.result?.code?.startsWith('000.') ? 'SUCCESS' : 'FAILED'
+      );
 
       refund = refundData;
       console.log("💸 Refund response:", refund);
