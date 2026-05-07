@@ -1386,6 +1386,18 @@ export const getPaymentStatus = async (req, res) => {
 
             console.log("✅ Card saved successfully with ID:", savedCard._id);
             console.log("✅ Card set as default:", savedCard.isDefault);
+
+            // Migrate all active subscriptions to use the new card's registration token
+            try {
+              const newRegistrationId = cardData.afs_registration_id;
+              const newCheckoutId = cardData.afs_checkout_id;
+              if (newRegistrationId) {
+                const migrationResult = await migrateSubscriptionTokens(customer.email, newRegistrationId, newCheckoutId);
+                console.log("✅ Subscription token migration result:", migrationResult);
+              }
+            } catch (migrationError) {
+              console.error("⚠️ Subscription migration failed (card was saved):", migrationError.message);
+            }
           }
         } catch (cardError) {
           console.error("❌ Error saving card details:", cardError);

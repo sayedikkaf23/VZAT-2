@@ -65,15 +65,30 @@ export const retryPayment = async (req, res) => {
       });
     }
 
-    // Find the customer's saved card
-    const savedCard = await SavedCard.findOne({
-      quotepaymentId: quotepaymentId,
-      customerEmail: customerEmail,
-      isActive: true
-    });
+    // Find the customer's saved card — search by customerId (same logic as cron job)
+    // so any active card works regardless of which quotepaymentId it was originally saved under
+    const customer = await Customer.findOne({ email: customerEmail });
+
+    let savedCard = null;
+
+    if (customer) {
+      // 1. Prefer the customer's default active card
+      savedCard = await SavedCard.findOne({ customerId: customer._id, isActive: true, isDefault: true });
+
+      // 2. Fall back to any active card, most recently used first
+      if (!savedCard) {
+        savedCard = await SavedCard.findOne({ customerId: customer._id, isActive: true })
+          .sort({ lastUsedDate: -1, cardAddedDate: -1 });
+      }
+    }
+
+    // 3. Legacy fallback — original quotepaymentId lookup (in case customer record is missing)
+    if (!savedCard) {
+      savedCard = await SavedCard.findOne({ quotepaymentId, customerEmail, isActive: true });
+    }
 
     if (!savedCard) {
-      console.log('❌ No active saved card found');
+      console.log('❌ No active saved card found for customer:', customerEmail);
       return res.status(404).json({
         success: false,
         message: 'No active payment method found. Please add a new card.'
