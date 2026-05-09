@@ -270,7 +270,7 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
     // Add standing instruction parameters for recurring payments
     afsData.append('standingInstruction.mode', 'REPEATED');
     afsData.append('standingInstruction.type', 'UNSCHEDULED');
-    afsData.append('standingInstruction.source', 'CIT'); // Merchant Initiated Transaction
+    afsData.append('standingInstruction.source', 'MIT');
 
     const afsHeaders = {
       Authorization: `Bearer ${accessToken}`,
