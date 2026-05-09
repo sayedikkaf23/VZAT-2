@@ -765,12 +765,24 @@ export class ActiveServices implements OnInit {
                 : 'Payment retry successful!');
             this.toastr.success(successMessage);
 
+            // Immediately update the local selectedService so the modal re-renders without waiting
+            if (this.selectedService && failedPayment) {
+              const scheduleItem = this.selectedService.payment_schedule?.find(
+                (p: any) => p._id === failedPayment._id ||
+                  p.installment_number === failedPayment.installment_number
+              );
+              if (scheduleItem) {
+                scheduleItem.status = 'completed';
+                this.cdr.detectChanges();
+              }
+            }
+
             // Reload active services to reflect the updated status
             this.loadActiveServices();
 
-            // Close the modal if it's open
+            // Close the service modal
             if (this.selectedService) {
-              this.closeModal();
+              this.closeServiceModal();
             }
           } else {
             console.error('❌ Payment retry failed:', response);
