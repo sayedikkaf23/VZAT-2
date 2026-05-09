@@ -9,7 +9,8 @@ import {
   testSubscriptionCompletionEmail,
   testPaymentFailureEmail,
   testServerToServerPayment,
-  checkSubscriptionCompletion
+  checkSubscriptionCompletion,
+  refundPayment
 } from "../Controllers/SubscriptionController.js";
 import { testEmailConfiguration } from "../services/emailService.js";
 import { testSalesforceConnection, updateQuotePaymentStatus, clearTokenCache, getPaymentStatusAndUpdateSchedule } from "../services/salesforceService.js";
@@ -40,6 +41,9 @@ router.post('/check-completion/:quotepaymentId', checkSubscriptionCompletion);
 
 // Test server-to-server payment logic
 router.post('/test/server-to-server/:quotepaymentId', testServerToServerPayment);
+
+// Refund a payment
+router.post('/refund', refundPayment);
 
 // EMAIL TESTING ENDPOINTS
 // Test basic email configuration

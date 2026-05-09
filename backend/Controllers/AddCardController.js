@@ -1227,11 +1227,11 @@ export const getPaymentStatus = async (req, res) => {
         entityId: AFS_CONFIG.entityId,
         amount: payment.amount,
         currency: payment.currency,
-        paymentType: "RF", // refund
+        paymentType: "RV",
       });
       const refundRequestLog = {
         headers: { Authorization: AFS_CONFIG.authorization, 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: { entityId: AFS_CONFIG.entityId, amount: payment.amount, currency: payment.currency, paymentType: 'RF' }
+        body: { entityId: AFS_CONFIG.entityId, amount: payment.amount, currency: payment.currency, paymentType: 'RV' }
       };
 
       let refundRes;

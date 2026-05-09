@@ -264,7 +264,7 @@ async function attemptPaymentRetry(subscription, savedCard, payment) {
     afsData.append('entityId', entityId);
     afsData.append('amount', installmentAmount);
     afsData.append('currency', 'AED');
-    afsData.append('paymentType', 'DB'); // Pre-Authorization for recurring payments
+    afsData.append('paymentType', 'DB'); 
     afsData.append('merchantTransactionId', `${subscription.quotepaymentId}_retry_${Date.now()}`);
 
     // Add standing instruction parameters for recurring payments
@@ -394,26 +394,39 @@ async function updateSubscriptionAfterRetry(subscription, payment, transactionId
     });
 
     // Update subscription
-    const nextDuePayment = subscription.payment_schedule.find(p =>
-      p.installment_number === payment.installment_number + 1
+    // Check if this retry is filling a gap (later installments already completed)
+    const isGapFill = subscription.payment_schedule.some(p =>
+      p.installment_number > payment.installment_number &&
+      (p.status === 'completed' || p.status === 'paid')
     );
 
     let nextChargeDate = null;
-    if (nextDuePayment) {
-      nextChargeDate = new Date(nextDuePayment.due_date);
+    let paymentsCompletedUpdate = {};
+
+    if (isGapFill) {
+      // Gap fill: don't touch payments_completed or next_charge_date — the subscription
+      // is already ahead; the existing next_charge_date and counter are correct.
+      console.log(`🔁 Gap fill detected for installment #${payment.installment_number} — keeping payments_completed and next_charge_date unchanged`);
+      paymentsCompletedUpdate = {};
+      nextChargeDate = undefined; // leave unchanged
     } else {
-      // If this was the last payment, set next charge date to null
-      nextChargeDate = null;
+      // Sequential retry: advance the counter and set next charge date normally
+      const nextDuePayment = subscription.payment_schedule.find(p =>
+        p.installment_number === payment.installment_number + 1
+      );
+      nextChargeDate = nextDuePayment ? new Date(nextDuePayment.due_date) : null;
+      paymentsCompletedUpdate = { $inc: { payments_completed: 1 } };
     }
+
+    const updateFields = {
+      last_payment_date: new Date(),
+      payment_retry_count: 0
+    };
+    if (nextChargeDate !== undefined) updateFields.next_charge_date = nextChargeDate;
 
     await Vzat_Recurring_Data.findByIdAndUpdate(
       subscription._id,
-      {
-        $inc: { payments_completed: 1 },
-        last_payment_date: new Date(),
-        next_charge_date: nextChargeDate,
-        payment_retry_count: 0 // Reset retry count on successful payment
-      }
+      { ...paymentsCompletedUpdate, $set: updateFields }
     );
 
     console.log('✅ Subscription updated successfully');

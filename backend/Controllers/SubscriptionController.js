@@ -522,62 +522,47 @@ export const processRecurringPayments = async (req, res) => {
       ]
     });
 
-    // Filter in JavaScript to check if the next installment hasn't been completed
-    // This allows same-day processing if there are multiple installments due
+    const MAX_RETRIES = 3;
+
     console.log(`🔍 Found ${allDueToday.length} subscriptions with next_charge_date today`);
 
     const dueSubscriptions = allDueToday.filter(subscription => {
       const quotepaymentId = subscription.quotepaymentId;
-      const paymentsCompleted = subscription.payments_completed || 0;
-      const nextInstallmentNumber = paymentsCompleted + 1;
-
       console.log(`\n📋 Checking subscription: ${quotepaymentId}`);
-      console.log(`   - Payments completed: ${paymentsCompleted}`);
-      console.log(`   - Next installment: #${nextInstallmentNumber}`);
-      console.log(`   - Last processed: ${subscription.last_processed_date ? new Date(subscription.last_processed_date).toISOString() : 'Never'}`);
 
-      // If never processed, allow it
-      if (!subscription.last_processed_date) {
-        console.log(`   ✅ Allowing: Never processed before`);
-        return true;
-      }
-
-      // If processed before today, allow it
-      const lastProcessed = new Date(subscription.last_processed_date);
-      lastProcessed.setHours(0, 0, 0, 0);
-      if (lastProcessed < today) {
-        console.log(`   ✅ Allowing: Last processed before today (${lastProcessed.toISOString().slice(0, 10)})`);
-        return true;
-      }
-
-      // If processed today, check if next installment is due today and not completed
-      const nextPayment = subscription.payment_schedule?.find(
-        p => p.installment_number === nextInstallmentNumber
-      );
-
-      if (nextPayment) {
-        // Check if this installment is due today and not completed
-        const dueDate = new Date(nextPayment.due_date);
-        dueDate.setHours(0, 0, 0, 0);
-        const isDueToday = dueDate.getTime() === today.getTime();
-        const isNotCompleted = nextPayment.status !== 'completed' && nextPayment.status !== 'paid';
-
-        console.log(`   - Next payment due_date: ${nextPayment.due_date}`);
-        console.log(`   - Next payment status: ${nextPayment.status}`);
-        console.log(`   - Is due today: ${isDueToday}`);
-        console.log(`   - Is not completed: ${isNotCompleted}`);
-
-        if (isDueToday && isNotCompleted) {
-          console.log(`   ✅ Allowing: Installment #${nextInstallmentNumber} is due today and not completed`);
-          return true;
-        } else {
-          console.log(`   ⏭️ Skipping: Installment #${nextInstallmentNumber} ${!isDueToday ? 'not due today' : 'already completed'}`);
+      // Already processed today — skip to prevent double-charging
+      if (subscription.last_processed_date) {
+        const lastProcessed = new Date(subscription.last_processed_date);
+        lastProcessed.setHours(0, 0, 0, 0);
+        if (lastProcessed.getTime() === today.getTime()) {
+          console.log(`   ⏭️ Skipping: Already processed today`);
+          return false;
         }
-      } else {
-        console.log(`   ⏭️ Skipping: No payment schedule entry found for installment #${nextInstallmentNumber}`);
       }
 
-      // Default: don't process if already processed today and no valid reason
+      // Allow if there is a failed payment that still has retries remaining
+      const retryablePayment = subscription.payment_schedule?.find(
+        p => p.status === 'failed' && (p.retry_count || 0) < MAX_RETRIES
+      );
+      if (retryablePayment) {
+        console.log(`   ✅ Allowing: Payment #${retryablePayment.installment_number} needs retry (attempt ${(retryablePayment.retry_count || 0) + 1}/${MAX_RETRIES})`);
+        return true;
+      }
+
+      // Allow if the next scheduled payment is due today or overdue
+      const nextScheduledPayment = subscription.payment_schedule?.find(
+        p => p.status === 'due' || p.status === 'pending'
+      );
+      if (nextScheduledPayment) {
+        const dueDate = new Date(nextScheduledPayment.due_date);
+        dueDate.setHours(0, 0, 0, 0);
+        if (dueDate <= today) {
+          console.log(`   ✅ Allowing: Payment #${nextScheduledPayment.installment_number} is due (${nextScheduledPayment.due_date})`);
+          return true;
+        }
+      }
+
+      console.log(`   ⏭️ Skipping: Nothing to process`);
       return false;
     });
 
@@ -587,17 +572,32 @@ export const processRecurringPayments = async (req, res) => {
 
     for (const subscription of dueSubscriptions) {
       try {
-        let paymentToProcess = subscription.payments_completed + 1;
-        let isProcessingNextPayment = false;
+        // Determine which payment to process using per-payment retry tracking
+        const failedPayment = subscription.payment_schedule.find(p => p.status === 'failed');
+        const nextScheduledPayment = subscription.payment_schedule.find(
+          p => p.status === 'due' || p.status === 'pending'
+        );
 
-        if (subscription.payment_retry_count >= 3) {
-          const nextDuePayment = subscription.payment_schedule.find(
-            (p) => p.status === "due" || p.status === "pending"
-          );
-          if (nextDuePayment) {
-            paymentToProcess = nextDuePayment.installment_number;
-            isProcessingNextPayment = true;
+        let paymentToProcess = null;
+
+        if (failedPayment && (failedPayment.retry_count || 0) < MAX_RETRIES) {
+          // Retry the failed payment — it still has attempts remaining
+          paymentToProcess = failedPayment.installment_number;
+          console.log(`🔄 Retrying payment #${paymentToProcess} (attempt ${(failedPayment.retry_count || 0) + 1}/${MAX_RETRIES})`);
+        } else if (nextScheduledPayment) {
+          // Process the next scheduled payment if its due date has arrived
+          const dueDate = new Date(nextScheduledPayment.due_date);
+          dueDate.setHours(0, 0, 0, 0);
+          if (dueDate <= today) {
+            paymentToProcess = nextScheduledPayment.installment_number;
+            console.log(`✅ Processing scheduled payment #${paymentToProcess} (due: ${nextScheduledPayment.due_date})`);
+          } else {
+            console.log(`⏭️ Skipping: Next payment #${nextScheduledPayment.installment_number} not yet due (${nextScheduledPayment.due_date})`);
+            continue;
           }
+        } else {
+          console.log(`⏭️ Skipping: No payments to process for ${subscription.quotepaymentId}`);
+          continue;
         }
 
         const subscriptionForProcessing = {
@@ -619,7 +619,7 @@ export const processRecurringPayments = async (req, res) => {
             subscription._id,
             {
               $set: {
-                payments_completed: paymentToProcess,
+                payments_completed: Math.max(subscription.payments_completed || 0, paymentToProcess),
                 last_payment_date: new Date(paymentResult.timestamp || new Date()),
                 payment_retry_count: 0
               }
@@ -745,104 +745,126 @@ export const processRecurringPayments = async (req, res) => {
           throw new Error(`Payment failed: ${paymentResult?.result?.description || "Unknown error"}`);
         }
       } catch (error) {
-        // FAILURE HANDLING (kept as you had)
+        // FAILURE HANDLING — per-payment retry tracking
         console.error("❌ =============== PAYMENT FAILED ===============");
         console.error(`📋 QuotePaymentId: ${subscription.quotepaymentId}`);
+        console.error(`📋 Installment: #${paymentToProcess}`);
         console.error(`📋 Error: ${error.message}`);
 
-        const retryCount = subscription.payment_retry_count || 0;
-        const maxRetries = 3;
+        // Get the current retry count for this specific payment
+        const failedPaymentInSchedule = subscription.payment_schedule.find(
+          p => p.installment_number === paymentToProcess
+        );
+        const newRetryCount = (failedPaymentInSchedule?.retry_count || 0) + 1;
 
-        console.log(`🔄 Current Retry Count: ${retryCount}/${maxRetries}`);
+        console.log(`🔄 Payment #${paymentToProcess} retry count: ${newRetryCount}/${MAX_RETRIES}`);
 
-        // mark processed + retry scheduling
-        let nextChargeDate = new Date();
-        nextChargeDate.setDate(nextChargeDate.getDate() + 1);
-        nextChargeDate.setHours(0, 0, 0, 0);
-
-        console.log(`🔄 Scheduling retry for: ${nextChargeDate.toISOString()}`);
-
-        await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-          last_processed_date: new Date(),
-          payment_retry_count: retryCount + 1,
-          next_charge_date: nextChargeDate
-        });
-
-        // mark schedule failed
-        const currentPaymentNumber = (subscription.payments_completed || 0) + 1;
+        // Update this payment's retry_count and status in the schedule
         await Vzat_Recurring_Data.findOneAndUpdate(
-          { _id: subscription._id, "payment_schedule.installment_number": currentPaymentNumber },
-          { $set: { "payment_schedule.$.status": "failed", "payment_schedule.$.failure_date": new Date() } }
+          { _id: subscription._id, 'payment_schedule.installment_number': paymentToProcess },
+          { $set: {
+            'payment_schedule.$.status': 'failed',
+            'payment_schedule.$.failure_date': new Date(),
+            'payment_schedule.$.retry_count': newRetryCount
+          }}
         );
 
-        // send failure email once/day
-        try {
-          const lastFailureEmailDate = subscription.last_failure_email_date;
-          const todayString = new Date().toDateString();
-          const shouldSendEmail =
-            !lastFailureEmailDate || new Date(lastFailureEmailDate).toDateString() !== todayString;
+        if (newRetryCount >= MAX_RETRIES) {
+          // Max retries exhausted — advance next_charge_date to the next payment's due date
+          const nextPaymentAfterFailed = subscription.payment_schedule.find(
+            p => p.installment_number > paymentToProcess && (p.status === 'due' || p.status === 'pending')
+          );
+          let nextChargeDate = nextPaymentAfterFailed ? new Date(nextPaymentAfterFailed.due_date) : null;
+          if (nextChargeDate) nextChargeDate.setHours(0, 0, 0, 0);
 
-          if (shouldSendEmail) {
-            const installmentAmount = parseFloat(
-              (subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)
-            );
+          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+            last_processed_date: new Date(),
+            next_charge_date: nextChargeDate
+          });
 
-            let cleanErrorMessage = error.message;
-            if (error.message.includes('"description":"')) {
-              const match = error.message.match(/"description":"([^"]+)"/);
-              if (match && match[1]) cleanErrorMessage = match[1];
+          console.log(`🛑 Payment #${paymentToProcess} reached max retries (${MAX_RETRIES}). Automatic retries stopped. Next charge date: ${nextChargeDate?.toISOString().slice(0, 10) || 'none (manual action required)'}`);
+          // No failure email sent after max retries — stops email spam, team retries manually
+        } else {
+          // Retries remaining — schedule retry for tomorrow
+          let nextChargeDate = new Date();
+          nextChargeDate.setDate(nextChargeDate.getDate() + 1);
+          nextChargeDate.setHours(0, 0, 0, 0);
+
+          await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+            last_processed_date: new Date(),
+            next_charge_date: nextChargeDate
+          });
+
+          console.log(`🔄 Retry ${newRetryCount}/${MAX_RETRIES} scheduled for tomorrow: ${nextChargeDate.toISOString().slice(0, 10)}`);
+
+          // Send failure email once per day while retries remain
+          try {
+            const lastFailureEmailDate = subscription.last_failure_email_date;
+            const todayString = new Date().toDateString();
+            const shouldSendEmail =
+              !lastFailureEmailDate || new Date(lastFailureEmailDate).toDateString() !== todayString;
+
+            if (shouldSendEmail) {
+              const installmentAmount = parseFloat(
+                (subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)
+              );
+
+              let cleanErrorMessage = error.message;
+              if (error.message.includes('"description":"')) {
+                const match = error.message.match(/"description":"([^"]+)"/);
+                if (match && match[1]) cleanErrorMessage = match[1];
+              }
+
+              const q_payment_id =
+                failedPaymentInSchedule?.q_payment_id ||
+                subscription.Quote_payment_number ||
+                subscription.quotepaymentId;
+
+              const emailData = {
+                quotepaymentId: subscription.quotepaymentId,
+                q_payment_id,
+                Customer_name: subscription.Customer_name || "Customer",
+                contactName: subscription.contactName,
+                opp_email: subscription.opp_email,
+                opp_owner: subscription.opp_owner,
+                payment_amount: installmentAmount,
+                due_date: today.toISOString().slice(0, 10),
+                failure_reason: cleanErrorMessage,
+                payment_link: "https://installment.virtuzone.com/login",
+                salesPersonDetails: subscription.salesPersonDetails
+              };
+
+              const emailResult = await sendPaymentFailureNotificationEmail(emailData);
+              if (emailResult.success) {
+                await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
+                  last_failure_email_date: new Date()
+                });
+              }
             }
-
-            const failedPayment = subscription.payment_schedule.find(
-              (p) => p.installment_number === currentPaymentNumber
-            );
-            const q_payment_id =
-              failedPayment?.q_payment_id ||
-              subscription.Quote_payment_number ||
-              subscription.quotepaymentId;
-
-            const emailData = {
-              quotepaymentId: subscription.quotepaymentId,
-              q_payment_id,
-              Customer_name: subscription.Customer_name || "Customer",
-              contactName: subscription.contactName,
-              opp_email: subscription.opp_email,
-              opp_owner: subscription.opp_owner,
-              payment_amount: installmentAmount,
-              due_date: today.toISOString().slice(0, 10),
-              failure_reason: cleanErrorMessage,
-              payment_link: "https://installment.virtuzone.com/login",
-              salesPersonDetails: subscription.salesPersonDetails
-            };
-
-            const emailResult = await sendPaymentFailureNotificationEmail(emailData);
-
-            if (emailResult.success) {
-              await Vzat_Recurring_Data.findByIdAndUpdate(subscription._id, {
-                last_failure_email_date: new Date()
-              });
-            }
+          } catch (e) {
+            console.error("📧 Failure email error (ignored):", e);
           }
-        } catch (e) {
-          console.error("📧 Failure email error (ignored):", e);
         }
 
         const failureResult = {
           quotepaymentId: subscription.quotepaymentId,
           status: "failed",
           error: error.message,
-          retry_count: retryCount + 1,
-          max_retries: maxRetries
+          installment_number: paymentToProcess,
+          retry_count: newRetryCount,
+          max_retries: MAX_RETRIES,
+          retries_exhausted: newRetryCount >= MAX_RETRIES
         };
         results.push(failureResult);
 
-        // Log individual failure with more context
-        Post_Common_DB_Log_Data("/cron/recurring-payment-failed", { 
+        Post_Common_DB_Log_Data("/cron/recurring-payment-failed", {
           quotepaymentId: subscription.quotepaymentId,
           customer_name: subscription.Customer_name,
-          installment_number: currentPaymentNumber,
+          installment_number: paymentToProcess,
           amount: parseFloat((subscription.Total_After_VAT_Currency / subscription.InstallmentLeft).toFixed(2)),
-          failure_timestamp: new Date().toISOString()
+          failure_timestamp: new Date().toISOString(),
+          retry_count: newRetryCount,
+          retries_exhausted: newRetryCount >= MAX_RETRIES
         }, failureResult, subscription.opp_email);
       }
     }
@@ -980,7 +1002,7 @@ async function processServerToServerPayment(subscription, savedCard) {
   afsData.append("entityId", entityId);
   afsData.append("amount", installmentAmount);
   afsData.append("currency", "AED");
-  afsData.append("paymentType", "PA");
+  afsData.append("paymentType", "DB");
 
   // ✅ PRODUCTION FIX: unique ID used here
   afsData.append("merchantTransactionId", merchantTransactionId);
@@ -1267,6 +1289,102 @@ export const testSubscriptionCompletionEmail = async (req, res) => {
 
 
 
+/**
+ * Refund a payment using the AFS Refund (RV) API
+ * Body: { transactionId, amount, quotepaymentId, installment_number? }
+ */
+export const refundPayment = async (req, res) => {
+  const { transactionId, amount, quotepaymentId, installment_number } = req.body;
+
+  console.log('💸 =============== REFUND REQUEST ===============');
+  console.log('📅 Timestamp:', new Date().toISOString());
+  console.log('📋 Request Body:', req.body);
+
+  if (!transactionId || !amount || !quotepaymentId) {
+    return res.status(400).json({
+      success: false,
+      message: 'transactionId, amount, and quotepaymentId are required'
+    });
+  }
+
+  const amountNumber = Number(amount);
+  if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
+    return res.status(400).json({ success: false, message: 'Invalid amount' });
+  }
+
+  try {
+    const subscription = await Vzat_Recurring_Data.findOne({ quotepaymentId });
+    if (!subscription) {
+      return res.status(404).json({ success: false, message: 'Subscription not found' });
+    }
+
+    const afsUrl = `${process.env.AFS_DOMAIN}/v1/payments/${transactionId}`;
+    const entityId = process.env.AFS_ENTITY_ID;
+    const accessToken = process.env.AFS_ACCESS_TOKEN;
+
+    const afsData = new URLSearchParams();
+    afsData.append('entityId', entityId);
+    afsData.append('amount', amountNumber.toFixed(2));
+    afsData.append('currency', 'AED');
+    afsData.append('paymentType', 'RV');
+
+    const afsHeaders = {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    };
+
+    console.log('🔗 AFS Refund Request:');
+    console.log('- URL:', afsUrl);
+    console.log('- Amount:', amountNumber.toFixed(2));
+    console.log('- paymentType: RV');
+
+    Post_Common_DB_Log_Data('/api/refund-request', { url: afsUrl, transactionId, amount: amountNumber.toFixed(2) }, { message: 'Refund request sent to AFS' }, subscription.opp_email);
+
+    const response = await axios.post(afsUrl, afsData, { headers: afsHeaders });
+    const result = response.data;
+
+    console.log('💸 AFS Refund Response:', result);
+
+    if (result?.result?.code?.startsWith('000.')) {
+      // Mark the installment as refunded if installment_number provided
+      if (installment_number) {
+        await Vzat_Recurring_Data.findOneAndUpdate(
+          { _id: subscription._id, 'payment_schedule.installment_number': installment_number },
+          { $set: { 'payment_schedule.$.status': 'refunded', 'payment_schedule.$.refund_transaction_id': result.id, 'payment_schedule.$.refund_date': new Date() } }
+        );
+      }
+
+      Post_Common_DB_Log_Data('/api/refund-success', { transactionId, refundTransactionId: result.id }, result, subscription.opp_email);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Refund processed successfully',
+        refundTransactionId: result.id,
+        amount: amountNumber.toFixed(2),
+        originalTransactionId: transactionId
+      });
+    } else {
+      Post_Common_DB_Log_Data('/api/refund-failed', { transactionId }, result, subscription.opp_email);
+
+      return res.status(400).json({
+        success: false,
+        message: result?.result?.description || 'Refund failed',
+        afsResponse: result
+      });
+    }
+  } catch (error) {
+    const status = error.response?.status;
+    const data = error.response?.data;
+    console.error('💥 Refund error:', error.message);
+
+    Post_Common_DB_Log_Data('/api/refund-exception', { transactionId, quotepaymentId }, data || { error: error.message });
+
+    if (status === 404) return res.status(404).json({ success: false, message: 'Original transaction not found in AFS' });
+    if (status === 400) return res.status(400).json({ success: false, message: 'AFS rejected refund request', afsResponse: data });
+    return res.status(500).json({ success: false, message: 'Refund request failed', error: error.message });
+  }
+};
+
 export default {
   handleAFSWebhook,
   processRecurringPayments,
@@ -1274,6 +1392,7 @@ export default {
   cancelSubscription,
   updateNextChargeDate,
   fixInstallmentLeft,
-  testServerToServerPayment
+  testServerToServerPayment,
+  refundPayment
 };
 
