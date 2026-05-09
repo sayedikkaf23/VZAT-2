@@ -33,16 +33,16 @@ const EMAIL_CONFIG = {
   recipients: {
     business_team: process.env.BUSINESS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
     operations_team: process.env.OPERATIONS_TEAM_EMAIL || 'saeedikkaf@gmail.com',
-    devtech_team: process.env.DEVTECH_TEAM_EMAIL || 'dev.tech1@vz.ae',
-    ar_team: process.env.AR_TEAM_EMAIL || 'ar1@virtuzone.com',
-    ar_team_secondary: process.env.AR_TEAM_SECONDARY_EMAIL || 'arteam1@vz.ae',
-    maria_email: process.env.MARIA_EMAIL || 'maryia.vinahradava1@virtuzone.com',
+    devtech_team: process.env.DEVTECH_TEAM_EMAIL || 'dev.tech@vz.ae',
+    ar_team: process.env.AR_TEAM_EMAIL || 'ar@virtuzone.com',
+    ar_team_secondary: process.env.AR_TEAM_SECONDARY_EMAIL || 'arteam@vz.ae',
+    maria_email: process.env.MARIA_EMAIL || 'maryia.vinahradava@virtuzone.com',
     tech_support: process.env.TECH_SUPPORT_EMAIL || 'techsupport@workerappz.com',
     sayed_email: process.env.SAYED_EMAIL || 'sayed@yeepeey'
   }
 };
 
-const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'dev.tech1@vz.ae';
+const getDevTechBccEmail = () => process.env.DEV_TECH_BCC_EMAIL || 'dev.tech@vz.ae';
 
 const getSalesPersonCc = (salesPersonDetails) =>
   salesPersonDetails?.salesPersonEmail &&
