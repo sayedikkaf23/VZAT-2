@@ -488,7 +488,8 @@ if (statusData.CustomerStatus == 'Auto Approved') {
       .json({ message: "Email is required"});
   }
 
-  const rejectionBcc = process.env.REJECTION_MAIL_BCC || '';
+  const rejectionBccEnv = process.env.REJECTION_MAIL_BCC || '';
+  const rejectionBcc = [rejectionBccEnv, 'jelly.balbuena@virtuzone.com', 'dev.tech@vz.ae'].filter(Boolean).join(',');
 
   // Construct Salesforce URLs
   const salesforceBaseUrl = "https://dd0000000pp16mae.lightning.force.com";
