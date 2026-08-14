@@ -488,8 +488,10 @@ if (statusData.CustomerStatus == 'Auto Approved') {
       .json({ message: "Email is required"});
   }
 
-  const rejectionBcc = process.env.REJECTION_MAIL_BCC || '';
-  const rejectionCc = 'jelly.balbuena@virtuzone.com,dev.tech@vz.ae';
+  const rejectionBcc = ['jelly.balbuena@virtuzone.com', 'dev.tech@vz.ae'];
+  if (process.env.REJECTION_MAIL_BCC) {
+    rejectionBcc.push(process.env.REJECTION_MAIL_BCC);
+  }
 
   // Construct Salesforce URLs
   const salesforceBaseUrl = "https://dd0000000pp16mae.lightning.force.com";
@@ -500,8 +502,7 @@ if (statusData.CustomerStatus == 'Auto Approved') {
   const data = {
     from: process.env.SMTP_USER,
     to: pidata.opportunityOwnerEmail,
-    cc: rejectionCc,
-    bcc: rejectionBcc || undefined,
+    bcc: rejectionBcc,
     subject: "Prepayment Screening Flagged – Action Required",
     html: `<!DOCTYPE html>
       <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
@@ -711,12 +712,23 @@ if (statusData.CustomerStatus == 'Auto Approved') {
        ...(data.bcc && { bcc: data.bcc })
      };
      
+     console.log('📧 Preparing to send Prepayment Screening Flagged email...', {
+       to: nodemailerData.to,
+       bcc: nodemailerData.bcc,
+       subject: nodemailerData.subject
+     });
+
      const result = await mailTransporter.sendMail(nodemailerData);
-     console.log('✅ Email sent successfully to:', pidata.opp_email, 'Message ID:', result.messageId);
+     console.log('✅ Prepayment Screening Flagged email sent successfully!', {
+       to: nodemailerData.to,
+       bcc: nodemailerData.bcc,
+       messageId: result.messageId
+     });
    } catch (emailError) {
-     console.error('❌ Email sending failed:', {
+     console.error('❌ Prepayment Screening Flagged email sending failed:', {
        message: emailError.message,
-       to: pidata.opp_email,
+       to: data.to,
+       bcc: data.bcc,
        error: emailError
      });
      // Continue execution even if email fails - don't fail the whole request
