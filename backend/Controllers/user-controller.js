@@ -4,7 +4,7 @@ import qs from "querystring";
 import VzatRecurringDataModel from "../model/VzatRecurringDataModel.js";
 // Remove the import * as AWS from 'aws-sdk';
 import fs from 'fs';
-// import mailgun from 'mailgun-js';
+import mailgun from 'mailgun-js';
 import nodemailer from 'nodemailer';
 
 import CountryRisk from "../model/CountryRisk.js";
@@ -34,24 +34,24 @@ dotenv.config();
 //   }
 // });
 
-// Initialize Mailgun (COMMENTED OUT - Using Nodemailer for now)
-// const mailgunConfig = {
-//   apiKey: process.env.MAILGUN_API_KEY,
-//   domain: process.env.MAILGUN_DOMAIN || 'vz.ae',
-//   fromEmail: process.env.SMTP_USER || 'payment@vz.ae'
-// };
+// Initialize Mailgun
+const mailgunConfig = {
+  apiKey: process.env.MAILGUN_API_KEY,
+  domain: process.env.MAILGUN_DOMAIN || 'vz.ae',
+  fromEmail: process.env.SMTP_USER || 'payment@vz.ae'
+};
 
-// let mailgunClient = null;
-// if (mailgunConfig.apiKey && mailgunConfig.domain) {
-//   try {
-//     mailgunClient = mailgun(mailgunConfig);
-//     console.log('✅ Mailgun client initialized successfully');
-//   } catch (error) {
-//     console.error('❌ Error initializing Mailgun client:', error);
-//   }
-// } else {
-//   console.warn('⚠️ Mailgun API key or domain not configured. Email functionality will be limited.');
-// }
+let mailgunClient = null;
+if (mailgunConfig.apiKey && mailgunConfig.domain) {
+  try {
+    mailgunClient = mailgun(mailgunConfig);
+    console.log('✅ Mailgun client initialized successfully');
+  } catch (error) {
+    console.error('❌ Error initializing Mailgun client:', error);
+  }
+} else {
+  console.warn('⚠️ Mailgun API key or domain not configured. Email functionality will be limited.');
+}
 
 // Initialize Nodemailer
 const mailTransporter = nodemailer.createTransport({
@@ -61,11 +61,6 @@ const mailTransporter = nodemailer.createTransport({
     pass: "qgwlzriynfzukuwy",
   },
 });
-
-// Keep mailgunConfig for fromEmail reference
-const mailgunConfig = {
-  fromEmail: process.env.SMTP_USER || 'payment@vz.ae'
-};
 
 
 
@@ -698,30 +693,16 @@ if (statusData.CustomerStatus == 'Auto Approved') {
   };
 
    try {
-     if (!mailTransporter) {
-       throw new Error('Nodemailer transporter not initialized');
-     }
-     
-     // Convert to Nodemailer format
-     const nodemailerData = {
-       from: data.from || `Virtuzone <${mailgunConfig.fromEmail}>`,
-       to: data.to,
-       subject: data.subject,
-       html: data.html,
-       ...(data.cc && { cc: data.cc }),
-       ...(data.bcc && { bcc: data.bcc })
-     };
-     
      console.log('📧 Preparing to send Prepayment Screening Flagged email...', {
-       to: nodemailerData.to,
-       bcc: nodemailerData.bcc,
-       subject: nodemailerData.subject
+       to: data.to,
+       bcc: data.bcc,
+       subject: data.subject
      });
 
-     const result = await mailTransporter.sendMail(nodemailerData);
+     const result = await sendEmailViaMailgun(data);
      console.log('✅ Prepayment Screening Flagged email sent successfully!', {
-       to: nodemailerData.to,
-       bcc: nodemailerData.bcc,
+       to: data.to,
+       bcc: data.bcc,
        messageId: result.messageId
      });
    } catch (emailError) {
@@ -798,20 +779,48 @@ function resolvePaymentURL(pi, quotePaymentId, bodyBase) {
   return base ? `${base.replace(/\/+$/,"")}/onlinepayment/${encodeURIComponent(quotePaymentId)}` : null;
 }
 
-// Helper function to send email via Nodemailer (temporarily replacing Mailgun)
+// Helper function to send email via Mailgun (with Nodemailer fallback)
 async function sendEmailViaMailgun(mailData) {
-  if (!mailTransporter) {
-    throw new Error('Nodemailer transporter not initialized');
+  if (mailgunClient) {
+    // Send via Mailgun
+    const mailgunData = {
+      from: mailData.from || `Virtuzone <${mailgunConfig.fromEmail}>`,
+      to: Array.isArray(mailData.to) ? mailData.to.join(', ') : mailData.to,
+      subject: mailData.subject,
+      html: mailData.html,
+      ...(mailData.cc && { cc: Array.isArray(mailData.cc) ? mailData.cc.join(', ') : mailData.cc }),
+      ...(mailData.bcc && { bcc: Array.isArray(mailData.bcc) ? mailData.bcc.join(', ') : mailData.bcc }),
+      ...(mailData.attachment && { attachment: mailData.attachment })
+    };
+
+    console.log('📧 Sending email via Mailgun:', {
+      to: mailgunData.to,
+      cc: mailgunData.cc || 'none',
+      bcc: mailgunData.bcc || 'none',
+      subject: mailgunData.subject
+    });
+
+    const result = await mailgunClient.messages().send(mailgunData);
+    return { 
+      messageId: result.id || result.message, 
+      accepted: [mailgunData.to], 
+      rejected: [] 
+    };
   }
 
-  // Convert to Nodemailer format
+  // Fallback to Nodemailer if Mailgun is not configured
+  if (!mailTransporter) {
+    throw new Error('No email service client initialized (neither Mailgun nor Nodemailer)');
+  }
+
+  console.log('⚠️ Mailgun client not initialized. Falling back to Nodemailer...');
   const nodemailerData = {
     from: mailData.from || `Virtuzone <${mailgunConfig.fromEmail}>`,
-    to: Array.isArray(mailData.to) ? mailData.to : mailData.to,
+    to: mailData.to,
     subject: mailData.subject,
     html: mailData.html,
-    ...(mailData.cc && { cc: Array.isArray(mailData.cc) ? mailData.cc : mailData.cc }),
-    ...(mailData.bcc && { bcc: Array.isArray(mailData.bcc) ? mailData.bcc : mailData.bcc }),
+    ...(mailData.cc && { cc: mailData.cc }),
+    ...(mailData.bcc && { bcc: mailData.bcc }),
     ...(mailData.attachment && { attachments: mailData.attachment })
   };
 
