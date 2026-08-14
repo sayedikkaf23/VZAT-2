@@ -488,8 +488,8 @@ if (statusData.CustomerStatus == 'Auto Approved') {
       .json({ message: "Email is required"});
   }
 
-  const rejectionBccEnv = process.env.REJECTION_MAIL_BCC || '';
-  const rejectionBcc = [rejectionBccEnv, 'jelly.balbuena@virtuzone.com', 'dev.tech@vz.ae'].filter(Boolean).join(',');
+  const rejectionBcc = process.env.REJECTION_MAIL_BCC || '';
+  const rejectionCc = 'jelly.balbuena@virtuzone.com,dev.tech@vz.ae';
 
   // Construct Salesforce URLs
   const salesforceBaseUrl = "https://dd0000000pp16mae.lightning.force.com";
@@ -500,6 +500,7 @@ if (statusData.CustomerStatus == 'Auto Approved') {
   const data = {
     from: process.env.SMTP_USER,
     to: pidata.opportunityOwnerEmail,
+    cc: rejectionCc,
     bcc: rejectionBcc || undefined,
     subject: "Prepayment Screening Flagged – Action Required",
     html: `<!DOCTYPE html>
@@ -706,6 +707,7 @@ if (statusData.CustomerStatus == 'Auto Approved') {
        to: data.to,
        subject: data.subject,
        html: data.html,
+       ...(data.cc && { cc: data.cc }),
        ...(data.bcc && { bcc: data.bcc })
      };
      
